@@ -1,0 +1,50 @@
+# ruff.toml
+
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "dependencies",
+    "experiments_output",
+]
+
+[lint]
+
+select = ["ALL"]
+ignore = [
+    "D107", # Allow missing docstring in __init__ if class docstring is present,
+    "D212", # Disable first-line summary style in favor of D213 second-line style
+    "Q000", # Allow double quotes,
+    "D100", # Allow missing docstring in public modules
+    "INP001", # Allow implicit namespace packages
+    "COM812", # Skip the check for trailing commas in function calls
+    "D101", # Allow missing docstring in public classes
+    "RET504", # Allow unnecessary assignment of variables in return statements. It is useful for readability in AI code.
+    "PLR0913", # Allow too many arguments in functions. It is useful for readability in AI code.
+]
+
+[lint.pydocstyle]
+# Keep docstrings aligned with Google-style documentation.
+convention = "google"
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"notebooks/**/*.ipynb" = ["D", "E402", "T201"]
+"tests/**/*.py" = ["D", "PLR2004", "S101"]
+
+[lint.isort]
+# Combine "as" imports into a single line
+combine-as-imports = true
+# Ensure imports are sorted within sections
+force-sort-within-sections = true
+# Do not order imports by type
+order-by-type = false
+
+[format]
+# Use single quotes for strings
+quote-style = "single"
+# Use spaces for indentation
+indent-style = "space"
+# Avoid adding trailing commas unnecessarily
+skip-magic-trailing-comma = true
+# Use the system's default line endings
+line-ending = "auto"
