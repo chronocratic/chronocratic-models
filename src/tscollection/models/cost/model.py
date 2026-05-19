@@ -9,14 +9,14 @@ from torch import fft, nn
 import torch.nn.functional as F  ## noqa: N812
 from torch.optim import SGD
 
-from src.tscollection.models.abstract import EncodingFunctionalityMixin
-from src.tscollection.models.augmentation.enums import CoSTAugmentationMode
-from src.tscollection.models.augmentation.factories import CoSTAugmentationMethodFactory
-from src.tscollection.models.cost.utils import compute_amplitude_and_phase
-from src.tscollection.models.encoders import CoSTTimeSeriesEncoder
-from src.tscollection.models.encoders.masking import MaskMode
-from src.tscollection.models.losses import instance_contrastive_loss
-from src.tscollection.models.utils import extract_features_from_batch, process_sample_length
+from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._augmentation.enums import CoSTAugmentationMode
+from tscollection.models._augmentation.factories import CoSTAugmentationMethodFactory
+from tscollection.models.cost.utils import compute_amplitude_and_phase
+from tscollection.models.encoders import CoSTTimeSeriesEncoder
+from tscollection.models.encoders.masking import MaskMode
+from tscollection.models.losses import instance_contrastive_loss
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class CoST(pl.LightningModule, EncodingFunctionalityMixin):

@@ -9,8 +9,8 @@ import torch.nn.functional as F  ## noqa: N812
 from torch.utils.data import DataLoader, TensorDataset
 import tqdm
 
-from src.tscollection.models.encoders.masking import MaskMode
-from src.tscollection.models.utils import (
+from tscollection.models.encoders.masking import MaskMode
+from tscollection.models.utils import (
     apply_slicing,
     concat_last_step_features,
     extract_features_from_batch,

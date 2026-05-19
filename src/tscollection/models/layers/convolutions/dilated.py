@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from src.tscollection.models.layers.convolutions.same_pad import Conv1dSamePadMultiBlock
+from tscollection.models.layers.convolutions.same_pad import Conv1dSamePadMultiBlock
 
 
 class Conv1dDilatedEncoder(nn.Module):

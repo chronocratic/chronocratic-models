@@ -12,8 +12,7 @@ import random
 import numpy as np
 import torch
 
-from src.tscollection.models.encoders import AutoTCLAugmentationTimeSeriesEncoder
-from src.tscollection.models.ts2vec.utils import extract_subsequences_per_row
+from tscollection.models.encoders import AutoTCLAugmentationTimeSeriesEncoder
 
 
 class AugmentationMethod(ABC):
@@ -119,6 +118,8 @@ class CropShiftAugmentation(AugmentationMethod):
             ``view2`` are the two augmented subsequence tensors and
             ``crop_length`` is the length of their shared interval.
         """
+        from tscollection.models.ts2vec.utils import extract_subsequences_per_row
+
         temporal_unit = kwargs.get('temporal_unit', 0)
         x = data
 

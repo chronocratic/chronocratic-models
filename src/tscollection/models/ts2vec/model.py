@@ -7,13 +7,13 @@ from torch import nn
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from src.tscollection.models.abstract import EncodingFunctionalityMixin
-from src.tscollection.models.augmentation.enums import TS2VecAugmentationMode
-from src.tscollection.models.augmentation.factories import TS2VecAugmentationMethodFactory
-from src.tscollection.models.encoders import TS2VecTimeSeriesEncoder
-from src.tscollection.models.encoders.masking import MaskMode
-from src.tscollection.models.losses import hierarchical_contrastive_loss
-from src.tscollection.models.utils import extract_features_from_batch, process_sample_length
+from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._augmentation.enums import TS2VecAugmentationMode
+from tscollection.models._augmentation.factories import TS2VecAugmentationMethodFactory
+from tscollection.models.encoders import TS2VecTimeSeriesEncoder
+from tscollection.models.encoders.masking import MaskMode
+from tscollection.models.losses import hierarchical_contrastive_loss
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class TS2Vec(pl.LightningModule, EncodingFunctionalityMixin):

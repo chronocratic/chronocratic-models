@@ -5,8 +5,8 @@ from typing import cast
 import numpy as np
 import torch
 
-from src.tscollection.models.augmentation import AugmentationMethod
-from src.tscollection.models.losses import l1_out_loss
+from tscollection.models._augmentation import AugmentationMethod
+from tscollection.models.losses import l1_out_loss
 
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
