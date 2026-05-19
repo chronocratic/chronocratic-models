@@ -4,12 +4,12 @@ __all__ = [
     'TS2VecAugmentationMethodFactory',
 ]
 
-from src.tscollection.models.augmentation.enums import (
+from tscollection.models._augmentation.enums import (
     AutoTCLAugmentationMode,
     CoSTAugmentationMode,
     TS2VecAugmentationMode,
 )
-from src.tscollection.models.augmentation.strategies import (
+from tscollection.models._augmentation.strategies import (
     AugmentationMethod,
     AutoTCLNeuralNetworkAugmentation,
     CoSTAugmentationMethod,

@@ -9,29 +9,29 @@ from torch.nn import functional as F  ## noqa: N812
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from src.tscollection.models.abstract import EncodingFunctionalityMixin
-from src.tscollection.models.augmentation.enums import (
+from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._augmentation.enums import (
     AutoTCLAugmentationMode,
     AutoTCLNeuralNetworkAugmentationTrainingMode,
 )
-from src.tscollection.models.augmentation.factories import AutoTCLAugmentationMethodFactory
-from src.tscollection.models.augmentation.strategies import (
+from tscollection.models._augmentation.factories import AutoTCLAugmentationMethodFactory
+from tscollection.models._augmentation.strategies import (
     AugmentationMethod,
     AutoTCLAugmentationTimeSeriesEncoder,
     AutoTCLNeuralNetworkAugmentation,
 )
-from src.tscollection.models.autotcl.utils import (
+from tscollection.models.autotcl.utils import (
     calculate_mutual_information,
     calculate_regular_consistency,
 )
-from src.tscollection.models.encoders import AutoTCLTimeSeriesEncoder
-from src.tscollection.models.encoders.masking import MaskMode
-from src.tscollection.models.losses import (
+from tscollection.models.encoders import AutoTCLTimeSeriesEncoder
+from tscollection.models.encoders.masking import MaskMode
+from tscollection.models.losses import (
     info_nce_loss,
     local_info_nce_loss,
     maximum_mean_discrepancy_with_gaussian_kernel_loss,
 )
-from src.tscollection.models.utils import extract_features_from_batch, process_sample_length
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class AutoTCL(pl.LightningModule, EncodingFunctionalityMixin):
