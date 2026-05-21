@@ -118,7 +118,7 @@ class CropShiftAugmentation(AugmentationMethod):
             ``view2`` are the two augmented subsequence tensors and
             ``crop_length`` is the length of their shared interval.
         """
-        from tscollection.models.ts2vec.utils import extract_subsequences_per_row
+        from tscollection.models.ts2vec.utils import extract_subsequences_per_row  # noqa: PLC0415
 
         temporal_unit = kwargs.get('temporal_unit', 0)
         x = data

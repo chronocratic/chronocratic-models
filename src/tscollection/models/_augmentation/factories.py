@@ -41,7 +41,7 @@ class AutoTCLAugmentationMethodFactory:
 
 class TS2VecAugmentationMethodFactory:
     @staticmethod
-    def get_augmentation_method(mode: TS2VecAugmentationMode, params: dict) -> AugmentationMethod:
+    def get_augmentation_method(mode: TS2VecAugmentationMode, params: dict) -> AugmentationMethod:  # noqa: ARG004
         """Return the augmentation strategy for a TS2Vec model.
 
         Args:
