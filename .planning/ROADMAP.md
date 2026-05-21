@@ -23,6 +23,8 @@
 
 **Requirements:** MIX-01, MIX-02, MIX-03, MIX-04, CFG-01, CFG-03
 
+**Plans:** 4 plans
+
 **Success Criteria:**
 1. TS2Vec and AutoTCL inherit `PoolingEncodingMixin`; CoST inherits `DecompositionEncodingMixin`
 2. `encode()` behavior identical to pre-refactor for all 3 models (no regression)
@@ -30,6 +32,12 @@
 4. `ty check src/` passes with zero errors
 
 **Canonical refs:** `_sources/rbspaper/src/rbspaper/models/abstract/encoding_functionality_mixin.py`, `_sources/rbspaper/src/rbspaper/models/config.py`
+
+**Plan list:**
+- [ ] 01-01-PLAN.md — Config dataclasses (ModelParameters hierarchy, D-03, D-07)
+- [ ] 01-02-PLAN.md — Mixin hierarchy (Base/Pooling/Decomposition, D-05, D-06)
+- [ ] 01-03-PLAN.md — Model inheritance + from_config() factory (D-04)
+- [ ] 01-04-PLAN.md — Type checking + lint + test verification
 
 ---
 
@@ -82,4 +90,4 @@
 
 ---
 
-*Last updated: 2026-05-21 after discuss-phase*
+*Last updated: 2026-05-21 after plan-phase*
