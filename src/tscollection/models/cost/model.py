@@ -3,7 +3,6 @@ __all__ = ['CoST']
 import itertools
 
 import lightning.pytorch as pl
-import numpy as np
 import torch
 from torch import fft, nn
 import torch.nn.functional as F  ## noqa: N812
@@ -141,7 +140,15 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         Returns:
             A configured CoST model instance.
         """
-        return cls(**vars(config), **additional_kwargs)  # type: ignore[arg-type]
+        config_kwargs = vars(config)
+        overlapping = set(config_kwargs) & set(additional_kwargs)
+        if overlapping:
+            msg = (
+                f"from_config received overlapping keys between config and additional_kwargs: "
+                f"{overlapping}. Remove them from one side."
+            )
+            raise ValueError(msg)
+        return cls(**config_kwargs, **additional_kwargs)  # type: ignore[arg-type]
 
     def _init_augmentation_method(self, augmentation_method_params: dict) -> None:
         self._augmentation_method = CoSTAugmentationMethodFactory.get_augmentation_method(
@@ -212,7 +219,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         update_key_encoder: bool = True,  ## noqa: FBT002 FBT001
     ) -> torch.Tensor:
         # compute query features
-        random_index = np.random.randint(0, query.shape[1])  ## noqa: NPY002
+        random_index = int(torch.randint(0, query.shape[1], size=()).item())
 
         query_trend, query_seasonality = self.query_encoder(query)
         if query_trend is not None:

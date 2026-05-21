@@ -156,7 +156,15 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         Returns:
             A configured AutoTCL model instance.
         """
-        return cls(**vars(config), **additional_kwargs)  # type: ignore[arg-type]
+        config_kwargs = vars(config)
+        overlapping = set(config_kwargs) & set(additional_kwargs)
+        if overlapping:
+            msg = (
+                f"from_config received overlapping keys between config and additional_kwargs: "
+                f"{overlapping}. Remove them from one side."
+            )
+            raise ValueError(msg)
+        return cls(**config_kwargs, **additional_kwargs)  # type: ignore[arg-type]
 
     # -------------- End of setup functions --------------
 

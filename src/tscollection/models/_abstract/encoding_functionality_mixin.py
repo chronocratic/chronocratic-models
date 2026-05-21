@@ -220,56 +220,57 @@ class BaseEncodingMixin(ABC):
         num_samples, time_series_length, _ = data.shape  # noqa: RUF059
 
         original_training_state = encoder.training
-        encoder.eval()
+        try:
+            encoder.eval()
 
-        dataset = TensorDataset(data)
-        _logger.info(
-            'building data loader with batch size %s and num workers %s',
-            batch_size,
-            num_workers,
-        )
-        loader = DataLoader(
-            dataset,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            persistent_workers=num_workers > 0,
-            pin_memory=True,
-        )
+            dataset = TensorDataset(data)
+            _logger.info(
+                'building data loader with batch size %s and num workers %s',
+                batch_size,
+                num_workers,
+            )
+            loader = DataLoader(
+                dataset,
+                batch_size=batch_size,
+                num_workers=num_workers,
+                persistent_workers=num_workers > 0,
+                pin_memory=True,
+            )
 
-        with torch.inference_mode():
-            all_outputs: list[torch.Tensor] = []
-            for batch in tqdm.tqdm(
-                loader, desc='Encoding data', unit='batch', leave=True, total=len(loader)
-            ):
-                input_tensor = extract_features_from_batch(batch)
+            with torch.inference_mode():
+                all_outputs: list[torch.Tensor] = []
+                for batch in tqdm.tqdm(
+                    loader, desc='Encoding data', unit='batch', leave=True, total=len(loader)
+                ):
+                    input_tensor = extract_features_from_batch(batch)
 
-                if sliding_length is not None:
-                    representations = self._compute_sliding_representations(
-                        input_tensor=input_tensor,
-                        sliding_length=sliding_length,
-                        sliding_padding=sliding_padding,
-                        causal=causal,
-                        mask=mask,
-                        encoding_window=encoding_window,
-                        num_samples=num_samples,
-                        batch_size=batch_size,
-                    )
-                else:
-                    representations = eval_method(
-                        input_tensor=input_tensor,
-                        mask=mask,
-                        slicing=None,
-                        encoding_window=encoding_window,
-                    )
+                    if sliding_length is not None:
+                        representations = self._compute_sliding_representations(
+                            input_tensor=input_tensor,
+                            sliding_length=sliding_length,
+                            sliding_padding=sliding_padding,
+                            causal=causal,
+                            mask=mask,
+                            encoding_window=encoding_window,
+                            num_samples=num_samples,
+                            batch_size=batch_size,
+                        )
+                    else:
+                        representations = eval_method(
+                            input_tensor=input_tensor,
+                            mask=mask,
+                            slicing=None,
+                            encoding_window=encoding_window,
+                        )
 
-                    if encoding_window == 'full_series':
-                        representations = representations.squeeze(1)
+                        if encoding_window == 'full_series':
+                            representations = representations.squeeze(1)
 
-                all_outputs.append(representations.cpu())
+                    all_outputs.append(representations.cpu())
 
-            result = torch.cat(all_outputs, dim=0)
-
-        encoder.train(original_training_state)
+                result = torch.cat(all_outputs, dim=0)
+        finally:
+            encoder.train(original_training_state)
         return result
 
 
