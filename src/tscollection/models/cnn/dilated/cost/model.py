@@ -8,7 +8,7 @@ from torch import fft, nn
 import torch.nn.functional as F  ## noqa: N812
 from torch.optim import SGD
 
-from tscollection.models._abstract import DecompositionEncodingMixin
+from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
 from tscollection.models._augmentation.enums import CoSTAugmentationMode
 from tscollection.models._augmentation.factories import CoSTAugmentationMethodFactory
 from tscollection.models.cnn.dilated.cost.utils import compute_amplitude_and_phase

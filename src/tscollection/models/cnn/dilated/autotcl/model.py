@@ -9,7 +9,7 @@ from torch.nn import functional as F  ## noqa: N812
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models._abstract import PoolingEncodingMixin
+from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models._augmentation.enums import (
     AutoTCLAugmentationMode,
     AutoTCLNeuralNetworkAugmentationTrainingMode,

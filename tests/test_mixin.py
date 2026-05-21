@@ -57,20 +57,20 @@ class _DecompositionEncoder(nn.Module):
 # ---------------------------------------------------------------------------
 
 class TestMixinImports:
-    """Verify all three mixin classes are importable from _abstract."""
+    """Verify all three mixin classes are importable from _mixin.encoding."""
 
     def test_pooling_mixin_import(self) -> None:
-        from tscollection.models._abstract import PoolingEncodingMixin
+        from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
 
         assert PoolingEncodingMixin is not None
 
     def test_decomposition_mixin_import(self) -> None:
-        from tscollection.models._abstract import DecompositionEncodingMixin
+        from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
 
         assert DecompositionEncodingMixin is not None
 
     def test_base_mixin_import(self) -> None:
-        from tscollection.models._abstract import BaseEncodingMixin
+        from tscollection.models.cnn.dilated._mixin.encoding import BaseEncodingMixin
 
         assert BaseEncodingMixin is not None
 
@@ -84,7 +84,7 @@ class TestMixinHierarchy:
 
     @pytest.fixture(autouse=True)
     def _load_classes(self) -> None:
-        from tscollection.models._abstract import (
+        from tscollection.models.cnn.dilated._mixin.encoding import (
             BaseEncodingMixin,
             DecompositionEncodingMixin,
             PoolingEncodingMixin,
@@ -110,7 +110,7 @@ class TestMixinHierarchy:
 @pytest.fixture
 def pooling_model() -> nn.Module:
     """Create a minimal pooling-based model for testing."""
-    from tscollection.models._abstract import PoolingEncodingMixin
+    from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
 
     class _PoolingTestModel(PoolingEncodingMixin, nn.Module):
         def __init__(self) -> None:
@@ -124,7 +124,7 @@ def pooling_model() -> nn.Module:
 @pytest.fixture
 def decomposition_model() -> nn.Module:
     """Create a minimal decomposition-based model for testing."""
-    from tscollection.models._abstract import DecompositionEncodingMixin
+    from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
 
     class _DecompositionTestModel(DecompositionEncodingMixin, nn.Module):
         def __init__(self) -> None:
@@ -217,7 +217,7 @@ class TestBugFixes:
         """DataLoader must use persistent_workers=num_workers > 0."""
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / '_abstract' / 'encoding_functionality_mixin.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
         source = mixin_file.read_text()
         assert 'persistent_workers=num_workers > 0' in source
 
@@ -225,7 +225,7 @@ class TestBugFixes:
         """_compute_sliding_representations full_series path uses .transpose(1, 2)."""
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / '_abstract' / 'encoding_functionality_mixin.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
         source = mixin_file.read_text()
         assert 'transpose(1, 2)' in source
 
@@ -279,7 +279,7 @@ class TestSourceCompliance:
     def _load_source(self) -> None:
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / '_abstract' / 'encoding_functionality_mixin.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
         self.source = mixin_file.read_text()
 
     def test_no_hasattr_branching(self) -> None:

@@ -7,7 +7,7 @@ augmentation kwargs pass through as additional_kwargs.
 Also verifies the correct mixin inheritance for each model class.
 """
 
-from tscollection.models._abstract import (
+from tscollection.models.cnn.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )

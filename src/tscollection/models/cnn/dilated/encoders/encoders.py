@@ -18,7 +18,7 @@ from tscollection.models.cnn.dilated.encoders.masking import (
     generate_not_nan_mask,
     MaskMode,
 )
-from tscollection.models.cnn.dilated.layers.convolutions import Conv1dDilatedEncoder
+from tscollection.models.cnn.dilated.layers import Conv1dDilatedEncoder
 from tscollection.models.layers import BandedFourierLayer
 
 
