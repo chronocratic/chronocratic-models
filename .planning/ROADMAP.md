@@ -10,7 +10,7 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 1 | Foundation | Split mixin hierarchy + add config layer | MIX-01..04, CFG-01, CFG-03 | 4 |
+| 1 | Foundation | 4/4 | Complete   | 2026-05-21 |
 | 2 | Directory Restructure | Move to cnn/dilated layout, collocate encoders/layers/augmentations | RESTRUCT-01..04 | 4 |
 | 3 | Augmentation Refactor | Replace enums/factories with ABC strategy system, collocate per-model | AUG-01..06, CFG-02, MOD-01..05 | 5 |
 | 4 | Cleanup and Verification | Remove dead code, polish imports, smoke tests | CLN-01..04, VER-01..05 | 5 |
@@ -23,7 +23,7 @@
 
 **Requirements:** MIX-01, MIX-02, MIX-03, MIX-04, CFG-01, CFG-03
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 **Success Criteria:**
 1. TS2Vec and AutoTCL inherit `PoolingEncodingMixin`; CoST inherits `DecompositionEncodingMixin`
@@ -34,10 +34,10 @@
 **Canonical refs:** `_sources/rbspaper/src/rbspaper/models/abstract/encoding_functionality_mixin.py`, `_sources/rbspaper/src/rbspaper/models/config.py`
 
 **Plan list:**
-- [ ] 01-01-PLAN.md — Config dataclasses (ModelParameters hierarchy, D-03, D-07)
-- [ ] 01-02-PLAN.md — Mixin hierarchy (Base/Pooling/Decomposition, D-05, D-06)
-- [ ] 01-03-PLAN.md — Model inheritance + from_config() factory (D-04)
-- [ ] 01-04-PLAN.md — Type checking + lint + test verification
+- [x] 01-01-PLAN.md — Config dataclasses (ModelParameters hierarchy, D-03, D-07)
+- [x] 01-02-PLAN.md — Mixin hierarchy (Base/Pooling/Decomposition, D-05, D-06)
+- [x] 01-03-PLAN.md — Model inheritance + from_config() factory (D-04)
+- [x] 01-04-PLAN.md — Type checking + lint + test verification
 
 ---
 
