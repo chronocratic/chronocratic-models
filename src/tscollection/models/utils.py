@@ -190,7 +190,7 @@ def concat_last_step_features(
 
 def pad_tensor_with_nan(
     tensor: torch.Tensor, left_pad: int = 0, right_pad: int = 0, axis: int = 0
-    ) -> torch.Tensor:
+) -> torch.Tensor:
     """
     Pad a tensor with NaN values along a specified axis.
 

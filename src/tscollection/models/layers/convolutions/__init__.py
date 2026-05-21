@@ -1,2 +1,1 @@
-from .dilated import *
-
+from tscollection.models.cnn.dilated.layers.convolutions import *

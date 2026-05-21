@@ -257,7 +257,11 @@ def info_nce_loss(
 
 
 def local_info_nce_loss(
-    z1: torch.Tensor, z2: torch.Tensor, pooling: str = 'max', temperature: float = 1.0, k: int = 16  # noqa: ARG001
+    z1: torch.Tensor,
+    z2: torch.Tensor,  # noqa: ARG001
+    pooling: str = 'max',
+    temperature: float = 1.0,
+    k: int = 16,
 ) -> torch.Tensor:
     """
     Compute local InfoNCE loss for contrastive learning.
@@ -586,7 +590,10 @@ def global_info_nce_loss(
 
 
 def similarity_loss(
-    z1: torch.Tensor, z2: torch.Tensor, pooling: str = 'max', temperature: float = 1.0  # noqa: ARG001
+    z1: torch.Tensor,
+    z2: torch.Tensor,
+    pooling: str = 'max',
+    temperature: float = 1.0,  # noqa: ARG001
 ) -> torch.Tensor:
     """
     Compute similarity loss.

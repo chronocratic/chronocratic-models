@@ -12,7 +12,7 @@ import random
 import numpy as np
 import torch
 
-from tscollection.models.encoders import AutoTCLAugmentationTimeSeriesEncoder
+from tscollection.models.cnn.dilated.encoders.encoders import AutoTCLAugmentationTimeSeriesEncoder
 
 
 class AugmentationMethod(ABC):
@@ -54,6 +54,7 @@ class CoSTAugmentationMethod(AugmentationMethod, ABC):
     @abstractmethod
     def augment(self, data: torch.Tensor, **kwargs) -> torch.Tensor:  ## noqa: ANN003
         """Return a single augmented view of ``data``."""
+
 
 class AutoTCLNeuralNetworkAugmentation(AugmentationMethod):
     """Augmentation driven by a learned neural network (AutoTCL)."""

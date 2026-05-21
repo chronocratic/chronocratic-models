@@ -18,12 +18,7 @@ class BandedFourierLayer(nn.Module):
     """
 
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        band: int,
-        num_bands: int,
-        length: int = 201,
+        self, in_channels: int, out_channels: int, band: int, num_bands: int, length: int = 201
     ) -> None:
         super().__init__()
 
@@ -42,9 +37,7 @@ class BandedFourierLayer(nn.Module):
         self.end = self.start + self.num_frequencies
 
         self.weight = nn.Parameter(
-            torch.empty(
-                (self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat
-            )
+            torch.empty((self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat)
         )
         self.bias = nn.Parameter(
             torch.empty((self.num_frequencies, out_channels), dtype=torch.cfloat)
@@ -70,7 +63,7 @@ class BandedFourierLayer(nn.Module):
             device=input_tensor.device,
             dtype=torch.cfloat,
         )
-        output_fft[:, self.start:self.end] = self._apply_fourier_transform(input_fft)
+        output_fft[:, self.start : self.end] = self._apply_fourier_transform(input_fft)
         return fft.irfft(output_fft, n=input_tensor.size(1), dim=1)
 
     def _apply_fourier_transform(self, input_tensor: torch.Tensor) -> torch.Tensor:
@@ -82,9 +75,7 @@ class BandedFourierLayer(nn.Module):
         Returns:
             Transformed output tensor in the Fourier domain.
         """
-        output = torch.einsum(
-            'bti,tio->bto', input_tensor[:, self.start:self.end], self.weight
-        )
+        output = torch.einsum('bti,tio->bto', input_tensor[:, self.start : self.end], self.weight)
         return output + self.bias
 
     def reset_parameters(self) -> None:

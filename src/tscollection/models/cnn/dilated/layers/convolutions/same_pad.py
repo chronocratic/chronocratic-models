@@ -105,7 +105,11 @@ class Conv1dSamePadMultiBlock(nn.Module):
             )
 
     def __initiate_projector(
-        self, in_channels: int, out_channels: int, stride: int, is_final: bool  # noqa: FBT001
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int,
+        is_final: bool,  # noqa: FBT001
     ) -> None:
 
         if stride == 1:
