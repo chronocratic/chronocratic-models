@@ -43,16 +43,22 @@ class TestFromConfigInstantiation:
         model = CoST.from_config(
             config,
             augmentation_mode=CoSTAugmentationMode.RANDOM_FUNCTIONS,
-            augmentation_method_params={},
+            augmentation_method_params={'sigma': 0.1},
         )
         assert isinstance(model, CoST)
 
     def test_autotcl_from_config_returns_instance(self) -> None:
         config = AutoTCLModelParameters(input_dims=1)
+        # AutoTCL's neural network augmentation needs encoder params too;
+        # provide them as additional_kwargs alongside the config unpack.
         model = AutoTCL.from_config(
             config,
             augmentation_mode=AutoTCLAugmentationMode.NEURAL_NETWORK,
-            augmentation_method_params={},
+            augmentation_method_params={
+                'input_dims': 1,
+                'output_dims': 320,
+                'kernel_sizes': [],
+            },
         )
         assert isinstance(model, AutoTCL)
 

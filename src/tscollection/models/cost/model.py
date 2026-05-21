@@ -9,7 +9,8 @@ from torch import fft, nn
 import torch.nn.functional as F  ## noqa: N812
 from torch.optim import SGD
 
-from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._abstract import DecompositionEncodingMixin
+from tscollection.models.config import CoSTModelParameters
 from tscollection.models._augmentation.enums import CoSTAugmentationMode
 from tscollection.models._augmentation.factories import CoSTAugmentationMethodFactory
 from tscollection.models.cost.utils import compute_amplitude_and_phase
@@ -19,7 +20,7 @@ from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
-class CoST(pl.LightningModule, EncodingFunctionalityMixin):
+class CoST(pl.LightningModule, DecompositionEncodingMixin):
     """CoST: Contrastive learning of Disentangled Seasonal-Trend Representations for time series."""
 
     def __init__(
@@ -127,6 +128,20 @@ class CoST(pl.LightningModule, EncodingFunctionalityMixin):
 
         optimizer = SGD(model_params, lr=self._learning_rate, momentum=0.9, weight_decay=1e-4)
         return optimizer
+
+    @classmethod
+    def from_config(cls, config: CoSTModelParameters, **additional_kwargs: object) -> "CoST":
+        """Instantiate CoST from a typed config dataclass.
+
+        Args:
+            config: CoST model parameters dataclass.
+            **additional_kwargs: Extra keyword arguments forwarded to __init__.
+                Typically includes augmentation_mode and augmentation_method_params.
+
+        Returns:
+            A configured CoST model instance.
+        """
+        return cls(**vars(config), **additional_kwargs)  # type: ignore[arg-type]
 
     def _init_augmentation_method(self, augmentation_method_params: dict) -> None:
         self._augmentation_method = CoSTAugmentationMethodFactory.get_augmentation_method(
