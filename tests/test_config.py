@@ -9,6 +9,7 @@ from dataclasses import fields, is_dataclass
 
 import pytest
 
+from tscollection.models.cnn.dilated.encoders.masking import MaskMode
 from tscollection.models.config import (
     AutoTCLModelParameters,
     CoSTModelParameters,
@@ -16,7 +17,6 @@ from tscollection.models.config import (
     ModelParameters,
     TS2VecModelParameters,
 )
-from tscollection.models.encoders.masking import MaskMode
 
 
 class TestModelParametersBase:

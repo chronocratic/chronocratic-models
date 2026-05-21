@@ -16,14 +16,14 @@ from tscollection.models._augmentation.enums import (
     CoSTAugmentationMode,
     TS2VecAugmentationMode,
 )
-from tscollection.models.autotcl.model import AutoTCL
+from tscollection.models.cnn.dilated.autotcl.model import AutoTCL
+from tscollection.models.cnn.dilated.cost.model import CoST
+from tscollection.models.cnn.dilated.ts2vec.model import TS2Vec
 from tscollection.models.config import (
     AutoTCLModelParameters,
     CoSTModelParameters,
     TS2VecModelParameters,
 )
-from tscollection.models.cost.model import CoST
-from tscollection.models.ts2vec.model import TS2Vec
 
 
 class TestFromConfigInstantiation:
