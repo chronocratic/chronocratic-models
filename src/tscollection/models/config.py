@@ -41,7 +41,7 @@ class ModelParameters(abc.ABC):
         if cls is ModelParameters:
             msg = 'ModelParameters is abstract and cannot be instantiated directly'
             raise TypeError(msg)
-        return super().__new__(cls)
+        return object.__new__(cls)
 
 
 @dataclass
