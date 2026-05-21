@@ -9,7 +9,8 @@ from torch.nn import functional as F  ## noqa: N812
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._abstract import PoolingEncodingMixin
+from tscollection.models.config import AutoTCLModelParameters
 from tscollection.models._augmentation.enums import (
     AutoTCLAugmentationMode,
     AutoTCLNeuralNetworkAugmentationTrainingMode,
@@ -34,7 +35,7 @@ from tscollection.models.losses import (
 from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
-class AutoTCL(pl.LightningModule, EncodingFunctionalityMixin):
+class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     def __init__(
         self,
         input_dims: int,
@@ -140,6 +141,22 @@ class AutoTCL(pl.LightningModule, EncodingFunctionalityMixin):
         if self._augmentation_mode == AutoTCLAugmentationMode.NEURAL_NETWORK:
             return self._configure_optimizers_neural_network_augmentation()
         return self._configure_optimizers_default()
+
+    @classmethod
+    def from_config(
+        cls, config: AutoTCLModelParameters, **additional_kwargs: object
+    ) -> "AutoTCL":
+        """Instantiate AutoTCL from a typed config dataclass.
+
+        Args:
+            config: AutoTCL model parameters dataclass.
+            **additional_kwargs: Extra keyword arguments forwarded to __init__.
+                Typically includes augmentation_mode and augmentation_method_params.
+
+        Returns:
+            A configured AutoTCL model instance.
+        """
+        return cls(**vars(config), **additional_kwargs)  # type: ignore[arg-type]
 
     # -------------- End of setup functions --------------
 

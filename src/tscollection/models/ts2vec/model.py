@@ -7,7 +7,8 @@ from torch import nn
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models._abstract import EncodingFunctionalityMixin
+from tscollection.models._abstract import PoolingEncodingMixin
+from tscollection.models.config import TS2VecModelParameters
 from tscollection.models._augmentation.enums import TS2VecAugmentationMode
 from tscollection.models._augmentation.factories import TS2VecAugmentationMethodFactory
 from tscollection.models.encoders import TS2VecTimeSeriesEncoder
@@ -16,7 +17,7 @@ from tscollection.models.losses import hierarchical_contrastive_loss
 from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
-class TS2Vec(pl.LightningModule, EncodingFunctionalityMixin):
+class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     def __init__(
         self,
         input_dims: int,
@@ -66,6 +67,22 @@ class TS2Vec(pl.LightningModule, EncodingFunctionalityMixin):
         """Return the AdamW optimizer for the TS2Vec encoder."""
         optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
         return optimizer
+
+    @classmethod
+    def from_config(
+        cls, config: TS2VecModelParameters, **additional_kwargs: object
+    ) -> "TS2Vec":
+        """Instantiate TS2Vec from a typed config dataclass.
+
+        Args:
+            config: TS2Vec model parameters dataclass.
+            **additional_kwargs: Extra keyword arguments forwarded to __init__.
+                Typically includes augmentation_mode and augmentation_method_params.
+
+        Returns:
+            A configured TS2Vec model instance.
+        """
+        return cls(**vars(config), **additional_kwargs)  # type: ignore[arg-type]
 
     def _init_augmentation_method(self, augmentation_method_params: dict) -> None:
         self._augmentation_method = TS2VecAugmentationMethodFactory.get_augmentation_method(
