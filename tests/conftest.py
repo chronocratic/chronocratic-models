@@ -1,8 +1,9 @@
-"""Shared pytest fixtures for config tests."""
-
+"""Shared fixtures for tscollection model tests."""
 from __future__ import annotations
 
 import pytest
+
+import torch
 
 
 @pytest.fixture
