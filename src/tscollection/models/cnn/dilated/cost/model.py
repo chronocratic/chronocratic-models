@@ -11,10 +11,10 @@ from torch.optim import SGD
 from tscollection.models._abstract import DecompositionEncodingMixin
 from tscollection.models._augmentation.enums import CoSTAugmentationMode
 from tscollection.models._augmentation.factories import CoSTAugmentationMethodFactory
+from tscollection.models.cnn.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.cnn.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
 from tscollection.models.config import CoSTModelParameters
-from tscollection.models.cost.utils import compute_amplitude_and_phase
 from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import extract_features_from_batch, process_sample_length
 

@@ -20,7 +20,7 @@ from tscollection.models._augmentation.strategies import (
     AutoTCLAugmentationTimeSeriesEncoder,
     AutoTCLNeuralNetworkAugmentation,
 )
-from tscollection.models.autotcl.utils import (
+from tscollection.models.cnn.dilated.autotcl.utils import (
     calculate_mutual_information,
     calculate_regular_consistency,
 )
