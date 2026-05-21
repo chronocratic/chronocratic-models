@@ -4,14 +4,14 @@ from collections.abc import Callable
 
 import torch
 from torch import nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812
 
 from tscollection.models.layers.convolutions.same_pad import Conv1dSamePadMultiBlock
 
 
 class Conv1dDilatedEncoder(nn.Module):
-    """
-    A sequence of Conv1dMultiBlock layers with exponentially increasing dilation.
+    """A sequence of Conv1dMultiBlock layers with exponentially increasing dilation.
+
     in_channels: Number of input channels.
     channels: List of output channels for each layer.
     kernel_size: Size of the kernel for the convolutions.

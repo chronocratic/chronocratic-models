@@ -27,7 +27,7 @@ ignore = [
 convention = "google"
 
 [lint.per-file-ignores]
-"__init__.py" = ["F401"]
+"__init__.py" = ["D104", "F401", "F403"]
 "notebooks/**/*.ipynb" = ["D", "E402", "T201"]
 "tests/**/*.py" = ["D", "PLR2004", "S101"]
 

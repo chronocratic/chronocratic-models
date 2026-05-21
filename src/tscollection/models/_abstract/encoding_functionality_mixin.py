@@ -2,7 +2,7 @@ __all__ = ['BaseEncodingMixin', 'DecompositionEncodingMixin', 'PoolingEncodingMi
 
 from abc import ABC, abstractmethod
 import logging
-from typing import TYPE_CHECKING, override
+from typing import override, TYPE_CHECKING
 
 import torch
 from torch import nn

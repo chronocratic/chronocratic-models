@@ -1,1 +1,1 @@
-from .strategies import AugmentationMethod  # noqa: D104
+from .strategies import AugmentationMethod

@@ -13,9 +13,9 @@ from einops import rearrange, reduce
 import torch
 from torch import nn
 
+from tscollection.models.encoders.masking import generate_mask, generate_not_nan_mask, MaskMode
 from tscollection.models.layers import BandedFourierLayer
 from tscollection.models.layers.convolutions import Conv1dDilatedEncoder
-from tscollection.models.encoders.masking import generate_mask, generate_not_nan_mask, MaskMode
 
 
 class BaseTimeSeriesEncoder(nn.Module, ABC):

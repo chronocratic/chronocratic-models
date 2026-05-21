@@ -4,13 +4,11 @@ from collections.abc import Callable
 
 import torch
 from torch import nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812
 
 
 class Conv1dSamePad(nn.Module):
-    """
-    A 1D convolutional layer that ensures the output has the same length as the input.
-    """
+    """A 1D convolutional layer that ensures the output has the same length as the input."""
 
     def __init__(
         self,
@@ -44,9 +42,7 @@ class Conv1dSamePad(nn.Module):
 
 
 class Conv1dSamePadMultiBlock(nn.Module):
-    """
-    A block consisting of n 1D convolutional layers with user specified activation functions.
-    """
+    """A block consisting of n 1D convolutional layers with user specified activation functions."""
 
     def __init__(
         self,
@@ -56,7 +52,7 @@ class Conv1dSamePadMultiBlock(nn.Module):
         dilation: int,
         stride: int = 1,
         num_blocks: int = 2,
-        is_final: bool = False,
+        is_final: bool = False,  # noqa: FBT001 FBT002
         activation_fn: Callable[[torch.Tensor], torch.Tensor] = F.gelu,
     ) -> None:
         super().__init__()
@@ -97,7 +93,7 @@ class Conv1dSamePadMultiBlock(nn.Module):
             )
         )
 
-        for i in range(1, num_blocks):
+        for _i in range(1, num_blocks):
             self.blocks.append(
                 Conv1dSamePad(
                     in_channels=out_channels,
@@ -109,7 +105,7 @@ class Conv1dSamePadMultiBlock(nn.Module):
             )
 
     def __initiate_projector(
-        self, in_channels: int, out_channels: int, stride: int, is_final: bool
+        self, in_channels: int, out_channels: int, stride: int, is_final: bool  # noqa: FBT001
     ) -> None:
 
         if stride == 1:

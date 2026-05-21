@@ -10,7 +10,6 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models._abstract import PoolingEncodingMixin
-from tscollection.models.config import AutoTCLModelParameters
 from tscollection.models._augmentation.enums import (
     AutoTCLAugmentationMode,
     AutoTCLNeuralNetworkAugmentationTrainingMode,
@@ -25,6 +24,7 @@ from tscollection.models.autotcl.utils import (
     calculate_mutual_information,
     calculate_regular_consistency,
 )
+from tscollection.models.config import AutoTCLModelParameters
 from tscollection.models.encoders import AutoTCLTimeSeriesEncoder
 from tscollection.models.encoders.masking import MaskMode
 from tscollection.models.losses import (
