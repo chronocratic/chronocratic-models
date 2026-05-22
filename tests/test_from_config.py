@@ -11,7 +11,7 @@ from tscollection.models.cnn.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
-from tscollection.models._augmentation.enums import (
+from tscollection.models.augmentation.enums import (
     AutoTCLAugmentationMode,
     CoSTAugmentationMode,
     TS2VecAugmentationMode,

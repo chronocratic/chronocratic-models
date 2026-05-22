@@ -9,8 +9,8 @@ import torch.nn.functional as F  ## noqa: N812
 from torch.optim import SGD
 
 from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
-from tscollection.models._augmentation.enums import CoSTAugmentationMode
-from tscollection.models._augmentation.factories import CoSTAugmentationMethodFactory
+from tscollection.models.augmentation.enums import CoSTAugmentationMode
+from tscollection.models.augmentation.factories import CoSTAugmentationMethodFactory
 from tscollection.models.cnn.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.cnn.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
