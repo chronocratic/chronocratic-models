@@ -10,12 +10,12 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models._augmentation.enums import (
+from tscollection.models.augmentation.enums import (
     AutoTCLAugmentationMode,
     AutoTCLNeuralNetworkAugmentationTrainingMode,
 )
-from tscollection.models._augmentation.factories import AutoTCLAugmentationMethodFactory
-from tscollection.models._augmentation.strategies import (
+from tscollection.models.augmentation.factories import AutoTCLAugmentationMethodFactory
+from tscollection.models.augmentation.strategies import (
     AugmentationMethod,
     AutoTCLAugmentationTimeSeriesEncoder,
     AutoTCLNeuralNetworkAugmentation,

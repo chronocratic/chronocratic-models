@@ -8,8 +8,8 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models._augmentation.enums import TS2VecAugmentationMode
-from tscollection.models._augmentation.factories import TS2VecAugmentationMethodFactory
+from tscollection.models.augmentation.enums import TS2VecAugmentationMode
+from tscollection.models.augmentation.factories import TS2VecAugmentationMethodFactory
 from tscollection.models.cnn.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
 from tscollection.models.config import TS2VecModelParameters
