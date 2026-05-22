@@ -8,7 +8,10 @@ import torch
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models.augmentation import AugmentationMethod, TrainableAugmentation
+from tscollection.models.augmentation.base import (
+    AugmentationMethod,
+    TrainableAugmentation,
+)
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
