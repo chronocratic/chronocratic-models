@@ -1,9 +1,9 @@
 __all__ = ['CoST']
 
 import itertools
-import numpy as np
 
 import lightning.pytorch as pl
+import numpy as np
 import torch
 from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
@@ -11,10 +11,10 @@ from torch.optim import SGD
 
 from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
+from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
