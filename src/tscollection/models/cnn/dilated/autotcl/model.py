@@ -156,6 +156,10 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         views = self._augmentation.augment(x)
         aug_x = views.views[0]
 
+        # Defensive device transfer — original model called .to(x.device)
+        if aug_x.device != x.device:
+            aug_x = aug_x.to(x.device)
+
         x_embeddings = self._encoder(x)
         aug_x_embeddings = self._encoder(aug_x)
 
@@ -190,6 +194,10 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
         views = self._augmentation.augment(x)
         aug_x = views.views[0]
+
+        # Defensive device transfer — original model called .to(x.device)
+        if aug_x.device != x.device:
+            aug_x = aug_x.to(x.device)
 
         x_embeddings = self._averaged_encoder(x)
         aug_x_embeddings = self._averaged_encoder(aug_x)
