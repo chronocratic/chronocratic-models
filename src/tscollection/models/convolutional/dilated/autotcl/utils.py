@@ -2,7 +2,7 @@ __all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 
 import torch
 
-from tscollection.models.augmentation import AugmentationMethod
+from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.losses import l1_out_loss
 
 

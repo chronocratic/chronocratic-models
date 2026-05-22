@@ -9,7 +9,7 @@ from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
-from tscollection.models.augmentation import AugmentationMethod
+from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
