@@ -12,7 +12,6 @@ from tscollection.models.augmentation.enums import (
 from tscollection.models.augmentation.strategies import (
     AugmentationMethod,
     AutoTCLNeuralNetworkAugmentation,
-    CoSTAugmentationMethod,
     CosTRandomFunctionAugmentation,
     CropShiftAugmentation,
 )
@@ -63,7 +62,7 @@ class TS2VecAugmentationMethodFactory:
 
 class CoSTAugmentationMethodFactory:
     @staticmethod
-    def get_augmentation_method(mode: CoSTAugmentationMode, params: dict) -> CoSTAugmentationMethod:
+    def get_augmentation_method(mode: CoSTAugmentationMode, params: dict) -> AugmentationMethod:
         """Return the augmentation strategy for a CoST model.
 
         Args:
