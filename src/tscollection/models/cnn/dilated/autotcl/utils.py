@@ -5,7 +5,7 @@ from typing import cast
 import numpy as np
 import torch
 
-from tscollection.models.augmentation import AugmentationMethod
+from tscollection.models.augmentation.strategies import AugmentationMethod
 from tscollection.models.losses import l1_out_loss
 
 
