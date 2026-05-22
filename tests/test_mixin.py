@@ -217,7 +217,7 @@ class TestBugFixes:
         """DataLoader must use persistent_workers=num_workers > 0."""
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'convolutional' / 'dilated' / '_mixin' / 'encoding.py'
         source = mixin_file.read_text()
         assert 'persistent_workers=num_workers > 0' in source
 
@@ -225,7 +225,7 @@ class TestBugFixes:
         """_compute_sliding_representations full_series path uses .transpose(1, 2)."""
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'convolutional' / 'dilated' / '_mixin' / 'encoding.py'
         source = mixin_file.read_text()
         assert 'transpose(1, 2)' in source
 
@@ -279,7 +279,7 @@ class TestSourceCompliance:
     def _load_source(self) -> None:
         import pathlib
 
-        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'cnn' / 'dilated' / '_mixin' / 'encoding.py'
+        mixin_file = pathlib.Path(__file__).parents[1] / 'src' / 'tscollection' / 'models' / 'convolutional' / 'dilated' / '_mixin' / 'encoding.py'
         self.source = mixin_file.read_text()
 
     def test_no_hasattr_branching(self) -> None:
