@@ -3,7 +3,7 @@ __all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 import torch
 
 from tscollection.models.augmentation.base import AugmentationMethod
-from tscollection.models.losses import l1_out_loss
+from .losses import l1_out_loss
 
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
@@ -24,10 +24,7 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     batch_size, time_steps, _ = weights.shape
 
     if time_steps <= 3:
-        msg = (
-            f'calculate_regular_consistency requires time_steps > 3, '
-            f'got {time_steps}'
-        )
+        msg = f'calculate_regular_consistency requires time_steps > 3, got {time_steps}'
         raise ValueError(msg)
 
     # Select random time steps for comparison
