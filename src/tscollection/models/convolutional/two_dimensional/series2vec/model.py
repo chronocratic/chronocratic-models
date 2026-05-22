@@ -3,8 +3,6 @@ from __future__ import annotations
 __all__ = ['Series2Vec', 'get_series2vec_model']
 
 import lightning.pytorch as pl
-import torch
-
 from src.autotsrc.models.series2vec.filters import filter_frequencies
 from src.autotsrc.models.series2vec.losses import (
     pairwise_euclidean_distances,
@@ -12,8 +10,8 @@ from src.autotsrc.models.series2vec.losses import (
     pretraining_loss,
 )
 from src.autotsrc.models.series2vec.network import Series2VecNetwork
-from src.autotsrc.models.series2vec.optimizers import get_optimizer
 from src.autotsrc.models.series2vec.soft_dtw_cuda import SoftDTW
+import torch
 
 
 def _extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Tensor:
@@ -22,6 +20,17 @@ def _extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Te
     if isinstance(batch, tuple | list):
         return batch[0]
     msg = f'Unsupported batch format: {type(batch)}'
+    raise ValueError(msg)
+
+
+def _get_optimizer(name):
+    if name == 'Adam':
+        return torch.optim.Adam
+    if name == 'RAdam':
+        return torch.optim.RAdam
+    if name == 'AdamW':
+        return torch.optim.AdamW
+    msg = f'Unknown optimizer: {name}'
     raise ValueError(msg)
 
 
@@ -127,7 +136,7 @@ class Series2Vec(pl.LightningModule):
         return val_loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
-        optimizer_cls = get_optimizer(self.optimizer_name)
+        optimizer_cls = _get_optimizer(self.optimizer_name)
         kwargs: dict = {'lr': self.learning_rate, 'weight_decay': self.weight_decay}
         if self.optimizer_name == 'AdamW':
             kwargs['warmup'] = self.warmup
