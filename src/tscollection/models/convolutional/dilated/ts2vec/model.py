@@ -84,6 +84,11 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         Returns:
             A configured TS2Vec model instance.
+
+        Note:
+            To configure augmentation training (e.g., ``training_ratio_step``),
+            set it on the strategy constructor:
+            ``RIPTrainingStrategy(training_ratio_step=3)``.
         """
         return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
