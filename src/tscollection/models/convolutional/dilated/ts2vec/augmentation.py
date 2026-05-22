@@ -9,10 +9,7 @@ Imports ``AugmentationMethod`` and ``TrainingViews`` directly from
 ``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = [
-    'CropShiftAugmentation',
-    'CropShiftAugmentationParameters',
-]
+__all__ = ['CropShiftAugmentation', 'CropShiftAugmentationParameters']
 
 from dataclasses import dataclass
 from typing import Any
@@ -20,10 +17,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from tscollection.models.augmentation.base import (
-    AugmentationMethod,
-    TrainingViews,
-)
+from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
 
 
 @dataclass
@@ -48,23 +42,19 @@ class CropShiftAugmentation(AugmentationMethod):
     independent per-sample temporal offsets.
     """
 
-    def __init__(
-        self, params: CropShiftAugmentationParameters | None = None
-    ) -> None:
+    def __init__(self, params: CropShiftAugmentationParameters | None = None) -> None:
         """Initialize the crop-and-shift augmentation.
 
         Args:
             params: Optional configuration controlling the temporal unit.
                 When ``None``, defaults to ``CropShiftAugmentationParameters()``.
         """
-        self._params = (
-            params
-            if params is not None
-            else CropShiftAugmentationParameters()
-        )
+        self._params = params if params is not None else CropShiftAugmentationParameters()
 
     def augment(
-        self, data: torch.Tensor, **kwargs: Any  # noqa: ANN401
+        self,
+        data: torch.Tensor,
+        **kwargs: Any,  # noqa: ANN401
     ) -> TrainingViews:
         """Return two overlapping random crops of ``data`` with random per-sample shifts.
 
@@ -122,9 +112,7 @@ class CropShiftAugmentation(AugmentationMethod):
 
         # Random offset for each sample in the batch
         crop_offsets = np.random.randint(  # noqa: NPY002
-            low=-crop_extension_start,
-            high=total_length - crop_extension_end + 1,
-            size=x.size(0),
+            low=-crop_extension_start, high=total_length - crop_extension_end + 1, size=x.size(0)
         )
 
         # Generate augmented subsequences 1 by cropping and shifting
@@ -136,9 +124,7 @@ class CropShiftAugmentation(AugmentationMethod):
 
         # Generate augmented subsequences 2 by cropping and shifting
         augmented_subsequences_2 = extract_subsequences_per_row(
-            array=x,
-            indices=crop_offsets + crop_start,
-            num_elements=crop_extension_end - crop_start,
+            array=x, indices=crop_offsets + crop_start, num_elements=crop_extension_end - crop_start
         )
 
         return TrainingViews(

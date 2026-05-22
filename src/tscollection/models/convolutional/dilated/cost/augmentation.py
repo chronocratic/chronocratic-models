@@ -9,10 +9,7 @@ Imports ``AugmentationMethod`` and ``TrainingViews`` directly from
 ``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = [
-    'CosTRandomFunctionAugmentation',
-    'CosTRandomFunctionAugmentationParameters',
-]
+__all__ = ['CosTRandomFunctionAugmentation', 'CosTRandomFunctionAugmentationParameters']
 
 from dataclasses import dataclass
 from typing import Any
@@ -20,10 +17,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from tscollection.models.augmentation.base import (
-    AugmentationMethod,
-    TrainingViews,
-)
+from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
 
 
 @dataclass
@@ -46,10 +40,7 @@ class CosTRandomFunctionAugmentationParameters:
 class CosTRandomFunctionAugmentation(AugmentationMethod):
     """Stochastic jitter/scale/shift augmentation used by CoST."""
 
-    def __init__(
-        self,
-        params: CosTRandomFunctionAugmentationParameters | dict[str, Any],
-    ) -> None:
+    def __init__(self, params: CosTRandomFunctionAugmentationParameters | dict[str, Any]) -> None:
         """Initialize the random-function augmentation.
 
         Args:
@@ -68,7 +59,7 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
             if 'sigma' not in params:
                 msg = (
                     "CosTRandomFunctionAugmentation requires 'sigma' in params. "
-                    "Pass CosTRandomFunctionAugmentationParameters or a dict "
+                    'Pass CosTRandomFunctionAugmentationParameters or a dict '
                     "with 'sigma' (required) and 'p' (optional)."
                 )
                 raise ValueError(msg)
@@ -97,7 +88,9 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
         return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
 
     def augment(
-        self, data: torch.Tensor, **kwargs: Any  # noqa: ANN401, ARG002
+        self,
+        data: torch.Tensor,
+        **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> TrainingViews:
         """Return ``data`` after stochastically applying scale, shift, and jitter.
 

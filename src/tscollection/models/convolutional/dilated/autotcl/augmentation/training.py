@@ -7,10 +7,7 @@ Imports ``AugmentationTrainingStrategy`` directly from ``augmentation/base.py``
 (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = [
-    'AdversarialTrainingStrategy',
-    'RIPTrainingStrategy',
-]
+__all__ = ['AdversarialTrainingStrategy', 'RIPTrainingStrategy']
 
 import torch
 from torch.nn import functional as F  # noqa: N812
@@ -80,12 +77,9 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
         vx_distance = maximum_mean_discrepancy_with_gaussian_kernel_loss(
             x_embeddings, aug_x_embeddings
         )
-        regular_consistency = calculate_regular_consistency(
-            weights=augmentation_factor
-        )
+        regular_consistency = calculate_regular_consistency(weights=augmentation_factor)
         regularization_loss = F.relu(
-            torch.sum(augmentation_factor, dim=-1).mean()
-            - self._regularization_threshold
+            torch.sum(augmentation_factor, dim=-1).mean() - self._regularization_threshold
         )
 
         return (
@@ -131,6 +125,4 @@ class AdversarialTrainingStrategy(AugmentationTrainingStrategy):
         Returns:
             Scalar loss tensor (negative InfoNCE).
         """
-        return -1.0 * info_nce_loss(
-            x_embeddings, aug_x_embeddings, temperature=1.0
-        )
+        return -1.0 * info_nce_loss(x_embeddings, aug_x_embeddings, temperature=1.0)

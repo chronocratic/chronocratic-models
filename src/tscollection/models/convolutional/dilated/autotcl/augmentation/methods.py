@@ -10,10 +10,7 @@ Imports ``TrainableAugmentation``, ``TrainingViews``, and
 the barrel) to avoid circular dependencies.
 """
 
-__all__ = [
-    'AutoTCLNeuralNetworkAugmentation',
-    'AutoTCLNeuralNetworkAugmentationParameters',
-]
+__all__ = ['AutoTCLNeuralNetworkAugmentation', 'AutoTCLNeuralNetworkAugmentationParameters']
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -98,14 +95,8 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
         """
         if isinstance(params, dict):
             # Backward-compat shim for dict-based params (factories)
-            params = AutoTCLNeuralNetworkAugmentationParameters(
-                **params
-            )  # type: ignore  # noqa: PGH003
-        strategy = (
-            training_strategy
-            if training_strategy is not None
-            else RIPTrainingStrategy()
-        )
+            params = AutoTCLNeuralNetworkAugmentationParameters(**params)  # type: ignore  # noqa: PGH003
+        strategy = training_strategy if training_strategy is not None else RIPTrainingStrategy()
         super().__init__(training_strategy=strategy)
         self.params = params
         self._build_model()
@@ -126,7 +117,9 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
         return self.model(data)
 
     def augment(
-        self, data: torch.Tensor, **kwargs: Any  # noqa: ANN401, ARG002
+        self,
+        data: torch.Tensor,
+        **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> TrainingViews:
         """Return an augmented view produced by the encoder model.
 
