@@ -10,7 +10,7 @@ from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.config import TS2VecModelParameters
+from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 from tscollection.models.utils import (
     extract_features_from_batch,
     merge_config_kwargs,

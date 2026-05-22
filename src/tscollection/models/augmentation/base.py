@@ -150,9 +150,7 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
     AutoTCL-specific; not a general pattern for TS2Vec/CoST.
     """
 
-    def __init__(
-        self, training_strategy: AugmentationTrainingStrategy
-    ) -> None:
+    def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
         """Initialize a trainable augmentation.
 
         Args:
@@ -161,9 +159,7 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         super().__init__()
         self._training_strategy = training_strategy
 
-    def should_train_augmentation(
-        self, epoch: int, batch_idx: int
-    ) -> bool:
+    def should_train_augmentation(self, epoch: int, batch_idx: int) -> bool:
         """Check whether the aug-network should train this step.
 
         Delegates to the composed training strategy to avoid exposing

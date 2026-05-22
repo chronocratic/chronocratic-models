@@ -14,7 +14,7 @@ from tscollection.models.convolutional.dilated._mixin.encoding import Decomposit
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.config import CoSTModelParameters
+from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
@@ -201,10 +201,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         batch_size = keys.shape[0]
 
         if self.queue_size % batch_size != 0:
-            msg = (
-                f'queue_size ({self.queue_size}) must be divisible by '
-                f'batch_size ({batch_size})'
-            )
+            msg = f'queue_size ({self.queue_size}) must be divisible by batch_size ({batch_size})'
             raise ValueError(msg)
 
         ptr = int(self.queue_insert_index.item())
@@ -215,7 +212,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         else:
             first_chunk = self.queue_size - ptr
             self.queue[:, ptr:] = keys.T[:, :first_chunk]
-            self.queue[:, :batch_size - first_chunk] = keys.T[:, first_chunk:]
+            self.queue[:, : batch_size - first_chunk] = keys.T[:, first_chunk:]
 
         ptr = (ptr + batch_size) % self.queue_size
         self.queue_insert_index[0] = ptr

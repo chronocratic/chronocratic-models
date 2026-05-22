@@ -18,9 +18,7 @@ from torch.nn import functional as F  # noqa: N812
 
 
 def merge_config_kwargs(
-    config_kwargs: dict[str, object],
-    additional_kwargs: dict[str, object],
-    source: str = 'config',
+    config_kwargs: dict[str, object], additional_kwargs: dict[str, object], source: str = 'config'
 ) -> dict[str, object]:
     """Merge config and additional kwargs, raising on overlap.
 
