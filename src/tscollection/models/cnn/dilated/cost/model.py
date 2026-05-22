@@ -1,6 +1,7 @@
 __all__ = ['CoST']
 
 import itertools
+import numpy as np
 
 import lightning.pytorch as pl
 import torch
@@ -55,6 +56,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self._augmentation = augmentation
 
         self.automatic_optimization = False
+
+        # Seeded RNG for reproducible temporal index selection
+        self._rng = np.random.default_rng(seed=int(torch.random.initial_seed()))
 
         length = min(max_train_length, sequence_length)
 
@@ -222,7 +226,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         update_key_encoder: bool = True,  ## noqa: FBT002 FBT001
     ) -> torch.Tensor:
         # compute query features
-        random_index = int(torch.randint(0, query.shape[1], size=()).item())
+        random_index = self._rng.integers(0, query.shape[1])
 
         query_trend, query_seasonality = self.query_encoder(query)
         if query_trend is not None:
