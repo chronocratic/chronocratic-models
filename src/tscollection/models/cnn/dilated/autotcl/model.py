@@ -139,6 +139,14 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
                     meta_opt.zero_grad()
                     self.manual_backward(aug_loss)
                     meta_opt.step()
+                    self.log(
+                        'aug_train_loss',
+                        aug_loss,
+                        on_step=True,
+                        on_epoch=True,
+                        prog_bar=True,
+                        sync_dist=self._sync_dist,
+                    )
 
         # Phase 2: Uniform encoder training
         self._encoder.train()
