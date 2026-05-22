@@ -20,13 +20,13 @@ from tscollection.models.augmentation.config import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.cnn.dilated._mixin.encoding import (
+from tscollection.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
-from tscollection.models.cnn.dilated.autotcl.model import AutoTCL
-from tscollection.models.cnn.dilated.cost.model import CoST
-from tscollection.models.cnn.dilated.ts2vec.model import TS2Vec
+from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
+from tscollection.models.convolutional.dilated.cost.model import CoST
+from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
 from tscollection.models.config import (
     AutoTCLModelParameters,
     CoSTModelParameters,

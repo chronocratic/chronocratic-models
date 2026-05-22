@@ -25,7 +25,7 @@ from tscollection.models.augmentation.config import (
     CosTRandomFunctionAugmentationParameters,
     CropShiftAugmentationParameters,
 )
-from tscollection.models.cnn.dilated.encoders.encoders import AutoTCLAugmentationTimeSeriesEncoder
+from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLAugmentationTimeSeriesEncoder
 from tscollection.models.losses import (
     info_nce_loss,
     maximum_mean_discrepancy_with_gaussian_kernel_loss,
@@ -196,7 +196,7 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
         # Lazy import to avoid circular dependency:
         # strategies.py imports from encoders.py, which may import from augmentation/__init__.py,
         # which imports from strategies.py — utils.py also imports from the barrel.
-        from tscollection.models.cnn.dilated.autotcl.utils import (  # noqa: PLC0415
+        from tscollection.models.convolutional.dilated.autotcl.utils import (  # noqa: PLC0415
             calculate_regular_consistency,
         )
 
@@ -457,7 +457,7 @@ class CropShiftAugmentation(AugmentationMethod):
         # Lazy import to avoid circular dependency:
         # ts2vec/model.py imports from augmentation/strategies.py, so a module-level
         # import of ts2vec/utils.py would create a circular import chain.
-        from tscollection.models.cnn.dilated.ts2vec.utils import (  # noqa: PLC0415
+        from tscollection.models.convolutional.dilated.ts2vec.utils import (  # noqa: PLC0415
             extract_subsequences_per_row,
         )
 
