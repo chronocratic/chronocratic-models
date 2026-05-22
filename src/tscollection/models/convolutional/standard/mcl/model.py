@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from .losses import MixUpLoss
+from tscollection.models.convolutional.standard.mcl.losses import MixUpLoss
 
 
 class FCN(pl.LightningModule):

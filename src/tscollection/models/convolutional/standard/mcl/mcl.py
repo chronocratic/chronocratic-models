@@ -16,9 +16,9 @@ from src.autotsrc.models.representations import (
 )
 import torch
 
-from src.autotsrc.enums import TimeSeriesDatasetMode
+from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-from .model import get_mcl_model
+from tscollection.models.convolutional.standard.mcl.model import get_mcl_model
 
 if TYPE_CHECKING:
     from lightning.pytorch.callbacks.callback import Callback
