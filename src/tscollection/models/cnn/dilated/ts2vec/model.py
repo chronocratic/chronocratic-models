@@ -109,7 +109,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         return emb_1, emb_2
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:  ## noqa: ARG002
+    def training_step(
+        self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int
+    ) -> torch.Tensor:  ## noqa: ARG002
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
 
@@ -141,7 +143,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         return train_loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:  ## noqa: ARG002
+    def validation_step(
+        self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int
+    ) -> torch.Tensor:  ## noqa: ARG002
         """Compute and log the TS2Vec validation loss."""
         x = extract_features_from_batch(batch)
 
