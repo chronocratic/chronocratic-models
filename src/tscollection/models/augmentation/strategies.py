@@ -530,6 +530,13 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
             self._p = params.p
         else:
             # Backward-compat shim for dict-based params (factories)
+            if 'sigma' not in params:
+                msg = (
+                    "CosTRandomFunctionAugmentation requires 'sigma' in params. "
+                    "Pass CosTRandomFunctionAugmentationParameters or a dict "
+                    "with 'sigma' (required) and 'p' (optional)."
+                )
+                raise ValueError(msg)
             self._params = CosTRandomFunctionAugmentationParameters(
                 sigma=params['sigma'], p=params.get('p', 0.5)
             )
