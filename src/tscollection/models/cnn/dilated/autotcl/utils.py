@@ -8,20 +8,27 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
 
     Compares differences between selected time steps.
 
-    Parameters
-    ----------
-    weights : torch.Tensor
-        The input weight tensor of shape (batch_size, time_steps, channels).
+    Args:
+        weights: Input weight tensor of shape (batch_size, time_steps, channels).
+            time_steps must be greater than 3.
 
     Returns:
-    -------
-    torch.Tensor
-        The mean consistency measure across the batch.
+        Mean consistency measure across the batch.
+
+    Raises:
+        ValueError: If time_steps is less than or equal to 3.
     """
     batch_size, time_steps, _ = weights.shape
 
+    if time_steps <= 3:
+        msg = (
+            f'calculate_regular_consistency requires time_steps > 3, '
+            f'got {time_steps}'
+        )
+        raise ValueError(msg)
+
     # Select random time steps for comparison
-    selected_steps = torch.randint(1, time_steps - 2, [batch_size])
+    selected_steps = torch.randint(1, time_steps - 2, [batch_size], device=weights.device)
     left_steps = selected_steps - 1
     right_steps = selected_steps + 1
     other_selected_steps = torch.randint(1, time_steps - 2, [batch_size])
