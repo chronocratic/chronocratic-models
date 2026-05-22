@@ -195,11 +195,22 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     def _dequeue_and_enqueue(self, keys: torch.Tensor) -> None:
         batch_size = keys.shape[0]
 
+        if self.queue_size % batch_size != 0:
+            msg = (
+                f'queue_size ({self.queue_size}) must be divisible by '
+                f'batch_size ({batch_size})'
+            )
+            raise ValueError(msg)
+
         ptr = int(self.queue_insert_index.item())
-        assert self.queue_size % batch_size == 0  ## noqa: S101
 
         # replace keys at ptr (dequeue and enqueue)
-        self.queue[:, ptr : ptr + batch_size] = keys.T
+        if ptr + batch_size <= self.queue_size:
+            self.queue[:, ptr : ptr + batch_size] = keys.T
+        else:
+            first_chunk = self.queue_size - ptr
+            self.queue[:, ptr:] = keys.T[:, :first_chunk]
+            self.queue[:, :batch_size - first_chunk] = keys.T[:, first_chunk:]
 
         ptr = (ptr + batch_size) % self.queue_size
         self.queue_insert_index[0] = ptr
