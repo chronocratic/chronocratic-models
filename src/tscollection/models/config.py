@@ -24,7 +24,7 @@ import abc
 from dataclasses import dataclass, field
 from typing import Self
 
-from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass

@@ -153,7 +153,7 @@ class TestRIPTrainingStrategy:
         )
         # Patch at the source module so lazy import in compute_loss returns fixed value
         with patch(
-            'tscollection.models.cnn.dilated.autotcl.utils.calculate_regular_consistency',
+            'tscollection.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency',
             return_value=fixed_consistency,
         ):
             new_loss = strategy.compute_loss(

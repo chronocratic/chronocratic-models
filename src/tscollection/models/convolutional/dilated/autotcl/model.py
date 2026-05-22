@@ -9,9 +9,9 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.augmentation import AugmentationMethod, TrainableAugmentation
-from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models.cnn.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
-from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
+from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.config import AutoTCLModelParameters
 from tscollection.models.losses import info_nce_loss, local_info_nce_loss
 from tscollection.models.utils import (
@@ -192,7 +192,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         Returns:
             MI estimate (L1-out loss) as a float.
         """
-        from tscollection.models.cnn.dilated.autotcl.utils import (  # noqa: PLC0415
+        from tscollection.models.convolutional.dilated.autotcl.utils import (  # noqa: PLC0415
             calculate_mutual_information,
         )
 

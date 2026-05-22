@@ -10,10 +10,10 @@ import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
 from tscollection.models.augmentation import AugmentationMethod
-from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
-from tscollection.models.cnn.dilated.cost.utils import compute_amplitude_and_phase
-from tscollection.models.cnn.dilated.encoders.encoders import CoSTTimeSeriesEncoder
-from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
+from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
+from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.config import CoSTModelParameters
 from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import (

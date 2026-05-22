@@ -13,12 +13,12 @@ from einops import rearrange, reduce
 import torch
 from torch import nn
 
-from tscollection.models.cnn.dilated.encoders.masking import (
+from tscollection.models.convolutional.dilated.encoders.masking import (
     generate_mask,
     generate_not_nan_mask,
     MaskMode,
 )
-from tscollection.models.cnn.dilated.layers import Conv1dDilatedEncoder
+from tscollection.models.convolutional.dilated.layers import Conv1dDilatedEncoder
 from tscollection.models.layers import BandedFourierLayer
 
 

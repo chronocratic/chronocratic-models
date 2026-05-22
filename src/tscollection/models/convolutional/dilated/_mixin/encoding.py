@@ -23,7 +23,7 @@ from tscollection.models.utils import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+    from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 _logger = logging.getLogger(__name__)
 _EXPECTED_INPUT_DIMS = 3

@@ -6,7 +6,7 @@ __all__ = [
 
 from dataclasses import dataclass, field
 
-from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass

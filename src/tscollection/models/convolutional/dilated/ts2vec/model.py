@@ -7,9 +7,9 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.augmentation import AugmentationMethod
-from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models.cnn.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
-from tscollection.models.cnn.dilated.encoders.masking import MaskMode
+from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
+from tscollection.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.config import TS2VecModelParameters
 from tscollection.models.losses import hierarchical_contrastive_loss
 from tscollection.models.utils import (
