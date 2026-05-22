@@ -1,13 +1,13 @@
 __all__ = [
-    'TrainingViews',
-    'AugmentationMethod',
-    'TrainableAugmentation',
-    'AugmentationTrainingStrategy',
-    'RIPTrainingStrategy',
     'AdversarialTrainingStrategy',
+    'AugmentationMethod',
+    'AugmentationTrainingStrategy',
     'AutoTCLNeuralNetworkAugmentation',
     'CosTRandomFunctionAugmentation',
     'CropShiftAugmentation',
+    'RIPTrainingStrategy',
+    'TrainableAugmentation',
+    'TrainingViews',
 ]
 
 from abc import ABC, abstractmethod
@@ -30,7 +30,6 @@ from tscollection.models.losses import (
     info_nce_loss,
     maximum_mean_discrepancy_with_gaussian_kernel_loss,
 )
-
 
 # --------------------------------------------------------------------------- #
 # TrainingViews
