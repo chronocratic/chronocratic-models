@@ -5,12 +5,11 @@ import itertools
 import lightning.pytorch as pl
 import torch
 from torch import fft, nn
-import torch.nn.functional as F  ## noqa: N812
+import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
+from tscollection.models.augmentation import AugmentationMethod
 from tscollection.models.cnn.dilated._mixin.encoding import DecompositionEncodingMixin
-from tscollection.models.augmentation.enums import CoSTAugmentationMode
-from tscollection.models.augmentation.factories import CoSTAugmentationMethodFactory
 from tscollection.models.cnn.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.cnn.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
@@ -20,16 +19,19 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
-    """CoST: Contrastive learning of Disentangled Seasonal-Trend Representations for time series."""
+    """CoST: Contrastive learning of Disentangled Seasonal-Trend Representations for time series.
+
+    Accepts any ``AugmentationMethod`` instance in the constructor.
+    The model calls ``augment(x).views[0]`` twice to produce independent
+    query and key augmented views.
+    """
 
     def __init__(
         self,
         input_dims: int,
         sequence_length: int,
         kernel_sizes: list[int],
-        augmentation_mode: CoSTAugmentationMode,
-        augmentation_method_params: dict,
-        augmentation_mode_params: dict = {},  ## noqa: B006
+        augmentation: AugmentationMethod,
         max_train_length: int = 201,
         hidden_dims: int = 64,
         output_dims: int = 320,
@@ -45,13 +47,14 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     ) -> None:
         super().__init__()
 
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['augmentation'])
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._sync_dist = sync_dist
+        self._augmentation = augmentation
 
-        self._augmentation_mode = augmentation_mode
+        self.automatic_optimization = False
 
         length = min(max_train_length, sequence_length)
 
@@ -113,10 +116,6 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self.temperature = temperature
         self.seasonal_loss_weight = seasonal_loss_weight
 
-        self._init_augmentation_method(augmentation_method_params)
-
-        self._init_augmentation_mode_params(augmentation_mode_params)
-
     def configure_optimizers(self) -> SGD:
         """Return SGD optimizer over trainable query encoder and projection head parameters."""
         model_params = itertools.chain(
@@ -135,7 +134,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         Args:
             config: CoST model parameters dataclass.
             **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes augmentation_mode and augmentation_method_params.
+                Typically includes
+                ``augmentation=CosTRandomFunctionAugmentation(params=CosTRandomFunctionAugmentationParameters(sigma=0.1))``.
 
         Returns:
             A configured CoST model instance.
@@ -149,14 +149,6 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             )
             raise ValueError(msg)
         return cls(**config_kwargs, **additional_kwargs)  # type: ignore[arg-type]
-
-    def _init_augmentation_method(self, augmentation_method_params: dict) -> None:
-        self._augmentation_method = CoSTAugmentationMethodFactory.get_augmentation_method(
-            mode=self._augmentation_mode, params=augmentation_method_params
-        )
-
-    def _init_augmentation_mode_params(self, augmentation_mode_param: dict) -> None:  # noqa: ARG002
-        self.automatic_optimization = False
 
     def _compute_contrastive_loss(
         self,
@@ -274,8 +266,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
-        query = self._augmentation_method.augment(data=x)
-        key = self._augmentation_method.augment(data=x)
+        query = self._augmentation.augment(x).views[0]
+        key = self._augmentation.augment(x).views[0]
 
         train_loss = self._compute_total_loss(query, key, update_key_encoder=True)
 
@@ -308,8 +300,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Compute and log the contrastive validation loss without updating model parameters."""
         x = extract_features_from_batch(batch)
 
-        query = self._augmentation_method.augment(data=x)
-        key = self._augmentation_method.augment(data=x)
+        query = self._augmentation.augment(x).views[0]
+        key = self._augmentation.augment(x).views[0]
 
         with torch.no_grad():
             val_loss = self._compute_total_loss(query, key, update_key_encoder=False)
