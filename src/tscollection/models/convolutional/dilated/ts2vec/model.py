@@ -17,7 +17,7 @@ from tscollection.models.utils import (
     process_sample_length,
 )
 
-from .losses import hierarchical_contrastive_loss
+from tscollection.models.convolutional.dilated.ts2vec.losses import hierarchical_contrastive_loss
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):

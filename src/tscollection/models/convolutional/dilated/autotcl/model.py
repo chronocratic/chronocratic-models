@@ -23,7 +23,7 @@ from tscollection.models.utils import (
     process_sample_length,
 )
 
-from .losses import local_info_nce_loss
+from tscollection.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
