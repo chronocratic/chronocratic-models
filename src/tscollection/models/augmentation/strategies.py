@@ -426,10 +426,19 @@ class CropShiftAugmentation(AugmentationMethod):
         x = data
 
         total_length = x.size(1)
+        min_crop_length = 2 ** (temporal_unit + 1)
+
+        if min_crop_length >= total_length:
+            msg = (
+                f'Crop minimum length ({min_crop_length}) exceeds input '
+                f'time dimension ({total_length}). Reduce temporal_unit '
+                f'or provide longer sequences.'
+            )
+            raise ValueError(msg)
 
         # Randomly determine the length of the crop
         crop_length = np.random.randint(  # noqa: NPY002
-            low=2 ** (temporal_unit + 1), high=total_length + 1
+            low=min_crop_length, high=total_length + 1
         )
 
         # Randomly determine the starting and ending points for the crops
