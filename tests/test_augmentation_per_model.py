@@ -72,9 +72,7 @@ class TestTS2VecAugmentationModule:
             CropShiftAugmentationParameters,
         )
 
-        aug = CropShiftAugmentation(
-            params=CropShiftAugmentationParameters(temporal_unit=1)
-        )
+        aug = CropShiftAugmentation(params=CropShiftAugmentationParameters(temporal_unit=1))
         data = torch.randn(2, 100, 3)
         result = aug.augment(data)
         assert isinstance(result, TrainingViews)
@@ -322,9 +320,7 @@ class TestAutoTCLTrainingStrategies:
         aug_x_emb = torch.randn(2, 10, 32, requires_grad=True)
         aug_factor = torch.rand(2, 10, 3)
         loss = strategy.compute_loss(
-            x_embeddings=x_emb,
-            aug_x_embeddings=aug_x_emb,
-            augmentation_factor=aug_factor,
+            x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
         )
         assert loss.ndim == 0
         assert loss.requires_grad
@@ -339,9 +335,7 @@ class TestAutoTCLTrainingStrategies:
         aug_x_emb = torch.randn(2, 10, 32, requires_grad=True)
         aug_factor = torch.rand(2, 10, 3)
         loss = strategy.compute_loss(
-            x_embeddings=x_emb,
-            aug_x_embeddings=aug_x_emb,
-            augmentation_factor=aug_factor,
+            x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
         )
         assert loss.ndim == 0
         assert loss.requires_grad
