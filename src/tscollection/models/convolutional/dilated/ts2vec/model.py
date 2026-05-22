@@ -11,12 +11,13 @@ from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEnc
 from tscollection.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.config import TS2VecModelParameters
-from tscollection.models.losses import hierarchical_contrastive_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
     merge_config_kwargs,
     process_sample_length,
 )
+
+from .losses import hierarchical_contrastive_loss
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
@@ -112,7 +113,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     def training_step(
         self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int
-    ) -> torch.Tensor:  ## noqa: ARG002
+    ) -> torch.Tensor:
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
 
@@ -146,7 +147,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     def validation_step(
         self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int
-    ) -> torch.Tensor:  ## noqa: ARG002
+    ) -> torch.Tensor:
         """Compute and log the TS2Vec validation loss."""
         x = extract_features_from_batch(batch)
 
