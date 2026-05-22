@@ -295,15 +295,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             sync_dist=self._sync_dist,
         )
 
-        if isinstance(optimizer, torch.optim.Optimizer):
-            optimizer.zero_grad()
-            self.manual_backward(train_loss)
-            optimizer.step()
-        elif isinstance(optimizer, list[torch.optim.Optimizer]):
-            for opt in optimizer:  # type: ignore not-iterable
-                opt.zero_grad()
-                self.manual_backward(train_loss)
-                opt.step()
+        optimizer.zero_grad()
+        self.manual_backward(train_loss)
+        optimizer.step()
 
         return train_loss
 
