@@ -12,9 +12,9 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.autotsrc.models.ts_tcc.encoder import TCCEncoder
-from src.autotsrc.models.ts_tcc.losses import NTXentLoss
-from src.autotsrc.models.ts_tcc.temporal_contrast import TemporalContrast
+from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
+from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
+from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
 
 if TYPE_CHECKING:
     from lightning.pytorch.core.optimizer import LightningOptimizer
