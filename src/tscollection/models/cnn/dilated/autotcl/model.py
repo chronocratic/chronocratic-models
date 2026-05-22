@@ -170,7 +170,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self._averaged_encoder.update_parameters(self._encoder)  # type: ignore  # noqa: PGH003
 
         self.log(
-            'enc_train_loss',
+            'train_loss',
             encoder_loss,
             on_step=True,
             on_epoch=True,
