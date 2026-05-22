@@ -9,7 +9,7 @@ from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.augmentation.base import AugmentationMethod, TrainableAugmentation
-from tscollection.models.config import AutoTCLModelParameters
+from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
 from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder

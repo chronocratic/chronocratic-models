@@ -27,11 +27,9 @@ from tscollection.models.convolutional.dilated._mixin.encoding import (
 from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
 from tscollection.models.convolutional.dilated.cost.model import CoST
 from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
-from tscollection.models.config import (
-    AutoTCLModelParameters,
-    CoSTModelParameters,
-    TS2VecModelParameters,
-)
+from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
+from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
 class TestFromConfigInstantiation:

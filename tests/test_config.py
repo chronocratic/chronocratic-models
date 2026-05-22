@@ -10,13 +10,11 @@ from dataclasses import fields, is_dataclass
 import pytest
 
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.config import (
-    AutoTCLModelParameters,
-    CoSTModelParameters,
-    DilatedCNNModelParameters,
-    ModelParameters,
-    TS2VecModelParameters,
-)
+from tscollection.models.config import ModelParameters
+from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from tscollection.models.convolutional.dilated.config import DilatedCNNModelParameters
+from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
+from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
 class TestModelParametersBase:
@@ -291,14 +289,7 @@ class TestAutoTCLModelParameters:
 class TestAllExports:
     """Test that __all__ exposes all expected classes."""
 
-    def test_all_exports(self) -> None:
+    def test_all_exports_root_only_base(self) -> None:
         from tscollection.models import config
 
-        expected = {
-            'AutoTCLModelParameters',
-            'CoSTModelParameters',
-            'DilatedCNNModelParameters',
-            'ModelParameters',
-            'TS2VecModelParameters',
-        }
-        assert set(config.__all__) == expected
+        assert set(config.__all__) == {'ModelParameters'}
