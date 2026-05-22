@@ -13,7 +13,7 @@
 | 1 | Foundation | 4/4 | Complete   | 2026-05-21 |
 | 2 | Directory Restructure | Move to cnn/dilated layout, collocate encoders/layers/augmentations | RESTRUCT-01..04 | 5 |
 | 3 | Augmentation Refactor | 3/3 | Complete   | 2026-05-22 |
-| 4 | Cleanup and Verification | 2/8 | In Progress|  |
+| 4 | Cleanup and Verification | 3/8 | In Progress|  |
 
 ---
 
@@ -123,12 +123,12 @@ Additionally, `augmentation/config.py` centralizes all param dataclasses. The `a
 
 **Canonical refs:** Current branch `gsd/phase-03-augmentation-refactor`; main branch model files for original logic comparison.
 
-**Plans:** 2/8 plans executed
+**Plans:** 3/8 plans executed
 
 **Plan list:**
 - [x] 04-01-PLAN.md — Create augmentation/base.py with ABC hierarchy (D-01)
 - [x] 04-02-PLAN.md — Create per-model config hierarchy + update from_config docstrings (D-08–D-13, D-18)
-- [ ] 04-03-PLAN.md — Create per-model augmentation files (D-04–D-06)
+- [x] 04-03-PLAN.md — Create per-model augmentation files (D-04–D-06)
 - [ ] 04-04-PLAN.md — Create configs/ re-export package (D-14–D-15)
 - [ ] 04-05-PLAN.md — Rewire barrel files and root config.py (D-02, D-08, D-16)
 - [ ] 04-06-PLAN.md — Update test imports, fix stale cnn paths (CLN-04)
