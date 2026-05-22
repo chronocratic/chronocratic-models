@@ -16,7 +16,7 @@ from tscollection.models.augmentation import (
     CropShiftAugmentation,
     RIPTrainingStrategy,
 )
-from tscollection.models.augmentation.config import (
+from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
 )
