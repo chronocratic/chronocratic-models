@@ -98,9 +98,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
             embeddings_1, embeddings_2, temporal_unit=self._temporal_unit
         )
 
-    def _encode_augmented_views(
-        self, x: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def _encode_augmented_views(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Augment ``x`` and encode both views, slicing by ``crop_length``."""
         views = self._augmentation.augment(x, temporal_unit=self._temporal_unit)
         crop_length = views.metadata['crop_length']

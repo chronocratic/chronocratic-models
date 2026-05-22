@@ -69,7 +69,7 @@ class AugmentationMethod(ABC):
     """
 
     @abstractmethod
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
+    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401
         """Return augmented views of ``data``.
 
         Args:
@@ -114,7 +114,7 @@ class AugmentationTrainingStrategy(ABC):
         """
         ...
 
-    def should_train(self, epoch: int, batch_idx: int) -> bool:
+    def should_train(self, epoch: int, batch_idx: int) -> bool:  # noqa: ARG002
         """Determine if aug-network training should run this step.
 
         Default: train every step. Override for epoch-gated schedules.
@@ -257,7 +257,7 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         self._training_strategy = training_strategy
 
     @abstractmethod
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
+    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401
         """Return an augmented view produced by the encoder model.
 
         Args:
@@ -281,7 +281,10 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         return AdamW(self.parameters(), lr=lr)
 
     def train_step(
-        self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+        self,
+        x: torch.Tensor,
+        encoder: nn.Module,
+        batch_idx: int,  # noqa: ARG002
     ) -> torch.Tensor | None:
         """Run one augmentation-network training step.
 
@@ -339,12 +342,8 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
         """
         if isinstance(params, dict):
             # Backward-compat shim for dict-based params (factories)
-            params = AutoTCLNeuralNetworkAugmentationParameters(**params)
-        strategy = (
-            training_strategy
-            if training_strategy is not None
-            else RIPTrainingStrategy()
-        )
+            params = AutoTCLNeuralNetworkAugmentationParameters(**params)  # type: ignore  # noqa: PGH003
+        strategy = training_strategy if training_strategy is not None else RIPTrainingStrategy()
         super().__init__(training_strategy=strategy)
         self.params = params
         self._build_model()
@@ -364,7 +363,7 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
         """
         return self.model(data)
 
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
+    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401, ARG002
         """Return an augmented view produced by the encoder model.
 
         Args:
@@ -388,9 +387,7 @@ class CropShiftAugmentation(AugmentationMethod):
     independent per-sample temporal offsets.
     """
 
-    def __init__(
-        self, params: CropShiftAugmentationParameters | None = None
-    ) -> None:
+    def __init__(self, params: CropShiftAugmentationParameters | None = None) -> None:
         """Initialize the crop-and-shift augmentation.
 
         Args:
@@ -399,7 +396,7 @@ class CropShiftAugmentation(AugmentationMethod):
         """
         self._params = params if params is not None else CropShiftAugmentationParameters()
 
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
+    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401
         """Return two overlapping random crops of ``data`` with random per-sample shifts.
 
         A crop window is sampled uniformly, then extended in both directions.
@@ -445,9 +442,7 @@ class CropShiftAugmentation(AugmentationMethod):
 
         # Random offset for each sample in the batch
         crop_offsets = np.random.randint(  # noqa: NPY002
-            low=-crop_extension_start,
-            high=total_length - crop_extension_end + 1,
-            size=x.size(0),
+            low=-crop_extension_start, high=total_length - crop_extension_end + 1, size=x.size(0)
         )
 
         # Generate augmented subsequences 1 by cropping and shifting
@@ -459,9 +454,7 @@ class CropShiftAugmentation(AugmentationMethod):
 
         # Generate augmented subsequences 2 by cropping and shifting
         augmented_subsequences_2 = extract_subsequences_per_row(
-            array=x,
-            indices=crop_offsets + crop_start,
-            num_elements=crop_extension_end - crop_start,
+            array=x, indices=crop_offsets + crop_start, num_elements=crop_extension_end - crop_start
         )
 
         return TrainingViews(
@@ -473,10 +466,7 @@ class CropShiftAugmentation(AugmentationMethod):
 class CosTRandomFunctionAugmentation(AugmentationMethod):
     """Stochastic jitter/scale/shift augmentation used by CoST."""
 
-    def __init__(
-        self,
-        params: CosTRandomFunctionAugmentationParameters | dict[str, Any],
-    ) -> None:
+    def __init__(self, params: CosTRandomFunctionAugmentationParameters | dict[str, Any]) -> None:
         """Initialize the random-function augmentation.
 
         Args:
@@ -516,7 +506,7 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
             return x
         return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
 
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
+    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401, ARG002
         """Return ``data`` after stochastically applying scale, shift, and jitter.
 
         Each of the three transforms is applied independently with probability
