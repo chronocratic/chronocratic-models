@@ -221,7 +221,7 @@ class TestCropShiftAugmentation:
     @pytest.fixture(autouse=True)
     def _imports(self) -> None:
         """Lazy import to avoid circular dependency at module load time."""
-        from tscollection.models.augmentation.strategies import CropShiftAugmentation
+        from tscollection.models.augmentation import CropShiftAugmentation
         self.aug_cls = CropShiftAugmentation  # type: ignore[attr-defined]
 
     def test_augment_returns_training_views(self) -> None:
@@ -233,7 +233,7 @@ class TestCropShiftAugmentation:
         assert 'crop_length' in result.metadata
 
     def test_augment_with_params(self) -> None:
-        from tscollection.models.augmentation.config import CropShiftAugmentationParameters
+        from tscollection.models.augmentation import CropShiftAugmentationParameters
 
         aug = self.aug_cls(  # type: ignore[attr-defined]
             params=CropShiftAugmentationParameters(temporal_unit=1)
@@ -253,8 +253,10 @@ class TestCosTRandomFunctionAugmentation:
     """CosTRandomFunctionAugmentation returns TrainingViews with single view."""
 
     def test_augment_returns_training_views(self) -> None:
-        from tscollection.models.augmentation.strategies import CosTRandomFunctionAugmentation
-        from tscollection.models.augmentation.config import CosTRandomFunctionAugmentationParameters
+        from tscollection.models.augmentation import (
+            CosTRandomFunctionAugmentation,
+            CosTRandomFunctionAugmentationParameters,
+        )
 
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
         aug = CosTRandomFunctionAugmentation(params=params)
@@ -268,8 +270,8 @@ class TestAutoTCLNeuralNetworkAugmentation:
     """AutoTCLNeuralNetworkAugmentation constructor and augment behavior."""
 
     def test_constructor_accepts_dataclass(self) -> None:
-        from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
-        from tscollection.models.augmentation.config import (
+        from tscollection.models.augmentation import (
+            AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
@@ -281,8 +283,8 @@ class TestAutoTCLNeuralNetworkAugmentation:
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
     def test_has_trainable_params(self) -> None:
-        from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
-        from tscollection.models.augmentation.config import (
+        from tscollection.models.augmentation import (
+            AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
@@ -295,8 +297,8 @@ class TestAutoTCLNeuralNetworkAugmentation:
         assert param_count > 0
 
     def test_augment_returns_training_views(self) -> None:
-        from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
-        from tscollection.models.augmentation.config import (
+        from tscollection.models.augmentation import (
+            AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
@@ -319,7 +321,7 @@ class TestLazyImport:
     """CropShift lazy import resolves at runtime."""
 
     def test_lazy_import_works(self) -> None:
-        from tscollection.models.augmentation.strategies import CropShiftAugmentation
+        from tscollection.models.augmentation import CropShiftAugmentation
 
         aug = CropShiftAugmentation()
         data = torch.randn(2, 100, 3)
