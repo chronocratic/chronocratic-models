@@ -1,6 +1,6 @@
 from torch import nn
 
-from .vae_base import BaseVariationalAutoencoder, Sampling
+from tscollection.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 
 
 class DenseEncoder(nn.Module):

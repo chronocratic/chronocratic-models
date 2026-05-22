@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .vae_base import BaseVariationalAutoencoder, Sampling
+from tscollection.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 
 
 class TrendLayer(nn.Module):

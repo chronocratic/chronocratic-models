@@ -4,9 +4,13 @@ from typing import TypedDict, Unpack
 import numpy as np
 import torch
 
-from .timevae import TimeVAE
-from .vae_conv_model import VariationalAutoencoderConv as VAE_Conv
-from .vae_dense_model import VariationalAutoencoderDense as VAE_Dense
+from tscollection.models.generative.timevae.timevae import TimeVAE
+from tscollection.models.generative.timevae.vae_conv_model import (
+    VariationalAutoencoderConv as VAE_Conv,
+)
+from tscollection.models.generative.timevae.vae_dense_model import (
+    VariationalAutoencoderDense as VAE_Dense,
+)
 
 _VAEModel = VAE_Dense | VAE_Conv | TimeVAE
 
