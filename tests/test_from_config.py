@@ -2,19 +2,24 @@
 
 Verifies that each model can be instantiated from its typed config dataclass,
 that config fields propagate correctly to __init__ attributes, and that
-augmentation kwargs pass through as additional_kwargs.
+augmentation instances pass through as additional_kwargs.
 
 Also verifies the correct mixin inheritance for each model class.
 """
 
+from tscollection.models.augmentation import (
+    AutoTCLNeuralNetworkAugmentation,
+    CosTRandomFunctionAugmentation,
+    CropShiftAugmentation,
+    RIPTrainingStrategy,
+)
+from tscollection.models.augmentation.config import (
+    AutoTCLNeuralNetworkAugmentationParameters,
+    CosTRandomFunctionAugmentationParameters,
+)
 from tscollection.models.cnn.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
-)
-from tscollection.models.augmentation.enums import (
-    AutoTCLAugmentationMode,
-    CoSTAugmentationMode,
-    TS2VecAugmentationMode,
 )
 from tscollection.models.cnn.dilated.autotcl.model import AutoTCL
 from tscollection.models.cnn.dilated.cost.model import CoST
@@ -33,8 +38,7 @@ class TestFromConfigInstantiation:
         config = TS2VecModelParameters(input_dims=1)
         model = TS2Vec.from_config(
             config,
-            augmentation_mode=TS2VecAugmentationMode.CROP_SHIFT,
-            augmentation_method_params={},
+            augmentation=CropShiftAugmentation(),
         )
         assert isinstance(model, TS2Vec)
 
@@ -42,23 +46,24 @@ class TestFromConfigInstantiation:
         config = CoSTModelParameters(input_dims=1, sequence_length=100)
         model = CoST.from_config(
             config,
-            augmentation_mode=CoSTAugmentationMode.RANDOM_FUNCTIONS,
-            augmentation_method_params={'sigma': 0.1},
+            augmentation=CosTRandomFunctionAugmentation(
+                params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+            ),
         )
         assert isinstance(model, CoST)
 
     def test_autotcl_from_config_returns_instance(self) -> None:
         config = AutoTCLModelParameters(input_dims=1)
-        # AutoTCL's neural network augmentation needs encoder params too;
-        # provide them as additional_kwargs alongside the config unpack.
         model = AutoTCL.from_config(
             config,
-            augmentation_mode=AutoTCLAugmentationMode.NEURAL_NETWORK,
-            augmentation_method_params={
-                'input_dims': 1,
-                'output_dims': 320,
-                'kernel_sizes': [],
-            },
+            augmentation=AutoTCLNeuralNetworkAugmentation(
+                params=AutoTCLNeuralNetworkAugmentationParameters(
+                    input_dims=1,
+                    output_dims=320,
+                    kernel_sizes=[3],
+                ),
+                training_strategy=RIPTrainingStrategy(),
+            ),
         )
         assert isinstance(model, AutoTCL)
 
@@ -76,8 +81,7 @@ class TestFromConfigAttributePropagation:
         )
         model = TS2Vec.from_config(
             config,
-            augmentation_mode=TS2VecAugmentationMode.CROP_SHIFT,
-            augmentation_method_params={},
+            augmentation=CropShiftAugmentation(),
         )
         assert model.hparams.input_dims == 3
         assert model.hparams.hidden_dims == 128
@@ -89,11 +93,10 @@ class TestFromConfigAttributePropagation:
         config = TS2VecModelParameters(input_dims=1)
         model = TS2Vec.from_config(
             config,
-            augmentation_mode=TS2VecAugmentationMode.CROP_SHIFT,
-            augmentation_method_params={},
+            augmentation=CropShiftAugmentation(),
         )
-        # augmentation_mode is passed as additional_kwarg and stored in __init__
-        assert model.hparams.augmentation_mode == TS2VecAugmentationMode.CROP_SHIFT
+        # augmentation is ignored by save_hyperparameters, not in hparams
+        assert not hasattr(model.hparams, 'augmentation')
 
 
 class TestMixinInheritance:

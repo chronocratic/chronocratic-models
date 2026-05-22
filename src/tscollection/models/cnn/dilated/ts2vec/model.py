@@ -3,13 +3,11 @@ __all__ = ['TS2Vec']
 
 import lightning.pytorch as pl
 import torch
-from torch import nn
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
+from tscollection.models.augmentation import AugmentationMethod
 from tscollection.models.cnn.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models.augmentation.enums import TS2VecAugmentationMode
-from tscollection.models.augmentation.factories import TS2VecAugmentationMethodFactory
 from tscollection.models.cnn.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
 from tscollection.models.config import TS2VecModelParameters
@@ -18,12 +16,18 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
+    """TS2Vec: Time-series two-tower vector quantization.
+
+    Accepts any ``AugmentationMethod`` instance in the constructor.
+    The model calls ``augment(x, temporal_unit=...)`` which returns a
+    ``TrainingViews`` containing two overlapping crop tensors and a
+    ``crop_length`` metadata key used for embedding slicing.
+    """
+
     def __init__(
         self,
         input_dims: int,
-        augmentation_mode: TS2VecAugmentationMode,
-        augmentation_method_params: dict,
-        augmentation_mode_params: dict | None = None,  ## noqa: ARG002
+        augmentation: AugmentationMethod,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -37,14 +41,15 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     ) -> None:
         super().__init__()
 
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['augmentation'])
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._temporal_unit = temporal_unit
         self._sync_dist = sync_dist
+        self._augmentation = augmentation
 
-        self._augmentation_mode = augmentation_mode
+        self.automatic_optimization = False
 
         self._encoder = TS2VecTimeSeriesEncoder(
             input_dims=input_dims,
@@ -59,10 +64,6 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self._averaged_encoder = AveragedModel(self._encoder)
         self._averaged_encoder.update_parameters(self._encoder)
 
-        self._init_augmentation_method(augmentation_method_params)
-
-        self._init_augmentation_mode_params()
-
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""
         optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
@@ -75,7 +76,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         Args:
             config: TS2Vec model parameters dataclass.
             **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes augmentation_mode and augmentation_method_params.
+                Typically includes ``augmentation=CropShiftAugmentation()``.
 
         Returns:
             A configured TS2Vec model instance.
@@ -90,14 +91,6 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
             raise ValueError(msg)
         return cls(**config_kwargs, **additional_kwargs)  # type: ignore[arg-type]
 
-    def _init_augmentation_method(self, augmentation_method_params: dict) -> None:
-        self._augmentation_method = TS2VecAugmentationMethodFactory.get_augmentation_method(
-            mode=self._augmentation_mode, params=augmentation_method_params
-        )
-
-    def _init_augmentation_mode_params(self) -> None:
-        self.automatic_optimization = False
-
     def _calculate_encoder_loss(
         self, embeddings_1: torch.Tensor, embeddings_2: torch.Tensor
     ) -> torch.Tensor:
@@ -105,25 +98,18 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
             embeddings_1, embeddings_2, temporal_unit=self._temporal_unit
         )
 
-    def _crop_shift_augmentation_strategy(
-        self, x: torch.Tensor, encoder: nn.Module
+    def _encode_augmented_views(
+        self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        augmented_subsequences_1, augmented_subsequences_2, crop_length = (
-            self._augmentation_method.augment(data=x, temporal_unit=self._temporal_unit)
-        )
+        """Augment ``x`` and encode both views, slicing by ``crop_length``."""
+        views = self._augmentation.augment(x, temporal_unit=self._temporal_unit)
+        crop_length = views.metadata['crop_length']
 
-        augmented_subsequences_1_embeddings = encoder(augmented_subsequences_1)
-        augmented_subsequences_2_embeddings = encoder(augmented_subsequences_2)
-
-        augmented_subsequences_1_embeddings = augmented_subsequences_1_embeddings[:, -crop_length:]
-
-        augmented_subsequences_2_embeddings = augmented_subsequences_2_embeddings[:, :crop_length]
-
-        return augmented_subsequences_1_embeddings, augmented_subsequences_2_embeddings
-
-    def _execute_augmentation_strategy(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         encoder = self._encoder if self.training else self._averaged_encoder
-        return self._crop_shift_augmentation_strategy(x=x, encoder=encoder)
+        emb_1 = encoder(views.views[0])[:, -crop_length:]
+        emb_2 = encoder(views.views[1])[:, :crop_length]
+
+        return emb_1, emb_2
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:  ## noqa: ARG002
         """Run one TS2Vec training step with manual optimization."""
@@ -133,7 +119,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
-        embeddings_1, embeddings_2 = self._execute_augmentation_strategy(x)
+        embeddings_1, embeddings_2 = self._encode_augmented_views(x)
 
         train_loss = self._calculate_encoder_loss(embeddings_1, embeddings_2)
 
@@ -161,7 +147,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         """Compute and log the TS2Vec validation loss."""
         x = extract_features_from_batch(batch)
 
-        embeddings_1, embeddings_2 = self._execute_augmentation_strategy(x)
+        embeddings_1, embeddings_2 = self._encode_augmented_views(x)
 
         val_loss = self._calculate_encoder_loss(embeddings_1, embeddings_2)
 
