@@ -184,6 +184,34 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
         return encoder_loss
 
+    def _eval_mutual_information(self, batch: torch.Tensor) -> float:
+        """Evaluate mutual information between original and augmented data.
+
+        Diagnostic method for research use. Sets augmentation to eval
+        mode during measurement and restores previous state afterward.
+
+        Args:
+            batch: Input tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            MI estimate (L1-out loss) as a float.
+        """
+        from tscollection.models.cnn.dilated.autotcl.utils import (  # noqa: PLC0415
+            calculate_mutual_information,
+        )
+
+        if isinstance(self._augmentation, TrainableAugmentation):
+            prev_mode = self._augmentation.training
+            self._augmentation.eval()
+        mi = calculate_mutual_information(
+            batch=batch,
+            augmentation_method=self._augmentation,
+            max_train_length=self._max_train_length,
+        )
+        if isinstance(self._augmentation, TrainableAugmentation):
+            self._augmentation.train(prev_mode)
+        return mi
+
     def validation_step(
         self,
         batch: torch.Tensor | tuple[torch.Tensor, ...],

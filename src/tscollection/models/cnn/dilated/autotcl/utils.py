@@ -1,6 +1,9 @@
-__all__ = ['calculate_regular_consistency']
+__all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 
 import torch
+
+from tscollection.models.augmentation import AugmentationMethod
+from tscollection.models.losses import l1_out_loss
 
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
@@ -51,3 +54,42 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     )
 
     return differences.mean()
+
+
+def calculate_mutual_information(
+    batch: torch.Tensor,
+    augmentation_method: AugmentationMethod,
+    max_train_length: int | None = None,
+) -> float:
+    """Calculate mutual information between original and augmented data.
+
+    Uses L1-out loss as a proxy for mutual information estimation.
+
+    Args:
+        batch: Input batch of shape ``(batch, time, channels)``.
+        augmentation_method: Augmentation strategy to apply.
+        max_train_length: Optional maximum sequence length. Sequences
+            longer than this are truncated randomly.
+
+    Returns:
+        Average MI estimate (L1-out loss) between original and
+        augmented data.
+    """
+    import numpy as np
+
+    with torch.inference_mode():
+        x = batch
+        device = x.device
+
+        if max_train_length is not None and x.size(1) > max_train_length:
+            window_offset = np.random.randint(  # noqa: NPY002
+                0, x.size(1) - max_train_length + 1
+            )
+            x = x[:, window_offset : window_offset + max_train_length]
+        x = x.to(device)
+
+        views = augmentation_method.augment(x)
+        augmented_x = views.views[0]
+
+        mi = l1_out_loss(x, augmented_x)
+    return mi.item()
