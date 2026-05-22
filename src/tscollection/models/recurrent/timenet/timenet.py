@@ -11,13 +11,13 @@ from lightning.pytorch.loggers import CSVLogger
 from torch.utils.data import DataLoader
 
 from experiments.utils import get_early_stopping_params
-from src.autotsrc.enums import TimeSeriesDatasetMode
+from tscollection.datasets.enums import TimeSeriesDatasetMode
 from src.autotsrc.models.representations import (
     construct_and_make_representations_folders,
     do_extract_representations,
 )
 
-from .model import get_timenet_model
+from tscollection.models.recurrent.timenet.model import get_timenet_model
 
 
 class _TimeNetDatasetModule(Protocol):
