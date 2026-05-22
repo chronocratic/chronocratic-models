@@ -1,1 +1,1 @@
-from .strategies import AugmentationMethod
+from .strategies import *  # noqa: F403
