@@ -10,8 +10,8 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.autotsrc.models.tst.loss import MaskedMSELoss
-from src.autotsrc.models.tst.ts_transformer import (
+from tscollection.models.transformer.tst.loss import MaskedMSELoss
+from tscollection.models.transformer.tst.ts_transformer import (
     TSTransformerEncoder,
     TSTransformerEncoderClassiregressor,
 )
