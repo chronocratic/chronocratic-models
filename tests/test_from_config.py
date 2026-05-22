@@ -7,6 +7,9 @@ augmentation instances pass through as additional_kwargs.
 Also verifies the correct mixin inheritance for each model class.
 """
 
+import pytest
+import torch
+
 from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
     CosTRandomFunctionAugmentation,
@@ -110,3 +113,59 @@ class TestMixinInheritance:
 
     def test_autotcl_inherits_pooling_encoding_mixin(self) -> None:
         assert issubclass(AutoTCL, PoolingEncodingMixin)
+
+
+class TestFromConfigOverlapDetection:
+    """Test that from_config raises on overlapping keys."""
+
+    def test_ts2vec_raises_on_overlapping_keys(self) -> None:
+        config = TS2VecModelParameters(input_dims=1, learning_rate=0.01)
+        with pytest.raises(ValueError, match='overlapping'):
+            TS2Vec.from_config(
+                config,
+                learning_rate=0.5,
+                augmentation=CropShiftAugmentation(),
+            )
+
+    def test_cost_raises_on_overlapping_keys(self) -> None:
+        config = CoSTModelParameters(input_dims=1, sequence_length=100, learning_rate=0.01)
+        with pytest.raises(ValueError, match='overlapping'):
+            CoST.from_config(
+                config,
+                learning_rate=0.5,
+                augmentation=CosTRandomFunctionAugmentation(
+                    params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+                ),
+            )
+
+    def test_autotcl_raises_on_overlapping_keys(self) -> None:
+        config = AutoTCLModelParameters(input_dims=1, learning_rate=0.01)
+        with pytest.raises(ValueError, match='overlapping'):
+            AutoTCL.from_config(
+                config,
+                learning_rate=0.5,
+                augmentation=AutoTCLNeuralNetworkAugmentation(
+                    params=AutoTCLNeuralNetworkAugmentationParameters(
+                        input_dims=1,
+                        output_dims=320,
+                        kernel_sizes=[3],
+                    ),
+                    training_strategy=RIPTrainingStrategy(),
+                ),
+            )
+
+
+class TestTrainingStepIntegration:
+    """Verify that a training step runs without crashing."""
+
+    def test_ts2vec_training_step_runs(self) -> None:
+        config = TS2VecModelParameters(input_dims=1)
+        model = TS2Vec.from_config(
+            config,
+            augmentation=CropShiftAugmentation(),
+        )
+        model.eval()
+        batch = torch.randn(4, 100, 1)
+        loss = model.validation_step(batch, batch_idx=0)
+        assert loss is not None
+        assert loss.ndim == 0
