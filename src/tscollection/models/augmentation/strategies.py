@@ -95,6 +95,17 @@ class AugmentationTrainingStrategy(ABC):
     schedules.
     """
 
+    def __init__(self, training_ratio_step: int = 1) -> None:
+        """Initialize the training strategy.
+
+        Args:
+            training_ratio_step: Train the aug network every N epochs.
+                Default ``1`` means every epoch. Matches the original
+                ``augmentation_network_training_ratio_step`` from
+                ``augmentation_mode_params``.
+        """
+        self._training_ratio_step = training_ratio_step
+
     @abstractmethod
     def compute_loss(
         self,
@@ -117,7 +128,7 @@ class AugmentationTrainingStrategy(ABC):
     def should_train(self, epoch: int, batch_idx: int) -> bool:  # noqa: ARG002
         """Determine if aug-network training should run this step.
 
-        Default: train every step. Override for epoch-gated schedules.
+        Default: train when ``epoch % training_ratio_step == 0``.
 
         Args:
             epoch: Current training epoch.
@@ -126,7 +137,7 @@ class AugmentationTrainingStrategy(ABC):
         Returns:
             ``True`` if the augmentation network should be trained this step.
         """
-        return True
+        return epoch % self._training_ratio_step == 0
 
 
 # --------------------------------------------------------------------------- #
@@ -150,6 +161,7 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
         consistency_weight: float = 0.001,
         regularization_weight: float = 0.001,
         regularization_threshold: float = 0.4,
+        training_ratio_step: int = 1,
     ) -> None:
         """Initialize the RIP training strategy.
 
@@ -157,7 +169,10 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
             consistency_weight: Weight for the regular consistency term.
             regularization_weight: Weight for the regularization loss.
             regularization_threshold: Threshold for the regularization term.
+            training_ratio_step: Train the aug network every N epochs.
+                Default ``1`` means every epoch.
         """
+        super().__init__(training_ratio_step=training_ratio_step)
         self._consistency_weight = consistency_weight
         self._regularization_weight = regularization_weight
         self._regularization_threshold = regularization_threshold
@@ -216,6 +231,15 @@ class AdversarialTrainingStrategy(AugmentationTrainingStrategy):
     ``_augmentation_loss_neural_network_augmentation_adversarial``.
     """
 
+    def __init__(self, training_ratio_step: int = 1) -> None:
+        """Initialize the adversarial training strategy.
+
+        Args:
+            training_ratio_step: Train the aug network every N epochs.
+                Default ``1`` means every epoch.
+        """
+        super().__init__(training_ratio_step=training_ratio_step)
+
     def compute_loss(
         self,
         x_embeddings: torch.Tensor,
@@ -255,6 +279,21 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         """
         super().__init__()
         self._training_strategy = training_strategy
+
+    def should_train_augmentation(self, epoch: int, batch_idx: int) -> bool:
+        """Check whether the aug-network should train this step.
+
+        Delegates to the composed training strategy to avoid exposing
+        the private ``_training_strategy`` attribute.
+
+        Args:
+            epoch: Current training epoch.
+            batch_idx: Current batch index within the epoch.
+
+        Returns:
+            ``True`` if the augmentation network should be trained this step.
+        """
+        return self._training_strategy.should_train(epoch, batch_idx)
 
     @abstractmethod
     def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401

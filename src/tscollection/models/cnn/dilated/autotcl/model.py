@@ -129,7 +129,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         # Phase 1: Aug network self-training (TrainableAugmentation only)
         if isinstance(self._augmentation, TrainableAugmentation):
             main_opt, meta_opt = cast('list[AdamW]', opts)
-            if self._augmentation._training_strategy.should_train(  # noqa: SLF001
+            if self._augmentation.should_train_augmentation(
                 self.current_epoch, batch_idx
             ):
                 self._encoder.eval()
