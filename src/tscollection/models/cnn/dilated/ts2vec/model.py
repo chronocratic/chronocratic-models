@@ -12,7 +12,11 @@ from tscollection.models.cnn.dilated.encoders.encoders import TS2VecTimeSeriesEn
 from tscollection.models.cnn.dilated.encoders.masking import MaskMode
 from tscollection.models.config import TS2VecModelParameters
 from tscollection.models.losses import hierarchical_contrastive_loss
-from tscollection.models.utils import extract_features_from_batch, process_sample_length
+from tscollection.models.utils import (
+    extract_features_from_batch,
+    merge_config_kwargs,
+    process_sample_length,
+)
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
@@ -81,15 +85,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         Returns:
             A configured TS2Vec model instance.
         """
-        config_kwargs = vars(config)
-        overlapping = set(config_kwargs) & set(additional_kwargs)
-        if overlapping:
-            msg = (
-                f'from_config received overlapping keys between config and additional_kwargs: '
-                f'{overlapping}. Remove them from one side.'
-            )
-            raise ValueError(msg)
-        return cls(**config_kwargs, **additional_kwargs)  # type: ignore[arg-type]
+        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
     def _calculate_encoder_loss(
         self, embeddings_1: torch.Tensor, embeddings_2: torch.Tensor
