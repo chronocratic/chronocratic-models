@@ -5,7 +5,6 @@ __all__ = [
     'AugmentationTrainingStrategy',
     'RIPTrainingStrategy',
     'AdversarialTrainingStrategy',
-    'CoSTAugmentationMethod',
     'AutoTCLNeuralNetworkAugmentation',
     'CosTRandomFunctionAugmentation',
     'CropShiftAugmentation',
@@ -13,7 +12,6 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import random
 from typing import Any
 
 import numpy as np
@@ -22,6 +20,11 @@ from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torch.optim import AdamW
 
+from tscollection.models.augmentation.config import (
+    AutoTCLNeuralNetworkAugmentationParameters,
+    CosTRandomFunctionAugmentationParameters,
+    CropShiftAugmentationParameters,
+)
 from tscollection.models.cnn.dilated.encoders.encoders import AutoTCLAugmentationTimeSeriesEncoder
 from tscollection.models.losses import (
     info_nce_loss,
@@ -78,23 +81,6 @@ class AugmentationMethod(ABC):
             TrainingViews containing augmented tensor(s) and metadata.
         """
         ...
-
-
-# --------------------------------------------------------------------------- #
-# CoSTAugmentationMethod (narrowed ABC — kept for backward compat)
-# --------------------------------------------------------------------------- #
-
-
-class CoSTAugmentationMethod(AugmentationMethod, ABC):
-    """Narrowed base for augmentation strategies compatible with CoST.
-
-    Guarantees that ``augment`` returns a plain ``TrainingViews`` with a
-    single tensor, which ``CoST._compute_total_loss`` requires.
-    """
-
-    @abstractmethod
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
-        """Return a single augmented view of ``data``."""
 
 
 # --------------------------------------------------------------------------- #
@@ -326,31 +312,58 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
 
 
 # --------------------------------------------------------------------------- #
-# Concrete augmentations (old implementation — to be updated in Task 4)
+# Concrete augmentations
 # --------------------------------------------------------------------------- #
 
 
-class AutoTCLNeuralNetworkAugmentation(AugmentationMethod):
+class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
     """Augmentation driven by a learned neural network (AutoTCL).
 
-    Note: This is the old dict-based constructor. Task 4 replaces it with
-    a dataclass-wired TrainableAugmentation subclass.
+    Inherits from ``TrainableAugmentation`` to provide optimizer configuration
+    and training-step delegation via a composed ``AugmentationTrainingStrategy``.
     """
 
-    def __init__(self, params: dict) -> None:
-        """Initialise the neural-network augmentation.
+    def __init__(
+        self,
+        params: AutoTCLNeuralNetworkAugmentationParameters | dict[str, Any],
+        training_strategy: AugmentationTrainingStrategy | None = None,
+    ) -> None:
+        """Initialize the neural-network augmentation.
 
         Args:
-            params: Keyword arguments forwarded to
-                ``AutoTCLAugmentationTimeSeriesEncoder``.
+            params: Configuration for the underlying encoder. Accepts either
+                an ``AutoTCLNeuralNetworkAugmentationParameters`` dataclass or
+                a dict with encoder kwargs for backward compatibility.
+            training_strategy: Strategy for computing the augmentation loss.
+                When ``None``, defaults to ``RIPTrainingStrategy()`` for
+                backward compatibility with factory-based instantiation.
         """
+        if isinstance(params, dict):
+            # Backward-compat shim for dict-based params (factories)
+            params = AutoTCLNeuralNetworkAugmentationParameters(**params)
+        strategy = (
+            training_strategy
+            if training_strategy is not None
+            else RIPTrainingStrategy()
+        )
+        super().__init__(training_strategy=strategy)
         self.params = params
-        self.model: AutoTCLAugmentationTimeSeriesEncoder
         self._build_model()
 
     def _build_model(self) -> None:
         """Instantiate the underlying encoder model."""
-        self.model = AutoTCLAugmentationTimeSeriesEncoder(**self.params)
+        self.model = AutoTCLAugmentationTimeSeriesEncoder(**vars(self.params))
+
+    def forward(self, data: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Run the encoder forward pass.
+
+        Args:
+            data: Input time-series tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            Dict with ``augmented_data`` and ``augmentation_factor`` tensors.
+        """
+        return self.model(data)
 
     def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
         """Return an augmented view produced by the encoder model.
@@ -370,7 +383,22 @@ class AutoTCLNeuralNetworkAugmentation(AugmentationMethod):
 
 
 class CropShiftAugmentation(AugmentationMethod):
-    """Augmentation method used by TS2Vec."""
+    """Random crop-and-shift augmentation used by TS2Vec.
+
+    Produces two overlapping random crops of the input tensor, applying
+    independent per-sample temporal offsets.
+    """
+
+    def __init__(
+        self, params: CropShiftAugmentationParameters | None = None
+    ) -> None:
+        """Initialize the crop-and-shift augmentation.
+
+        Args:
+            params: Optional configuration controlling the temporal unit.
+                When ``None``, defaults to ``CropShiftAugmentationParameters()``.
+        """
+        self._params = params if params is not None else CropShiftAugmentationParameters()
 
     def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:
         """Return two overlapping random crops of ``data`` with random per-sample shifts.
@@ -383,8 +411,10 @@ class CropShiftAugmentation(AugmentationMethod):
         Args:
             data: Input tensor of shape ``(batch, time, channels)``.
             **kwargs:
-                temporal_unit (int): Controls the minimum crop length as
-                    ``2 ** (temporal_unit + 1)``. Defaults to ``0``.
+                temporal_unit (int): Overrides the configured temporal unit.
+                    Controls the minimum crop length as
+                    ``2 ** (temporal_unit + 1)``. Defaults to value from
+                    ``params`` (or ``0`` when no params provided).
 
         Returns:
             TrainingViews with two augmented tensors and crop_length metadata.
@@ -396,7 +426,7 @@ class CropShiftAugmentation(AugmentationMethod):
             extract_subsequences_per_row,
         )
 
-        temporal_unit = kwargs.get('temporal_unit', 0)
+        temporal_unit = kwargs.get('temporal_unit', self._params.temporal_unit)
         x = data
 
         total_length = x.size(1)
@@ -440,39 +470,50 @@ class CropShiftAugmentation(AugmentationMethod):
             metadata={'crop_length': crop_length},
         )
 
-    def get_model(self) -> None:
-        """No underlying model; augmentation is purely algorithmic."""
 
+class CosTRandomFunctionAugmentation(AugmentationMethod):
+    """Stochastic jitter/scale/shift augmentation used by CoST."""
 
-class CosTRandomFunctionAugmentation(CoSTAugmentationMethod):
-    """Augmentation method used by CoST."""
-
-    def __init__(self, params: dict) -> None:
-        """Initialise the random-function augmentation.
+    def __init__(
+        self,
+        params: CosTRandomFunctionAugmentationParameters | dict[str, Any],
+    ) -> None:
+        """Initialize the random-function augmentation.
 
         Args:
-            params: Must contain ``sigma`` (noise scale). Optionally ``p``
-                (probability of applying each transform, default ``0.5``).
+            params: Configuration controlling noise scale and apply
+                probability. Accepts either a
+                ``CosTRandomFunctionAugmentationParameters`` dataclass or a
+                dict with ``sigma`` (required) and ``p`` (optional, default
+                ``0.5``) keys for backward compatibility.
         """
-        self.params = params
-        self._sigma = self.params['sigma']
-        self._p = self.params.get('p', 0.5)
+        if isinstance(params, CosTRandomFunctionAugmentationParameters):
+            self._params = params
+            self._sigma = params.sigma
+            self._p = params.p
+        else:
+            # Backward-compat shim for dict-based params (factories)
+            self._params = CosTRandomFunctionAugmentationParameters(
+                sigma=params['sigma'], p=params.get('p', 0.5)
+            )
+            self._sigma = self._params.sigma
+            self._p = self._params.p
 
     def _jitter(self, x: torch.Tensor) -> torch.Tensor:
         """Add Gaussian noise with std ``sigma`` with probability ``p``."""
-        if random.random() > self._p:  # noqa: S311
+        if np.random.random() > self._p:  # noqa: NPY002
             return x
         return x + (torch.randn(x.shape, device=x.device) * self._sigma)
 
     def _scale(self, x: torch.Tensor) -> torch.Tensor:
         """Multiply each channel by a Gaussian factor around 1 with probability ``p``."""
-        if random.random() > self._p:  # noqa: S311
+        if np.random.random() > self._p:  # noqa: NPY002
             return x
         return x * (torch.randn(x.size(-1), device=x.device) * self._sigma + 1)
 
     def _shift(self, x: torch.Tensor) -> torch.Tensor:
         """Add a per-channel Gaussian offset with probability ``p``."""
-        if random.random() > self._p:  # noqa: S311
+        if np.random.random() > self._p:  # noqa: NPY002
             return x
         return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
 
@@ -491,6 +532,3 @@ class CosTRandomFunctionAugmentation(CoSTAugmentationMethod):
         """
         result = self._jitter(self._shift(self._scale(data)))
         return TrainingViews(views=(result,), metadata={})
-
-    def get_model(self) -> None:
-        """No underlying model; augmentation is purely algorithmic."""

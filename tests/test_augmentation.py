@@ -211,7 +211,7 @@ class TestAdversarialTrainingStrategy:
 
 
 # --------------------------------------------------------------------------- #
-# Concrete augmentations (Task 4 — tests placed here, imports are lazy)
+# Concrete augmentations (Task 4)
 # --------------------------------------------------------------------------- #
 
 
@@ -232,6 +232,16 @@ class TestCropShiftAugmentation:
         assert len(result.views) == 2
         assert 'crop_length' in result.metadata
 
+    def test_augment_with_params(self) -> None:
+        from tscollection.models.augmentation.config import CropShiftAugmentationParameters
+
+        aug = self.aug_cls(  # type: ignore[attr-defined]
+            params=CropShiftAugmentationParameters(temporal_unit=1)
+        )
+        data = torch.randn(2, 100, 3)
+        result = aug.augment(data)
+        assert isinstance(result, TrainingViews)
+
     def test_augment_with_temporal_unit_kwarg(self) -> None:
         aug = self.aug_cls()  # type: ignore[attr-defined]
         data = torch.randn(2, 100, 3)
@@ -244,8 +254,10 @@ class TestCosTRandomFunctionAugmentation:
 
     def test_augment_returns_training_views(self) -> None:
         from tscollection.models.augmentation.strategies import CosTRandomFunctionAugmentation
+        from tscollection.models.augmentation.config import CosTRandomFunctionAugmentationParameters
 
-        aug = CosTRandomFunctionAugmentation(params={'sigma': 0.1})
+        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
+        aug = CosTRandomFunctionAugmentation(params=params)
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
         assert isinstance(result, TrainingViews)
@@ -253,15 +265,49 @@ class TestCosTRandomFunctionAugmentation:
 
 
 class TestAutoTCLNeuralNetworkAugmentation:
-    """AutoTCLNeuralNetworkAugmentation returns TrainingViews."""
+    """AutoTCLNeuralNetworkAugmentation constructor and augment behavior."""
+
+    def test_constructor_accepts_dataclass(self) -> None:
+        from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
+        from tscollection.models.augmentation.config import (
+            AutoTCLNeuralNetworkAugmentationParameters,
+        )
+
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
+        strategy = RIPTrainingStrategy()
+        aug = AutoTCLNeuralNetworkAugmentation(
+            params=params, training_strategy=strategy
+        )
+        assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
+
+    def test_has_trainable_params(self) -> None:
+        from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
+        from tscollection.models.augmentation.config import (
+            AutoTCLNeuralNetworkAugmentationParameters,
+        )
+
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
+        strategy = RIPTrainingStrategy()
+        aug = AutoTCLNeuralNetworkAugmentation(
+            params=params, training_strategy=strategy
+        )
+        param_count = len(list(aug.parameters()))
+        assert param_count > 0
 
     def test_augment_returns_training_views(self) -> None:
         from tscollection.models.augmentation.strategies import AutoTCLNeuralNetworkAugmentation
-
-        aug = AutoTCLNeuralNetworkAugmentation(
-            params={'input_dims': 1, 'output_dims': 320, 'kernel_sizes': [3]}
+        from tscollection.models.augmentation.config import (
+            AutoTCLNeuralNetworkAugmentationParameters,
         )
-        aug.get_model().eval()
+
+        params = AutoTCLNeuralNetworkAugmentationParameters(
+            input_dims=1, output_dims=320, kernel_sizes=[3]
+        )
+        strategy = RIPTrainingStrategy()
+        aug = AutoTCLNeuralNetworkAugmentation(
+            params=params, training_strategy=strategy
+        )
+        aug.eval()
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
             result = aug.augment(data)
