@@ -3,15 +3,13 @@ from __future__ import annotations
 __all__ = ['Series2Vec', 'get_series2vec_model']
 
 import lightning.pytorch as pl
-from src.autotsrc.models.series2vec.filters import filter_frequencies
-from src.autotsrc.models.series2vec.losses import (
-    pairwise_euclidean_distances,
-    pairwise_soft_dtw_distances,
-    pretraining_loss,
-)
-from src.autotsrc.models.series2vec.network import Series2VecNetwork
-from src.autotsrc.models.series2vec.soft_dtw_cuda import SoftDTW
 import torch
+
+from tscollection.models.distances.soft_dtw import SoftDTW
+
+from .filters import filter_frequencies
+from .losses import pairwise_euclidean_distances, pairwise_soft_dtw_distances, pretraining_loss
+from .network import Series2VecNetwork
 
 
 def _extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Tensor:
