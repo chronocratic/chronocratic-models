@@ -3,7 +3,7 @@ __all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 import torch
 
 from tscollection.models.augmentation.base import AugmentationMethod
-from .losses import l1_out_loss
+from tscollection.models.convolutional.dilated.autotcl.losses import l1_out_loss
 
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
