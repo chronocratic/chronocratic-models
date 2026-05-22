@@ -121,19 +121,6 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
 class TestConfigImports:
     """Verify config dataclasses are importable from expected paths."""
 
-    def test_backward_compat_config_still_works(self) -> None:
-        """Verify the .config shim module still re-exports all parameter dataclasses.
-
-        The canonical import path is the barrel (tscollection.models.augmentation).
-        This test ensures backward compatibility for code that imports directly
-        from tscollection.models.augmentation.config.
-        """
-        from tscollection.models.augmentation.config import (  # noqa: F401
-            AutoTCLNeuralNetworkAugmentationParameters,
-            CosTRandomFunctionAugmentationParameters,
-            CropShiftAugmentationParameters,
-        )
-
     def test_import_from_barrel(self) -> None:
         from tscollection.models.augmentation import (  # noqa: F401
             AutoTCLNeuralNetworkAugmentationParameters,

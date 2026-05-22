@@ -1,6 +1,6 @@
 """Augmentation package — barrel re-export.
 
-Re-exports all symbols from ``base.py``, ``config.py``, and ``strategies.py``.
+Re-exports all symbols from ``base.py`` and per-model augmentation modules.
 Uses lazy imports to avoid circular dependencies when per-model modules
 (cost, ts2vec, autotcl) load through their __init__.py barrels.
 

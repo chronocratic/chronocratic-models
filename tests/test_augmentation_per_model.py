@@ -400,16 +400,7 @@ class TestAutoTCLAugmentationBarrel:
 
 
 class TestBackwardCompatibility:
-    """Old import paths from strategies.py still work."""
-
-    def test_strategies_still_exports(self) -> None:
-        from tscollection.models.augmentation import strategies
-
-        assert hasattr(strategies, 'CropShiftAugmentation')
-        assert hasattr(strategies, 'CosTRandomFunctionAugmentation')
-        assert hasattr(strategies, 'AutoTCLNeuralNetworkAugmentation')
-        assert hasattr(strategies, 'RIPTrainingStrategy')
-        assert hasattr(strategies, 'AdversarialTrainingStrategy')
+    """Barrel import paths still work after per-model migration."""
 
     def test_barrel_still_exports(self) -> None:
         from tscollection.models.augmentation import (
