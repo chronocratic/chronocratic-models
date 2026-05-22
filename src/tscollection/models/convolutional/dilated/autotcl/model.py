@@ -12,16 +12,18 @@ from tscollection.models.augmentation.base import (
     AugmentationMethod,
     TrainableAugmentation,
 )
+from tscollection.models.config import AutoTCLModelParameters
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.config import AutoTCLModelParameters
-from tscollection.models.losses import info_nce_loss, local_info_nce_loss
+from tscollection.models.losses import info_nce_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
     merge_config_kwargs,
     process_sample_length,
 )
+
+from .losses import local_info_nce_loss
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
@@ -134,9 +136,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         # Phase 1: Aug network self-training (TrainableAugmentation only)
         if isinstance(self._augmentation, TrainableAugmentation):
             main_opt, meta_opt = cast('list[AdamW]', opts)
-            if self._augmentation.should_train_augmentation(
-                self.current_epoch, batch_idx
-            ):
+            if self._augmentation.should_train_augmentation(self.current_epoch, batch_idx):
                 self._encoder.eval()
                 self._augmentation.train()
                 aug_loss = self._augmentation.train_step(x, self._encoder, batch_idx)
