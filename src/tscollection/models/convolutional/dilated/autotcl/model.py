@@ -93,6 +93,12 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
         Returns:
             A configured AutoTCL model instance.
+
+        Note:
+            ``training_ratio_step`` is not a model parameter. It is configured
+            via the training strategy: ``RIPTrainingStrategy(training_ratio_step=3)``.
+            The strategy controls how often the augmentation network trains
+            relative to the main model.
         """
         return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
