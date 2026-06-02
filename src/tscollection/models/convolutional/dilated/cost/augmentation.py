@@ -33,7 +33,7 @@ class CosTRandomFunctionAugmentationParameters:
             (default ``0.5``).
     """
 
-    sigma: float
+    sigma: float = 0.1
     p: float = 0.5
 
 
