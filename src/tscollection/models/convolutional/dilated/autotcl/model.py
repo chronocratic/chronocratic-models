@@ -10,13 +10,13 @@ from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.augmentation.base import AugmentationMethod, TrainableAugmentation
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models.convolutional.dilated.autotcl.losses import info_nce_loss, local_info_nce_loss
+from tscollection.models.convolutional.dilated.autotcl.losses import (
+    info_nce_loss,
+    local_info_nce_loss,
+)
 from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.utils import (
-    extract_features_from_batch,
-    process_sample_length,
-)
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
@@ -30,10 +30,13 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     If ``augmentation`` is not provided, defaults to
     ``AutoTCLNeuralNetworkAugmentation`` with ``input_dims`` from model
     and ``RIPTrainingStrategy`` (D-24, D-25).
+
+    Code source: https://github.com/AslanDing/AutoTCL
     """
 
     def __init__(
         self,
+        *,
         input_dims: int,
         kernel_sizes: list[int] | None = None,
         augmentation: AugmentationMethod | None = None,
@@ -47,7 +50,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         max_train_length: int | None = None,
         meta_learning_rate: float = 1e-2,
         local_loss_weight: float = 0.1,
-        sync_dist: bool = False,  # noqa: FBT001 FBT002
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
 

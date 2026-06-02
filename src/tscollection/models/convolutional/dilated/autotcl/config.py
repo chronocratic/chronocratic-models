@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AutoTCLModelParameters:
     """Configuration for the AutoTCL model.
 

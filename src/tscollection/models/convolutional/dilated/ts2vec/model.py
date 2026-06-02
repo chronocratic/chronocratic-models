@@ -11,10 +11,7 @@ from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEnc
 from tscollection.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.convolutional.dilated.ts2vec.losses import hierarchical_contrastive_loss
-from tscollection.models.utils import (
-    extract_features_from_batch,
-    process_sample_length,
-)
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
@@ -27,10 +24,13 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     If ``augmentation`` is not provided, defaults to
     ``CropShiftAugmentation`` (D-22).
+
+    Code source: https://github.com/zhihanyue/ts2vec
     """
 
     def __init__(
         self,
+        *,
         input_dims: int,
         augmentation: AugmentationMethod | None = None,
         hidden_dims: int = 64,
@@ -42,7 +42,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         learning_rate: float = 1e-3,
         max_train_length: int | None = None,
         temporal_unit: int = 0,
-        sync_dist: bool = False,  ## noqa: FBT001 FBT002
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
 

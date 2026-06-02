@@ -15,10 +15,7 @@ from tscollection.models.convolutional.dilated.cost.utils import compute_amplitu
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.losses import instance_contrastive_loss
-from tscollection.models.utils import (
-    extract_features_from_batch,
-    process_sample_length,
-)
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
@@ -30,10 +27,13 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
     If ``augmentation`` is not provided, defaults to
     ``CosTRandomFunctionAugmentation`` (D-23).
+
+    Code source: https://github.com/salesforce/CoST
     """
 
     def __init__(
         self,
+        *,
         input_dims: int,
         sequence_length: int,
         kernel_sizes: list[int] | None = None,
@@ -49,7 +49,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         queue_size: int = 65536,
         momentum: float = 0.999,
         temperature: float = 0.07,
-        sync_dist: bool = False,  ## noqa: FBT001 FBT002
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
 

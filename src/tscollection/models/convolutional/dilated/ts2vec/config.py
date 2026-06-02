@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
-@dataclass
+@dataclass(kw_only=True)
 class TS2VecModelParameters:
     """Configuration for the TS2Vec model.
 
