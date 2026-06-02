@@ -121,7 +121,7 @@ class TestRIPTrainingStrategy:
         """
         from unittest.mock import patch
         from torch.nn import functional as F
-        from tscollection.models.losses import maximum_mean_discrepancy_with_gaussian_kernel_loss
+        from tscollection.models.convolutional.dilated.autotcl.losses import maximum_mean_discrepancy_with_gaussian_kernel_loss
 
         torch.manual_seed(42)
         x_emb = torch.randn(2, 10, 32)
@@ -189,7 +189,7 @@ class TestAdversarialTrainingStrategy:
 
     def test_loss_equivalence_to_original_auto_tcl(self) -> None:
         """AdversarialTrainingStrategy must match original AutoTCL loss."""
-        from tscollection.models.losses import info_nce_loss
+        from tscollection.models.convolutional.dilated.autotcl.losses import info_nce_loss
 
         torch.manual_seed(42)
         x_emb = torch.randn(2, 10, 32)

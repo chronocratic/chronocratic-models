@@ -13,7 +13,7 @@ import torch
 from torch.nn import functional as F  # noqa: N812
 
 from tscollection.models.augmentation.base import AugmentationTrainingStrategy
-from tscollection.models.losses import (
+from tscollection.models.convolutional.dilated.autotcl.losses import (
     info_nce_loss,
     maximum_mean_discrepancy_with_gaussian_kernel_loss,
 )
