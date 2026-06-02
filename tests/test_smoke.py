@@ -21,15 +21,21 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.models.augmentation import (
     AugmentationMethod,
-    AutoTCLNeuralNetworkAugmentation,
-    CosTRandomFunctionAugmentation,
-    CropShiftAugmentation,
-    RIPTrainingStrategy,
     TrainingViews,
 )
 from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.autotcl.augmentation import (
+    AutoTCLNeuralNetworkAugmentation,
+    RIPTrainingStrategy,
+)
+from tscollection.models.convolutional.dilated.cost.augmentation import (
+    CosTRandomFunctionAugmentation,
+)
+from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+    CropShiftAugmentation,
 )
 from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
 from tscollection.models.convolutional.dilated.cost.model import CoST
