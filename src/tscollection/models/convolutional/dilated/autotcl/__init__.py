@@ -1,3 +1,17 @@
-__all__ = ['AutoTCL']
+__all__ = [
+    'AdversarialTrainingStrategy',
+    'AutoTCL',
+    'AutoTCLModelParameters',
+    'AutoTCLNeuralNetworkAugmentation',
+    'AutoTCLNeuralNetworkAugmentationParameters',
+    'RIPTrainingStrategy',
+]
 
-from .model import *
+from .augmentation import (
+    AdversarialTrainingStrategy,
+    AutoTCLNeuralNetworkAugmentation,
+    AutoTCLNeuralNetworkAugmentationParameters,
+    RIPTrainingStrategy,
+)
+from .config import AutoTCLModelParameters
+from .model import AutoTCL
