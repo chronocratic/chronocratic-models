@@ -13,7 +13,6 @@ __all__ = [
 ]
 
 import random
-from typing import cast
 
 import numpy as np
 import torch
@@ -263,7 +262,7 @@ def subsequence_info_nce_loss(
     else:
         raise ValueError(f'Invalid pooling method: {pooling}')  # noqa: TRY003, EM102
 
-    return info_nce_loss(crop_z1_pooling, crop_z2_pooling, cast('str', temperature))
+    return info_nce_loss(z1=crop_z1_pooling, z2=crop_z2_pooling, temperature=temperature)
 
 
 def sliding_local_info_nce_loss(
@@ -404,7 +403,7 @@ def global_info_nce_loss(
     else:
         msg = f'Invalid pooling method: {pooling}'
         raise ValueError(msg)
-    return info_nce_loss(z1, z2, cast('str', temperature))
+    return info_nce_loss(z1=z1, z2=z2, temperature=temperature)
 
 
 def similarity_loss(
