@@ -1,8 +1,8 @@
 """Configuration for the CoST model.
 
-Inherits directly from ModelParameters (not DilatedCNNModelParameters)
-because CoST uses a seasonal-trend decomposition encoder with a
-distinct parameter surface.
+Provides CoSTModelParameters with CoST-specific settings including
+seasonal-trend decomposition encoder parameters and contrastive
+learning configuration.
 """
 
 __all__ = ['CoSTModelParameters']
@@ -17,15 +17,10 @@ from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 class CoSTModelParameters(ModelParameters):
     """Configuration for the CoST model.
 
-    Inherits directly from :class:`ModelParameters` (not
-    ``DilatedCNNModelParameters``) because CoST uses a seasonal-trend
-    decomposition encoder with a distinct parameter surface.
-
     Args:
         input_dims: Number of input features (channels) in the time series.
         sequence_length: Length of each input time series sample.
-        kernel_sizes: DWT decomposition levels as kernel sizes. Empty list
-            means the encoder selects levels automatically.
+        kernel_sizes: DWT decomposition levels as kernel sizes.
         max_train_length: Maximum sequence length for training samples.
         hidden_dims: Number of hidden units in each encoder layer.
         output_dims: Number of output features produced by the encoder.
@@ -43,7 +38,7 @@ class CoSTModelParameters(ModelParameters):
 
     input_dims: int
     sequence_length: int
-    kernel_sizes: list[int] = field(default_factory=list)
+    kernel_sizes: list[int] = field(default_factory=lambda: [1, 2, 4, 8, 16, 32, 64, 128])
     max_train_length: int = 201
     hidden_dims: int = 64
     output_dims: int = 320

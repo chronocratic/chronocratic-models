@@ -1,6 +1,6 @@
 """Configuration for the TS2Vec model.
 
-Extends DilatedCNNModelParameters with TS2Vec-specific runtime
+Provides TS2VecModelParameters with all TS2Vec-specific runtime
 settings: mask mode, learning rate, training length cap, temporal
 unit, and distributed-sync flag.
 """
@@ -9,19 +9,21 @@ __all__ = ['TS2VecModelParameters']
 
 from dataclasses import dataclass
 
-from tscollection.models.convolutional.dilated.config import DilatedCNNModelParameters
+from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass
-class TS2VecModelParameters(DilatedCNNModelParameters):
+class TS2VecModelParameters(ModelParameters):
     """Configuration for the TS2Vec model.
 
-    Extends :class:`DilatedCNNModelParameters` with TS2Vec-specific
-    runtime settings: mask mode, learning rate, training length cap,
-    temporal unit, and distributed-sync flag.
-
     Args:
+        input_dims: Number of input features (channels) in the time series.
+        hidden_dims: Number of hidden units in each encoder layer.
+        output_dims: Number of output features produced by the encoder.
+        depth: Number of encoder layers.
+        dropout_rate: Dropout probability applied after each encoder layer.
+        conv_kernel_size: Size of the convolutional kernel in each layer.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
         max_train_length: Maximum sequence length; longer samples are
@@ -31,6 +33,12 @@ class TS2VecModelParameters(DilatedCNNModelParameters):
             processes.
     """
 
+    input_dims: int
+    hidden_dims: int = 64
+    output_dims: int = 320
+    depth: int = 10
+    dropout_rate: float = 0.1
+    conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
     max_train_length: int | None = None

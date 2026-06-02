@@ -4,8 +4,6 @@ All concrete parameter dataclasses live in per-model config modules:
     - TS2Vec: ``ts2vec/config.py``
     - CoST: ``cost/config.py``
     - AutoTCL: ``autotcl/config.py``
-
-This file provides ``ModelParameters`` as the common root type.
 """
 
 __all__ = ['ModelParameters']

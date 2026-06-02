@@ -1,7 +1,8 @@
 """Tests for model configuration dataclasses.
 
-Verifies instantiation, inheritance hierarchy, field defaults, and
-vars() unpacking for all config dataclasses.
+Verifies instantiation, field defaults, and vars() unpacking for all
+config dataclasses. Each model config is a flat dataclass inheriting
+directly from ModelParameters.
 """
 
 from abc import ABC
@@ -9,11 +10,10 @@ from dataclasses import fields, is_dataclass
 
 import pytest
 
-from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.config import DilatedCNNModelParameters
 from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
+from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
@@ -34,49 +34,18 @@ class TestModelParametersBase:
             ModelParameters()  # type: ignore[call-arg]
 
 
-class TestDilatedCNNModelParameters:
-    """Test DilatedCNNModelParameters base class."""
-
-    def test_requires_input_dims(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.input_dims == 1
-
-    def test_default_hidden_dims(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.hidden_dims == 64
-
-    def test_default_output_dims(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.output_dims == 320
-
-    def test_default_depth(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.depth == 10
-
-    def test_default_dropout_rate(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.dropout_rate == 0.1
-
-    def test_default_conv_kernel_size(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.conv_kernel_size == 3
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(DilatedCNNModelParameters, ModelParameters)
-
-
 class TestTS2VecModelParameters:
-    """Test TS2VecModelParameters inherits from DilatedCNNModelParameters."""
+    """Test TS2VecModelParameters is a flat dataclass."""
 
     def test_requires_only_input_dims(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
         assert params.input_dims == 1
 
-    def test_inherits_from_dilated_cnn(self) -> None:
-        assert issubclass(TS2VecModelParameters, DilatedCNNModelParameters)
-
     def test_inherits_from_model_parameters(self) -> None:
         assert issubclass(TS2VecModelParameters, ModelParameters)
+
+    def test_direct_parent_is_model_parameters(self) -> None:
+        assert TS2VecModelParameters.__bases__ == (ModelParameters,)
 
     def test_default_mask_mode(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
@@ -98,7 +67,7 @@ class TestTS2VecModelParameters:
         params = TS2VecModelParameters(input_dims=1)
         assert params.sync_dist is False
 
-    def test_inherited_defaults(self) -> None:
+    def test_encoder_field_defaults(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
         assert params.hidden_dims == 64
         assert params.output_dims == 320
@@ -126,7 +95,7 @@ class TestTS2VecModelParameters:
 
 
 class TestCoSTModelParameters:
-    """Test CoSTModelParameters inherits directly from ModelParameters."""
+    """Test CoSTModelParameters is a flat dataclass."""
 
     def test_requires_input_dims_and_sequence_length(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -136,18 +105,18 @@ class TestCoSTModelParameters:
     def test_inherits_from_model_parameters(self) -> None:
         assert issubclass(CoSTModelParameters, ModelParameters)
 
-    def test_not_subclass_of_dilated_cnn(self) -> None:
-        assert not issubclass(CoSTModelParameters, DilatedCNNModelParameters)
+    def test_direct_parent_is_model_parameters(self) -> None:
+        assert CoSTModelParameters.__bases__ == (ModelParameters,)
 
     def test_default_kernel_sizes(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.kernel_sizes == []
+        assert params.kernel_sizes == [1, 2, 4, 8, 16, 32, 64, 128]
 
     def test_default_kernel_sizes_isolation(self) -> None:
         p1 = CoSTModelParameters(input_dims=1, sequence_length=100)
         p2 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p1.kernel_sizes.append(2)
-        assert p2.kernel_sizes == []
+        p1.kernel_sizes.append(256)
+        assert 256 not in p2.kernel_sizes
 
     def test_default_max_train_length(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -221,27 +190,27 @@ class TestCoSTModelParameters:
 
 
 class TestAutoTCLModelParameters:
-    """Test AutoTCLModelParameters inherits from DilatedCNNModelParameters."""
+    """Test AutoTCLModelParameters is a flat dataclass."""
 
     def test_requires_only_input_dims(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.input_dims == 1
 
-    def test_inherits_from_dilated_cnn(self) -> None:
-        assert issubclass(AutoTCLModelParameters, DilatedCNNModelParameters)
-
     def test_inherits_from_model_parameters(self) -> None:
         assert issubclass(AutoTCLModelParameters, ModelParameters)
 
+    def test_direct_parent_is_model_parameters(self) -> None:
+        assert AutoTCLModelParameters.__bases__ == (ModelParameters,)
+
     def test_default_kernel_sizes(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == []
+        assert params.kernel_sizes == [3, 5, 7]
 
     def test_default_kernel_sizes_isolation(self) -> None:
         p1 = AutoTCLModelParameters(input_dims=1)
         p2 = AutoTCLModelParameters(input_dims=1)
-        p1.kernel_sizes.append(2)
-        assert p2.kernel_sizes == []
+        p1.kernel_sizes.append(9)
+        assert 9 not in p2.kernel_sizes
 
     def test_default_mask_mode(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
@@ -259,13 +228,21 @@ class TestAutoTCLModelParameters:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.sync_dist is False
 
-    def test_inherited_defaults(self) -> None:
+    def test_encoder_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.hidden_dims == 64
         assert params.output_dims == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
+
+    def test_meta_learning_rate_default(self) -> None:
+        params = AutoTCLModelParameters(input_dims=1)
+        assert params.meta_learning_rate == 1e-2
+
+    def test_local_loss_weight_default(self) -> None:
+        params = AutoTCLModelParameters(input_dims=1)
+        assert params.local_loss_weight == 0.1
 
     def test_vars_produces_correct_keys(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
@@ -281,6 +258,8 @@ class TestAutoTCLModelParameters:
             'mask_mode',
             'learning_rate',
             'max_train_length',
+            'meta_learning_rate',
+            'local_loss_weight',
             'sync_dist',
         }
         assert set(result.keys()) == expected_keys
@@ -290,6 +269,6 @@ class TestAllExports:
     """Test that __all__ exposes all expected classes."""
 
     def test_all_exports_root_only_base(self) -> None:
-        from tscollection.models import config
+        from tscollection.models import config  # noqa: PLC0415
 
         assert set(config.__all__) == {'ModelParameters'}
