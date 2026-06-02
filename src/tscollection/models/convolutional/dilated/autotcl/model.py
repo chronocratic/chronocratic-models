@@ -17,7 +17,6 @@ from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.losses import info_nce_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
-    merge_config_kwargs,
     process_sample_length,
 )
 
@@ -29,13 +28,17 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     When the augmentation is a ``TrainableAugmentation``, the model runs
     a two-phase training step: (1) aug-network self-training via the
     composed strategy, (2) uniform encoder training.
+
+    If ``augmentation`` is not provided, defaults to
+    ``AutoTCLNeuralNetworkAugmentation`` with ``input_dims`` from model
+    and ``RIPTrainingStrategy`` (D-24, D-25).
     """
 
     def __init__(
         self,
         input_dims: int,
         kernel_sizes: list[int],
-        augmentation: AugmentationMethod,
+        augmentation: AugmentationMethod | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -57,7 +60,20 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self._meta_learning_rate = meta_learning_rate
         self._local_loss_weight = local_loss_weight
         self._sync_dist = sync_dist
-        self._augmentation = augmentation
+
+        if augmentation is None:
+            from tscollection.models.convolutional.dilated.autotcl.augmentation import (  # noqa: PLC0415
+                AutoTCLNeuralNetworkAugmentation,
+                AutoTCLNeuralNetworkAugmentationParameters,
+                RIPTrainingStrategy,
+            )
+
+            self._augmentation: AugmentationMethod = AutoTCLNeuralNetworkAugmentation(
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
+                training_strategy=RIPTrainingStrategy(),
+            )
+        else:
+            self._augmentation = augmentation
 
         self.automatic_optimization = False
 
@@ -81,27 +97,6 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             meta_optimizer = self._augmentation.configure_optimizer(lr=self._meta_learning_rate)
             return [main_optimizer, meta_optimizer]
         return AdamW(self._encoder.parameters(), lr=self._learning_rate)
-
-    @classmethod
-    def from_config(cls, config: AutoTCLModelParameters, **additional_kwargs: object) -> 'AutoTCL':
-        """Instantiate AutoTCL from a typed config dataclass.
-
-        Args:
-            config: AutoTCL model parameters dataclass.
-            **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes
-                ``augmentation=AutoTCLNeuralNetworkAugmentation(params=..., strategy=...)``.
-
-        Returns:
-            A configured AutoTCL model instance.
-
-        Note:
-            ``training_ratio_step`` is not a model parameter. It is configured
-            via the training strategy: ``RIPTrainingStrategy(training_ratio_step=3)``.
-            The strategy controls how often the augmentation network trains
-            relative to the main model.
-        """
-        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
     def _calculate_encoder_loss(
         self, x_embeddings: torch.Tensor, augmented_x_embeddings: torch.Tensor

@@ -4,7 +4,6 @@ __all__ = [
     'extract_features_from_batch',
     'full_series_pooling',
     'integer_pooling',
-    'merge_config_kwargs',
     'multiscale_pooling',
     'process_sample_length',
     'process_sliding_window',
@@ -15,33 +14,6 @@ from einops import rearrange
 import numpy as np
 import torch
 from torch.nn import functional as F  # noqa: N812
-
-
-def merge_config_kwargs(
-    config_kwargs: dict[str, object], additional_kwargs: dict[str, object], source: str = 'config'
-) -> dict[str, object]:
-    """Merge config and additional kwargs, raising on overlap.
-
-    Args:
-        config_kwargs: Dict from ``vars(config)``.
-        additional_kwargs: Extra kwargs forwarded to constructor.
-        source: Name of the config source for error messages.
-
-    Returns:
-        Merged dict of config_kwargs + additional_kwargs.
-
-    Raises:
-        ValueError: If keys appear in both dicts.
-    """
-    overlapping = set(config_kwargs) & set(additional_kwargs)
-    if overlapping:
-        msg = (
-            f'from_config received overlapping keys between {source} '
-            f'and additional_kwargs: {overlapping}. '
-            f'Remove them from one side.'
-        )
-        raise ValueError(msg)
-    return {**config_kwargs, **additional_kwargs}
 
 
 def extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Tensor:

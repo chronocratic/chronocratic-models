@@ -18,7 +18,6 @@ from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.losses import instance_contrastive_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
-    merge_config_kwargs,
     process_sample_length,
 )
 
@@ -29,6 +28,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     Accepts any ``AugmentationMethod`` instance in the constructor.
     The model calls ``augment(x).views[0]`` twice to produce independent
     query and key augmented views.
+
+    If ``augmentation`` is not provided, defaults to
+    ``CosTRandomFunctionAugmentation`` (D-23).
     """
 
     def __init__(
@@ -36,7 +38,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         input_dims: int,
         sequence_length: int,
         kernel_sizes: list[int],
-        augmentation: AugmentationMethod,
+        augmentation: AugmentationMethod | None = None,
         max_train_length: int = 201,
         hidden_dims: int = 64,
         output_dims: int = 320,
@@ -57,7 +59,15 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._sync_dist = sync_dist
-        self._augmentation = augmentation
+
+        if augmentation is None:
+            from tscollection.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
+                CosTRandomFunctionAugmentation,
+            )
+
+            self._augmentation: AugmentationMethod = CosTRandomFunctionAugmentation()
+        else:
+            self._augmentation = augmentation
 
         self.automatic_optimization = False
 
@@ -134,26 +144,6 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         optimizer = SGD(model_params, lr=self._learning_rate, momentum=0.9, weight_decay=1e-4)
         return optimizer
-
-    @classmethod
-    def from_config(cls, config: CoSTModelParameters, **additional_kwargs: object) -> 'CoST':
-        """Instantiate CoST from a typed config dataclass.
-
-        Args:
-            config: CoST model parameters dataclass.
-            **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes
-                ``augmentation=CosTRandomFunctionAugmentation(params=CosTRandomFunctionAugmentationParameters(sigma=0.1))``.
-
-        Returns:
-            A configured CoST model instance.
-
-        Note:
-            To configure augmentation training (e.g., ``training_ratio_step``),
-            set it on the strategy constructor:
-            ``RIPTrainingStrategy(training_ratio_step=3)``.
-        """
-        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
     def _compute_contrastive_loss(
         self,

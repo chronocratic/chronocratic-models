@@ -14,7 +14,6 @@ from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelP
 from tscollection.models.convolutional.dilated.ts2vec.losses import hierarchical_contrastive_loss
 from tscollection.models.utils import (
     extract_features_from_batch,
-    merge_config_kwargs,
     process_sample_length,
 )
 
@@ -26,12 +25,15 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     The model calls ``augment(x, temporal_unit=...)`` which returns a
     ``TrainingViews`` containing two overlapping crop tensors and a
     ``crop_length`` metadata key used for embedding slicing.
+
+    If ``augmentation`` is not provided, defaults to
+    ``CropShiftAugmentation`` (D-22).
     """
 
     def __init__(
         self,
         input_dims: int,
-        augmentation: AugmentationMethod,
+        augmentation: AugmentationMethod | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -51,7 +53,15 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self._max_train_length = max_train_length
         self._temporal_unit = temporal_unit
         self._sync_dist = sync_dist
-        self._augmentation = augmentation
+
+        if augmentation is None:
+            from tscollection.models.convolutional.dilated.ts2vec.augmentation import (  # noqa: PLC0415
+                CropShiftAugmentation,
+            )
+
+            self._augmentation: AugmentationMethod = CropShiftAugmentation()
+        else:
+            self._augmentation = augmentation
 
         self.automatic_optimization = False
 
@@ -77,25 +87,6 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         """Return the AdamW optimizer for the TS2Vec encoder."""
         optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
         return optimizer
-
-    @classmethod
-    def from_config(cls, config: TS2VecModelParameters, **additional_kwargs: object) -> 'TS2Vec':
-        """Instantiate TS2Vec from a typed config dataclass.
-
-        Args:
-            config: TS2Vec model parameters dataclass.
-            **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes ``augmentation=CropShiftAugmentation()``.
-
-        Returns:
-            A configured TS2Vec model instance.
-
-        Note:
-            To configure augmentation training (e.g., ``training_ratio_step``),
-            set it on the strategy constructor:
-            ``RIPTrainingStrategy(training_ratio_step=3)``.
-        """
-        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
     def _calculate_encoder_loss(
         self, embeddings_1: torch.Tensor, embeddings_2: torch.Tensor
