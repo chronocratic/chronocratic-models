@@ -1,51 +1,28 @@
 """Tests for model configuration dataclasses.
 
 Verifies instantiation, field defaults, and vars() unpacking for all
-config dataclasses. Each model config is a flat dataclass inheriting
-directly from ModelParameters.
+config dataclasses.
 """
 
-from abc import ABC
 from dataclasses import fields, is_dataclass
 
 import pytest
 
-from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
 from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
-class TestModelParametersBase:
-    """Test ModelParameters is an ABC with no fields."""
-
-    def test_is_abc(self) -> None:
-        assert issubclass(ModelParameters, ABC)
+class TestTS2VecModelParameters:
+    """Test TS2VecModelParameters fields and defaults."""
 
     def test_is_dataclass(self) -> None:
-        assert is_dataclass(ModelParameters)
-
-    def test_no_fields(self) -> None:
-        assert len(fields(ModelParameters)) == 0
-
-    def test_cannot_instantiate(self) -> None:
-        with pytest.raises(TypeError):
-            ModelParameters()  # type: ignore[call-arg]
-
-
-class TestTS2VecModelParameters:
-    """Test TS2VecModelParameters is a flat dataclass."""
+        assert is_dataclass(TS2VecModelParameters)
 
     def test_requires_only_input_dims(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
         assert params.input_dims == 1
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(TS2VecModelParameters, ModelParameters)
-
-    def test_direct_parent_is_model_parameters(self) -> None:
-        assert TS2VecModelParameters.__bases__ == (ModelParameters,)
 
     def test_default_mask_mode(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
@@ -93,20 +70,28 @@ class TestTS2VecModelParameters:
         }
         assert set(result.keys()) == expected_keys
 
+    def test_field_count(self) -> None:
+        assert len(fields(TS2VecModelParameters)) == 11
+
 
 class TestCoSTModelParameters:
-    """Test CoSTModelParameters is a flat dataclass."""
+    """Test CoSTModelParameters fields and defaults."""
+
+    def test_is_dataclass(self) -> None:
+        assert is_dataclass(CoSTModelParameters)
 
     def test_requires_input_dims_and_sequence_length(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         assert params.input_dims == 1
         assert params.sequence_length == 100
 
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(CoSTModelParameters, ModelParameters)
+    def test_missing_input_dims_raises(self) -> None:
+        with pytest.raises(TypeError):
+            CoSTModelParameters(sequence_length=100)  # type: ignore[call-arg]
 
-    def test_direct_parent_is_model_parameters(self) -> None:
-        assert CoSTModelParameters.__bases__ == (ModelParameters,)
+    def test_missing_sequence_length_raises(self) -> None:
+        with pytest.raises(TypeError):
+            CoSTModelParameters(input_dims=1)  # type: ignore[call-arg]
 
     def test_default_kernel_sizes(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -188,19 +173,19 @@ class TestCoSTModelParameters:
         }
         assert set(result.keys()) == expected_keys
 
+    def test_field_count(self) -> None:
+        assert len(fields(CoSTModelParameters)) == 15
+
 
 class TestAutoTCLModelParameters:
-    """Test AutoTCLModelParameters is a flat dataclass."""
+    """Test AutoTCLModelParameters fields and defaults."""
+
+    def test_is_dataclass(self) -> None:
+        assert is_dataclass(AutoTCLModelParameters)
 
     def test_requires_only_input_dims(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.input_dims == 1
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(AutoTCLModelParameters, ModelParameters)
-
-    def test_direct_parent_is_model_parameters(self) -> None:
-        assert AutoTCLModelParameters.__bases__ == (ModelParameters,)
 
     def test_default_kernel_sizes(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
@@ -264,11 +249,13 @@ class TestAutoTCLModelParameters:
         }
         assert set(result.keys()) == expected_keys
 
+    def test_field_count(self) -> None:
+        assert len(fields(AutoTCLModelParameters)) == 13
 
-class TestAllExports:
-    """Test that __all__ exposes all expected classes."""
 
-    def test_all_exports_root_only_base(self) -> None:
-        from tscollection.models import config  # noqa: PLC0415
+class TestNoModelParameters:
+    """ModelParameters has been removed."""
 
-        assert set(config.__all__) == {'ModelParameters'}
+    def test_import_fails(self) -> None:
+        with pytest.raises(ImportError):
+            from tscollection.models.config import ModelParameters  # noqa: F401, PLC0415

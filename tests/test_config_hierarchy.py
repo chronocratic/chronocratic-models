@@ -1,7 +1,6 @@
-"""Tests for per-model config locations and inheritance.
+"""Tests for per-model config locations and module exports.
 
-Verifies that config classes live in their own module files and
-inherit directly from ModelParameters:
+Verifies that config classes live in their own module files:
     - ts2vec/config.py: TS2VecModelParameters
     - cost/config.py: CoSTModelParameters
     - autotcl/config.py: AutoTCLModelParameters
@@ -9,7 +8,6 @@ inherit directly from ModelParameters:
 
 import pytest
 
-from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
 from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
@@ -25,11 +23,8 @@ class TestTS2VecModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.ts2vec.config'
         )
 
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(TS2VecModelParameters, ModelParameters)
-
-    def test_flat_inheritance(self) -> None:
-        assert TS2VecModelParameters.__bases__ == (ModelParameters,)
+    def test_no_parent_class(self) -> None:
+        assert TS2VecModelParameters.__bases__ == (object,)
 
 
 class TestCoSTModelParametersLocation:
@@ -41,11 +36,8 @@ class TestCoSTModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.cost.config'
         )
 
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(CoSTModelParameters, ModelParameters)
-
-    def test_flat_inheritance(self) -> None:
-        assert CoSTModelParameters.__bases__ == (ModelParameters,)
+    def test_no_parent_class(self) -> None:
+        assert CoSTModelParameters.__bases__ == (object,)
 
 
 class TestAutoTCLModelParametersLocation:
@@ -57,11 +49,8 @@ class TestAutoTCLModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.autotcl.config'
         )
 
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(AutoTCLModelParameters, ModelParameters)
-
-    def test_flat_inheritance(self) -> None:
-        assert AutoTCLModelParameters.__bases__ == (ModelParameters,)
+    def test_no_parent_class(self) -> None:
+        assert AutoTCLModelParameters.__bases__ == (object,)
 
 
 class TestTS2VecConfigDefaults:

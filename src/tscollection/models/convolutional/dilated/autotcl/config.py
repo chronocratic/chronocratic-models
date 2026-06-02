@@ -9,12 +9,11 @@ __all__ = ['AutoTCLModelParameters']
 
 from dataclasses import dataclass, field
 
-from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass
-class AutoTCLModelParameters(ModelParameters):
+class AutoTCLModelParameters:
     """Configuration for the AutoTCL model.
 
     Args:

@@ -9,12 +9,11 @@ __all__ = ['CoSTModelParameters']
 
 from dataclasses import dataclass, field
 
-from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass
-class CoSTModelParameters(ModelParameters):
+class CoSTModelParameters:
     """Configuration for the CoST model.
 
     Args:

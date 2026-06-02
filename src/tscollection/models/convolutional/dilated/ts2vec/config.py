@@ -9,12 +9,11 @@ __all__ = ['TS2VecModelParameters']
 
 from dataclasses import dataclass
 
-from tscollection.models.config import ModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass
-class TS2VecModelParameters(ModelParameters):
+class TS2VecModelParameters:
     """Configuration for the TS2Vec model.
 
     Args:
