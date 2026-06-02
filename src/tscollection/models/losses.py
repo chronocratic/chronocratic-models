@@ -482,7 +482,7 @@ def _compute_gaussian_kernel(
     target: torch.Tensor,
     kernel_mul: float = 2.0,
     kernel_num: int = 5,
-    fix_sigma: float = 1.0,
+    fix_sigma: float | None = None,
     epsilon: float = 1e-6,
 ) -> torch.Tensor:
     """
@@ -545,7 +545,7 @@ def maximum_mean_discrepancy_with_gaussian_kernel_loss(
     target: torch.Tensor,
     kernel_mul: float = 2.0,
     kernel_num: int = 5,
-    fix_sigma: float = 1.0,
+    fix_sigma: float | None = None,
     pooling: str = 'max',
 ) -> torch.Tensor:
     """
