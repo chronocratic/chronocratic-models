@@ -88,6 +88,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         )
 
         self._averaged_encoder = AveragedModel(self._encoder)
+        self._averaged_encoder.update_parameters(self._encoder)
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
         """Return encoder optimizer(s); two optimizers when using TrainableAugmentation."""
