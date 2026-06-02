@@ -300,7 +300,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         key = self._augmentation.augment(x).views[0]
 
         with torch.no_grad():
-            val_loss = self._compute_total_loss(query, key, update_key_encoder=True)
+            val_loss = self._compute_total_loss(query, key, update_key_encoder=False)
 
         self.log(
             'val_loss',
