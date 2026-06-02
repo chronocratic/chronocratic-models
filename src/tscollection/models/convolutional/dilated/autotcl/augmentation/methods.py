@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import torch
+from torch import nn
 
 from tscollection.models.augmentation.base import (
     AugmentationTrainingStrategy,
@@ -135,3 +136,35 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
     def get_model(self) -> AutoTCLAugmentationTimeSeriesEncoder:
         """Return the underlying ``AutoTCLAugmentationTimeSeriesEncoder``."""
         return self.model
+
+    def train_step(
+        self,
+        x: torch.Tensor,
+        encoder: nn.Module,
+        batch_idx: int,  # noqa: ARG002
+    ) -> torch.Tensor | None:
+        """Run one aug-network training step.
+
+        Forward pass through aug network to get augmentation_factor and
+        augmented_data, encode both inputs through the passed encoder,
+        then delegate to strategy.compute_loss().
+
+        Args:
+            x: Original input data.
+            encoder: The main encoder module to compute embeddings.
+            batch_idx: Current batch index (unused).
+
+        Returns:
+            Loss tensor from the training strategy.
+        """
+        features = self.forward(x)
+        augmentation_factor = features['augmentation_factor']
+        augmented_x = features['augmented_data']
+        x_embeddings = encoder(x)
+        aug_x_embeddings = encoder(augmented_x)
+
+        return self._training_strategy.compute_loss(
+            x_embeddings=x_embeddings,
+            aug_x_embeddings=aug_x_embeddings,
+            augmentation_factor=augmentation_factor,
+        )
