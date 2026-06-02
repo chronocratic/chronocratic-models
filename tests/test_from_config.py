@@ -98,11 +98,11 @@ class TestDefaultAugmentation:
         assert model._augmentation is not None
 
     def test_cost_default_augmentation(self) -> None:
-        model = CoST(input_dims=1, sequence_length=100, kernel_sizes=[3])
+        model = CoST(input_dims=1, sequence_length=100)
         assert model._augmentation is not None
 
     def test_autotcl_default_augmentation(self) -> None:
-        model = AutoTCL(input_dims=1, kernel_sizes=[3])
+        model = AutoTCL(input_dims=1)
         assert model._augmentation is not None
 
 

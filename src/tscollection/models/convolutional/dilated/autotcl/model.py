@@ -35,7 +35,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     def __init__(
         self,
         input_dims: int,
-        kernel_sizes: list[int],
+        kernel_sizes: list[int] | None = None,
         augmentation: AugmentationMethod | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
@@ -52,6 +52,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         super().__init__()
 
         self.save_hyperparameters(ignore=['augmentation'])
+
+        if kernel_sizes is None:
+            kernel_sizes = [3, 5, 7]
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length

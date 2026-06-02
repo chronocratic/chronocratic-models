@@ -36,7 +36,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self,
         input_dims: int,
         sequence_length: int,
-        kernel_sizes: list[int],
+        kernel_sizes: list[int] | None = None,
         augmentation: AugmentationMethod | None = None,
         max_train_length: int = 201,
         hidden_dims: int = 64,
@@ -54,6 +54,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         super().__init__()
 
         self.save_hyperparameters(ignore=['augmentation'])
+
+        if kernel_sizes is None:
+            kernel_sizes = [1, 2, 4, 8, 16, 32, 64, 128]
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
