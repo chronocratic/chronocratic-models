@@ -57,8 +57,8 @@ class AutoTCLNeuralNetworkAugmentationParameters:
     """
 
     input_dims: int
-    output_dims: int
-    kernel_sizes: list[int] = field(default_factory=list)
+    output_dims: int = 16
+    kernel_sizes: list[int] = field(default_factory=lambda: [3, 5, 7])
     hidden_dims: int = 64
     feature_extractor_depth: int = 10
     dropout_rate: float = 0.1
