@@ -68,6 +68,11 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self._averaged_encoder = AveragedModel(self._encoder)
         self._averaged_encoder.update_parameters(self._encoder)
 
+    @property
+    def encoder(self) -> TS2VecTimeSeriesEncoder:
+        """Return the primary (non-averaged) encoder for inspection and checkpointing."""
+        return self._encoder
+
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""
         optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
