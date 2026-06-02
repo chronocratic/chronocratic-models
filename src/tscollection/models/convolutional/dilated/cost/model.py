@@ -11,7 +11,6 @@ from torch.optim import SGD
 
 from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
