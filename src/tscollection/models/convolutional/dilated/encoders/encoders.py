@@ -79,7 +79,7 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
     def _process_mask_mode(self, mask_mode: MaskMode | None) -> MaskMode:
         if mask_mode is None:
-            mask_mode = self.mask_mode if self.mask_mode is not None else MaskMode.ALL_TRUE
+            mask_mode = self.mask_mode if self.training else MaskMode.ALL_TRUE
         return mask_mode
 
     def _common_forward(self, x: torch.Tensor, mask_mode: MaskMode | None = None) -> torch.Tensor:
