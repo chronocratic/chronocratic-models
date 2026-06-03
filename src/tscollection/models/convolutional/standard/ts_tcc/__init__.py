@@ -1,1 +1,7 @@
-from .model import *
+__all__ = [
+    'TSTCC',
+    'TSTCCModelParameters',
+]
+
+from .config import TSTCCModelParameters
+from .model import TSTCC

@@ -1,25 +1,25 @@
-"""Barrel for dilated-convolution models (AutoTCL, CoST, TS2Vec) — lazy re-exports."""
+"""Barrel for standard-convolution models (MCL, Series2Vec, TS-TCC) — lazy re-exports."""
 
 from __future__ import annotations
 
 from typing import Any
 
 __all__ = [
-    'AutoTCL',
-    'AutoTCLModelParameters',
-    'CoST',
-    'CoSTModelParameters',
-    'TS2Vec',
-    'TS2VecModelParameters',
+    'FCN',
+    'TSTCC',
+    'MCLModelParameters',
+    'Series2Vec',
+    'Series2VecModelParameters',
+    'TSTCCModelParameters',
 ]
 
 _LAZY: dict[str, str] = {
-    'AutoTCL': '.autotcl',
-    'AutoTCLModelParameters': '.autotcl',
-    'CoST': '.cost',
-    'CoSTModelParameters': '.cost',
-    'TS2Vec': '.ts2vec',
-    'TS2VecModelParameters': '.ts2vec',
+    'FCN': '.mcl',
+    'MCLModelParameters': '.mcl',
+    'Series2Vec': '.series2vec',
+    'Series2VecModelParameters': '.series2vec',
+    'TSTCC': '.ts_tcc',
+    'TSTCCModelParameters': '.ts_tcc',
 }
 
 

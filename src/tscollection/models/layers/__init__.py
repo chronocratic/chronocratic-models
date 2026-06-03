@@ -1,1 +1,3 @@
-from .general import *
+__all__ = ['BandedFourierLayer']
+
+from .general import BandedFourierLayer

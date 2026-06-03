@@ -1,1 +1,7 @@
-from .timevae import *
+__all__ = [
+    'TimeVAE',
+    'TimeVAEModelParameters',
+]
+
+from .config import TimeVAEModelParameters
+from .timevae import TimeVAE
