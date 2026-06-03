@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['TST', 'get_tst_model']
+__all__ = ['TST']
 
 import math
 from typing import cast, Literal, TYPE_CHECKING
@@ -257,8 +257,3 @@ class TST(pl.LightningModule):
         out = enc.act(out)
         out = out.permute(1, 0, 2)
         return enc.dropout1(out)
-
-
-def get_tst_model(model_params: dict) -> TST:
-    """Create a TST instance from a parameter dictionary."""
-    return TST(**model_params)

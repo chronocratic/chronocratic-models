@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['get_timenet_model']
+__all__ = ['TimeNet']
 
 from typing import TYPE_CHECKING
 
@@ -100,8 +100,3 @@ class TimeNet(LightningModule):
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-
-
-def get_timenet_model(model_params: dict) -> TimeNet:
-    """Function to create a TimeNet model instance based on the provided parameters."""
-    return TimeNet(**model_params)

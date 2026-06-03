@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-__all__ = ['TSTCC', 'get_ts_tcc_model']
+__all__ = ['TSTCC']
 
 from typing import cast, Literal
 
@@ -192,8 +192,3 @@ class TSTCC(pl.LightningModule):
 
         self._encoder.train(was_training)
         return torch.cat(outputs, dim=0)
-
-
-def get_ts_tcc_model(model_params: dict) -> TSTCC:
-    """Create a TSTCC instance from a parameter dictionary."""
-    return TSTCC(**model_params)

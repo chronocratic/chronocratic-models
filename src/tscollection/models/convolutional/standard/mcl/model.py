@@ -1,4 +1,4 @@
-__all__ = ['get_mcl_model']
+__all__ = ['FCN']
 
 import lightning.pytorch as pl
 import numpy as np
@@ -95,8 +95,3 @@ class FCN(pl.LightningModule):
     def configure_optimizers(self) -> torch.optim.Optimizer:
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
-
-
-def get_mcl_model(model_params: dict) -> FCN:
-    """Function to create an MCL model instance based on the provided parameters."""
-    return FCN(**model_params)

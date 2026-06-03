@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['Series2Vec', 'get_series2vec_model']
+__all__ = ['Series2Vec']
 
 import lightning.pytorch as pl
 import torch
@@ -142,7 +142,3 @@ class Series2Vec(pl.LightningModule):
         if self.optimizer_name == 'AdamW':
             kwargs['warmup'] = self.warmup
         return optimizer_cls(self.parameters(), **kwargs)
-
-
-def get_series2vec_model(model_params: dict) -> Series2Vec:
-    return Series2Vec(**model_params)
