@@ -10,8 +10,8 @@ import lightning.pytorch as pl
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
 
+from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
 from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 TrainingMode = Literal['self_supervised', 'supervised', 'fine_tuning']
 
 
-class TSTCC(pl.LightningModule):
+class TSTCC(pl.LightningModule, SimpleEncodingMixin):
     """PyTorch Lightning module for TS-TCC.
 
     Three training modes controlled by ``training_mode``:
@@ -169,26 +169,13 @@ class TSTCC(pl.LightningModule):
         ]
 
     # ------------------------------------------------------------------
-    # Representation extraction
+    # Representation extraction (via SimpleEncodingMixin.encode)
     # ------------------------------------------------------------------
 
-    @torch.inference_mode()
-    def encode(self, data: torch.Tensor, batch_size: int, num_workers: int = 0) -> torch.Tensor:
-        """Extract feature maps for ``data`` of shape ``(N, C, T)``.
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — returns the conv-encoder features before the logits head.
 
-        Returns ``(N, final_out_channels, reduced_T)``: the Conv encoder output
-        before the logits layer, suitable for downstream tasks.
+        Input shape ``(batch, C, T)``; output ``(batch, final_out_channels, reduced_T)``.
         """
-        was_training = self._encoder.training
-        self._encoder.eval()
-
-        loader = DataLoader(
-            TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
-        )
-        outputs = []
-        for (batch_x,) in loader:
-            _, features = self._encoder(batch_x.float().to(self.device))
-            outputs.append(features.cpu())
-
-        self._encoder.train(was_training)
-        return torch.cat(outputs, dim=0)
+        _, features = self._encoder(batch_x.float().to(self.device))
+        return features

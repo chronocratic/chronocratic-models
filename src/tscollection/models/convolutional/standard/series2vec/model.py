@@ -5,13 +5,14 @@ __all__ = ['Series2Vec']
 import lightning.pytorch as pl
 import torch
 
-from tscollection.models.convolutional.two_dimensional.series2vec.filters import filter_frequencies
-from tscollection.models.convolutional.two_dimensional.series2vec.losses import (
+from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models.convolutional.standard.series2vec.filters import filter_frequencies
+from tscollection.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
     pairwise_soft_dtw_distances,
     pretraining_loss,
 )
-from tscollection.models.convolutional.two_dimensional.series2vec.network import Series2VecNetwork
+from tscollection.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from tscollection.models.distances.soft_dtw import SoftDTW
 
 
@@ -35,7 +36,7 @@ def _get_optimizer(name):
     raise ValueError(msg)
 
 
-class Series2Vec(pl.LightningModule):
+class Series2Vec(pl.LightningModule, SimpleEncodingMixin):
     """Lightning wrapper for Series2Vec pretraining.
 
     The public input shape is ``(batch, time, channels)``.
@@ -67,7 +68,6 @@ class Series2Vec(pl.LightningModule):
         self.optimizer_name = optimizer_name
         self.weight_decay = weight_decay
         self.warmup = warmup
-        self.output_representation = False
 
         self.network = Series2VecNetwork(
             input_dims=input_dims,
@@ -80,16 +80,16 @@ class Series2Vec(pl.LightningModule):
             encoder_kernel_size=encoder_kernel_size,
         )
 
-    def switch_to_representation_mode(self) -> None:
-        self.output_representation = True
-
-    def switch_to_training_mode(self) -> None:
-        self.output_representation = False
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.output_representation:
-            return self.network.encode(x).unsqueeze(1)
         return self.network(x)
+
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — returns ``(batch, 1, 2 * representation_dims)``.
+
+        Delegates to ``Series2VecNetwork.encode``, which concatenates the
+        temporal and frequency-domain representations.
+        """
+        return self.network.encode(batch_x.to(self.device)).unsqueeze(1)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self.soft_dtw_gamma)

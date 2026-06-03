@@ -5,10 +5,11 @@ import numpy as np
 import torch
 from torch import nn
 
+from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.convolutional.standard.mcl.losses import MixUpLoss
 
 
-class FCN(pl.LightningModule):
+class FCN(pl.LightningModule, SimpleEncodingMixin):
     def __init__(
         self,
         n_in: int,
@@ -20,11 +21,10 @@ class FCN(pl.LightningModule):
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        self._device = device
         self.alpha = alpha
         self.learning_rate = learning_rate
 
-        self.criterion = MixUpLoss(device=self._device, batch_size=batch_size)
+        self.criterion = MixUpLoss(device=device, batch_size=batch_size)
 
         self.encoder = nn.Sequential(
             nn.Conv1d(n_in, 128, kernel_size=7, padding=6, dilation=2),
@@ -44,21 +44,16 @@ class FCN(pl.LightningModule):
             nn.Linear(output_dims, 128), nn.BatchNorm1d(128), nn.ReLU(), nn.Linear(128, 128)
         )
 
-        self.output_representation = False  # Control flag
-
-    def switch_to_representation_mode(self) -> None:
-        self.output_representation = True  # Switch to representation mode
-
-    def switch_to_training_mode(self) -> None:
-        self.output_representation = False  # Switch back to training mode
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        h = self.encoder(x)
-        out = self.proj_head(h)
+        return self.proj_head(self.encoder(x))
 
-        if self.output_representation:
-            return h.unsqueeze(1)
-        return out
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — returns the encoder output before the MixUp projection head.
+
+        Shape ``(batch, 1, output_dims)``: the trailing singleton dim preserves
+        the original flag-pattern shape so downstream code is unaffected.
+        """
+        return self.encoder(batch_x.to(self.device)).unsqueeze(1)
 
     def _step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         x = batch

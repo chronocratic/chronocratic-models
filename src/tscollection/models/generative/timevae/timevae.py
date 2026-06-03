@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 
 
@@ -245,7 +246,7 @@ class TimeVAEDecoder(nn.Module):
         return outputs
 
 
-class TimeVAE(BaseVariationalAutoencoder):
+class TimeVAE(BaseVariationalAutoencoder, SimpleEncodingMixin):
     model_name = 'TimeVAE'
 
     def __init__(
@@ -288,6 +289,11 @@ class TimeVAE(BaseVariationalAutoencoder):
 
     def _get_encoder(self) -> nn.Module:
         return TimeVAEEncoder(self.seq_len, self.feat_dim, self.hidden_layer_sizes, self.latent_dim)
+
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — returns the latent mean ``z_mean`` of shape ``(batch, latent_dim)``."""
+        z_mean, _, _ = self.encoder(batch_x.to(self.device))
+        return z_mean
 
     def _get_decoder(self) -> nn.Module:
         return TimeVAEDecoder(

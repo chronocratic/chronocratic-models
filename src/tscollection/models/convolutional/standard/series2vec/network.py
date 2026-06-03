@@ -3,7 +3,7 @@ __all__ = ['Series2VecNetwork']
 import torch
 from torch import nn
 
-from tscollection.models.convolutional.two_dimensional.series2vec.encoder import DisjoinEncoder
+from tscollection.models.convolutional.standard.series2vec.encoder import DisjoinEncoder
 
 
 class Series2VecNetwork(nn.Module):

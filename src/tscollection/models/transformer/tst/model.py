@@ -8,8 +8,8 @@ from typing import cast, Literal, TYPE_CHECKING
 import lightning.pytorch as pl
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
 
+from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.transformer.tst.loss import MaskedMSELoss
 from tscollection.models.transformer.tst.ts_transformer import (
     TSTransformerEncoder,
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 Task = Literal['imputation', 'transduction', 'classification', 'regression']
 
 
-class TST(pl.LightningModule):
+class TST(pl.LightningModule, SimpleEncodingMixin):
     """PyTorch Lightning module for the Time Series Transformer (TST).
 
     Supports four tasks controlled by the ``task`` parameter:
@@ -215,32 +215,21 @@ class TST(pl.LightningModule):
         }
 
     # ------------------------------------------------------------------
-    # Representation extraction
+    # Representation extraction (via SimpleEncodingMixin.encode)
     # ------------------------------------------------------------------
 
-    @torch.inference_mode()
-    def encode(self, data: torch.Tensor, batch_size: int, num_workers: int = 0) -> torch.Tensor:
-        """Extract backbone representations for ``data`` of shape ``(N, T, C)``.
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — runs the transformer trunk, skipping the task head.
 
-        Returns a tensor of shape ``(N, T, d_model)``: the transformer output
-        before the task-specific output layer, suitable for downstream tasks.
+        Returns ``(batch, T, d_model)`` for input of shape ``(batch, T, C)``.
+        Padding masks are synthesized as all-true (no padding) since the
+        public ``encode()`` API doesn't carry per-sample mask information.
         """
-        was_training = self._encoder.training
-        self._encoder.eval()
-
-        loader = DataLoader(
-            TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
+        inp = batch_x.to(self.device)
+        padding_masks = torch.ones(
+            inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device
         )
-        outputs = []
-        for (batch_x,) in loader:
-            inp = batch_x.to(self.device)
-            padding_masks = torch.ones(
-                inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device
-            )
-            outputs.append(self._backbone(inp, padding_masks).cpu())
-
-        self._encoder.train(was_training)
-        return torch.cat(outputs, dim=0)
+        return self._backbone(inp, padding_masks)
 
     def _backbone(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
         """Run the shared transformer trunk, stopping before the output layer.

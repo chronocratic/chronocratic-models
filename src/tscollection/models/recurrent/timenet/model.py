@@ -8,6 +8,8 @@ from lightning.pytorch import LightningModule
 import torch
 from torch import nn
 
+from tscollection.models._mixin import SimpleEncodingMixin
+
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
     from torch.nn.modules.container import Sequential
@@ -29,7 +31,7 @@ class GRUWrapper(nn.Module):
         return output
 
 
-class TimeNet(LightningModule):
+class TimeNet(LightningModule, SimpleEncodingMixin):
     def __init__(
         self, hidden_dims: int, num_layers: int, dropout: float = 0.1, learning_rate: float = 1e-3
     ) -> None:
@@ -42,14 +44,6 @@ class TimeNet(LightningModule):
         self.decoder: Sequential = self._build_decoder()
         self.learning_rate = learning_rate
         self.loss_fn = nn.MSELoss()
-
-        self.output_representation = False  # Control flag
-
-    def switch_to_representation_mode(self) -> None:
-        self.output_representation = True  # Switch to representation mode
-
-    def switch_to_training_mode(self) -> None:
-        self.output_representation = False  # Switch back to training mode
 
     def _build_encoder(self) -> nn.Sequential:
         encoder_layers: list[nn.Module] = [GRUWrapper(1, self.hidden_dims, batch_first=True)]
@@ -72,15 +66,12 @@ class TimeNet(LightningModule):
         return nn.Sequential(*decoder_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Encoder
         encode = self.encoder(x)
+        return self.decoder(torch.flip(encode, dims=[1]))  # reconstruction target
 
-        # Decoder
-        decode = self.decoder(torch.flip(encode, dims=[1]))  # Reverse the encoded sequence
-
-        if self.output_representation:
-            return encode
-        return decode
+    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one batch — returns the GRU encoder output ``(batch, T, hidden_dims)``."""
+        return self.encoder(batch_x.to(self.device))
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         x = batch
