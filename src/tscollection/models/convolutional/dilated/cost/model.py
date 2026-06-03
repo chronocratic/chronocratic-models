@@ -26,7 +26,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     query and key augmented views.
 
     If ``augmentation`` is not provided, defaults to
-    ``CosTRandomFunctionAugmentation`` (D-23).
+    ``CosTRandomFunctionAugmentation``.
 
     Code source: https://github.com/salesforce/CoST
     """

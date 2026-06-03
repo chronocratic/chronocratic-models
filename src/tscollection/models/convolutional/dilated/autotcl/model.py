@@ -29,7 +29,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
     If ``augmentation`` is not provided, defaults to
     ``AutoTCLNeuralNetworkAugmentation`` with ``input_dims`` from model
-    and ``RIPTrainingStrategy`` (D-24, D-25).
+    and ``RIPTrainingStrategy``.
 
     Code source: https://github.com/AslanDing/AutoTCL
     """
@@ -108,7 +108,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Compute encoder contrastive loss combining InfoNCE and local InfoNCE.
 
-        Encoder loss remains model-internal (D-05: model owns the choice).
+        Encoder loss remains model-internal.
         """
         local_loss = local_info_nce_loss(x_embeddings, augmented_x_embeddings)
         loss = info_nce_loss(x_embeddings, augmented_x_embeddings, temperature=1.0)

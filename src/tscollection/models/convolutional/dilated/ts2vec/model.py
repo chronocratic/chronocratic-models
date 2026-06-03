@@ -23,7 +23,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     ``crop_length`` metadata key used for embedding slicing.
 
     If ``augmentation`` is not provided, defaults to
-    ``CropShiftAugmentation`` (D-22).
+    ``CropShiftAugmentation``.
 
     Code source: https://github.com/zhihanyue/ts2vec
     """
