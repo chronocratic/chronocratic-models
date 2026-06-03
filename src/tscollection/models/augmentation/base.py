@@ -147,6 +147,7 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
     """Augmentation with learnable parameters.
 
     Composes an ``AugmentationTrainingStrategy`` for loss computation.
+    Subclasses implement ``train_step()`` to define their own training loop.
     AutoTCL-specific; not a general pattern for TS2Vec/CoST.
     """
 
@@ -198,34 +199,25 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         """
         return AdamW(self.parameters(), lr=lr)
 
+    @abstractmethod
     def train_step(
         self,
         x: torch.Tensor,
         encoder: nn.Module,
-        batch_idx: int,  # noqa: ARG002
+        batch_idx: int,
     ) -> torch.Tensor | None:
         """Run one augmentation-network training step.
 
-        Forward pass through aug network to get augmentation_factor and
-        augmented_data, encode both inputs through the passed encoder,
-        then delegate to strategy.compute_loss().
+        Subclasses define their own training loop. The base provides
+        ``configure_optimizer()`` and ``should_train_augmentation()``;
+        the composed ``_training_strategy`` provides ``compute_loss()``.
 
         Args:
             x: Original input data.
             encoder: The main encoder module to compute embeddings.
-            batch_idx: Current batch index (passed to should_train).
+            batch_idx: Current batch index within the epoch.
 
         Returns:
-            Loss tensor if strategy.should_train(), otherwise None.
+            Loss tensor if training should run this step, otherwise None.
         """
-        features = self.forward(x)
-        augmentation_factor = features['augmentation_factor']
-        augmented_x = features['augmented_data']
-        x_embeddings = encoder(x)
-        aug_x_embeddings = encoder(augmented_x)
-
-        return self._training_strategy.compute_loss(
-            x_embeddings=x_embeddings,
-            aug_x_embeddings=aug_x_embeddings,
-            augmentation_factor=augmentation_factor,
-        )
+        ...

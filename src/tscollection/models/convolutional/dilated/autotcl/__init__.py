@@ -1,3 +1,7 @@
-__all__ = ['AutoTCL']
+__all__ = [
+    'AutoTCL',
+    'AutoTCLModelParameters',
+]
 
-from .model import *
+from .config import AutoTCLModelParameters
+from .model import AutoTCL

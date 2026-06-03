@@ -72,8 +72,9 @@ class TestTrainableAugmentationFromBase:
     """TrainableAugmentation is abstract and inherits nn.Module."""
 
     def test_has_abstract_methods(self) -> None:
-        """TrainableAugmentation declares augment() as abstract."""
+        """TrainableAugmentation declares augment() and train_step() as abstract."""
         assert 'augment' in TrainableAugmentation.__abstractmethods__
+        assert 'train_step' in TrainableAugmentation.__abstractmethods__
 
     def test_inherits_from_nn_module(self) -> None:
         assert issubclass(TrainableAugmentation, nn.Module)

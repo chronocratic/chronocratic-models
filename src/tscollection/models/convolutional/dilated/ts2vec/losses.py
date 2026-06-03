@@ -1,9 +1,75 @@
 __all__ = ['hierarchical_contrastive_loss']
 
+import numpy as np
 import torch
 import torch.nn.functional as F  # noqa: N812
 
-from tscollection.models.losses import instance_contrastive_loss, temporal_contrastive_loss
+from tscollection.models.losses import instance_contrastive_loss
+
+
+def _compute_contrastive_loss_logits(
+    combined_instance: torch.Tensor, dimension_size: int, indexing_factor: np.ndarray
+) -> torch.Tensor:
+    """
+    Compute contrastive loss logits between two sets of embeddings.
+
+    Parameters
+    ----------
+    combined_instance : torch.Tensor
+        A Tensor representing the concatenated set of instance embeddings.
+    dimension_size : int
+        The size of the dimension along which the embeddings are concatenated.
+    indexing_factor : np.ndarray
+        The index used to compute the loss.
+
+    Returns:
+    -------
+    torch.Tensor
+        The computed contrastive loss.
+    """
+    similarity_scores = torch.matmul(
+        combined_instance, combined_instance.transpose(1, 2)
+    )  # T x 2B x 2B
+    lower_triangular_logits = torch.tril(similarity_scores, diagonal=-1)[:, :, :-1]
+    upper_triangular_logits = torch.triu(similarity_scores, diagonal=1)[:, :, 1:]
+    logits = lower_triangular_logits + upper_triangular_logits
+    logits = -F.log_softmax(logits, dim=-1)
+
+    loss = (
+        logits[:, indexing_factor, dimension_size + indexing_factor - 1].mean()
+        + logits[:, dimension_size + indexing_factor, indexing_factor].mean()
+    ) / 2
+    return loss
+
+
+def temporal_contrastive_loss(instance_1: torch.Tensor, instance_2: torch.Tensor) -> torch.Tensor:
+    """
+    Compute temporal contrastive loss.
+
+    Parameters
+    ----------
+    instance_1 : torch.Tensor
+        The first batch of sequences.
+    instance_2 : torch.Tensor
+        The second batch of sequences.
+
+    Returns:
+    -------
+    torch.Tensor
+        A tensor representing the temporal contrastive loss.
+    """
+    sequence_length = instance_1.size(1)
+    if sequence_length == 1:
+        return instance_1.new_tensor(0.0)
+    combined_instance = torch.cat([instance_1, instance_2], dim=1)  # B x 2T x C
+
+    indexing_factor = torch.arange(sequence_length, device=instance_1.device).cpu().numpy()
+
+    return _compute_contrastive_loss_logits(
+        combined_instance=combined_instance,
+        dimension_size=sequence_length,
+        indexing_factor=indexing_factor,
+    )
 
 
 def hierarchical_contrastive_loss(

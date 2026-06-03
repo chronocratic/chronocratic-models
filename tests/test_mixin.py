@@ -273,7 +273,7 @@ class TestDecompositionValidation:
 # ---------------------------------------------------------------------------
 
 class TestSourceCompliance:
-    """Verify D-05 adaptations at the source level."""
+    """Verify mixin adaptations in source code."""
 
     @pytest.fixture(autouse=True)
     def _load_source(self) -> None:

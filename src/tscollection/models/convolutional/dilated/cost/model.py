@@ -1,6 +1,7 @@
 __all__ = ['CoST']
 
 import itertools
+from typing import cast
 
 import lightning.pytorch as pl
 import numpy as np
@@ -11,32 +12,26 @@ from torch.optim import SGD
 
 from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.losses import instance_contrastive_loss
-from tscollection.models.utils import (
-    extract_features_from_batch,
-    merge_config_kwargs,
-    process_sample_length,
-)
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
-    """CoST: Contrastive learning of Disentangled Seasonal-Trend Representations for time series.
+    """CoST Model.
 
-    Accepts any ``AugmentationMethod`` instance in the constructor.
-    The model calls ``augment(x).views[0]`` twice to produce independent
-    query and key augmented views.
+    Code source: https://github.com/salesforce/CoST
     """
 
     def __init__(
         self,
+        *,
         input_dims: int,
         sequence_length: int,
-        kernel_sizes: list[int],
-        augmentation: AugmentationMethod,
+        kernel_sizes: list[int] | None = None,
+        augmentation: AugmentationMethod | None = None,
         max_train_length: int = 201,
         hidden_dims: int = 64,
         output_dims: int = 320,
@@ -48,16 +43,27 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         queue_size: int = 65536,
         momentum: float = 0.999,
         temperature: float = 0.07,
-        sync_dist: bool = False,  ## noqa: FBT001 FBT002
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
 
         self.save_hyperparameters(ignore=['augmentation'])
 
+        if kernel_sizes is None:
+            kernel_sizes = [1, 2, 4, 8, 16, 32, 64, 128]
+
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._sync_dist = sync_dist
-        self._augmentation = augmentation
+
+        if augmentation is None:
+            from tscollection.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
+                CosTRandomFunctionAugmentation,
+            )
+
+            self._augmentation: AugmentationMethod = CosTRandomFunctionAugmentation()
+        else:
+            self._augmentation = augmentation
 
         self.automatic_optimization = False
 
@@ -102,13 +108,14 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             nn.Linear(component_dims, component_dims),
         )
 
-        for param_query_encoder, param_key_encoder in zip(  ## noqa: B905
-            self.query_encoder.parameters(), self.key_encoder.parameters()
+        for param_query_encoder, param_key_encoder in zip(
+            self.query_encoder.parameters(), self.key_encoder.parameters(), strict=True
         ):
             param_key_encoder.data.copy_(param_query_encoder.data)  # initialize
             param_key_encoder.requires_grad = False  # not update by gradient
-        for param_query_projection_head, param_key_projection_head in zip(  ## noqa: B905
-            self.query_projection_head.parameters(), self.key_projection_head.parameters()
+        for param_query_projection_head, param_key_projection_head in zip(
+            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            strict=True,
         ):
             param_key_projection_head.data.copy_(param_query_projection_head.data)  # initialize
             param_key_projection_head.requires_grad = False  # not update by gradient
@@ -134,26 +141,6 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         optimizer = SGD(model_params, lr=self._learning_rate, momentum=0.9, weight_decay=1e-4)
         return optimizer
-
-    @classmethod
-    def from_config(cls, config: CoSTModelParameters, **additional_kwargs: object) -> 'CoST':
-        """Instantiate CoST from a typed config dataclass.
-
-        Args:
-            config: CoST model parameters dataclass.
-            **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes
-                ``augmentation=CosTRandomFunctionAugmentation(params=CosTRandomFunctionAugmentationParameters(sigma=0.1))``.
-
-        Returns:
-            A configured CoST model instance.
-
-        Note:
-            To configure augmentation training (e.g., ``training_ratio_step``),
-            set it on the strategy constructor:
-            ``RIPTrainingStrategy(training_ratio_step=3)``.
-        """
-        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
 
     def _compute_contrastive_loss(
         self,
@@ -181,15 +168,16 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     @torch.no_grad()
     def _momentum_update_key_encoder(self) -> None:
         """Momentum update for key encoder."""
-        for param_query_encoder, param_key_encoder in zip(  ## noqa: B905
-            self.query_encoder.parameters(), self.key_encoder.parameters()
+        for param_query_encoder, param_key_encoder in zip(
+            self.query_encoder.parameters(), self.key_encoder.parameters(), strict=True
         ):
             param_key_encoder.data = (
                 param_key_encoder.data * self.momentum
                 + param_query_encoder.data * (1 - self.momentum)
             )
-        for param_query_projection_head, param_key_projection_head in zip(  ## noqa: B905
-            self.query_projection_head.parameters(), self.key_projection_head.parameters()
+        for param_query_projection_head, param_key_projection_head in zip(
+            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            strict=True,
         ):
             param_key_projection_head.data = (
                 param_key_projection_head.data * self.momentum
@@ -221,7 +209,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self,
         query: torch.Tensor,
         key: torch.Tensor,
-        update_key_encoder: bool = True,  ## noqa: FBT002 FBT001
+        *,
+        update_key_encoder: bool = True,
     ) -> torch.Tensor:
         # compute query features
         random_index = self._rng.integers(0, query.shape[1])
@@ -275,7 +264,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Augment the batch twice, compute the contrastive loss, perform a manual update step."""
         x = extract_features_from_batch(batch)
 
-        optimizer = self.optimizers()
+        optimizer = cast('torch.optim.Optimizer', self.optimizers())
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
@@ -311,7 +300,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         key = self._augmentation.augment(x).views[0]
 
         with torch.no_grad():
-            val_loss = self._compute_total_loss(query, key, update_key_encoder=True)
+            val_loss = self._compute_total_loss(query, key, update_key_encoder=False)
 
         self.log(
             'val_loss',

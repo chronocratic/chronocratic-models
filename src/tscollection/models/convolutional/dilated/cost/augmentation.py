@@ -33,14 +33,17 @@ class CosTRandomFunctionAugmentationParameters:
             (default ``0.5``).
     """
 
-    sigma: float
+    sigma: float = 0.1
     p: float = 0.5
 
 
 class CosTRandomFunctionAugmentation(AugmentationMethod):
     """Stochastic jitter/scale/shift augmentation used by CoST."""
 
-    def __init__(self, params: CosTRandomFunctionAugmentationParameters | dict[str, Any]) -> None:
+    def __init__(
+        self,
+        params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None,
+    ) -> None:
         """Initialize the random-function augmentation.
 
         Args:
@@ -48,12 +51,13 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
                 probability. Accepts either a
                 ``CosTRandomFunctionAugmentationParameters`` dataclass or a
                 dict with ``sigma`` (required) and ``p`` (optional, default
-                ``0.5``) keys for backward compatibility.
+                ``0.5``) keys for backward compatibility. When ``None``, uses
+                dataclass defaults (sigma=0.1, p=0.5).
         """
-        if isinstance(params, CosTRandomFunctionAugmentationParameters):
+        if params is None:
+            self._params = CosTRandomFunctionAugmentationParameters()
+        elif isinstance(params, CosTRandomFunctionAugmentationParameters):
             self._params = params
-            self._sigma = params.sigma
-            self._p = params.p
         else:
             # Backward-compat shim for dict-based params (factories)
             if 'sigma' not in params:
@@ -66,8 +70,8 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
             self._params = CosTRandomFunctionAugmentationParameters(
                 sigma=params['sigma'], p=params.get('p', 0.5)
             )
-            self._sigma = self._params.sigma
-            self._p = self._params.p
+        self._sigma = self._params.sigma
+        self._p = self._params.p
 
     def _jitter(self, x: torch.Tensor) -> torch.Tensor:
         """Add Gaussian noise with std ``sigma`` with probability ``p``."""

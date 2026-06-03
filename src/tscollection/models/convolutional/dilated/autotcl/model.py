@@ -10,32 +10,27 @@ from torch.optim.swa_utils import AveragedModel
 
 from tscollection.models.augmentation.base import AugmentationMethod, TrainableAugmentation
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
+from tscollection.models.convolutional.dilated.autotcl.losses import (
+    info_nce_loss,
+    local_info_nce_loss,
+)
 from tscollection.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.losses import info_nce_loss
-from tscollection.models.utils import (
-    extract_features_from_batch,
-    merge_config_kwargs,
-    process_sample_length,
-)
+from tscollection.models.utils import extract_features_from_batch, process_sample_length
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
-    """Contrastive time-series encoder with a pluggable augmentation strategy.
+    """AutoTCL Model.
 
-    Accepts any ``AugmentationMethod`` instance in the constructor.
-    When the augmentation is a ``TrainableAugmentation``, the model runs
-    a two-phase training step: (1) aug-network self-training via the
-    composed strategy, (2) uniform encoder training.
+    Code source: https://github.com/AslanDing/AutoTCL
     """
 
     def __init__(
         self,
+        *,
         input_dims: int,
-        kernel_sizes: list[int],
-        augmentation: AugmentationMethod,
+        kernel_sizes: list[int] | None = None,
+        augmentation: AugmentationMethod | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -46,18 +41,34 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         max_train_length: int | None = None,
         meta_learning_rate: float = 1e-2,
         local_loss_weight: float = 0.1,
-        sync_dist: bool = False,  # noqa: FBT001 FBT002
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
 
         self.save_hyperparameters(ignore=['augmentation'])
+
+        if kernel_sizes is None:
+            kernel_sizes = [3, 5, 7]
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._meta_learning_rate = meta_learning_rate
         self._local_loss_weight = local_loss_weight
         self._sync_dist = sync_dist
-        self._augmentation = augmentation
+
+        if augmentation is None:
+            from tscollection.models.convolutional.dilated.autotcl.augmentation import (  # noqa: PLC0415
+                AutoTCLNeuralNetworkAugmentation,
+                AutoTCLNeuralNetworkAugmentationParameters,
+                RIPTrainingStrategy,
+            )
+
+            self._augmentation: AugmentationMethod = AutoTCLNeuralNetworkAugmentation(
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
+                training_strategy=RIPTrainingStrategy(),
+            )
+        else:
+            self._augmentation = augmentation
 
         self.automatic_optimization = False
 
@@ -73,6 +84,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         )
 
         self._averaged_encoder = AveragedModel(self._encoder)
+        self._averaged_encoder.update_parameters(self._encoder)
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
         """Return encoder optimizer(s); two optimizers when using TrainableAugmentation."""
@@ -82,33 +94,12 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             return [main_optimizer, meta_optimizer]
         return AdamW(self._encoder.parameters(), lr=self._learning_rate)
 
-    @classmethod
-    def from_config(cls, config: AutoTCLModelParameters, **additional_kwargs: object) -> 'AutoTCL':
-        """Instantiate AutoTCL from a typed config dataclass.
-
-        Args:
-            config: AutoTCL model parameters dataclass.
-            **additional_kwargs: Extra keyword arguments forwarded to __init__.
-                Typically includes
-                ``augmentation=AutoTCLNeuralNetworkAugmentation(params=..., strategy=...)``.
-
-        Returns:
-            A configured AutoTCL model instance.
-
-        Note:
-            ``training_ratio_step`` is not a model parameter. It is configured
-            via the training strategy: ``RIPTrainingStrategy(training_ratio_step=3)``.
-            The strategy controls how often the augmentation network trains
-            relative to the main model.
-        """
-        return cls(**merge_config_kwargs(vars(config), additional_kwargs))  # type: ignore[arg-type]
-
     def _calculate_encoder_loss(
         self, x_embeddings: torch.Tensor, augmented_x_embeddings: torch.Tensor
     ) -> torch.Tensor:
         """Compute encoder contrastive loss combining InfoNCE and local InfoNCE.
 
-        Encoder loss remains model-internal (D-05: model owns the choice).
+        Encoder loss remains model-internal.
         """
         local_loss = local_info_nce_loss(x_embeddings, augmented_x_embeddings)
         loss = info_nce_loss(x_embeddings, augmented_x_embeddings, temperature=1.0)
