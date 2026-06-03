@@ -1,9 +1,29 @@
 from __future__ import annotations
 
-__all__ = ['DataTransform']
+__all__ = ['DataTransform', 'TSTCCAugmentationParameters']
+
+from dataclasses import dataclass
 
 import numpy as np
 import torch
+
+
+@dataclass
+class TSTCCAugmentationParameters:
+    """Parameters for the TS-TCC weak/strong augmentation pair.
+
+    Args:
+        jitter_scale_ratio: Std of the Gaussian scaling factor used by
+            the weak (scaling) augmentation.
+        jitter_ratio: Std of the additive Gaussian noise used by the
+            strong (jitter-after-permutation) augmentation.
+        max_seg: Upper bound on the number of segments sampled by the
+            permutation step of the strong augmentation.
+    """
+
+    jitter_scale_ratio: float = 1.1
+    jitter_ratio: float = 0.8
+    max_seg: int = 5
 
 
 def DataTransform(
