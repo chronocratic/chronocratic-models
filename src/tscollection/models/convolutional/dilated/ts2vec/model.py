@@ -1,6 +1,8 @@
 __all__ = ['TS2Vec']
 
 
+from typing import cast
+
 import lightning.pytorch as pl
 import torch
 from torch.optim import AdamW
@@ -72,7 +74,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     @property
     def encoder(self) -> TS2VecTimeSeriesEncoder:
         """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return self._encoder
+        return cast('TS2VecTimeSeriesEncoder', self._encoder)
 
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""
@@ -103,7 +105,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
 
-        optimizer = self.optimizers()
+        optimizer = cast('torch.optim.Optimizer', self.optimizers())
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
@@ -119,13 +121,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
-        if isinstance(optimizer, torch.optim.Optimizer):
-            optimizer.zero_grad()
-            self.manual_backward(train_loss)
-            optimizer.step()
-        else:
-            msg = 'Expected optimizer to be an instance of torch.optim.Optimizer'
-            raise TypeError(msg)
+        optimizer.zero_grad()
+        self.manual_backward(train_loss)
+        optimizer.step()
         if isinstance(self._averaged_encoder, AveragedModel):
             self._averaged_encoder.update_parameters(self._encoder)
 

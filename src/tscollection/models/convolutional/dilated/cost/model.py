@@ -1,6 +1,7 @@
 __all__ = ['CoST']
 
 import itertools
+from typing import cast
 
 import lightning.pytorch as pl
 import numpy as np
@@ -260,7 +261,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Augment the batch twice, compute the contrastive loss, perform a manual update step."""
         x = extract_features_from_batch(batch)
 
-        optimizer = self.optimizers()
+        optimizer = cast('torch.optim.Optimizer', self.optimizers())
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
