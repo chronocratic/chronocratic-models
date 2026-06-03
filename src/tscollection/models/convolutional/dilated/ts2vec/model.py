@@ -15,15 +15,7 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
-    """TS2Vec: Time-series two-tower vector quantization.
-
-    Accepts any ``AugmentationMethod`` instance in the constructor.
-    The model calls ``augment(x, temporal_unit=...)`` which returns a
-    ``TrainingViews`` containing two overlapping crop tensors and a
-    ``crop_length`` metadata key used for embedding slicing.
-
-    If ``augmentation`` is not provided, defaults to
-    ``CropShiftAugmentation``.
+    """TS2Vec Model.
 
     Code source: https://github.com/zhihanyue/ts2vec
     """

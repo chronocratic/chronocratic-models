@@ -20,16 +20,7 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
-    """Contrastive time-series encoder with a pluggable augmentation strategy.
-
-    Accepts any ``AugmentationMethod`` instance in the constructor.
-    When the augmentation is a ``TrainableAugmentation``, the model runs
-    a two-phase training step: (1) aug-network self-training via the
-    composed strategy, (2) uniform encoder training.
-
-    If ``augmentation`` is not provided, defaults to
-    ``AutoTCLNeuralNetworkAugmentation`` with ``input_dims`` from model
-    and ``RIPTrainingStrategy``.
+    """AutoTCL Model.
 
     Code source: https://github.com/AslanDing/AutoTCL
     """

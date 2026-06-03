@@ -19,14 +19,7 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
-    """CoST: Contrastive learning of Disentangled Seasonal-Trend Representations for time series.
-
-    Accepts any ``AugmentationMethod`` instance in the constructor.
-    The model calls ``augment(x).views[0]`` twice to produce independent
-    query and key augmented views.
-
-    If ``augmentation`` is not provided, defaults to
-    ``CosTRandomFunctionAugmentation``.
+    """CoST Model.
 
     Code source: https://github.com/salesforce/CoST
     """
