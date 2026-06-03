@@ -108,13 +108,14 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             nn.Linear(component_dims, component_dims),
         )
 
-        for param_query_encoder, param_key_encoder in zip(  ## noqa: B905
-            self.query_encoder.parameters(), self.key_encoder.parameters()
+        for param_query_encoder, param_key_encoder in zip(
+            self.query_encoder.parameters(), self.key_encoder.parameters(), strict=True
         ):
             param_key_encoder.data.copy_(param_query_encoder.data)  # initialize
             param_key_encoder.requires_grad = False  # not update by gradient
-        for param_query_projection_head, param_key_projection_head in zip(  ## noqa: B905
-            self.query_projection_head.parameters(), self.key_projection_head.parameters()
+        for param_query_projection_head, param_key_projection_head in zip(
+            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            strict=True,
         ):
             param_key_projection_head.data.copy_(param_query_projection_head.data)  # initialize
             param_key_projection_head.requires_grad = False  # not update by gradient
@@ -167,15 +168,16 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     @torch.no_grad()
     def _momentum_update_key_encoder(self) -> None:
         """Momentum update for key encoder."""
-        for param_query_encoder, param_key_encoder in zip(  ## noqa: B905
-            self.query_encoder.parameters(), self.key_encoder.parameters()
+        for param_query_encoder, param_key_encoder in zip(
+            self.query_encoder.parameters(), self.key_encoder.parameters(), strict=True
         ):
             param_key_encoder.data = (
                 param_key_encoder.data * self.momentum
                 + param_query_encoder.data * (1 - self.momentum)
             )
-        for param_query_projection_head, param_key_projection_head in zip(  ## noqa: B905
-            self.query_projection_head.parameters(), self.key_projection_head.parameters()
+        for param_query_projection_head, param_key_projection_head in zip(
+            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            strict=True,
         ):
             param_key_projection_head.data = (
                 param_key_projection_head.data * self.momentum
@@ -207,7 +209,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self,
         query: torch.Tensor,
         key: torch.Tensor,
-        update_key_encoder: bool = True,  ## noqa: FBT002 FBT001
+        *,
+        update_key_encoder: bool = True,
     ) -> torch.Tensor:
         # compute query features
         random_index = self._rng.integers(0, query.shape[1])

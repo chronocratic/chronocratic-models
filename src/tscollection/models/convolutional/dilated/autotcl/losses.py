@@ -179,7 +179,8 @@ def info_nce_loss(
         z1 = torch.unsqueeze(torch.mean(z1, 1), 1)
         z2 = torch.unsqueeze(torch.mean(z2, 1), 1)
     else:
-        raise ValueError(f'Invalid pooling method: {pooling}')  # noqa: TRY003, EM102
+        msg = f'Invalid pooling method: {pooling}'
+        raise ValueError(msg)
 
     z1t = torch.nn.functional.normalize(z1, dim=2)
     z2t = torch.nn.functional.normalize(z2, dim=2)
@@ -305,7 +306,8 @@ def maximum_mean_discrepancy_with_gaussian_kernel_loss(
         source = torch.unsqueeze(torch.mean(source, 1), 1)
         target = torch.unsqueeze(torch.mean(target, 1), 1)
     else:
-        raise ValueError(f'Invalid pooling method: {pooling}')  # noqa: TRY003, EM102
+        msg = f'Invalid pooling method: {pooling}'
+        raise ValueError(msg)
 
     batch_size = int(source.size()[0])
     kernels = _compute_gaussian_kernel(
