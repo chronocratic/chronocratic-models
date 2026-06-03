@@ -1,3 +1,7 @@
-__all__ = ['TS2Vec']
+__all__ = [
+    'TS2Vec',
+    'TS2VecModelParameters',
+]
 
-from .model import *
+from .config import TS2VecModelParameters
+from .model import TS2Vec

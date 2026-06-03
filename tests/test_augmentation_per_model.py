@@ -1,4 +1,4 @@
-"""Tests for per-model augmentation modules (Phase 4, Plan 3).
+"""Tests for per-model augmentation modules.
 
 Verifies that concrete augmentations live in their model directories:
     - ts2vec/augmentation.py: CropShiftAugmentation + CropShiftAugmentationParameters

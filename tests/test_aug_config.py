@@ -45,9 +45,9 @@ class TestCropShiftAugmentationParameters:
 class TestCosTRandomFunctionAugmentationParameters:
     """CosTRandomFunctionAugmentationParameters defaults and fields."""
 
-    def test_sigma_required(self) -> None:
-        with pytest.raises(TypeError):
-            CosTRandomFunctionAugmentationParameters()  # type: ignore[call-arg]
+    def test_sigma_has_default(self) -> None:
+        params = CosTRandomFunctionAugmentationParameters()
+        assert params.sigma == 0.1
 
     def test_sigma_and_default_p(self) -> None:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
@@ -83,13 +83,13 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
         with pytest.raises(TypeError):
             AutoTCLNeuralNetworkAugmentationParameters(output_dims=320)  # type: ignore[call-arg]
 
-    def test_output_dims_required(self) -> None:
-        with pytest.raises(TypeError):
-            AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)  # type: ignore[call-arg]
+    def test_output_dims_has_default(self) -> None:
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+        assert params.output_dims == 16
 
     def test_default_fields(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
-        assert params.kernel_sizes == []
+        assert params.kernel_sizes == [3, 5, 7]
         assert params.hidden_dims == 64
         assert params.feature_extractor_depth == 10
         assert params.dropout_rate == 0.1

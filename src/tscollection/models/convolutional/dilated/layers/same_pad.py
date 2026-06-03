@@ -52,7 +52,8 @@ class Conv1dSamePadMultiBlock(nn.Module):
         dilation: int,
         stride: int = 1,
         num_blocks: int = 2,
-        is_final: bool = False,  # noqa: FBT001 FBT002
+        *,
+        is_final: bool = False,
         activation_fn: Callable[[torch.Tensor], torch.Tensor] = F.gelu,
     ) -> None:
         super().__init__()
@@ -109,7 +110,8 @@ class Conv1dSamePadMultiBlock(nn.Module):
         in_channels: int,
         out_channels: int,
         stride: int,
-        is_final: bool,  # noqa: FBT001
+        *,
+        is_final: bool,
     ) -> None:
 
         if stride == 1:

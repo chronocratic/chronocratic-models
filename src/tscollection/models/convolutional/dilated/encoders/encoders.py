@@ -72,14 +72,15 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
     def forward(
         self,
         x: torch.Tensor,
-        return_tcn_output: bool = False,  # noqa: FBT001 FBT002
+        *,
+        return_tcn_output: bool = False,
         mask_mode: MaskMode = MaskMode.ALL_TRUE,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         pass
 
     def _process_mask_mode(self, mask_mode: MaskMode | None) -> MaskMode:
         if mask_mode is None:
-            mask_mode = self.mask_mode if self.mask_mode is not None else MaskMode.ALL_TRUE
+            mask_mode = self.mask_mode if self.training else MaskMode.ALL_TRUE
         return mask_mode
 
     def _common_forward(self, x: torch.Tensor, mask_mode: MaskMode | None = None) -> torch.Tensor:
@@ -182,7 +183,8 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
     def forward(
         self,
         x: torch.Tensor,
-        return_tcn_output: bool = False,  ## noqa: FBT001 FBT002
+        *,
+        return_tcn_output: bool = False,
         mask_mode: MaskMode = MaskMode.ALL_TRUE,
     ) -> torch.Tensor:
         """Encode a batch of time series into trend representations.
@@ -229,7 +231,8 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         gumbel_bias: float = 0.001,
         zeta: float = 1.0,
         gamma_zeta: float = 0.05,
-        hard_mask: bool = True,  ## noqa: FBT001 FBT002
+        *,
+        hard_mask: bool = True,
     ) -> None:
 
         super().__init__()
@@ -265,7 +268,8 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         sampling_weights: torch.Tensor,
         temperature: float = 1.0,
         bias: float = 0.0,
-        is_training: bool = True,  ## noqa: FBT001 FBT002
+        *,
+        is_training: bool = True,
     ) -> torch.Tensor:
         """
         Obtain a sample graph while maintaining the possibility to backprop.
@@ -318,7 +322,8 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        return_tcn_output: bool = False,  ## noqa: FBT001 FBT002
+        *,
+        return_tcn_output: bool = False,
         mask_mode: MaskMode = MaskMode.ALL_TRUE,
     ) -> dict[str, torch.Tensor]:
         """Encode the input and produce an augmented view via a learned channel mask.
@@ -517,7 +522,8 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
     def forward(
         self,
         x: torch.Tensor,
-        return_tcn_output: bool = False,  ## noqa: FBT001 FBT002
+        *,
+        return_tcn_output: bool = False,
         mask_mode: MaskMode = MaskMode.ALL_TRUE,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Encode a batch of time series into disentangled trend and seasonal representations.
@@ -605,7 +611,8 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
     def forward(
         self,
         x: torch.Tensor,
-        return_tcn_output: bool = False,  ## noqa: FBT001 FBT002 ARG002
+        *,
+        return_tcn_output: bool = False,  # noqa: ARG002
         mask_mode: MaskMode = MaskMode.ALL_TRUE,
     ) -> torch.Tensor:
         """Encode a batch of time series into contextual representations.

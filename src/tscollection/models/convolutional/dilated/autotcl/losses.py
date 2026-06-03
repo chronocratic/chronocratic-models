@@ -1,4 +1,9 @@
-__all__ = ['l1_out_loss', 'local_info_nce_loss']
+__all__ = [
+    'info_nce_loss',
+    'l1_out_loss',
+    'local_info_nce_loss',
+    'maximum_mean_discrepancy_with_gaussian_kernel_loss',
+]
 
 import random
 
@@ -142,4 +147,180 @@ def l1_out_loss(
     logits = -torch.log(pos_exp / sum_negs)
     loss = logits.mean()
 
+    return loss
+
+
+def info_nce_loss(
+    z1: torch.Tensor, z2: torch.Tensor, pooling: str = 'max', temperature: float = 1.0
+) -> torch.Tensor:
+    """
+    Compute InfoNCE loss for contrastive learning.
+
+    Parameters
+    ----------
+    z1 : torch.Tensor
+        The first set of embeddings.
+    z2 : torch.Tensor
+        The second set of embeddings.
+    pooling : str, optional
+        The pooling method to use ('max' or 'mean', default is 'max').
+    temperature : float, optional
+        The temperature parameter for scaling the logits (default is 1.0).
+
+    Returns:
+    -------
+    torch.Tensor
+        The computed InfoNCE loss.
+    """
+    if pooling == 'max':
+        z1 = F.max_pool1d(z1.transpose(1, 2).contiguous(), kernel_size=z1.size(1)).transpose(1, 2)
+        z2 = F.max_pool1d(z2.transpose(1, 2).contiguous(), kernel_size=z2.size(1)).transpose(1, 2)
+    elif pooling == 'mean':
+        z1 = torch.unsqueeze(torch.mean(z1, 1), 1)
+        z2 = torch.unsqueeze(torch.mean(z2, 1), 1)
+    else:
+        msg = f'Invalid pooling method: {pooling}'
+        raise ValueError(msg)
+
+    z1t = torch.nn.functional.normalize(z1, dim=2)
+    z2t = torch.nn.functional.normalize(z2, dim=2)
+
+    similarity_matrix = torch.matmul(z1t.squeeze(1), z2t.squeeze(1).T)
+
+    mask = torch.eye(z1.shape[0], dtype=torch.bool).to(z1.device)
+
+    positives = similarity_matrix[mask].view(mask.shape[0], -1)
+    negatives = similarity_matrix[~mask].view(mask.shape[0], mask.shape[1] - 1)
+
+    logits = torch.cat([positives, negatives], dim=1)
+
+    logits = logits / temperature
+    logits = -F.log_softmax(logits, dim=-1)
+    loss = logits[:, 0].mean()
+
+    return loss
+
+
+def _compute_gaussian_kernel(
+    source: torch.Tensor,
+    target: torch.Tensor,
+    kernel_mul: float = 2.0,
+    kernel_num: int = 5,
+    fix_sigma: float | None = None,
+    epsilon: float = 1e-6,
+) -> torch.Tensor:
+    """
+    Compute the Gaussian kernel between source and target embeddings.
+
+    Parameters
+    ----------
+    source : torch.Tensor
+        Source embeddings.
+    target : torch.Tensor
+        Target embeddings.
+    kernel_mul : float, optional
+        Kernel multiplier (default is 2.0).
+    kernel_num : int, optional
+        Number of kernels (default is 5).
+    fix_sigma : float, optional
+        Fixed sigma value for the Gaussian kernel (default is None).
+    epsilon : float, optional
+        Small value to ensure numerical stability (default is 1e-6).
+
+    Returns:
+    -------
+    torch.Tensor
+        The computed Gaussian kernel.
+    """
+    n_samples = int(source.size()[0]) + int(target.size()[0])
+    total = torch.cat([source, target], dim=0)
+
+    total0 = total.unsqueeze(0).expand(int(total.size(0)), int(total.size(0)), int(total.size(1)))
+    total1 = total.unsqueeze(1).expand(int(total.size(0)), int(total.size(0)), int(total.size(1)))
+
+    l2_distance = ((total0 - total1) ** 2).sum(2)
+
+    if fix_sigma:
+        bandwidth = fix_sigma
+    else:
+        bandwidth = torch.sum(l2_distance.data) / (n_samples**2 - n_samples)
+        bandwidth += epsilon
+
+    if bandwidth <= 0:
+        msg = f'Error in function {__name__}: bandwidth is invalid; got {bandwidth}'
+        raise ValueError(msg)
+
+    bandwidth /= kernel_mul ** (kernel_num // 2)
+
+    if bandwidth <= 0:
+        msg = (
+            f'Error in function {__name__}: bandwidth after adjustment is invalid; got {bandwidth}'
+        )
+        raise ValueError(msg)
+
+    bandwidth_list = [bandwidth * (kernel_mul**i) for i in range(kernel_num)]
+    kernel_val = [torch.exp(-l2_distance / bandwidth_temp) for bandwidth_temp in bandwidth_list]
+
+    return torch.sum(torch.stack(kernel_val), dim=0)
+
+
+def maximum_mean_discrepancy_with_gaussian_kernel_loss(
+    source: torch.Tensor,
+    target: torch.Tensor,
+    kernel_mul: float = 2.0,
+    kernel_num: int = 5,
+    fix_sigma: float | None = None,
+    pooling: str = 'max',
+) -> torch.Tensor:
+    """
+    Compute Maximum Mean Discrepancy (MMD) loss with Gaussian kernel.
+
+    Parameters
+    ----------
+    source : torch.Tensor
+        Source embeddings.
+    target : torch.Tensor
+        Target embeddings.
+    kernel_mul : float, optional
+        Kernel multiplier (default is 2.0).
+    kernel_num : int, optional
+        Number of kernels (default is 5).
+    fix_sigma : float, optional
+        Fixed sigma value for the Gaussian kernel (default is None).
+    pooling : str, optional
+        The pooling method to use ('max' or 'mean', default is 'max').
+
+    Returns:
+    -------
+    torch.Tensor
+        The computed MMD loss.
+    """
+    if pooling == 'max':
+        source = F.max_pool1d(
+            source.transpose(1, 2).contiguous(), kernel_size=source.size(1)
+        ).transpose(1, 2)
+        target = F.max_pool1d(
+            target.transpose(1, 2).contiguous(), kernel_size=target.size(1)
+        ).transpose(1, 2)
+    elif pooling == 'mean':
+        source = torch.unsqueeze(torch.mean(source, 1), 1)
+        target = torch.unsqueeze(torch.mean(target, 1), 1)
+    else:
+        msg = f'Invalid pooling method: {pooling}'
+        raise ValueError(msg)
+
+    batch_size = int(source.size()[0])
+    kernels = _compute_gaussian_kernel(
+        source.squeeze(1),
+        target.squeeze(1),
+        kernel_mul=kernel_mul,
+        kernel_num=kernel_num,
+        fix_sigma=fix_sigma,
+    )
+    xx = kernels[:batch_size, :batch_size]
+    yy = kernels[batch_size:, batch_size:]
+    xy = kernels[:batch_size, batch_size:]
+    yx = kernels[batch_size:, :batch_size]
+
+    loss = torch.mean(xx + yy - xy - yx)
     return loss

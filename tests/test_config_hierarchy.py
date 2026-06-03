@@ -1,34 +1,17 @@
-"""Tests for per-model config hierarchy (Phase 4, Plan 2).
+"""Tests for per-model config locations and module exports.
 
-Verifies that config classes live in their own module files with
-correct tiered inheritance:
-    - dilated/config.py: DilatedCNNModelParameters
-    - ts2vec/config.py: TS2VecModelParameters -> DilatedCNNModelParameters
-    - cost/config.py: CoSTModelParameters -> ModelParameters (NOT DilatedCNN)
-    - autotcl/config.py: AutoTCLModelParameters -> DilatedCNNModelParameters
+Verifies that config classes live in their own module files:
+    - ts2vec/config.py: TS2VecModelParameters
+    - cost/config.py: CoSTModelParameters
+    - autotcl/config.py: AutoTCLModelParameters
 """
 
 import pytest
 
-from tscollection.models.config import ModelParameters
-from tscollection.models.convolutional.dilated.config import DilatedCNNModelParameters
+from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
 from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-
-
-class TestDilatedCNNModelParametersLocation:
-    """DilatedCNNModelParameters lives in dilated/config.py."""
-
-    def test_module_location(self) -> None:
-        assert (
-            DilatedCNNModelParameters.__module__
-            == 'tscollection.models.convolutional.dilated.config'
-        )
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(DilatedCNNModelParameters, ModelParameters)
 
 
 class TestTS2VecModelParametersLocation:
@@ -40,11 +23,8 @@ class TestTS2VecModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.ts2vec.config'
         )
 
-    def test_inherits_from_dilated_cnn(self) -> None:
-        assert issubclass(TS2VecModelParameters, DilatedCNNModelParameters)
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(TS2VecModelParameters, ModelParameters)
+    def test_no_parent_class(self) -> None:
+        assert TS2VecModelParameters.__bases__ == (object,)
 
 
 class TestCoSTModelParametersLocation:
@@ -56,11 +36,8 @@ class TestCoSTModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.cost.config'
         )
 
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(CoSTModelParameters, ModelParameters)
-
-    def test_not_subclass_of_dilated_cnn(self) -> None:
-        assert not issubclass(CoSTModelParameters, DilatedCNNModelParameters)
+    def test_no_parent_class(self) -> None:
+        assert CoSTModelParameters.__bases__ == (object,)
 
 
 class TestAutoTCLModelParametersLocation:
@@ -72,28 +49,12 @@ class TestAutoTCLModelParametersLocation:
             == 'tscollection.models.convolutional.dilated.autotcl.config'
         )
 
-    def test_inherits_from_dilated_cnn(self) -> None:
-        assert issubclass(AutoTCLModelParameters, DilatedCNNModelParameters)
-
-    def test_inherits_from_model_parameters(self) -> None:
-        assert issubclass(AutoTCLModelParameters, ModelParameters)
-
-
-class TestDilatedCNNConfigDefaults:
-    """DilatedCNNModelParameters field defaults match source."""
-
-    def test_field_defaults(self) -> None:
-        params = DilatedCNNModelParameters(input_dims=1)
-        assert params.input_dims == 1
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
-        assert params.depth == 10
-        assert params.dropout_rate == 0.1
-        assert params.conv_kernel_size == 3
+    def test_no_parent_class(self) -> None:
+        assert AutoTCLModelParameters.__bases__ == (object,)
 
 
 class TestTS2VecConfigDefaults:
-    """TS2VecModelParameters field defaults match source."""
+    """TS2VecModelParameters field defaults match model init."""
 
     def test_own_field_defaults(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
@@ -103,7 +64,7 @@ class TestTS2VecConfigDefaults:
         assert params.temporal_unit == 0
         assert params.sync_dist is False
 
-    def test_inherited_field_defaults(self) -> None:
+    def test_encoder_field_defaults(self) -> None:
         params = TS2VecModelParameters(input_dims=1)
         assert params.hidden_dims == 64
         assert params.output_dims == 320
@@ -113,7 +74,7 @@ class TestTS2VecConfigDefaults:
 
 
 class TestCoSTConfigDefaults:
-    """CoSTModelParameters field defaults match source."""
+    """CoSTModelParameters field defaults match model init."""
 
     def test_required_fields(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -129,8 +90,8 @@ class TestCoSTConfigDefaults:
         """Mutable default (list) must not be shared across instances."""
         p1 = CoSTModelParameters(input_dims=1, sequence_length=100)
         p2 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p1.kernel_sizes.append(2)
-        assert p2.kernel_sizes == []
+        p1.kernel_sizes.append(256)
+        assert 256 not in p2.kernel_sizes
 
     def test_other_defaults(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -148,11 +109,11 @@ class TestCoSTConfigDefaults:
 
 
 class TestAutoTCLConfigDefaults:
-    """AutoTCLModelParameters field defaults match source."""
+    """AutoTCLModelParameters field defaults match model init."""
 
     def test_own_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == []
+        assert params.kernel_sizes == [3, 5, 7]
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
         assert params.max_train_length is None
@@ -162,10 +123,10 @@ class TestAutoTCLConfigDefaults:
         """Mutable default (list) must not be shared across instances."""
         p1 = AutoTCLModelParameters(input_dims=1)
         p2 = AutoTCLModelParameters(input_dims=1)
-        p1.kernel_sizes.append(2)
-        assert p2.kernel_sizes == []
+        p1.kernel_sizes.append(9)
+        assert 9 not in p2.kernel_sizes
 
-    def test_inherited_field_defaults(self) -> None:
+    def test_encoder_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.hidden_dims == 64
         assert params.output_dims == 320
@@ -173,26 +134,36 @@ class TestAutoTCLConfigDefaults:
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
 
+    def test_training_field_defaults(self) -> None:
+        params = AutoTCLModelParameters(input_dims=1)
+        assert params.meta_learning_rate == 1e-2
+        assert params.local_loss_weight == 0.1
+
 
 class TestConfigAllExports:
     """Each config module exposes its class via __all__."""
 
-    def test_dilated_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.config as mod
-
-        assert 'DilatedCNNModelParameters' in mod.__all__
-
     def test_ts2vec_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.ts2vec.config as mod
+        import tscollection.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
 
         assert 'TS2VecModelParameters' in mod.__all__
 
     def test_cost_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.cost.config as mod
+        import tscollection.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
 
         assert 'CoSTModelParameters' in mod.__all__
 
     def test_autotcl_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.autotcl.config as mod
+        import tscollection.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
 
         assert 'AutoTCLModelParameters' in mod.__all__
+
+
+class TestNoDilatedCNNConfig:
+    """DilatedCNNModelParameters no longer exists."""
+
+    def test_import_fails(self) -> None:
+        with pytest.raises(ImportError):
+            from tscollection.models.convolutional.dilated.config import (  # noqa: F401, PLC0415
+                DilatedCNNModelParameters,
+            )
