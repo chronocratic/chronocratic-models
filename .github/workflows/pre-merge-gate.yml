@@ -1,0 +1,84 @@
+name: Pre-merge Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pre-merge-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  backup-main:
+    name: Backup main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create backup branch
+        run: |
+          BACKUP="main.backup.${{ github.event.pull_request.number }}.$(date +%Y%m%d-%H%M%S)"
+          git branch "$BACKUP" origin/main
+          git push origin "$BACKUP"
+          echo "Created $BACKUP"
+
+      - name: Clean up old backups
+        run: |
+          git fetch --prune origin
+          git branch -r | grep 'origin/main.backup.' | sort | head -n -5 | \
+            sed 's|origin/||' | xargs -I {} git push origin --delete {} || true
+
+  forbidden-files:
+    name: Check forbidden paths
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan PR for forbidden files
+        run: |
+          FORBIDDEN=(
+            ".claude/"
+            ".remember/"
+            ".planning/"
+            "MEMORY.md"
+            "CLAUDE.md"
+            "CONTEXT.md"
+            "STATE.md"
+            "ROADMAP.md"
+            ".continue-here.md"
+            "HANDOFF.json"
+          )
+
+          CHANGED=$(git diff --diff-filter=ACMR --name-only ${{ github.event.pull_request.base.sha }}..HEAD)
+          MATCHED=()
+
+          for path in "${FORBIDDEN[@]}"; do
+            matches=$(echo "$CHANGED" | grep "$path" || true)
+            if [ -n "$matches" ]; then
+              MATCHED+=($matches)
+            fi
+          done
+
+          if [ ${#MATCHED[@]} -gt 0 ]; then
+            echo "::error::Forbidden files detected:"
+            for f in "${MATCHED[@]}"; do
+              echo "::error::  - $f"
+            done
+            exit 1
+          fi
+          echo "All clear."
