@@ -5,6 +5,8 @@ import torch
 from tscollection.models.augmentation.base import AugmentationMethod
 from tscollection.models.convolutional.dilated.autotcl.losses import l1_out_loss
 
+_MIN_TIME_STEPS = 3
+
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     """Calculate regular consistency for weights.
@@ -13,18 +15,21 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
 
     Args:
         weights: Input weight tensor of shape (batch_size, time_steps, channels).
-            time_steps must be greater than 3.
+            time_steps must be greater than {_MIN_TIME_STEPS}.
 
     Returns:
         Mean consistency measure across the batch.
 
     Raises:
-        ValueError: If time_steps is less than or equal to 3.
+        ValueError: If time_steps is less than or equal to {_MIN_TIME_STEPS}.
     """
     batch_size, time_steps, _ = weights.shape
 
-    if time_steps <= 3:
-        msg = f'calculate_regular_consistency requires time_steps > 3, got {time_steps}'
+    if time_steps <= _MIN_TIME_STEPS:
+        msg = (
+            f'calculate_regular_consistency requires time_steps > {_MIN_TIME_STEPS}, '
+            f'got {time_steps}'
+        )
         raise ValueError(msg)
 
     # Select random time steps for comparison
@@ -72,7 +77,7 @@ def calculate_mutual_information(
         Average MI estimate (L1-out loss) between original and
         augmented data.
     """
-    import numpy as np
+    import numpy as np  # noqa: PLC0415
 
     with torch.inference_mode():
         x = batch
