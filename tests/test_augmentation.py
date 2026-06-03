@@ -2,7 +2,7 @@
 
 Verifies that TrainingViews, AugmentationMethod, TrainableAugmentation,
 AugmentationTrainingStrategy, RIPTrainingStrategy, and AdversarialTrainingStrategy
-behave correctly according to decisions D-01 through D-03.
+behave correctly and follow the documented interfaces.
 """
 
 import pytest

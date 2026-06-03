@@ -3,7 +3,7 @@
 Verifies that each model can run multiple training steps with finite loss
 after module restructuring, that user-defined augmentation subclasses work
 with the model pipeline, and that checkpoint save/reload preserves encoder
-weights. Covers VER-01 through VER-05.
+weights.
 """
 
 from __future__ import annotations
