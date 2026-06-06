@@ -8,9 +8,8 @@ supported training modes.
 __all__ = ['TSTCCModelParameters']
 
 from dataclasses import dataclass
-from typing import Literal
 
-TrainingMode = Literal['self_supervised', 'supervised', 'fine_tuning']
+from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
 
 
 @dataclass(kw_only=True)
@@ -36,9 +35,8 @@ class TSTCCModelParameters:
         temperature: Temperature scaling for the NT-Xent contextual loss.
         use_cosine_similarity: Whether the NT-Xent loss uses cosine
             similarity (otherwise dot-product).
-        training_mode: One of ``'self_supervised'``, ``'supervised'``, or
-            ``'fine_tuning'``. Controls which loss is active and which
-            parameters are trainable.
+        training_mode: A ``TrainingMode`` value. Controls which loss is
+            active and which parameters are trainable.
         learning_rate: Base learning rate for the two Adam optimizers
             (encoder and temporal-contrast).
         lambda1: Weight of the temporal-contrast loss term in the
@@ -60,7 +58,7 @@ class TSTCCModelParameters:
     tc_timesteps: int = 6
     temperature: float = 0.2
     use_cosine_similarity: bool = True
-    training_mode: TrainingMode = 'self_supervised'
+    training_mode: TrainingMode = TrainingMode.SELF_SUPERVISED
     learning_rate: float = 3e-4
     lambda1: float = 1.0
     lambda2: float = 0.7

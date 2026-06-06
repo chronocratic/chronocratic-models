@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 __all__ = ['TSTCC']
 
-from typing import cast, Literal
+from typing import cast
 
 import lightning.pytorch as pl
 import torch
@@ -13,14 +13,13 @@ import torch.nn.functional as F
 
 from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
+from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
 from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
 
 if TYPE_CHECKING:
     from lightning.pytorch.core.optimizer import LightningOptimizer
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
-
-TrainingMode = Literal['self_supervised', 'supervised', 'fine_tuning']
 
 
 class TSTCC(pl.LightningModule, SimpleEncodingMixin):
@@ -54,7 +53,7 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
         tc_timesteps: int = 6,
         temperature: float = 0.2,
         use_cosine_similarity: bool = True,
-        training_mode: TrainingMode = 'self_supervised',
+        training_mode: TrainingMode = TrainingMode.SELF_SUPERVISED,
         learning_rate: float = 3e-4,
         lambda1: float = 1.0,
         lambda2: float = 0.7,
@@ -87,7 +86,7 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
         )
         self._criterion = nn.CrossEntropyLoss()
 
-        if training_mode == 'fine_tuning':
+        if training_mode == TrainingMode.FINE_TUNING:
             for name, param in self._encoder.named_parameters():
                 param.requires_grad = name.startswith('logits')
 
@@ -106,7 +105,7 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
     def _compute_loss(self, batch: tuple) -> torch.Tensor:
         data, labels, aug1, aug2 = batch
 
-        if self._training_mode == 'self_supervised':
+        if self._training_mode == TrainingMode.SELF_SUPERVISED:
             aug1 = aug1.float()
             aug2 = aug2.float()
             _, features1 = self._encoder(aug1)
