@@ -22,7 +22,8 @@ from .base import (
     TrainingViews,
 )
 
-# Shared transforms — package-internal, no circular-dep risk
+# Shared transforms and combinators — package-internal, no circular-dep risk
+from .composition import ComposeAugmentation, PairedAugmentation
 from .transforms import (
     Jitter,
     JitterParameters,
@@ -40,12 +41,14 @@ __all__ = [
     'AugmentationTrainingStrategy',
     'AutoTCLNeuralNetworkAugmentation',
     'AutoTCLNeuralNetworkAugmentationParameters',
+    'ComposeAugmentation',
     'CosTRandomFunctionAugmentation',
     'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentation',
     'CropShiftAugmentationParameters',
     'Jitter',
     'JitterParameters',
+    'PairedAugmentation',
     'Permutation',
     'PermutationParameters',
     'RIPTrainingStrategy',
