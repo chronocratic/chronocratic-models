@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 __all__ = ['TSTCC']
 
-from typing import cast
 
 import lightning.pytorch as pl
 import torch
@@ -19,7 +18,6 @@ from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import 
 from tscollection.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
-    from lightning.pytorch.core.optimizer import LightningOptimizer
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
     from tscollection.models.augmentation.base import AugmentationMethod
@@ -145,7 +143,7 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
 
     def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
         """Manual optimization step for both sub-module optimizers."""
-        model_opt, tc_opt = cast('list[LightningOptimizer]', self.optimizers())
+        model_opt, tc_opt = self.optimizers()
         model_opt.zero_grad()
         tc_opt.zero_grad()
 
