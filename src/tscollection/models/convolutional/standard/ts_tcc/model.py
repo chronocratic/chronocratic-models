@@ -36,7 +36,9 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
 
     Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
     augmented views of ``data`` are produced by the injected
-    ``AugmentationMethod`` (defaults to ``TSTCCWeakStrongAugmentation``).
+    ``AugmentationMethod``. The default is a ``PairedAugmentation`` of
+    Gaussian scaling (weak view) and segment-permutation + jitter
+    (strong view), matching the original TS-TCC contract.
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
@@ -73,11 +75,30 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
         self._sync_dist = sync_dist
 
         if augmentation is None:
-            from tscollection.models.convolutional.standard.ts_tcc.augmentations import (  # noqa: PLC0415
-                TSTCCWeakStrongAugmentation,
+            from tscollection.models.augmentation import (  # noqa: PLC0415
+                ComposeAugmentation,
+                Jitter,
+                JitterParameters,
+                PairedAugmentation,
+                Permutation,
+                PermutationParameters,
+                Scaling,
+                ScalingParameters,
             )
 
-            self._augmentation: AugmentationMethod = TSTCCWeakStrongAugmentation()
+            # Weak view: per-(sample, channel) Gaussian scaling around mean=2.
+            # Strong view: random segment permutation followed by additive jitter.
+            # Data flows as (B, C, T), hence channel_dim=1 and time_dim=-1.
+            weak = Scaling(
+                ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)
+            )
+            strong = ComposeAugmentation(
+                [
+                    Permutation(PermutationParameters(max_segments=5, time_dim=-1)),
+                    Jitter(JitterParameters(sigma=0.8)),
+                ]
+            )
+            self._augmentation: AugmentationMethod = PairedAugmentation(weak, strong)
         else:
             self._augmentation = augmentation
 
