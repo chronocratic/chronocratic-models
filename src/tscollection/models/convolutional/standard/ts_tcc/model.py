@@ -16,10 +16,13 @@ from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
 from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
 from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
+from tscollection.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.core.optimizer import LightningOptimizer
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
+
+    from tscollection.models.augmentation.base import AugmentationMethod
 
 
 class TSTCC(pl.LightningModule, SimpleEncodingMixin):
@@ -33,8 +36,9 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
     - ``fine_tuning``: cross-entropy training with only the logits head
       trainable; backbone weights are frozen.
 
-    Batch format (all modes): ``(data, labels, aug1, aug2)``
-    where ``aug1`` / ``aug2`` are only used in ``self_supervised`` mode.
+    Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
+    augmented views of ``data`` are produced by the injected
+    ``AugmentationMethod`` (defaults to ``TSTCCWeakStrongAugmentation``).
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
@@ -58,9 +62,10 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
         lambda1: float = 1.0,
         lambda2: float = 0.7,
         sync_dist: bool = False,
+        augmentation: AugmentationMethod | None = None,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['augmentation'])
         self.automatic_optimization = False
 
         self._training_mode = training_mode
@@ -68,6 +73,15 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
         self._lambda1 = lambda1
         self._lambda2 = lambda2
         self._sync_dist = sync_dist
+
+        if augmentation is None:
+            from tscollection.models.convolutional.standard.ts_tcc.augmentations import (  # noqa: PLC0415
+                TSTCCWeakStrongAugmentation,
+            )
+
+            self._augmentation: AugmentationMethod = TSTCCWeakStrongAugmentation()
+        else:
+            self._augmentation = augmentation
 
         self._encoder = TCCEncoder(
             input_channels=input_channels,
@@ -103,11 +117,11 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
     # ------------------------------------------------------------------
 
     def _compute_loss(self, batch: tuple) -> torch.Tensor:
-        data, labels, aug1, aug2 = batch
+        data = extract_features_from_batch(batch).float()
 
         if self._training_mode == TrainingMode.SELF_SUPERVISED:
-            aug1 = aug1.float()
-            aug2 = aug2.float()
+            views = self._augmentation.augment(data)
+            aug1, aug2 = views.views[0], views.views[1]
             _, features1 = self._encoder(aug1)
             _, features2 = self._encoder(aug2)
             features1 = F.normalize(features1, dim=1)
@@ -121,7 +135,8 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
             return self._lambda1 * temporal_loss + self._lambda2 * contextual_loss
 
         # supervised / fine_tuning
-        predictions, _ = self._encoder(data.float())
+        labels = batch[1]
+        predictions, _ = self._encoder(data)
         return self._criterion(predictions, labels.long())
 
     # ------------------------------------------------------------------

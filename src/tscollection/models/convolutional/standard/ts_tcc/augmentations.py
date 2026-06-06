@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-__all__ = ['DataTransform', 'TSTCCAugmentationParameters']
+__all__ = ['DataTransform', 'TSTCCAugmentationParameters', 'TSTCCWeakStrongAugmentation']
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import torch
+
+from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
 
 
 @dataclass
@@ -75,3 +78,48 @@ def _permutation(x: np.ndarray, max_segments: int = 5) -> np.ndarray:
         else:
             result[i] = pat
     return result
+
+
+class TSTCCWeakStrongAugmentation(AugmentationMethod):
+    """Weak + strong augmentation pair used by TS-TCC.
+
+    Returns two views: a weak (scaling) view and a strong
+    (permutation + jitter) view. Operates on tensors of shape
+    ``(batch, channels, seq_len)`` to match the TCC encoder.
+    """
+
+    def __init__(self, params: TSTCCAugmentationParameters | None = None) -> None:
+        """Initialize the weak/strong augmentation pair.
+
+        Args:
+            params: Configuration controlling jitter and permutation
+                magnitudes. When ``None``, uses the dataclass defaults.
+        """
+        self._params = params if params is not None else TSTCCAugmentationParameters()
+
+    def augment(
+        self,
+        data: torch.Tensor,
+        **kwargs: Any,  # noqa: ANN401, ARG002
+    ) -> TrainingViews:
+        """Return weak and strong augmented views of ``data``.
+
+        Args:
+            data: Input tensor of shape ``(batch, channels, seq_len)``.
+            **kwargs: Unused; present for interface compatibility.
+
+        Returns:
+            TrainingViews with two tensors: ``(weak, strong)``.
+        """
+        device = data.device
+        sample = data.detach().cpu().numpy()
+        weak, strong = DataTransform(
+            sample,
+            jitter_scale_ratio=self._params.jitter_scale_ratio,
+            jitter_ratio=self._params.jitter_ratio,
+            max_seg=self._params.max_seg,
+        )
+        return TrainingViews(
+            views=(weak.to(device).float(), strong.to(device).float()),
+            metadata={},
+        )
