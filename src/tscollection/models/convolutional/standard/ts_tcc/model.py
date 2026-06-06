@@ -42,6 +42,9 @@ class TSTCC(pl.LightningModule, SimpleEncodingMixin):
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/emadeldeen24/TS-TCC under MIT License.
     """
 
     def __init__(

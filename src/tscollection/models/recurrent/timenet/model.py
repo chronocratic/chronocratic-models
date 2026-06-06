@@ -32,6 +32,12 @@ class GRUWrapper(nn.Module):
 
 
 class TimeNet(LightningModule, SimpleEncodingMixin):
+    """TimeNet Model.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/paudan/TimeNet under MIT License.
+    """
+
     def __init__(
         self, hidden_dims: int, num_layers: int, dropout: float = 0.1, learning_rate: float = 1e-3
     ) -> None:

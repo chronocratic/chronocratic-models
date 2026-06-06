@@ -40,6 +40,9 @@ class Series2Vec(pl.LightningModule, SimpleEncodingMixin):
     """Lightning wrapper for Series2Vec pretraining.
 
     The public input shape is ``(batch, time, channels)``.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/Navidfoumani/Series2Vec.
     """
 
     def __init__(

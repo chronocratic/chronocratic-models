@@ -107,6 +107,12 @@ class TimeVAEDecoder(nn.Module):
 
 
 class TimeVAE(BaseVariationalAutoencoder, SimpleEncodingMixin):
+    """TimeVAE Model.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/abudesai/timeVAE under MIT License.
+    """
+
     model_name = 'TimeVAE'
 
     def __init__(

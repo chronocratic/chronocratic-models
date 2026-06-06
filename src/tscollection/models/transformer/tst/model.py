@@ -38,6 +38,9 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
 
     All tensors are on CPU when returned from the DataLoader;
     Lightning moves them to the correct device before each step.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/gzerveas/mvts_transformer under MIT License.
     """
 
     def __init__(

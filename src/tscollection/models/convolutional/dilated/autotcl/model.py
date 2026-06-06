@@ -22,7 +22,8 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     """AutoTCL Model.
 
-    Code source: https://github.com/AslanDing/AutoTCL
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/AslanDing/AutoTCL.
     """
 
     def __init__(

@@ -10,6 +10,12 @@ from tscollection.models.convolutional.standard.mcl.losses import MixUpLoss
 
 
 class FCN(pl.LightningModule, SimpleEncodingMixin):
+    """FCN encoder for Mixup Contrastive Learning (MCL).
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/Wickstrom/MixupContrastiveLearning.
+    """
+
     def __init__(
         self,
         n_in: int,

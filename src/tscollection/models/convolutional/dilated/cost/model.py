@@ -22,7 +22,8 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
     """CoST Model.
 
-    Code source: https://github.com/salesforce/CoST
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/salesforce/CoST under BSD-3-Clause License.
     """
 
     def __init__(

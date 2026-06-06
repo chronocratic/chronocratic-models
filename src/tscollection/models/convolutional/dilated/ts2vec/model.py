@@ -19,7 +19,8 @@ from tscollection.models.utils import extract_features_from_batch, process_sampl
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     """TS2Vec Model.
 
-    Code source: https://github.com/zhihanyue/ts2vec
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/zhihanyue/ts2vec under MIT License.
     """
 
     def __init__(
