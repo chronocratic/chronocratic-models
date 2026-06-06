@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models.convolutional.standard.mcl.encoder import FCNEncoder
 from tscollection.models.convolutional.standard.mcl.losses import MixUpLoss
 
 
@@ -32,20 +33,7 @@ class FCN(pl.LightningModule, SimpleEncodingMixin):
 
         self.criterion = MixUpLoss(device=device, batch_size=batch_size)
 
-        self.encoder = nn.Sequential(
-            nn.Conv1d(n_in, 128, kernel_size=7, padding=6, dilation=2),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Conv1d(128, 256, kernel_size=5, padding=8, dilation=4),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Conv1d(256, 128, kernel_size=3, padding=8, dilation=8),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(1),
-            nn.Flatten(),
-            nn.Linear(128, output_dims),
-        )
+        self.encoder = FCNEncoder(input_channels=n_in, output_dims=output_dims)
         self.proj_head = nn.Sequential(
             nn.Linear(output_dims, 128), nn.BatchNorm1d(128), nn.ReLU(), nn.Linear(128, 128)
         )
