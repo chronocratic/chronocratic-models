@@ -14,15 +14,7 @@ from tscollection.models.convolutional.standard.series2vec.losses import (
 )
 from tscollection.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from tscollection.models.distances.soft_dtw import SoftDTW
-
-
-def _extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Tensor:
-    if isinstance(batch, torch.Tensor):
-        return batch
-    if isinstance(batch, tuple | list):
-        return batch[0]
-    msg = f'Unsupported batch format: {type(batch)}'
-    raise ValueError(msg)
+from tscollection.models.utils import extract_features_from_batch
 
 
 def _get_optimizer(name):
@@ -110,7 +102,7 @@ class Series2Vec(pl.LightningModule, SimpleEncodingMixin):
         )
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        x = _extract_features_from_batch(batch)
+        x = extract_features_from_batch(batch)
         train_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             'train_loss',
@@ -125,7 +117,7 @@ class Series2Vec(pl.LightningModule, SimpleEncodingMixin):
         return train_loss
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        x = _extract_features_from_batch(batch)
+        x = extract_features_from_batch(batch)
         val_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             'val_loss',
