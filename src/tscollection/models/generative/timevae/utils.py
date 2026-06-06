@@ -4,7 +4,7 @@ from typing import TypedDict, Unpack
 import numpy as np
 import torch
 
-from tscollection.models.generative.timevae.timevae import TimeVAE
+from tscollection.models.generative.timevae.model import TimeVAE
 from tscollection.models.generative.timevae.vae_conv_model import (
     VariationalAutoencoderConv as VAE_Conv,
 )

@@ -4,4 +4,4 @@ __all__ = [
 ]
 
 from .config import TimeVAEModelParameters
-from .timevae import TimeVAE
+from .model import TimeVAE
