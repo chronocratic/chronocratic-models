@@ -1,16 +1,12 @@
 """Configuration for the TST (Time Series Transformer) model.
 
 Provides TSTModelParameters with all settings for the transformer
-backbone shared between the imputation / transduction and the
-classification / regression heads.
+backbone used during masked-reconstruction pretraining.
 """
 
 __all__ = ['TSTModelParameters']
 
 from dataclasses import dataclass
-from typing import Literal
-
-Task = Literal['imputation', 'transduction', 'classification', 'regression']
 
 
 @dataclass(kw_only=True)
@@ -27,12 +23,6 @@ class TSTModelParameters:
         num_layers: Number of stacked transformer encoder layers.
         dim_feedforward: Hidden dimensionality of the transformer
             feed-forward block.
-        num_classes: Number of output classes / regression targets.
-            Required for ``'classification'`` and ``'regression'``
-            tasks; ignored otherwise.
-        task: One of ``'imputation'``, ``'transduction'``,
-            ``'classification'``, or ``'regression'``. Selects the
-            backbone variant and the loss function.
         dropout: Dropout probability used throughout the transformer.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
             ``'learnable'``) passed to the encoder.
@@ -64,8 +54,6 @@ class TSTModelParameters:
     n_heads: int = 8
     num_layers: int = 3
     dim_feedforward: int = 256
-    num_classes: int | None = None
-    task: Task = 'imputation'
     dropout: float = 0.1
     pos_encoding: str = 'fixed'
     activation: str = 'gelu'

@@ -3,7 +3,7 @@ from __future__ import annotations
 __all__ = ['TST']
 
 import math
-from typing import cast, Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import lightning.pytorch as pl
 import torch
@@ -11,33 +11,33 @@ from torch import nn
 
 from tscollection.models._mixin import SimpleEncodingMixin
 from tscollection.models.transformer.tst.loss import MaskedMSELoss
-from tscollection.models.transformer.tst.ts_transformer import (
-    TSTransformerEncoder,
-    TSTransformerEncoderClassiregressor,
-)
+from tscollection.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRSchedulerConfig
-
-Task = Literal['imputation', 'transduction', 'classification', 'regression']
 
 
 class TST(pl.LightningModule, SimpleEncodingMixin):
     """PyTorch Lightning module for the Time Series Transformer (TST).
 
-    Supports four tasks controlled by the ``task`` parameter:
-
-    - imputation / transduction  → MaskedMSELoss, TSTransformerEncoder backbone
-    - classification / regression → CrossEntropyLoss / MSELoss, TSTransformerEncoderClassiregressor
+    Representation-learning model trained with a masked-reconstruction
+    pretraining objective. The same model supports both random-mask
+    imputation and structured-mask transduction pretraining — the
+    masking strategy is configured upstream in the dataloader and is
+    transparent to the model.
 
     Batch format expected from the DataLoader:
-    - unsupervised (imputation / transduction):
-        (X, targets, target_masks, padding_masks, IDs)
-    - supervised (classification / regression):
-        (X, targets, padding_masks, IDs)
+        ``(X, targets, target_masks, padding_masks, IDs)``
+    where ``target_masks`` marks the positions whose reconstruction is
+    scored, and ``padding_masks`` marks valid (non-padded) timesteps.
 
-    All tensors are on CPU when returned from the DataLoader;
-    Lightning moves them to the correct device before each step.
+    ``forward(x, padding_masks)`` returns transformer representations
+    of shape ``(batch, seq_len, d_model)``, not the masked-reconstruction
+    output. The reconstruction head is internal and used only during
+    pretraining.
+
+    For downstream classification / regression, use the dedicated heads
+    in ``tscollection.models.transformer.tst.heads``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
@@ -51,8 +51,6 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         n_heads: int = 8,
         num_layers: int = 3,
         dim_feedforward: int = 256,
-        num_classes: int | None = None,
-        task: Task = 'imputation',
         dropout: float = 0.1,
         pos_encoding: str = 'fixed',
         activation: str = 'gelu',
@@ -68,7 +66,6 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         super().__init__()
         self.save_hyperparameters()
 
-        self._task = task
         self._l2_reg = l2_reg
         self._global_reg = global_reg
         self._learning_rate = learning_rate
@@ -76,61 +73,51 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         self._lr_factor = lr_factor
         self._sync_dist = sync_dist
 
-        if task in ('imputation', 'transduction'):
-            self._encoder: TSTransformerEncoder | TSTransformerEncoderClassiregressor = (
-                TSTransformerEncoder(
-                    feat_dim=feat_dim,
-                    max_len=max_seq_len,
-                    d_model=d_model,
-                    n_heads=n_heads,
-                    num_layers=num_layers,
-                    dim_feedforward=dim_feedforward,
-                    dropout=dropout,
-                    pos_encoding=pos_encoding,
-                    activation=activation,
-                    norm=norm,
-                    freeze=freeze,
-                )
-            )
-            self._loss_fn: nn.Module = MaskedMSELoss(reduction='none')
-
-        elif task in ('classification', 'regression'):
-            if num_classes is None:
-                msg = f'num_classes is required for task "{task}"'
-                raise ValueError(msg)
-            self._encoder = TSTransformerEncoderClassiregressor(
-                feat_dim=feat_dim,
-                max_len=max_seq_len,
-                d_model=d_model,
-                n_heads=n_heads,
-                num_layers=num_layers,
-                dim_feedforward=dim_feedforward,
-                num_classes=num_classes,
-                dropout=dropout,
-                pos_encoding=pos_encoding,
-                activation=activation,
-                norm=norm,
-                freeze=freeze,
-            )
-            self._loss_fn = (
-                nn.CrossEntropyLoss(reduction='none')
-                if task == 'classification'
-                else nn.MSELoss(reduction='none')
-            )
-        else:
-            msg = f"Unknown task '{task}'"
-            raise ValueError(msg)
+        self._encoder = TSTransformerEncoder(
+            feat_dim=feat_dim,
+            max_len=max_seq_len,
+            d_model=d_model,
+            n_heads=n_heads,
+            num_layers=num_layers,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            pos_encoding=pos_encoding,
+            activation=activation,
+            norm=norm,
+            freeze=freeze,
+        )
+        self._loss_fn: nn.Module = MaskedMSELoss(reduction='none')
 
         if freeze:
             for name, param in self._encoder.named_parameters():
                 param.requires_grad = name.startswith('output_layer')
 
     # ------------------------------------------------------------------
-    # Forward
+    # Forward / representation extraction
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
-        """Run the encoder on masked input ``x`` with the given padding masks."""
+        """Return transformer representations of shape ``(batch, seq_len, d_model)``."""
+        return self.get_representations(x, padding_masks)
+
+    def get_representations(
+        self, x: torch.Tensor, padding_masks: torch.Tensor
+    ) -> torch.Tensor:
+        """Run the transformer trunk, skipping the reconstruction output layer."""
+        inp = x.permute(1, 0, 2)
+        inp = self._encoder.project_inp(inp) * math.sqrt(self._encoder.d_model)
+        inp = self._encoder.pos_enc(inp)
+        out = self._encoder.transformer_encoder(inp, src_key_padding_mask=~padding_masks)
+        out = self._encoder.act(out)
+        out = out.permute(1, 0, 2)
+        return self._encoder.dropout1(out)
+
+    def reconstruct(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
+        """Run the full backbone, including the reconstruction output layer.
+
+        Used during masked-reconstruction pretraining; downstream callers
+        should use ``forward`` / ``get_representations`` instead.
+        """
         return self._encoder(x, padding_masks)
 
     # ------------------------------------------------------------------
@@ -138,18 +125,10 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
     # ------------------------------------------------------------------
 
     def _compute_loss(self, batch: tuple) -> torch.Tensor:
-        if self._task in ('imputation', 'transduction'):
-            x, targets, target_masks, padding_masks, _ = batch
-            predictions = self(x, padding_masks)
-            combined_mask = target_masks * padding_masks.unsqueeze(-1)
-            per_element_loss = self._loss_fn(predictions, targets, combined_mask)  # (num_active,)
-        else:
-            x, targets, padding_masks, _ = batch
-            predictions = self(x, padding_masks)
-            if self._task == 'classification':
-                per_element_loss = self._loss_fn(predictions, targets.long().squeeze())
-            else:
-                per_element_loss = self._loss_fn(predictions, targets)
+        x, targets, target_masks, padding_masks, _ = batch
+        predictions = self.reconstruct(x, padding_masks)
+        combined_mask = target_masks * padding_masks.unsqueeze(-1)
+        per_element_loss = self._loss_fn(predictions, targets, combined_mask)
 
         mean_loss = torch.sum(per_element_loss) / len(per_element_loss)
 
@@ -166,7 +145,7 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
     # ------------------------------------------------------------------
 
     def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
-        """Compute and log the training loss for one batch."""
+        """Compute and log the masked-reconstruction training loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
             'train_loss',
@@ -179,7 +158,7 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         return loss
 
     def validation_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
-        """Compute and log the validation loss for one batch."""
+        """Compute and log the masked-reconstruction validation loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
             'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
@@ -222,9 +201,8 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
     # ------------------------------------------------------------------
 
     def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — runs the transformer trunk, skipping the task head.
+        """Encode one batch — returns ``(batch, T, d_model)``.
 
-        Returns ``(batch, T, d_model)`` for input of shape ``(batch, T, C)``.
         Padding masks are synthesized as all-true (no padding) since the
         public ``encode()`` API doesn't carry per-sample mask information.
         """
@@ -232,20 +210,4 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         padding_masks = torch.ones(
             inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device
         )
-        return self._backbone(inp, padding_masks)
-
-    def _backbone(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
-        """Run the shared transformer trunk, stopping before the output layer.
-
-        Both TSTransformerEncoder and TSTransformerEncoderClassiregressor share
-        the same trunk attributes (project_inp, pos_enc, transformer_encoder,
-        act, dropout1), so this works regardless of task.
-        """
-        enc = cast('TSTransformerEncoder', self._encoder)
-        inp = x.permute(1, 0, 2)
-        inp = enc.project_inp(inp) * math.sqrt(enc.d_model)
-        inp = enc.pos_enc(inp)
-        out = enc.transformer_encoder(inp, src_key_padding_mask=~padding_masks)
-        out = enc.act(out)
-        out = out.permute(1, 0, 2)
-        return enc.dropout1(out)
+        return self.get_representations(inp, padding_masks)
