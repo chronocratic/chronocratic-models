@@ -22,6 +22,18 @@ from .base import (
     TrainingViews,
 )
 
+# Shared transforms — package-internal, no circular-dep risk
+from .transforms import (
+    Jitter,
+    JitterParameters,
+    Permutation,
+    PermutationParameters,
+    Scaling,
+    ScalingParameters,
+    Shift,
+    ShiftParameters,
+)
+
 __all__ = [
     'AdversarialTrainingStrategy',
     'AugmentationMethod',
@@ -32,7 +44,15 @@ __all__ = [
     'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentation',
     'CropShiftAugmentationParameters',
+    'Jitter',
+    'JitterParameters',
+    'Permutation',
+    'PermutationParameters',
     'RIPTrainingStrategy',
+    'Scaling',
+    'ScalingParameters',
+    'Shift',
+    'ShiftParameters',
     'TrainableAugmentation',
     'TrainingViews',
 ]
