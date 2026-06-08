@@ -1,3 +1,3 @@
-__all__ = ['SimpleEncodingMixin']
+__all__ = ['BasicEncodingMixin']
 
-from tscollection.models._mixin.encoding import SimpleEncodingMixin
+from tscollection.models._mixin.encoding import BasicEncodingMixin

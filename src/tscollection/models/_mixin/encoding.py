@@ -6,7 +6,7 @@ MCL, TS-TCC, Series2Vec). Models that need sliding-window inference, multi-scale
 pooling, or mask-mode handling (the dilated trio: TS2Vec, AutoTCL, CoST) should
 use the heavier mixins under ``convolutional/dilated/_mixin/`` instead.
 
-Subclasses implement :meth:`SimpleEncodingMixin._encode_batch` — one method
+Subclasses implement :meth:`BasicEncodingMixin._encode_batch` — one method
 returning the representation for a single batch tensor. The mixin handles
 DataLoader iteration, eval-mode toggling, ``inference_mode``, and result
 concatenation.
@@ -14,7 +14,7 @@ concatenation.
 
 from __future__ import annotations
 
-__all__ = ['SimpleEncodingMixin']
+__all__ = ['BasicEncodingMixin']
 
 from abc import ABC, abstractmethod
 
@@ -22,7 +22,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 
-class SimpleEncodingMixin(ABC):
+class BasicEncodingMixin(ABC):
     """Uniform ``encode()`` API for fixed-length sequence models.
 
     Designed to be mixed into a ``lightning.pytorch.LightningModule``. The
@@ -62,12 +62,7 @@ class SimpleEncodingMixin(ABC):
         """
 
     @torch.inference_mode()
-    def encode(
-        self,
-        data: torch.Tensor,
-        batch_size: int,
-        num_workers: int = 0,
-    ) -> torch.Tensor:
+    def encode(self, data: torch.Tensor, batch_size: int, num_workers: int = 0) -> torch.Tensor:
         """Extract representations for ``data`` in mini-batches.
 
         Iterates the input through a ``DataLoader``, applies
@@ -89,10 +84,7 @@ class SimpleEncodingMixin(ABC):
         self.eval()
         try:
             loader = DataLoader(
-                TensorDataset(data),
-                batch_size=batch_size,
-                num_workers=num_workers,
-                pin_memory=True,
+                TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
             )
             outputs: list[torch.Tensor] = []
             for (batch_x,) in loader:

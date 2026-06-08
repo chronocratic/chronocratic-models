@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from tscollection.models.layers.general import (
     LevelModel,
@@ -106,7 +106,7 @@ class TimeVAEDecoder(nn.Module):
         return outputs
 
 
-class TimeVAE(BaseVariationalAutoencoder, SimpleEncodingMixin):
+class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     """TimeVAE Model.
 
     This model was implemented based on the code available on this GitHub

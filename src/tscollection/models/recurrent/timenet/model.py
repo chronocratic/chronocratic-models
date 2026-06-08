@@ -8,7 +8,7 @@ from lightning.pytorch import LightningModule
 import torch
 from torch import nn
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -17,11 +17,7 @@ if TYPE_CHECKING:
 
 class GRUWrapper(nn.Module):
     def __init__(
-        self,
-        input_size: int,
-        hidden_size: int,
-        num_layers: int = 1,
-        batch_first: bool = True,
+        self, input_size: int, hidden_size: int, num_layers: int = 1, batch_first: bool = True
     ) -> None:
         super().__init__()
         self.gru = nn.GRU(input_size, hidden_size, num_layers=num_layers, batch_first=batch_first)
@@ -31,7 +27,7 @@ class GRUWrapper(nn.Module):
         return output
 
 
-class TimeNet(LightningModule, SimpleEncodingMixin):
+class TimeNet(LightningModule, BasicEncodingMixin):
     """TimeNet Model.
 
     This model was implemented based on the code available on this GitHub

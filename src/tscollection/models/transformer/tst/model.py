@@ -9,7 +9,7 @@ import lightning.pytorch as pl
 import torch
 from torch import nn
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.transformer.tst.loss import MaskedMSELoss
 from tscollection.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRSchedulerConfig
 
 
-class TST(pl.LightningModule, SimpleEncodingMixin):
+class TST(pl.LightningModule, BasicEncodingMixin):
     """PyTorch Lightning module for the Time Series Transformer (TST).
 
     Representation-learning model trained with a masked-reconstruction
@@ -100,9 +100,7 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         """Return transformer representations of shape ``(batch, seq_len, d_model)``."""
         return self.get_representations(x, padding_masks)
 
-    def get_representations(
-        self, x: torch.Tensor, padding_masks: torch.Tensor
-    ) -> torch.Tensor:
+    def get_representations(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
         """Run the transformer trunk, skipping the reconstruction output layer."""
         inp = x.permute(1, 0, 2)
         inp = self._encoder.project_inp(inp) * math.sqrt(self._encoder.d_model)
@@ -207,7 +205,5 @@ class TST(pl.LightningModule, SimpleEncodingMixin):
         public ``encode()`` API doesn't carry per-sample mask information.
         """
         inp = batch_x.to(self.device)
-        padding_masks = torch.ones(
-            inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device
-        )
+        padding_masks = torch.ones(inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device)
         return self.get_representations(inp, padding_masks)

@@ -5,7 +5,7 @@ __all__ = ['Series2Vec']
 import lightning.pytorch as pl
 import torch
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.series2vec.filters import filter_frequencies
 from tscollection.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
@@ -28,7 +28,7 @@ def _get_optimizer(name):
     raise ValueError(msg)
 
 
-class Series2Vec(pl.LightningModule, SimpleEncodingMixin):
+class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     """Lightning wrapper for Series2Vec pretraining.
 
     The public input shape is ``(batch, time, channels)``.

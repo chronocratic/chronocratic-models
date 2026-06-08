@@ -10,7 +10,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
 from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
 from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from tscollection.models.augmentation.base import AugmentationMethod
 
 
-class TSTCC(pl.LightningModule, SimpleEncodingMixin):
+class TSTCC(pl.LightningModule, BasicEncodingMixin):
     """PyTorch Lightning module for TS-TCC.
 
     Three training modes controlled by ``training_mode``:

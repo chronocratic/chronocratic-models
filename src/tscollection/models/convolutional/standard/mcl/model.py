@@ -5,12 +5,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from tscollection.models._mixin import SimpleEncodingMixin
+from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.mcl.encoder import FCNEncoder
 from tscollection.models.convolutional.standard.mcl.losses import MixUpLoss
 
 
-class FCN(pl.LightningModule, SimpleEncodingMixin):
+class FCN(pl.LightningModule, BasicEncodingMixin):
     """FCN encoder for Mixup Contrastive Learning (MCL).
 
     This model was implemented based on the code available on this GitHub
