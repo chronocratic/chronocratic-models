@@ -21,6 +21,7 @@ from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 if TYPE_CHECKING:
@@ -31,16 +32,18 @@ class BasicEncodingMixin(ABC):
     """Uniform ``encode()`` API for fixed-length sequence models.
 
     Designed to be mixed into a ``lightning.pytorch.LightningModule``. The
-    LightningModule is expected to provide:
-
-    - ``self.device`` — used to move batches onto the model's device.
-    - ``self.training`` flag and ``self.eval()`` / ``self.train(mode)`` —
-      standard ``nn.Module`` toggles used to put the model into inference
-      mode and restore the prior training state on exit.
+    LightningModule is expected to provide ``self.device`` so that batches
+    can be moved onto the model's device.
 
     Subclasses implement :meth:`_get_encoder` (required) and may override
-    :meth:`_prepare_inputs` and :meth:`_postprocess` to adapt the contract
-    to encoders that take extra arguments or return non-tensor structures.
+    :meth:`_get_encoder_module`, :meth:`_prepare_inputs`, and
+    :meth:`_postprocess` to adapt the contract to encoders that take extra
+    arguments or return non-tensor structures.
+
+    The mixin manages the ``training`` / ``eval`` state of the *encoder
+    module* (not the whole LightningModule) so that ``encode()`` does not
+    perturb submodules that are unrelated to inference (e.g. contrastive
+    heads, auxiliary loss modules).
     """
 
     # Attribute provided by the host LightningModule. Declared here so type
@@ -55,6 +58,24 @@ class BasicEncodingMixin(ABC):
         bound method (e.g. ``self.get_representations``). Called once per
         ``encode()`` invocation.
         """
+
+    def _get_encoder_module(self) -> nn.Module:
+        """Return the ``nn.Module`` whose train/eval state should be toggled.
+
+        Default: returns :meth:`_get_encoder` when it already is an
+        ``nn.Module``. Override when :meth:`_get_encoder` returns a bound
+        method (e.g. TST's ``self.get_representations``) — the underlying
+        module then has to be identified explicitly so ``encode()`` can
+        toggle its state surgically instead of the whole LightningModule's.
+        """
+        encoder = self._get_encoder()
+        if isinstance(encoder, nn.Module):
+            return encoder
+        msg = (
+            '_get_encoder() returned a non-Module callable. Override '
+            '_get_encoder_module() to return the underlying nn.Module.'
+        )
+        raise NotImplementedError(msg)
 
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[Any, ...]:
         """Return the positional args to pass to the encoder.
@@ -107,13 +128,14 @@ class BasicEncodingMixin(ABC):
             CPU tensor of shape ``(N, ...)`` — concatenation of per-batch
             representations along dim 0.
         """
-        was_training = self.training
-        self.eval()
+        encoder = self._get_encoder()
+        encoder_module = self._get_encoder_module()
+        was_training = encoder_module.training
+        encoder_module.eval()
         try:
             loader = DataLoader(
                 TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
             )
-            encoder = self._get_encoder()
             outputs: list[torch.Tensor] = []
             for (batch_x,) in loader:
                 batch_on_device = batch_x.to(self.device)
@@ -122,4 +144,4 @@ class BasicEncodingMixin(ABC):
                 outputs.append(self._postprocess(output).cpu())
             return torch.cat(outputs, dim=0)
         finally:
-            self.train(was_training)
+            encoder_module.train(was_training)

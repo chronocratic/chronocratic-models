@@ -204,6 +204,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Expose representation extraction to ``BasicEncodingMixin.encode``."""
         return self.get_representations
 
+    def _get_encoder_module(self) -> nn.Module:
+        """Underlying module for state management — ``get_representations`` is a bound method."""
+        return self._encoder
+
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Synthesize all-true padding masks; ``encode()`` carries no mask info."""
         padding_masks = torch.ones(

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import lightning.pytorch as pl
 import torch
+from torch import nn
 
 from tscollection.models._mixin import BasicEncodingMixin
 
@@ -90,6 +91,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         It concatenates the temporal and frequency-domain representations.
         """
         return self.network.encode
+
+    def _get_encoder_module(self) -> nn.Module:
+        """Underlying module for state management — ``network.encode`` is a bound method."""
+        return self.network
 
     def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
         """Add a trailing singleton dim so the shape is ``(batch, 1, 2 * representation_dims)``."""
