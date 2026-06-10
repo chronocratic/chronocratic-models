@@ -36,6 +36,7 @@ class DisjoinEncoder(nn.Module):
         return x
 
     def initialize_weights(self) -> None:
+        """Initialize convolution weights with Xavier uniform initialization."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('relu'))

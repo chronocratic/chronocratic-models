@@ -5,16 +5,18 @@ from torch import nn
 
 
 class MixUpLoss(torch.nn.Module):
-    def __init__(self, device: torch.device, batch_size: int) -> None:
+    """MixUp contrastive loss used by MCL."""
+
+    def __init__(self, device: str | torch.device, batch_size: int) -> None:
         super().__init__()
 
         self.tau = 0.5
-        self.device = device
+        self.device = torch.device(device)
         self.batch_size = batch_size
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(
-        self, z_aug: torch.Tensor, z_1: torch.Tensor, z_2: torch.Tensor, lam: int
+        self, z_aug: torch.Tensor, z_1: torch.Tensor, z_2: torch.Tensor, lam: torch.Tensor
     ) -> torch.Tensor:
         """Forward pass."""
         z_1 = nn.functional.normalize(z_1)
@@ -32,6 +34,6 @@ class MixUpLoss(torch.nn.Module):
 
         return loss
 
-    def cross_entropy(self, logits, soft_targets) -> torch.Tensor:
+    def cross_entropy(self, logits: torch.Tensor, soft_targets: torch.Tensor) -> torch.Tensor:
         """Compute soft-label cross-entropy as the mean of per-sample log-softmax dot products."""
         return torch.mean(torch.sum(-soft_targets * self.logsoftmax(logits), 1))

@@ -114,7 +114,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             param_key_encoder.data.copy_(param_query_encoder.data)  # initialize
             param_key_encoder.requires_grad = False  # not update by gradient
         for param_query_projection_head, param_key_projection_head in zip(
-            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            self.query_projection_head.parameters(),
+            self.key_projection_head.parameters(),
             strict=True,
         ):
             param_key_projection_head.data.copy_(param_query_projection_head.data)  # initialize
@@ -176,7 +177,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
                 + param_query_encoder.data * (1 - self.momentum)
             )
         for param_query_projection_head, param_key_projection_head in zip(
-            self.query_projection_head.parameters(), self.key_projection_head.parameters(),
+            self.query_projection_head.parameters(),
+            self.key_projection_head.parameters(),
             strict=True,
         ):
             param_key_projection_head.data = (
@@ -206,11 +208,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self.queue_insert_index[0] = ptr
 
     def _compute_total_loss(
-        self,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        *,
-        update_key_encoder: bool = True,
+        self, query: torch.Tensor, key: torch.Tensor, *, update_key_encoder: bool = True
     ) -> torch.Tensor:
         # compute query features
         random_index = self._rng.integers(0, query.shape[1])

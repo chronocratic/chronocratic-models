@@ -57,6 +57,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         pos_encoding: str = 'fixed',
         activation: str = 'gelu',
         norm: str = 'BatchNorm',
+        *,
         freeze: bool = False,
         learning_rate: float = 1e-3,
         lr_step: list[int] | None = None,
@@ -144,7 +145,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Training & validation steps
     # ------------------------------------------------------------------
 
-    def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction training loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
@@ -157,7 +158,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         )
         return loss
 
-    def validation_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction validation loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
@@ -176,6 +177,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         gradient_clip_algorithm: str | None = None,
     ) -> None:
         """Clip gradients by global norm to stabilise training."""
+        del optimizer, gradient_clip_val, gradient_clip_algorithm
         torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=4.0)
 
     # ------------------------------------------------------------------

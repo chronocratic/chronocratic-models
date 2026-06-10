@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-__all__ = ['TSTCC']
-
+from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
 import torch
 from torch import nn
-import torch.nn.functional as F
+from torch.nn import functional
 
 from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.tstcc.encoder import TCCEncoder
@@ -16,6 +13,8 @@ from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTraining
 from tscollection.models.convolutional.standard.tstcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from tscollection.models.utils import extract_features_from_batch
+
+__all__ = ['TSTCC']
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -60,6 +59,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         tc_hidden_dim: int = 100,
         tc_timesteps: int = 6,
         temperature: float = 0.2,
+        *,
         use_cosine_similarity: bool = True,
         training_mode: TSTCCTrainingMode = TSTCCTrainingMode.SELF_SUPERVISED,
         learning_rate: float = 3e-4,
@@ -120,7 +120,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Loss
     # ------------------------------------------------------------------
 
-    def _compute_loss(self, batch: tuple) -> torch.Tensor:
+    def _compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         data = extract_features_from_batch(batch).float()
 
         if self._training_mode == TSTCCTrainingMode.SELF_SUPERVISED:
@@ -128,8 +128,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             aug1, aug2 = views.views[0], views.views[1]
             _, features1 = self._encoder(aug1)
             _, features2 = self._encoder(aug2)
-            features1 = F.normalize(features1, dim=1)
-            features2 = F.normalize(features2, dim=1)
+            features1 = functional.normalize(features1, dim=1)
+            features2 = functional.normalize(features2, dim=1)
 
             temp_loss1, proj1 = self._tc_model(features1, features2)
             temp_loss2, proj2 = self._tc_model(features2, features1)
@@ -147,9 +147,12 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Training & validation steps
     # ------------------------------------------------------------------
 
-    def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def training_step(
+        self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
+    ) -> torch.Tensor:
         """Manual optimization step for both sub-module optimizers."""
-        model_opt, tc_opt = self.optimizers()
+        optimizers = cast('list[torch.optim.Optimizer]', self.optimizers(use_pl_optimizer=False))
+        model_opt, tc_opt = optimizers
         model_opt.zero_grad()
         tc_opt.zero_grad()
 
@@ -167,7 +170,9 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         tc_opt.step()
         return loss
 
-    def validation_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def validation_step(
+        self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
+    ) -> torch.Tensor:
         """Compute and log validation loss."""
         loss = self._compute_loss(batch)
         self.log(

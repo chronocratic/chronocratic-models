@@ -1,7 +1,6 @@
 __all__ = ['FCN']
 
 import lightning.pytorch as pl
-import numpy as np
 import torch
 from torch import nn
 
@@ -39,6 +38,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return projected MCL representations for ``x``."""
         return self.proj_head(self.encoder(x))
 
     def _get_encoder(self) -> nn.Module:
@@ -49,13 +49,14 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
         return output.unsqueeze(1)
 
-    def _step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = batch
 
         x_1 = x
         x_2 = x[torch.randperm(len(x))]
 
-        lam = np.random.beta(self.alpha, self.alpha)
+        concentration = torch.tensor(self.alpha, device=x.device)
+        lam = torch.distributions.Beta(concentration, concentration).sample()
 
         x_aug = lam * x_1 + (1 - lam) * x_2
 
@@ -67,20 +68,23 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
         return loss
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        loss = self._step(batch, batch_idx)
+    def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the training loss for one batch."""
+        loss = self._step(batch)
 
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        loss = self._step(batch, batch_idx)
+    def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the validation loss for one batch."""
+        loss = self._step(batch)
 
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Return the Adam optimizer used to train MCL."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer

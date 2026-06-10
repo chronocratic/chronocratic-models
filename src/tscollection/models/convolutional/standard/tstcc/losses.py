@@ -4,7 +4,7 @@ __all__ = ['NTXentLoss']
 
 import torch
 from torch import nn
-from torch.nn import functional as F
+from torch.nn import functional
 
 
 class NTXentLoss(nn.Module):
@@ -14,24 +14,27 @@ class NTXentLoss(nn.Module):
     computed lazily inside ``forward`` so variable-sized last batches work.
     """
 
-    def __init__(self, temperature: float = 0.2, use_cosine_similarity: bool = True) -> None:
+    def __init__(self, temperature: float = 0.2, *, use_cosine_similarity: bool = True) -> None:
         super().__init__()
         self.temperature = temperature
         self.use_cosine_similarity = use_cosine_similarity
         self.criterion = nn.CrossEntropyLoss(reduction='sum')
 
     def forward(self, zis: torch.Tensor, zjs: torch.Tensor) -> torch.Tensor:
-        """
+        """Return the NT-Xent loss for paired projection embeddings.
+
         Args:
-            zis, zjs: ``(batch, dim)`` projection embeddings
+            zis: Projection embeddings with shape ``(batch, dim)``.
+            zjs: Projection embeddings with shape ``(batch, dim)``.
+
         Returns:
-            scalar NT-Xent loss
+            Scalar NT-Xent loss.
         """
         batch_size = zis.shape[0]
         representations = torch.cat([zjs, zis], dim=0)  # (2*batch, dim)
 
         if self.use_cosine_similarity:
-            similarity_matrix = F.cosine_similarity(
+            similarity_matrix = functional.cosine_similarity(
                 representations.unsqueeze(1), representations.unsqueeze(0), dim=-1
             )
         else:

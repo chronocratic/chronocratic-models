@@ -74,6 +74,7 @@ class Jitter(AugmentationMethod):
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> TrainingViews:
+        """Return one jittered view of ``data``."""
         if not _should_apply(self._params.p):
             return TrainingViews(views=(data,), metadata={})
         noise = torch.randn_like(data) * self._params.sigma
@@ -118,6 +119,7 @@ class Scaling(AugmentationMethod):
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> TrainingViews:
+        """Return one scaled view of ``data``."""
         if not _should_apply(self._params.p):
             return TrainingViews(views=(data,), metadata={})
         c_dim = _normalize_dim(data, self._params.channel_dim)
@@ -161,6 +163,7 @@ class Permutation(AugmentationMethod):
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> TrainingViews:
+        """Return one view with per-sample time segments permuted."""
         t_dim = _normalize_dim(data, self._params.time_dim)
         batch_size = data.size(0)
         seq_len = data.size(t_dim)
@@ -201,6 +204,7 @@ class ComposeAugmentation(AugmentationMethod):
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401
     ) -> TrainingViews:
+        """Apply each configured augmentation sequentially."""
         current = data
         for augmentation in self._augmentations:
             current = augmentation.augment(current, **kwargs).views[0]
@@ -243,8 +247,10 @@ class TSTCCPairedAugmentation(PairedAugmentation):
 
     @property
     def first(self) -> AugmentationMethod:
+        """Return the weak augmentation view."""
         return self._weak
 
     @property
     def second(self) -> AugmentationMethod:
+        """Return the strong augmentation view."""
         return self._strong

@@ -1,6 +1,8 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
+from torch.nn import functional
+
+MIN_PAIR_COUNT = 2
 
 
 def _lower_triangular_pair_indices(batch_size: int, device: torch.device) -> torch.Tensor:
@@ -22,7 +24,7 @@ def _distance_normalizer(distance: torch.Tensor) -> torch.Tensor:
 
 def pairwise_soft_dtw_distances(soft_dtw: nn.Module, time_series: torch.Tensor) -> torch.Tensor:
     """Compute lower-triangular pairwise SoftDTW distances on the input device."""
-    if time_series.size(0) < 2:
+    if time_series.size(0) < MIN_PAIR_COUNT:
         return time_series.new_empty(0)
 
     pair_indices = _lower_triangular_pair_indices(
@@ -35,7 +37,7 @@ def pairwise_soft_dtw_distances(soft_dtw: nn.Module, time_series: torch.Tensor) 
 
 def pairwise_euclidean_distances(time_series: torch.Tensor) -> torch.Tensor:
     """Compute lower-triangular pairwise Euclidean distances on the input device."""
-    if time_series.size(0) < 2:
+    if time_series.size(0) < MIN_PAIR_COUNT:
         return time_series.new_empty(0)
 
     pair_indices = _lower_triangular_pair_indices(
@@ -70,6 +72,6 @@ def pretraining_loss(
     target_temporal_distances = _distance_normalizer(target_temporal_distances)
     target_frequency_distances = _distance_normalizer(target_frequency_distances)
 
-    temporal_loss = F.smooth_l1_loss(temporal_distances, target_temporal_distances)
-    frequency_loss = F.smooth_l1_loss(frequency_distances, target_frequency_distances)
+    temporal_loss = functional.smooth_l1_loss(temporal_distances, target_temporal_distances)
+    frequency_loss = functional.smooth_l1_loss(frequency_distances, target_frequency_distances)
     return temporal_loss + frequency_loss, temporal_loss, frequency_loss

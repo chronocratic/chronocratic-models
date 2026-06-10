@@ -41,8 +41,7 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
     """Stochastic jitter/scale/shift augmentation used by CoST."""
 
     def __init__(
-        self,
-        params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None,
+        self, params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None
     ) -> None:
         """Initialize the random-function augmentation.
 

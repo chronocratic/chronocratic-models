@@ -24,7 +24,7 @@ from tscollection.models.distances.soft_dtw import SoftDTW
 from tscollection.models.utils import extract_features_from_batch
 
 
-def _get_optimizer(name):
+def _get_optimizer(name: str) -> Callable[..., torch.optim.Optimizer]:
     if name == 'Adam':
         return torch.optim.Adam
     if name == 'RAdam':
@@ -55,6 +55,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         encoder_kernel_size: int = 8,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
+        *,
         sync_dist: bool = False,
         optimizer_name: str = 'Adam',
         weight_decay: float = 0.0,
@@ -81,6 +82,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return Series2Vec representations for ``x``."""
         return self.network(x)
 
     def _get_encoder(self) -> Callable[..., torch.Tensor]:
@@ -113,7 +115,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             target_frequency_distances=target_frequency_distances,
         )
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the Series2Vec pretraining loss for one batch."""
         x = extract_features_from_batch(batch)
         train_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
@@ -128,7 +131,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self.log('train_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self.sync_dist)
         return train_loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the Series2Vec validation loss for one batch."""
         x = extract_features_from_batch(batch)
         val_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
@@ -144,6 +148,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         return val_loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Return the configured optimizer for Series2Vec pretraining."""
         optimizer_cls = _get_optimizer(self.optimizer_name)
         kwargs: dict = {'lr': self.learning_rate, 'weight_decay': self.weight_decay}
         if self.optimizer_name == 'AdamW':

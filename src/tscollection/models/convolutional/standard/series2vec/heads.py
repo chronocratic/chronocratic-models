@@ -40,6 +40,7 @@ class Series2VecClassificationHead(pl.LightningModule):
         self,
         backbone: Series2Vec,
         num_classes: int,
+        *,
         freeze_backbone: bool = True,
         learning_rate: float = 1e-3,
         weight_decay: float = 0.0,
@@ -67,12 +68,10 @@ class Series2VecClassificationHead(pl.LightningModule):
         representations = self._backbone.network.encode(x)
         return self._output_layer(representations)
 
-    def _compute_loss(
-        self, predictions: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_loss(self, predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         return self._loss_fn(predictions, targets.long().squeeze())
 
-    def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training loss for one batch."""
         x, targets = batch
         predictions = self(x)
@@ -87,24 +86,17 @@ class Series2VecClassificationHead(pl.LightningModule):
         )
         return loss
 
-    def validation_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation loss for one batch."""
         x, targets = batch
         predictions = self(x)
         loss = self._compute_loss(predictions, targets)
         self.log(
-            'val_loss',
-            loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=self._sync_dist,
+            'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )
         return loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Return Adam over the trainable parameters of this module."""
         trainable = (p for p in self.parameters() if p.requires_grad)
-        return torch.optim.Adam(
-            trainable, lr=self._learning_rate, weight_decay=self._weight_decay
-        )
+        return torch.optim.Adam(trainable, lr=self._learning_rate, weight_decay=self._weight_decay)

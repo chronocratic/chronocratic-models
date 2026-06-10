@@ -1,3 +1,10 @@
+from collections.abc import Sequence
+import math
+
+import torch
+from torch import fft, nn
+import torch.nn.functional as F  # noqa: N812
+
 __all__ = [
     'BandedFourierLayer',
     'LevelModel',
@@ -6,11 +13,7 @@ __all__ = [
     'TrendLayer',
 ]
 
-import math
-
-import torch
-from torch import fft, nn
-import torch.nn.functional as F  # noqa: N812
+Seasonality = tuple[int, int]
 
 
 class BandedFourierLayer(nn.Module):
@@ -94,7 +97,7 @@ class BandedFourierLayer(nn.Module):
 
 
 class TrendLayer(nn.Module):
-    def __init__(self, seq_len, feat_dim, latent_dim, trend_poly):
+    def __init__(self, seq_len: int, feat_dim: int, latent_dim: int, trend_poly: int) -> None:
         super().__init__()
         self.seq_len = seq_len
         self.feat_dim = feat_dim
@@ -105,7 +108,8 @@ class TrendLayer(nn.Module):
             self.feat_dim * self.trend_poly, self.feat_dim * self.trend_poly
         )
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Return polynomial trend values for each latent vector."""
         trend_params = F.relu(self.trend_dense1(z))
         trend_params = self.trend_dense2(trend_params)
         trend_params = trend_params.view(-1, self.feat_dim, self.trend_poly)
@@ -119,7 +123,9 @@ class TrendLayer(nn.Module):
 
 
 class SeasonalLayer(nn.Module):
-    def __init__(self, seq_len, feat_dim, latent_dim, custom_seas):
+    def __init__(
+        self, seq_len: int, feat_dim: int, latent_dim: int, custom_seas: Sequence[Seasonality]
+    ) -> None:
         super().__init__()
         self.seq_len = seq_len
         self.feat_dim = feat_dim
@@ -132,7 +138,9 @@ class SeasonalLayer(nn.Module):
             ]
         )
 
-    def _get_season_indexes_over_seq(self, num_seasons, len_per_season):
+    def _get_season_indexes_over_seq(
+        self, num_seasons: int, len_per_season: int
+    ) -> torch.Tensor:
         season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(
             (num_seasons, len_per_season), dtype=torch.int32
         )
@@ -140,13 +148,14 @@ class SeasonalLayer(nn.Module):
         season_indexes = season_indexes.repeat(self.seq_len // len_per_season + 1)[: self.seq_len]
         return season_indexes
 
-    def forward(self, z):
-        N = z.shape[0]
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Return additive seasonal values for each latent vector."""
+        batch_size = z.shape[0]
         ones_tensor = torch.ones(
-            (N, self.feat_dim, self.seq_len), dtype=torch.int32, device=z.device
+            (batch_size, self.feat_dim, self.seq_len), dtype=torch.int32, device=z.device
         )
 
-        all_seas_vals = []
+        seasonal_components: list[torch.Tensor] = []
         for i, (num_seasons, len_per_season) in enumerate(self.custom_seas):
             season_params = self.dense_layers[i](z)
             season_params = season_params.view(-1, self.feat_dim, num_seasons)
@@ -158,20 +167,21 @@ class SeasonalLayer(nn.Module):
             dim2_idxes = ones_tensor * season_indexes_over_time.view(1, 1, -1)
             season_vals = torch.gather(season_params, 2, dim2_idxes)
 
-            all_seas_vals.append(season_vals)
+            seasonal_components.append(season_vals)
 
-        all_seas_vals = torch.stack(all_seas_vals, dim=-1)
-        all_seas_vals = torch.sum(all_seas_vals, dim=-1)
-        all_seas_vals = all_seas_vals.permute(0, 2, 1)
+        all_seas_vals = torch.stack(seasonal_components, dim=-1)
+        seasonal_values = torch.sum(all_seas_vals, dim=-1)
+        seasonal_values = seasonal_values.permute(0, 2, 1)
 
-        return all_seas_vals
+        return seasonal_values
 
-    def compute_output_shape(self, input_shape):
+    def compute_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, int, int]:
+        """Return the output shape for Keras-compatible callers."""
         return (input_shape[0], self.seq_len, self.feat_dim)
 
 
 class LevelModel(nn.Module):
-    def __init__(self, latent_dim, feat_dim, seq_len):
+    def __init__(self, latent_dim: int, feat_dim: int, seq_len: int) -> None:
         super().__init__()
         self.latent_dim = latent_dim
         self.feat_dim = feat_dim
@@ -180,7 +190,8 @@ class LevelModel(nn.Module):
         self.level_dense2 = nn.Linear(self.feat_dim, self.feat_dim)
         self.relu = nn.ReLU()
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Return the level component for each latent vector."""
         level_params = self.relu(self.level_dense1(z))
         level_params = self.level_dense2(level_params)
         level_params = level_params.view(-1, 1, self.feat_dim)
@@ -191,7 +202,14 @@ class LevelModel(nn.Module):
 
 
 class ResidualConnection(nn.Module):
-    def __init__(self, seq_len, feat_dim, hidden_layer_sizes, latent_dim, encoder_last_dense_dim):
+    def __init__(
+        self,
+        seq_len: int,
+        feat_dim: int,
+        hidden_layer_sizes: Sequence[int],
+        latent_dim: int,
+        encoder_last_dense_dim: int,
+    ) -> None:
         super().__init__()
         self.seq_len = seq_len
         self.feat_dim = feat_dim
@@ -201,7 +219,7 @@ class ResidualConnection(nn.Module):
         self.deconv_layers: nn.ModuleList = nn.ModuleList()
         in_channels = hidden_layer_sizes[-1]
 
-        for i, num_filters in enumerate(reversed(hidden_layer_sizes[:-1])):
+        for num_filters in reversed(hidden_layer_sizes[:-1]):
             self.deconv_layers.append(
                 nn.ConvTranspose1d(
                     in_channels, num_filters, kernel_size=3, stride=2, padding=1, output_padding=1
@@ -215,14 +233,15 @@ class ResidualConnection(nn.Module):
             )
         )
 
-        L_in = encoder_last_dense_dim // hidden_layer_sizes[-1]
-        for i in range(len(hidden_layer_sizes)):
-            L_in = (L_in - 1) * 2 - 2 * 1 + 3 + 1
-        L_final = L_in
+        length_in = encoder_last_dense_dim // hidden_layer_sizes[-1]
+        for _ in range(len(hidden_layer_sizes)):
+            length_in = (length_in - 1) * 2 - 2 * 1 + 3 + 1
+        length_final = length_in
 
-        self.final_dense = nn.Linear(feat_dim * L_final, seq_len * feat_dim)
+        self.final_dense = nn.Linear(feat_dim * length_final, seq_len * feat_dim)
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Return the residual decoder branch for each latent vector."""
         batch_size = z.size(0)
         x = F.relu(self.dense(z))
         x = x.view(batch_size, -1, self.hidden_layer_sizes[-1])

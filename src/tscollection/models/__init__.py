@@ -21,18 +21,18 @@ from .recurrent import TimeNet, TimeNetModelParameters
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
+    'FCN',
+    'TST',
+    'TSTCC',
     'AutoTCL',
     'AutoTCLModelParameters',
     'CoST',
     'CoSTModelParameters',
-    'FCN',
     'MCLModelParameters',
     'Series2Vec',
     'Series2VecModelParameters',
     'TS2Vec',
     'TS2VecModelParameters',
-    'TST',
-    'TSTCC',
     'TSTCCModelParameters',
     'TSTModelParameters',
     'TimeNet',

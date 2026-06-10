@@ -7,7 +7,7 @@ from typing import cast
 from einops import rearrange, repeat
 import torch
 from torch import nn
-from torch.nn import functional as F
+from torch.nn import functional
 
 # ---------------------------------------------------------------------------
 # Seq_Transformer building blocks (internal to this module)
@@ -57,12 +57,12 @@ class _Attention(nn.Module):
         self.to_out = nn.Sequential(nn.Linear(dim, dim), nn.Dropout(dropout))
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        b, n, h = x.shape[0], x.shape[1], self.heads
+        h = self.heads
         qkv = self.to_qkv(x).chunk(3, dim=-1)
         q, k, v = (rearrange(t, 'b n (h d) -> b h n d', h=h) for t in qkv)
         dots = torch.einsum('bhid,bhjd->bhij', q, k) * self.scale
         if mask is not None:
-            mask = F.pad(mask.flatten(1), (1, 0), value=True)
+            mask = functional.pad(mask.flatten(1), (1, 0), value=True)
             mask = mask[:, None, :] * mask[:, :, None]
             dots.masked_fill_(~mask, float('-inf'))
         attn = dots.softmax(dim=-1)
@@ -150,9 +150,12 @@ class TemporalContrast(nn.Module):
     def forward(
         self, features_aug1: torch.Tensor, features_aug2: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """
+        """Return temporal contrastive loss and projection for two views.
+
         Args:
-            features_aug1, features_aug2: ``(batch, num_channels, seq_len)``
+            features_aug1: First feature view with shape ``(batch, num_channels, seq_len)``.
+            features_aug2: Second feature view with shape ``(batch, num_channels, seq_len)``.
+
         Returns:
             nce:        scalar temporal contrastive loss
             projection: ``(batch, num_channels // 4)`` for NT-Xent

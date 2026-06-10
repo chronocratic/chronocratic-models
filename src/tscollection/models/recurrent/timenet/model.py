@@ -17,12 +17,13 @@ if TYPE_CHECKING:
 
 class GRUWrapper(nn.Module):
     def __init__(
-        self, input_size: int, hidden_size: int, num_layers: int = 1, batch_first: bool = True
+        self, input_size: int, hidden_size: int, num_layers: int = 1, *, batch_first: bool = True
     ) -> None:
         super().__init__()
         self.gru = nn.GRU(input_size, hidden_size, num_layers=num_layers, batch_first=batch_first)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return the GRU output sequence."""
         output, _ = self.gru(x)
         return output
 
@@ -68,14 +69,16 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         return nn.Sequential(*decoder_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Reconstruct ``x`` from the reversed encoder sequence."""
         encode = self.encoder(x)
         return self.decoder(torch.flip(encode, dims=[1]))  # reconstruction target
 
     def _get_encoder(self) -> nn.Module:
-        """Expose the GRU encoder to ``SimpleEncodingMixin.encode``."""
+        """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
         return self.encoder
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the training reconstruction loss."""
         x = batch
         output = self(x)
         loss = self.loss_fn(output, x)
@@ -83,7 +86,8 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
         return loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log the validation reconstruction loss."""
         x = batch
         output = self(x)
         loss = self.loss_fn(output, x)
@@ -92,4 +96,5 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         return loss
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
+        """Return the Adam optimizer used to train TimeNet."""
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)

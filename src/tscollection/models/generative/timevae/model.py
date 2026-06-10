@@ -10,15 +10,19 @@ from tscollection.models.layers.general import (
     TrendLayer,
 )
 
+Seasonality = tuple[int, int]
+
 
 class TimeVAEEncoder(nn.Module):
-    def __init__(self, seq_len, feat_dim, hidden_layer_sizes, latent_dim):
+    def __init__(
+        self, seq_len: int, feat_dim: int, hidden_layer_sizes: list[int], latent_dim: int
+    ) -> None:
         super().__init__()
         self.seq_len = seq_len
         self.feat_dim = feat_dim
         self.latent_dim = latent_dim
         self.hidden_layer_sizes = hidden_layer_sizes
-        self.layers = []
+        self.layers: list[nn.Module] = []
         self.layers.append(
             nn.Conv1d(feat_dim, hidden_layer_sizes[0], kernel_size=3, stride=2, padding=1)
         )
@@ -32,23 +36,23 @@ class TimeVAEEncoder(nn.Module):
 
         self.layers.append(nn.Flatten())
 
-        self.encoder_last_dense_dim = self._get_last_dense_dim(
-            seq_len, feat_dim, hidden_layer_sizes
-        )
+        self.encoder_last_dense_dim = self._get_last_dense_dim(seq_len, feat_dim)
 
         self.encoder = nn.Sequential(*self.layers)
         self.z_mean = nn.Linear(self.encoder_last_dense_dim, latent_dim)
         self.z_log_var = nn.Linear(self.encoder_last_dense_dim, latent_dim)
+        self.sampling = Sampling()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Encode an input batch into latent mean, log-variance, and sample."""
         x = x.transpose(1, 2)
         x = self.encoder(x)
         z_mean = self.z_mean(x)
         z_log_var = self.z_log_var(x)
-        z = Sampling()([z_mean, z_log_var])
+        z = self.sampling((z_mean, z_log_var))
         return z_mean, z_log_var, z
 
-    def _get_last_dense_dim(self, seq_len, feat_dim, hidden_layer_sizes):
+    def _get_last_dense_dim(self, seq_len: int, feat_dim: int) -> int:
         with torch.no_grad():
             x = torch.randn(1, feat_dim, seq_len)
             for conv in self.layers:
@@ -59,15 +63,16 @@ class TimeVAEEncoder(nn.Module):
 class TimeVAEDecoder(nn.Module):
     def __init__(
         self,
-        seq_len,
-        feat_dim,
-        hidden_layer_sizes,
-        latent_dim,
-        trend_poly=0,
-        custom_seas=None,
-        use_residual_conn=True,
-        encoder_last_dense_dim=None,
-    ):
+        seq_len: int,
+        feat_dim: int,
+        hidden_layer_sizes: list[int],
+        latent_dim: int,
+        trend_poly: int = 0,
+        custom_seas: list[Seasonality] | None = None,
+        *,
+        use_residual_conn: bool = True,
+        encoder_last_dense_dim: int | None = None,
+    ) -> None:
         super().__init__()
         self.seq_len = seq_len
         self.feat_dim = feat_dim
@@ -86,11 +91,15 @@ class TimeVAEDecoder(nn.Module):
         self.level_model = LevelModel(self.latent_dim, self.feat_dim, self.seq_len)
 
         if use_residual_conn:
+            if encoder_last_dense_dim is None:
+                msg = 'encoder_last_dense_dim is required when use_residual_conn is True.'
+                raise ValueError(msg)
             self.residual_conn = ResidualConnection(
                 seq_len, feat_dim, hidden_layer_sizes, latent_dim, encoder_last_dense_dim
             )
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        """Decode latent samples into reconstructed time-series batches."""
         outputs = self.level_model(z)
         if self.trend_poly is not None and self.trend_poly > 0:
             outputs += self.trend_layer(z)
@@ -114,6 +123,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     """
 
     model_name = 'TimeVAE'
+    encoder: TimeVAEEncoder
+    decoder: TimeVAEDecoder
 
     def __init__(
         self,
@@ -122,9 +133,10 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         latent_dim: int,
         reconstruction_wt: float = 3.0,
         learning_rate: float = 1e-3,
-        hidden_layer_sizes: list | None = None,
+        hidden_layer_sizes: list[int] | None = None,
         trend_poly: int = 0,
-        custom_seas: list | None = None,
+        custom_seas: list[Seasonality] | None = None,
+        *,
         use_residual_conn: bool = True,
     ) -> None:
         super().__init__(
@@ -153,11 +165,11 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
                 if layer.bias is not None:
                     nn.init.zeros_(layer.bias)
 
-    def _build_encoder(self) -> nn.Module:
+    def _build_encoder(self) -> TimeVAEEncoder:
         return TimeVAEEncoder(self.seq_len, self.feat_dim, self.hidden_layer_sizes, self.latent_dim)
 
     def _get_encoder(self) -> nn.Module:
-        """Expose the VAE encoder for ``SimpleEncodingMixin.encode``."""
+        """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
         return self.encoder
 
     def _postprocess(
@@ -166,14 +178,14 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Return the latent mean ``z_mean`` from the ``(z_mean, z_log_var, z)`` tuple."""
         return output[0]
 
-    def _build_decoder(self) -> nn.Module:
+    def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
-            self.seq_len,
-            self.feat_dim,
-            self.hidden_layer_sizes,
-            self.latent_dim,
-            self.trend_poly,
-            self.custom_seas,
-            self.use_residual_conn,
-            self.encoder.encoder_last_dense_dim,
+            seq_len=self.seq_len,
+            feat_dim=self.feat_dim,
+            hidden_layer_sizes=self.hidden_layer_sizes,
+            latent_dim=self.latent_dim,
+            trend_poly=self.trend_poly,
+            custom_seas=self.custom_seas,
+            use_residual_conn=self.use_residual_conn,
+            encoder_last_dense_dim=self.encoder.encoder_last_dense_dim,
         )

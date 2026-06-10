@@ -15,12 +15,14 @@ from __future__ import annotations
 __all__ = ['TSTClassificationHead', 'TSTRegressionHead']
 
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
 import lightning.pytorch as pl
 import torch
 from torch import nn
 
-from tscollection.models.transformer.tst.model import TST
+if TYPE_CHECKING:
+    from tscollection.models.transformer.tst.model import TST
 
 
 class _TSTHead(pl.LightningModule):
@@ -34,6 +36,7 @@ class _TSTHead(pl.LightningModule):
         self,
         backbone: TST,
         num_outputs: int,
+        *,
         freeze_backbone: bool = True,
         learning_rate: float = 1e-3,
         weight_decay: float = 0.0,
@@ -69,7 +72,7 @@ class _TSTHead(pl.LightningModule):
     ) -> torch.Tensor:
         """Return the scalar loss for this head."""
 
-    def training_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training loss for one batch."""
         x, targets, padding_masks, _ = batch
         predictions = self(x, padding_masks)
@@ -84,7 +87,7 @@ class _TSTHead(pl.LightningModule):
         )
         return loss
 
-    def validation_step(self, batch: tuple, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation loss for one batch."""
         x, targets, padding_masks, _ = batch
         predictions = self(x, padding_masks)
@@ -123,6 +126,7 @@ class TSTClassificationHead(_TSTHead):
         self,
         backbone: TST,
         num_classes: int,
+        *,
         freeze_backbone: bool = True,
         learning_rate: float = 1e-3,
         weight_decay: float = 0.0,
@@ -160,6 +164,7 @@ class TSTRegressionHead(_TSTHead):
         self,
         backbone: TST,
         num_outputs: int,
+        *,
         freeze_backbone: bool = True,
         learning_rate: float = 1e-3,
         weight_decay: float = 0.0,

@@ -11,11 +11,12 @@ from __future__ import annotations
 __all__ = ['PairedAugmentation']
 
 from abc import ABC, abstractmethod
-from typing import Any
-
-import torch
+from typing import Any, TYPE_CHECKING
 
 from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
+
+if TYPE_CHECKING:
+    import torch
 
 
 class PairedAugmentation(AugmentationMethod, ABC):

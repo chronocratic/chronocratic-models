@@ -54,9 +54,11 @@ class TCCEncoder(nn.Module):
         self.logits = nn.Linear(features_len * final_out_channels, num_classes)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """
+        """Encode a batch and return logits plus convolutional features.
+
         Args:
             x: ``(batch, input_channels, seq_len)``
+
         Returns:
             logits:   ``(batch, num_classes)``
             features: ``(batch, final_out_channels, reduced_seq_len)``

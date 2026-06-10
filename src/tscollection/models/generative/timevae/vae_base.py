@@ -7,7 +7,10 @@ from torch import nn
 
 
 class Sampling(nn.Module):
-    def forward(self, inputs):
+    """Reparameterization layer for VAE latent sampling."""
+
+    def forward(self, inputs: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Sample a latent vector from ``(z_mean, z_log_var)``."""
         z_mean, z_log_var = inputs
         batch = z_mean.size(0)
         dim = z_mean.size(1)
@@ -36,11 +39,12 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.sampling = Sampling()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Reconstruct an input batch using the latent mean."""
         z_mean, _z_log_var, _z = self.encoder(x)
         return self.decoder(z_mean)
 
     def _step(
-        self, batch: torch.Tensor | tuple | list
+        self, batch: torch.Tensor | tuple[torch.Tensor, ...] | list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = batch[0] if isinstance(batch, (tuple, list)) else batch
         z_mean, z_log_var, z = self.encoder(x)
@@ -49,14 +53,16 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         n = x.size(0)
         return loss / n, recon_loss / n, kl_loss / n
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute, log, and return the training loss for one batch."""
         loss, recon_loss, kl_loss = self._step(batch)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         self.log('train_recon_loss', recon_loss, on_epoch=True)
         self.log('train_kl_loss', kl_loss, on_epoch=True)
         return loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute, log, and return the validation loss for one batch."""
         loss, recon_loss, kl_loss = self._step(batch)
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         self.log('val_recon_loss', recon_loss, on_epoch=True)
@@ -64,9 +70,11 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         return loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
+        """Return the Adam optimizer used to train the VAE."""
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return reconstructions for a NumPy input batch."""
         self.eval()
         with torch.no_grad():
             x_t = torch.FloatTensor(x).to(next(self.parameters()).device)
@@ -75,15 +83,18 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         return x_decoded.cpu().detach().numpy()
 
     def get_num_trainable_variables(self) -> int:
+        """Return the number of trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def get_prior_samples(self, num_samples: int) -> np.ndarray:
+        """Sample from the standard normal prior and decode the samples."""
         device = next(self.parameters()).device
         z = torch.randn(num_samples, self.latent_dim).to(device)
         samples = self.decoder(z)
         return samples.cpu().detach().numpy()
 
     def get_prior_samples_given_z(self, z: np.ndarray) -> np.ndarray:
+        """Decode the provided latent vectors."""
         z_t = torch.FloatTensor(z).to(next(self.parameters()).device)
         samples = self.decoder(z_t)
         return samples.cpu().detach().numpy()
@@ -113,6 +124,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def loss_function(
         self, x: torch.Tensor, x_recons: torch.Tensor, z_mean: torch.Tensor, z_log_var: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Return total, reconstruction, and KL losses for a batch."""
         reconstruction_loss = self._get_reconstruction_loss(x, x_recons)
         kl_loss = -0.5 * torch.sum(1 + z_log_var - z_mean.pow(2) - z_log_var.exp())
         total_loss = self.reconstruction_wt * reconstruction_loss + kl_loss

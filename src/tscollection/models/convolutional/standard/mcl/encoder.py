@@ -32,4 +32,5 @@ class FCNEncoder(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode a batch of time series into flat FCN representations."""
         return self.layers(x)

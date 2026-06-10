@@ -89,6 +89,7 @@ class Series2VecNetwork(nn.Module):
     def pretrain_forward(
         self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Return pairwise distances and representations used by the pretraining loss."""
         x_channels_first = self._to_channels_first(x)
         x_src = self.embed_layer(x_channels_first)
         x_src = self.gap(x_src)
