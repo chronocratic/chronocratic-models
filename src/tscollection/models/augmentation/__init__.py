@@ -1,39 +1,37 @@
-"""Augmentation package — barrel re-export.
+"""Augmentation package — abstract types only.
 
-Re-exports all symbols from ``base.py`` and per-model augmentation modules.
-Uses lazy imports to avoid circular dependencies when per-model modules
-(cost, ts2vec, autotcl) load through their __init__.py barrels.
+This package owns the augmentation ABCs that the rest of the codebase
+codes against:
 
-New code should import concrete augmentations from per-model directories:
-    - TS2Vec: ``ts2vec/augmentation.py``
-    - CoST: ``cost/augmentation.py``
-    - AutoTCL: ``autotcl/augmentation/`` package
+- :class:`AugmentationMethod` / :class:`TrainableAugmentation` /
+  :class:`AugmentationTrainingStrategy` / :class:`TrainingViews` from
+  ``base.py``.
+- :class:`PairedAugmentation` from ``composition.py`` — the abstract
+  two-view contract used by contrastive setups.
+
+Concrete augmentations live alongside the models that use them:
+
+- TS2Vec: ``ts2vec/augmentation.py``
+- CoST: ``cost/augmentation.py``
+- AutoTCL: ``autotcl/augmentation/`` package
+- TS-TCC: ``ts_tcc/augmentations.py``
+
+The lazy ``__getattr__`` below re-exports the per-model concrete classes
+through this barrel for callers that prefer one import path, without
+introducing circular dependencies during package load.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# Always available — ABCs from base.py (no circular dependency)
 from .base import (
     AugmentationMethod,
     AugmentationTrainingStrategy,
     TrainableAugmentation,
     TrainingViews,
 )
-
-# Shared transforms and combinators — package-internal, no circular-dep risk
-from .composition import ComposeAugmentation, PairedAugmentation
-from .transforms import (
-    Jitter,
-    JitterParameters,
-    Permutation,
-    PermutationParameters,
-    Scaling,
-    ScalingParameters,
-    Shift,
-    ShiftParameters,
-)
+from .composition import PairedAugmentation
 
 __all__ = [
     'AdversarialTrainingStrategy',
@@ -41,28 +39,19 @@ __all__ = [
     'AugmentationTrainingStrategy',
     'AutoTCLNeuralNetworkAugmentation',
     'AutoTCLNeuralNetworkAugmentationParameters',
-    'ComposeAugmentation',
     'CosTRandomFunctionAugmentation',
     'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentation',
     'CropShiftAugmentationParameters',
-    'Jitter',
-    'JitterParameters',
     'PairedAugmentation',
-    'Permutation',
-    'PermutationParameters',
     'RIPTrainingStrategy',
-    'Scaling',
-    'ScalingParameters',
-    'Shift',
-    'ShiftParameters',
     'TrainableAugmentation',
     'TrainingViews',
 ]
 
 
 def __getattr__(name: str) -> Any:  # noqa: ANN401, PLR0911
-    """Lazy import of concrete augmentations and params.
+    """Lazy import of concrete per-model augmentations.
 
     Defers imports until first access, breaking the circular dependency
     chain when per-model __init__.py files trigger during package load.

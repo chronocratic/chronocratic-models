@@ -36,10 +36,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
     augmented views of ``data`` are produced by the injected
-    ``PairedAugmentation`` (one augmentation per view). The default is a
-    ``PairedAugmentation`` of Gaussian scaling (weak view) and
-    segment-permutation + jitter (strong view), matching the original
-    TS-TCC contract.
+    ``PairedAugmentation`` (one augmentation per view). The default is
+    ``TSTCCPairedAugmentation``, which provides Gaussian scaling (weak)
+    and segment-permutation + jitter (strong) views, matching the
+    original TS-TCC contract.
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
@@ -79,30 +79,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
 
         if augmentation is None:
-            from tscollection.models.augmentation import (  # noqa: PLC0415
-                ComposeAugmentation,
-                Jitter,
-                JitterParameters,
-                PairedAugmentation,
-                Permutation,
-                PermutationParameters,
-                Scaling,
-                ScalingParameters,
+            from tscollection.models.convolutional.standard.ts_tcc.augmentations import (  # noqa: PLC0415
+                TSTCCPairedAugmentation,
             )
 
-            # Weak view: per-(sample, channel) Gaussian scaling around mean=2.
-            # Strong view: random segment permutation followed by additive jitter.
-            # Data flows as (B, C, T), hence channel_dim=1 and time_dim=-1.
-            weak = Scaling(
-                ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)
-            )
-            strong = ComposeAugmentation(
-                [
-                    Permutation(PermutationParameters(max_segments=5, time_dim=-1)),
-                    Jitter(JitterParameters(sigma=0.8)),
-                ]
-            )
-            self._augmentation: PairedAugmentation = PairedAugmentation(weak, strong)
+            self._augmentation: PairedAugmentation = TSTCCPairedAugmentation()
         else:
             self._augmentation = augmentation
 

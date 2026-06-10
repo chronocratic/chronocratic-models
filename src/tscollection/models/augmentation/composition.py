@@ -1,16 +1,16 @@
-"""Combinators that build augmentations out of other augmentations.
+"""Abstract two-view augmentation contract.
 
-- :class:`ComposeAugmentation` chains augmentations sequentially on a
-  single view (analogous to ``torchvision.transforms.Compose``).
-- :class:`PairedAugmentation` runs two augmentations in parallel on the
-  same input and returns both as a two-view :class:`TrainingViews`,
-  matching the contract of contrastive models like TS-TCC.
+Defines :class:`PairedAugmentation` — the abstract base type for any
+augmentation that produces two views of the input, used by contrastive
+setups like TS-TCC. Concrete pairs live alongside the models that use
+them (e.g. ``ts_tcc/augmentations.py``).
 """
 
 from __future__ import annotations
 
-__all__ = ['ComposeAugmentation', 'PairedAugmentation']
+__all__ = ['PairedAugmentation']
 
+from abc import ABC, abstractmethod
 from typing import Any
 
 import torch
@@ -18,56 +18,35 @@ import torch
 from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
 
 
-class ComposeAugmentation(AugmentationMethod):
-    """Apply a sequence of augmentations one after another.
+class PairedAugmentation(AugmentationMethod, ABC):
+    """Abstract augmentation that produces two views from a single input.
 
-    Each augmentation's first view is fed as input to the next. The
-    final output is a single-view :class:`TrainingViews`.
+    Subclasses implement :meth:`first` and :meth:`second` to return the
+    :class:`AugmentationMethod` used for each view. The base :meth:`augment`
+    runs both on the same input and bundles their first views into a
+    two-view :class:`TrainingViews`.
+
+    The slot names ``first`` / ``second`` are intentionally role-agnostic;
+    subclasses may expose additional aliases (``weak`` / ``strong``,
+    ``query`` / ``key``, …) that name the roles they assign.
     """
 
-    def __init__(self, augmentations: list[AugmentationMethod]) -> None:
-        """Initialize the composition.
+    @property
+    @abstractmethod
+    def first(self) -> AugmentationMethod:
+        """Augmentation producing the first view."""
 
-        Args:
-            augmentations: Augmentations to apply in order.
-        """
-        self._augmentations = augmentations
+    @property
+    @abstractmethod
+    def second(self) -> AugmentationMethod:
+        """Augmentation producing the second view."""
 
     def augment(
         self,
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401
     ) -> TrainingViews:
-        """Apply each augmentation in order and return the final view."""
-        current = data
-        for augmentation in self._augmentations:
-            current = augmentation.augment(current, **kwargs).views[0]
-        return TrainingViews(views=(current,), metadata={})
-
-
-class PairedAugmentation(AugmentationMethod):
-    """Run two augmentations on the same input and return both views.
-
-    Used by contrastive setups (e.g. TS-TCC's weak/strong pair) where
-    the model needs two differently augmented views of each sample.
-    """
-
-    def __init__(self, first: AugmentationMethod, second: AugmentationMethod) -> None:
-        """Initialize the paired augmentation.
-
-        Args:
-            first: Augmentation producing the first view.
-            second: Augmentation producing the second view.
-        """
-        self._first = first
-        self._second = second
-
-    def augment(
-        self,
-        data: torch.Tensor,
-        **kwargs: Any,  # noqa: ANN401
-    ) -> TrainingViews:
-        """Return ``(first.augment(data), second.augment(data))`` as two views."""
-        view_a = self._first.augment(data, **kwargs).views[0]
-        view_b = self._second.augment(data, **kwargs).views[0]
+        """Apply ``first`` and ``second`` to ``data`` and return both views."""
+        view_a = self.first.augment(data, **kwargs).views[0]
+        view_b = self.second.augment(data, **kwargs).views[0]
         return TrainingViews(views=(view_a, view_b), metadata={})
