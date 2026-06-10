@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
-from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
+from tscollection.models.convolutional.standard.ts_tcc.enums import TSTCCTrainingMode
 from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
 from tscollection.models.utils import extract_features_from_batch
@@ -61,7 +61,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         tc_timesteps: int = 6,
         temperature: float = 0.2,
         use_cosine_similarity: bool = True,
-        training_mode: TrainingMode = TrainingMode.SELF_SUPERVISED,
+        training_mode: TSTCCTrainingMode = TSTCCTrainingMode.SELF_SUPERVISED,
         learning_rate: float = 3e-4,
         lambda1: float = 1.0,
         lambda2: float = 0.7,
@@ -123,7 +123,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         )
         self._criterion = nn.CrossEntropyLoss()
 
-        if training_mode == TrainingMode.FINE_TUNING:
+        if training_mode == TSTCCTrainingMode.FINE_TUNING:
             for name, param in self._encoder.named_parameters():
                 param.requires_grad = name.startswith('logits')
 
@@ -142,7 +142,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     def _compute_loss(self, batch: tuple) -> torch.Tensor:
         data = extract_features_from_batch(batch).float()
 
-        if self._training_mode == TrainingMode.SELF_SUPERVISED:
+        if self._training_mode == TSTCCTrainingMode.SELF_SUPERVISED:
             views = self._augmentation.augment(data)
             aug1, aug2 = views.views[0], views.views[1]
             _, features1 = self._encoder(aug1)

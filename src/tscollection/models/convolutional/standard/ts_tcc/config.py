@@ -9,7 +9,7 @@ __all__ = ['TSTCCModelParameters']
 
 from dataclasses import dataclass
 
-from tscollection.models.convolutional.standard.ts_tcc.enums import TrainingMode
+from tscollection.models.convolutional.standard.ts_tcc.enums import TSTCCTrainingMode
 
 
 @dataclass(kw_only=True)
@@ -35,7 +35,7 @@ class TSTCCModelParameters:
         temperature: Temperature scaling for the NT-Xent contextual loss.
         use_cosine_similarity: Whether the NT-Xent loss uses cosine
             similarity (otherwise dot-product).
-        training_mode: A ``TrainingMode`` value. Controls which loss is
+        training_mode: A ``TSTCCTrainingMode`` value. Controls which loss is
             active and which parameters are trainable.
         learning_rate: Base learning rate for the two Adam optimizers
             (encoder and temporal-contrast).
@@ -58,7 +58,7 @@ class TSTCCModelParameters:
     tc_timesteps: int = 6
     temperature: float = 0.2
     use_cosine_similarity: bool = True
-    training_mode: TrainingMode = TrainingMode.SELF_SUPERVISED
+    training_mode: TSTCCTrainingMode = TSTCCTrainingMode.SELF_SUPERVISED
     learning_rate: float = 3e-4
     lambda1: float = 1.0
     lambda2: float = 0.7
