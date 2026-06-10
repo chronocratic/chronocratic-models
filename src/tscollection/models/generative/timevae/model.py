@@ -144,8 +144,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         self.custom_seas = custom_seas
         self.use_residual_conn = use_residual_conn
 
-        self.encoder = self._get_encoder()
-        self.decoder = self._get_decoder()
+        self.encoder = self._build_encoder()
+        self.decoder = self._build_decoder()
 
         for layer in self.modules():
             if isinstance(layer, nn.Linear):
@@ -153,15 +153,20 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
                 if layer.bias is not None:
                     nn.init.zeros_(layer.bias)
 
-    def _get_encoder(self) -> nn.Module:
+    def _build_encoder(self) -> nn.Module:
         return TimeVAEEncoder(self.seq_len, self.feat_dim, self.hidden_layer_sizes, self.latent_dim)
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns the latent mean ``z_mean`` of shape ``(batch, latent_dim)``."""
-        z_mean, _, _ = self.encoder(batch_x.to(self.device))
-        return z_mean
+    def _get_encoder(self) -> nn.Module:
+        """Expose the VAE encoder for ``SimpleEncodingMixin.encode``."""
+        return self.encoder
 
-    def _get_decoder(self) -> nn.Module:
+    def _postprocess(
+        self, output: tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> torch.Tensor:
+        """Return the latent mean ``z_mean`` from the ``(z_mean, z_log_var, z)`` tuple."""
+        return output[0]
+
+    def _build_decoder(self) -> nn.Module:
         return TimeVAEDecoder(
             self.seq_len,
             self.feat_dim,

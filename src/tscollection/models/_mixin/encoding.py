@@ -6,10 +6,11 @@ MCL, TS-TCC, Series2Vec). Models that need sliding-window inference, multi-scale
 pooling, or mask-mode handling (the dilated trio: TS2Vec, AutoTCL, CoST) should
 use the heavier mixins under ``convolutional/dilated/_mixin/`` instead.
 
-Subclasses implement :meth:`BasicEncodingMixin._encode_batch` — one method
-returning the representation for a single batch tensor. The mixin handles
-DataLoader iteration, eval-mode toggling, ``inference_mode``, and result
-concatenation.
+Subclasses expose their encoder via :meth:`BasicEncodingMixin._get_encoder`
+and, when needed, customize input preparation and output post-processing via
+:meth:`_prepare_inputs` and :meth:`_postprocess`. The mixin itself owns the
+DataLoader iteration, eval/inference mode handling, device placement, encoder
+invocation, and result concatenation.
 """
 
 from __future__ import annotations
@@ -17,9 +18,13 @@ from __future__ import annotations
 __all__ = ['BasicEncodingMixin']
 
 from abc import ABC, abstractmethod
+from typing import Any, TYPE_CHECKING
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class BasicEncodingMixin(ABC):
@@ -33,9 +38,9 @@ class BasicEncodingMixin(ABC):
       standard ``nn.Module`` toggles used to put the model into inference
       mode and restore the prior training state on exit.
 
-    Concrete subclasses implement :meth:`_encode_batch`. They are free to
-    project the input through any subset of their submodules — typically the
-    feature-producing trunk before any task-specific head.
+    Subclasses implement :meth:`_get_encoder` (required) and may override
+    :meth:`_prepare_inputs` and :meth:`_postprocess` to adapt the contract
+    to encoders that take extra arguments or return non-tensor structures.
     """
 
     # Attribute provided by the host LightningModule. Declared here so type
@@ -43,32 +48,54 @@ class BasicEncodingMixin(ABC):
     device: torch.device
 
     @abstractmethod
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Return the representation for one batch.
+    def _get_encoder(self) -> Callable[..., Any]:
+        """Return the callable used to produce per-batch representations.
 
-        Called from within ``torch.inference_mode()`` and with the model in
-        eval mode. The implementation is responsible for moving ``batch_x``
-        onto the correct device and producing whatever tensor shape the
-        downstream consumer expects.
+        Typically a submodule (e.g. ``self._encoder``, ``self.encoder``) or a
+        bound method (e.g. ``self.get_representations``). Called once per
+        ``encode()`` invocation.
+        """
+
+    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[Any, ...]:
+        """Return the positional args to pass to the encoder.
+
+        Default: ``(batch_x,)``. Override when the encoder needs additional
+        inputs (e.g. padding masks) or a dtype cast.
 
         Args:
-            batch_x: Input batch tensor as yielded by a ``TensorDataset`` over
-                the ``data`` argument of :meth:`encode`.
+            batch_x: Batch tensor already moved to ``self.device``.
 
         Returns:
-            The batch's representation tensor (any shape). The mixin will move
-            it to CPU and concatenate it with the other batches' outputs along
-            dim 0.
+            Tuple of positional arguments fed to the encoder as
+            ``encoder(*args)``.
         """
+        return (batch_x,)
+
+    def _postprocess(self, output: Any) -> torch.Tensor:  # noqa: ANN401
+        """Return the final representation tensor from the encoder output.
+
+        Default: identity (the encoder is assumed to return a tensor).
+        Override when the encoder returns a tuple, dict, or otherwise needs
+        a final reshape (e.g. ``.unsqueeze(1)``).
+
+        Args:
+            output: Whatever the encoder returned for one batch.
+
+        Returns:
+            The representation tensor for this batch. The mixin will move it
+            to CPU and concatenate with the other batches' outputs along dim 0.
+        """
+        return output
 
     @torch.inference_mode()
     def encode(self, data: torch.Tensor, batch_size: int, num_workers: int = 0) -> torch.Tensor:
         """Extract representations for ``data`` in mini-batches.
 
-        Iterates the input through a ``DataLoader``, applies
-        :meth:`_encode_batch` per batch under ``inference_mode``, and
-        concatenates the per-batch outputs on dim 0. The model's prior
-        training-mode state is preserved across the call.
+        Iterates ``data`` through a ``DataLoader``, moves each batch to
+        ``self.device``, invokes the encoder via the
+        ``_get_encoder`` / ``_prepare_inputs`` / ``_postprocess`` hooks under
+        ``inference_mode``, and concatenates the per-batch outputs on dim 0.
+        The model's prior training-mode state is preserved across the call.
 
         Args:
             data: Input tensor of shape ``(N, ...)`` — leading dim is the
@@ -86,9 +113,13 @@ class BasicEncodingMixin(ABC):
             loader = DataLoader(
                 TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
             )
+            encoder = self._get_encoder()
             outputs: list[torch.Tensor] = []
             for (batch_x,) in loader:
-                outputs.append(self._encode_batch(batch_x).cpu())
+                batch_on_device = batch_x.to(self.device)
+                args = self._prepare_inputs(batch_on_device)
+                output = encoder(*args)
+                outputs.append(self._postprocess(output).cpu())
             return torch.cat(outputs, dim=0)
         finally:
             self.train(was_training)

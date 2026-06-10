@@ -14,6 +14,8 @@ from tscollection.models.transformer.tst.loss import MaskedMSELoss
 from tscollection.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from lightning.pytorch.utilities.types import OptimizerLRSchedulerConfig
 
 
@@ -195,15 +197,16 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         }
 
     # ------------------------------------------------------------------
-    # Representation extraction (via SimpleEncodingMixin.encode)
+    # Representation extraction (via BasicEncodingMixin.encode)
     # ------------------------------------------------------------------
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns ``(batch, T, d_model)``.
+    def _get_encoder(self) -> Callable[..., torch.Tensor]:
+        """Expose representation extraction to ``BasicEncodingMixin.encode``."""
+        return self.get_representations
 
-        Padding masks are synthesized as all-true (no padding) since the
-        public ``encode()`` API doesn't carry per-sample mask information.
-        """
-        inp = batch_x.to(self.device)
-        padding_masks = torch.ones(inp.shape[0], inp.shape[1], dtype=torch.bool, device=self.device)
-        return self.get_representations(inp, padding_masks)
+    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Synthesize all-true padding masks; ``encode()`` carries no mask info."""
+        padding_masks = torch.ones(
+            batch_x.shape[0], batch_x.shape[1], dtype=torch.bool, device=self.device
+        )
+        return (batch_x, padding_masks)

@@ -41,13 +41,13 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.proj_head(self.encoder(x))
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns the encoder output before the MixUp projection head.
+    def _get_encoder(self) -> nn.Module:
+        """Expose the FCN encoder (before the MixUp projection head)."""
+        return self.encoder
 
-        Shape ``(batch, 1, output_dims)``: the trailing singleton dim preserves
-        the original flag-pattern shape so downstream code is unaffected.
-        """
-        return self.encoder(batch_x.to(self.device)).unsqueeze(1)
+    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+        """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
+        return output.unsqueeze(1)
 
     def _step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         x = batch

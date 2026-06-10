@@ -71,9 +71,9 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         encode = self.encoder(x)
         return self.decoder(torch.flip(encode, dims=[1]))  # reconstruction target
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns the GRU encoder output ``(batch, T, hidden_dims)``."""
-        return self.encoder(batch_x.to(self.device))
+    def _get_encoder(self) -> nn.Module:
+        """Expose the GRU encoder to ``SimpleEncodingMixin.encode``."""
+        return self.encoder
 
     def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         x = batch

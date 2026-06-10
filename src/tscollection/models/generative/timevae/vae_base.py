@@ -89,11 +89,11 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         return samples.cpu().detach().numpy()
 
     @abstractmethod
-    def _get_encoder(self) -> nn.Module:
+    def _build_encoder(self) -> nn.Module:
         raise NotImplementedError
 
     @abstractmethod
-    def _get_decoder(self) -> nn.Module:
+    def _build_decoder(self) -> nn.Module:
         raise NotImplementedError
 
     def _get_reconstruction_loss(self, x: torch.Tensor, x_recons: torch.Tensor) -> torch.Tensor:

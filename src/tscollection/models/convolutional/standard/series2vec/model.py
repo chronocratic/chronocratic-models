@@ -2,10 +2,16 @@ from __future__ import annotations
 
 __all__ = ['Series2Vec']
 
+from typing import TYPE_CHECKING
+
 import lightning.pytorch as pl
 import torch
 
 from tscollection.models._mixin import BasicEncodingMixin
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 from tscollection.models.convolutional.standard.series2vec.filters import filter_frequencies
 from tscollection.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
@@ -78,13 +84,16 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns ``(batch, 1, 2 * representation_dims)``.
+    def _get_encoder(self) -> Callable[..., torch.Tensor]:
+        """Expose ``Series2VecNetwork.encode`` to ``BasicEncodingMixin.encode``.
 
-        Delegates to ``Series2VecNetwork.encode``, which concatenates the
-        temporal and frequency-domain representations.
+        It concatenates the temporal and frequency-domain representations.
         """
-        return self.network.encode(batch_x.to(self.device)).unsqueeze(1)
+        return self.network.encode
+
+    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+        """Add a trailing singleton dim so the shape is ``(batch, 1, 2 * representation_dims)``."""
+        return output.unsqueeze(1)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self.soft_dtw_gamma)

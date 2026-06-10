@@ -208,10 +208,14 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Representation extraction (via SimpleEncodingMixin.encode)
     # ------------------------------------------------------------------
 
-    def _encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
-        """Encode one batch — returns the conv-encoder features before the logits head.
+    def _get_encoder(self) -> nn.Module:
+        """Expose the conv encoder to ``SimpleEncodingMixin.encode``."""
+        return self._encoder
 
-        Input shape ``(batch, C, T)``; output ``(batch, final_out_channels, reduced_T)``.
-        """
-        _, features = self._encoder(batch_x.float().to(self.device))
-        return features
+    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
+        """Cast to float — the TCC encoder expects float inputs."""
+        return (batch_x.float(),)
+
+    def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Return the pre-logits features from the ``(logits, features)`` encoder output."""
+        return output[1]
