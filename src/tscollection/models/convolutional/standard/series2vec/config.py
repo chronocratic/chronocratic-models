@@ -20,8 +20,6 @@ class Series2VecModelParameters:
     Args:
         input_dims: Number of input features (channels) in the time
             series.
-        num_classes: Number of output classes for the supervised head
-            inside ``Series2VecNetwork``.
         embedding_dims: Token embedding dimensionality.
         num_heads: Number of attention heads in the transformer encoder.
         feedforward_dims: Hidden dimensionality of the transformer
@@ -44,7 +42,6 @@ class Series2VecModelParameters:
     """
 
     input_dims: int
-    num_classes: int
     embedding_dims: int
     num_heads: int
     feedforward_dims: int

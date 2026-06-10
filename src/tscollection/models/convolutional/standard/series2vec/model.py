@@ -47,7 +47,6 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def __init__(
         self,
         input_dims: int,
-        num_classes: int,
         embedding_dims: int,
         num_heads: int,
         feedforward_dims: int,
@@ -73,7 +72,6 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
         self.network = Series2VecNetwork(
             input_dims=input_dims,
-            num_classes=num_classes,
             embedding_dims=embedding_dims,
             num_heads=num_heads,
             feedforward_dims=feedforward_dims,

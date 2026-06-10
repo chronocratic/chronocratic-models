@@ -12,12 +12,14 @@ class Series2VecNetwork(nn.Module):
     Public methods accept input shaped ``(batch, time, channels)``. The original
     Series2Vec convolution blocks operate on ``(batch, channels, time)``, so this
     class transposes internally before calling the encoders.
+
+    The network produces representations only; downstream classification is
+    implemented as a separate head (see ``series2vec/heads.py``).
     """
 
     def __init__(
         self,
         input_dims: int,
-        num_classes: int,
         embedding_dims: int,
         num_heads: int,
         feedforward_dims: int,
@@ -54,7 +56,6 @@ class Series2VecNetwork(nn.Module):
 
         self.gap = nn.AdaptiveAvgPool1d(1)
         self.gap_f = nn.AdaptiveAvgPool1d(1)
-        self.classifier = nn.Linear(2 * representation_dims, num_classes)
 
     @staticmethod
     def _to_channels_first(x: torch.Tensor) -> torch.Tensor:
@@ -80,6 +81,7 @@ class Series2VecNetwork(nn.Module):
         return self.gap_f(out_f).squeeze(-1)
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
+        """Return ``(batch, 2 * representation_dims)`` temporal + frequency concat."""
         temporal_representation = self._temporal_representation(x)
         frequency_representation = self._frequency_representation(x)
         return torch.cat((temporal_representation, frequency_representation), dim=1)
@@ -115,13 +117,5 @@ class Series2VecNetwork(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.classifier(self.encode(x))
-
-    # Backward-compatible names while the old trainer code is still being removed.
-    def linear_prob(self, x: torch.Tensor) -> torch.Tensor:
+        """Return representations of shape ``(batch, 2 * representation_dims)``."""
         return self.encode(x)
-
-    def Pretrain_forward(  # noqa: N802
-        self, x: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        return self.pretrain_forward(x)
