@@ -11,10 +11,10 @@ from torch import nn
 import torch.nn.functional as F
 
 from tscollection.models._mixin import BasicEncodingMixin
-from tscollection.models.convolutional.standard.ts_tcc.encoder import TCCEncoder
-from tscollection.models.convolutional.standard.ts_tcc.enums import TSTCCTrainingMode
-from tscollection.models.convolutional.standard.ts_tcc.losses import NTXentLoss
-from tscollection.models.convolutional.standard.ts_tcc.temporal_contrast import TemporalContrast
+from tscollection.models.convolutional.standard.tstcc.encoder import TCCEncoder
+from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTrainingMode
+from tscollection.models.convolutional.standard.tstcc.losses import NTXentLoss
+from tscollection.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from tscollection.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
 
         if augmentation is None:
-            from tscollection.models.convolutional.standard.ts_tcc.augmentations import (  # noqa: PLC0415
+            from tscollection.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
                 TSTCCPairedAugmentation,
             )
 
@@ -187,11 +187,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         ]
 
     # ------------------------------------------------------------------
-    # Representation extraction (via SimpleEncodingMixin.encode)
+    # Representation extraction (via BasicEncodingMixin.encode)
     # ------------------------------------------------------------------
 
     def _get_encoder(self) -> nn.Module:
-        """Expose the conv encoder to ``SimpleEncodingMixin.encode``."""
+        """Expose the conv encoder to ``BasicEncodingMixin.encode``."""
         return self._encoder
 
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:

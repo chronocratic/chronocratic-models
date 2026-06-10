@@ -27,9 +27,12 @@ class TCCEncoder(nn.Module):
 
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
-                input_channels, 32,
-                kernel_size=kernel_size, stride=stride,
-                bias=False, padding=kernel_size // 2,
+                input_channels,
+                32,
+                kernel_size=kernel_size,
+                stride=stride,
+                bias=False,
+                padding=kernel_size // 2,
             ),
             nn.BatchNorm1d(32),
             nn.ReLU(),

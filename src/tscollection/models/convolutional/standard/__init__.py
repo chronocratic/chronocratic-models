@@ -18,8 +18,8 @@ _LAZY: dict[str, str] = {
     'MCLModelParameters': '.mcl',
     'Series2Vec': '.series2vec',
     'Series2VecModelParameters': '.series2vec',
-    'TSTCC': '.ts_tcc',
-    'TSTCCModelParameters': '.ts_tcc',
+    'TSTCC': '.tstcc',
+    'TSTCCModelParameters': '.tstcc',
 }
 
 
@@ -29,5 +29,5 @@ def __getattr__(name: str) -> Any:  # noqa: ANN401
         from importlib import import_module  # noqa: PLC0415
 
         return getattr(import_module(_LAZY[name], __name__), name)
-    msg = f"module {__name__!r} has no attribute {name!r}"
+    msg = f'module {__name__!r} has no attribute {name!r}'
     raise AttributeError(msg)

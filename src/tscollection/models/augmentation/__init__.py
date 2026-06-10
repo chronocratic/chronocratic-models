@@ -14,7 +14,7 @@ Concrete augmentations live alongside the models that use them:
 - TS2Vec: ``ts2vec/augmentation.py``
 - CoST: ``cost/augmentation.py``
 - AutoTCL: ``autotcl/augmentation/`` package
-- TS-TCC: ``ts_tcc/augmentations.py``
+- TS-TCC: ``tstcc/augmentations.py``
 
 The lazy ``__getattr__`` below re-exports the per-model concrete classes
 through this barrel for callers that prefer one import path, without

@@ -3,7 +3,7 @@
 Defines :class:`PairedAugmentation` — the abstract base type for any
 augmentation that produces two views of the input, used by contrastive
 setups like TS-TCC. Concrete pairs live alongside the models that use
-them (e.g. ``ts_tcc/augmentations.py``).
+them (e.g. ``tstcc/augmentations.py``).
 """
 
 from __future__ import annotations

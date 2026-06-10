@@ -223,20 +223,14 @@ class TSTCCPairedAugmentation(PairedAugmentation):
     """
 
     def __init__(
-        self,
-        weak: AugmentationMethod | None = None,
-        strong: AugmentationMethod | None = None,
+        self, weak: AugmentationMethod | None = None, strong: AugmentationMethod | None = None
     ) -> None:
         self._weak: AugmentationMethod = weak if weak is not None else self._default_weak()
-        self._strong: AugmentationMethod = (
-            strong if strong is not None else self._default_strong()
-        )
+        self._strong: AugmentationMethod = strong if strong is not None else self._default_strong()
 
     @staticmethod
     def _default_weak() -> AugmentationMethod:
-        return Scaling(
-            ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)
-        )
+        return Scaling(ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1))
 
     @staticmethod
     def _default_strong() -> AugmentationMethod:

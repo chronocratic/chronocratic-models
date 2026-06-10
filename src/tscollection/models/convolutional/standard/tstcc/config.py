@@ -9,7 +9,7 @@ __all__ = ['TSTCCModelParameters']
 
 from dataclasses import dataclass
 
-from tscollection.models.convolutional.standard.ts_tcc.enums import TSTCCTrainingMode
+from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTrainingMode
 
 
 @dataclass(kw_only=True)
