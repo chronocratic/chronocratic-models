@@ -1,9 +1,9 @@
 __all__ = ['TSTCCTrainingMode']
 
-from enum import Enum
+from enum import StrEnum
 
 
-class TSTCCTrainingMode(Enum):
+class TSTCCTrainingMode(StrEnum):
     """Training modes supported by the TS-TCC model.
 
     Attributes:
