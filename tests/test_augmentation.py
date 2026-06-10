@@ -17,7 +17,6 @@ from tscollection.models.augmentation import (
     TrainingViews,
 )
 
-
 # --------------------------------------------------------------------------- #
 # TrainingViews
 # --------------------------------------------------------------------------- #
@@ -120,8 +119,12 @@ class TestRIPTrainingStrategy:
         produce identical consistency terms.
         """
         from unittest.mock import patch
+
         from torch.nn import functional as F
-        from tscollection.models.convolutional.dilated.autotcl.losses import maximum_mean_discrepancy_with_gaussian_kernel_loss
+
+        from tscollection.models.convolutional.dilated.autotcl.losses import (
+            maximum_mean_discrepancy_with_gaussian_kernel_loss,
+        )
 
         torch.manual_seed(42)
         x_emb = torch.randn(2, 10, 32)

@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import pytest
 
-import torch
-
 
 @pytest.fixture
 def sample_input_dims() -> int:

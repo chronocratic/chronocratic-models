@@ -6,7 +6,6 @@ Verifies that concrete augmentations live in their model directories:
     - autotcl/augmentation/: methods.py, training.py, __init__.py
 """
 
-import pytest
 import torch
 
 from tscollection.models.augmentation.base import (
@@ -15,7 +14,6 @@ from tscollection.models.augmentation.base import (
     TrainableAugmentation,
     TrainingViews,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Task 1: ts2vec/augmentation.py
@@ -404,11 +402,11 @@ class TestBackwardCompatibility:
 
     def test_barrel_still_exports(self) -> None:
         from tscollection.models.augmentation import (
-            CropShiftAugmentation,
-            CosTRandomFunctionAugmentation,
-            AutoTCLNeuralNetworkAugmentation,
-            RIPTrainingStrategy,
             AdversarialTrainingStrategy,
+            AutoTCLNeuralNetworkAugmentation,
+            CosTRandomFunctionAugmentation,
+            CropShiftAugmentation,
+            RIPTrainingStrategy,
         )
 
         assert CropShiftAugmentation is not None
