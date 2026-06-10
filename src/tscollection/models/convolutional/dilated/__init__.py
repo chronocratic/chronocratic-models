@@ -1,8 +1,10 @@
-"""Barrel for dilated-convolution models (AutoTCL, CoST, TS2Vec) — lazy re-exports."""
+"""Barrel for dilated-convolution models (AutoTCL, CoST, TS2Vec)."""
 
 from __future__ import annotations
 
-from typing import Any
+from .autotcl import AutoTCL, AutoTCLModelParameters
+from .cost import CoST, CoSTModelParameters
+from .ts2vec import TS2Vec, TS2VecModelParameters
 
 __all__ = [
     'AutoTCL',
@@ -12,22 +14,3 @@ __all__ = [
     'TS2Vec',
     'TS2VecModelParameters',
 ]
-
-_LAZY: dict[str, str] = {
-    'AutoTCL': '.autotcl',
-    'AutoTCLModelParameters': '.autotcl',
-    'CoST': '.cost',
-    'CoSTModelParameters': '.cost',
-    'TS2Vec': '.ts2vec',
-    'TS2VecModelParameters': '.ts2vec',
-}
-
-
-def __getattr__(name: str) -> Any:  # noqa: ANN401
-    """Resolve a public name by importing its owning subpackage on first access."""
-    if name in _LAZY:
-        from importlib import import_module  # noqa: PLC0415
-
-        return getattr(import_module(_LAZY[name], __name__), name)
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
