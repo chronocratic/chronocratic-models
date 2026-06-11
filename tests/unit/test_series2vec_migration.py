@@ -90,6 +90,6 @@ class TestOldHeadRemoved:
     def test_classification_head_removed(self) -> None:
         """Series2VecClassificationHead is no longer importable."""
         with pytest.raises(ImportError):
-            from tscollection.models.convolutional.standard.series2vec import (  # noqa: F401, I001, PLC0415
+            from tscollection.models.convolutional.standard.series2vec import (  # noqa: F401, PLC0415
                 Series2VecClassificationHead,
             )

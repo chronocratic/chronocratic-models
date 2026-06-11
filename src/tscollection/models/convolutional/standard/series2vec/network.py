@@ -13,8 +13,9 @@ class Series2VecNetwork(nn.Module):
     Series2Vec convolution blocks operate on ``(batch, channels, time)``, so this
     class transposes internally before calling the encoders.
 
-    The network produces representations only; downstream classification is
-    implemented as a separate head (see ``series2vec/heads.py``).
+    The network produces representations only; downstream classification and
+    regression use :class:`FineTuningModule` from
+    ``tscollection.models._finetuning``.
     """
 
     def __init__(
