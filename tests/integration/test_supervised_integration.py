@@ -1,4 +1,4 @@
-"""Cross-model fine-tuning integration tests.
+"""Cross-model supervised-training integration tests.
 
 Verifies the end-to-end flow: backbone → factory → SupervisedModule → training.
 """

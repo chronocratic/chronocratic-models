@@ -90,7 +90,7 @@ class _DummyHead(nn.Module):
 
 
 class TestSupervisedModule:
-    """Verify the generic fine-tuning wrapper."""
+    """Verify the generic supervised-training wrapper."""
 
     def test_forward_returns_expected_shape(self) -> None:
         """SupervisedModule.forward returns (batch, num_outputs)."""

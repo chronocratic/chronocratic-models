@@ -122,3 +122,28 @@ class TestTSTCCSupervisedModule:
         loss = module.training_step(batch, 0)
         assert loss.ndim == 0
         assert torch.isfinite(loss)
+
+    def test_supervised_from_scratch_trains_backbone(self) -> None:
+        """From-scratch mode (fresh backbone, freeze_backbone=False) sends grads to the backbone.
+
+        This is the explicit replacement for the removed
+        ``TSTCCTrainingMode.SUPERVISED``: an un-pretrained encoder trained
+        end-to-end on labels.
+        """
+        backbone = TSTCC(
+            input_channels=2,
+            kernel_size=8,
+            stride=4,
+            final_out_channels=16,
+            features_len=10,
+            num_classes=3,
+        )
+        module = make_tstcc_supervised(
+            backbone, num_outputs=5, task='classification', freeze_backbone=False
+        )
+        batch = (torch.randn(4, 2, 256), torch.randint(0, 5, (4,)))
+        loss = module.training_step(batch, 0)
+        loss.backward()
+        backbone_grads = [p.grad for p in backbone.parameters() if p.requires_grad]
+        assert backbone_grads, 'backbone should have trainable params when freeze_backbone=False'
+        assert any(g is not None for g in backbone_grads)
