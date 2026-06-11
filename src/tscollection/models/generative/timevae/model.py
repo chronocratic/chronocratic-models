@@ -1,16 +1,17 @@
 import torch
 from torch import nn
 
+__all__ = ['TimeVAE', 'TimeVAEDecoder', 'TimeVAEEncoder']
+
 from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from tscollection.models.layers.general import (
     LevelModel,
     ResidualConnection,
+    Seasonality,
     SeasonalLayer,
     TrendLayer,
 )
-
-Seasonality = tuple[int, int]
 
 
 class TimeVAEEncoder(nn.Module):
@@ -39,6 +40,7 @@ class TimeVAEEncoder(nn.Module):
         self.encoder_last_dense_dim = self._get_last_dense_dim(seq_len, feat_dim)
 
         self.encoder = nn.Sequential(*self.layers)
+        del self.layers
         self.z_mean = nn.Linear(self.encoder_last_dense_dim, latent_dim)
         self.z_log_var = nn.Linear(self.encoder_last_dense_dim, latent_dim)
         self.sampling = Sampling()

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 __all__ = ['TST']
 
-import math
 from typing import TYPE_CHECKING
 
 import lightning.pytorch as pl
@@ -105,13 +104,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def get_representations(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
         """Run the transformer trunk, skipping the reconstruction output layer."""
-        inp = x.permute(1, 0, 2)
-        inp = self._encoder.project_inp(inp) * math.sqrt(self._encoder.d_model)
-        inp = self._encoder.pos_enc(inp)
-        out = self._encoder.transformer_encoder(inp, src_key_padding_mask=~padding_masks)
-        out = self._encoder.act(out)
-        out = out.permute(1, 0, 2)
-        return self._encoder.dropout1(out)
+        return self._encoder.encode_representations(x, padding_masks)
 
     def reconstruct(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
         """Run the full backbone, including the reconstruction output layer.
@@ -177,8 +170,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         gradient_clip_algorithm: str | None = None,
     ) -> None:
         """Clip gradients by global norm to stabilise training."""
-        del optimizer, gradient_clip_val, gradient_clip_algorithm
-        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=4.0)
+        del optimizer, gradient_clip_algorithm
+        if gradient_clip_val is None:
+            gradient_clip_val = 4.0
+        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=gradient_clip_val)
 
     # ------------------------------------------------------------------
     # Optimizers & LR scheduling

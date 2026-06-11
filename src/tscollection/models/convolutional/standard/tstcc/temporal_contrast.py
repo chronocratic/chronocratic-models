@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 __all__ = ['TemporalContrast']
 
 from typing import cast
@@ -165,6 +163,9 @@ class TemporalContrast(nn.Module):
         z2 = features_aug2.transpose(1, 2)
 
         batch, seq_len, _ = z1.shape
+        if seq_len <= self.timestep:
+            msg = f"seq_len ({seq_len}) must be > timestep ({self.timestep})"
+            raise ValueError(msg)
         t_samples = torch.randint(seq_len - self.timestep, size=(1,), device=device).long()
 
         encode_samples = torch.stack(

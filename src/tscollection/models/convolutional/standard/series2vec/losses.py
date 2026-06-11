@@ -2,6 +2,12 @@ import torch
 from torch import nn
 from torch.nn import functional
 
+__all__ = [
+    'pairwise_euclidean_distances',
+    'pairwise_soft_dtw_distances',
+    'pretraining_loss',
+]
+
 MIN_PAIR_COUNT = 2
 
 

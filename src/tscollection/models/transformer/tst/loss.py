@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+__all__ = ['MaskedMSELoss']
+
 
 class MaskedMSELoss(nn.Module):
     """Masked MSE Loss."""

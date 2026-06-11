@@ -1,16 +1,29 @@
 from scipy.signal import butter, lfilter
 import torch
 
+__all__ = [
+    'LOWPASS_PROBABILITY',
+    'SAMPLING_RATE',
+    'apply_fft',
+    'filter_frequencies',
+    'highpass_filter',
+    'lowpass_filter',
+]
+
 LOWPASS_PROBABILITY = 0.5
 SAMPLING_RATE = 128
 
 
 def filter_frequencies(
-    data: torch.Tensor, lowpass_cutoff: float = 40.0, highpass_cutoff: float = 0.5
+    data: torch.Tensor,
+    lowpass_cutoff: float = 40.0,
+    highpass_cutoff: float = 0.5,
+    *,
+    training: bool = True,
 ) -> torch.Tensor:
     """Randomly apply low-pass or high-pass filtering to FFT-transformed samples."""
     fft_results = torch.stack([apply_fft(sample) for sample in data])
-    if torch.rand(()) < LOWPASS_PROBABILITY:
+    if training and torch.rand(()) < LOWPASS_PROBABILITY:
         return torch.stack(
             [
                 lowpass_filter(sample, lowpass_cutoff, sampling_rate=SAMPLING_RATE)

@@ -2,6 +2,15 @@ from collections.abc import Callable
 import math
 from typing import cast
 
+__all__ = [
+    'FixedPositionalEncoding',
+    'LearnablePositionalEncoding',
+    'TSTransformerEncoder',
+    'TransformerBatchNormEncoderLayer',
+    '_get_activation_fn',
+    'get_pos_encoder',
+]
+
 import torch
 from torch import nn, Tensor
 from torch.nn import functional
@@ -271,3 +280,26 @@ class TSTransformerEncoder(nn.Module):
         output = self.output_layer(output)  # (batch_size, seq_length, feat_dim)
 
         return output
+
+    def encode_representations(self, x: Tensor, padding_masks: Tensor) -> Tensor:
+        """Return transformer representations before output_layer.
+
+        Args:
+            x: ``(batch_size, seq_length, feat_dim)`` tensor of masked features.
+            padding_masks: ``(batch_size, seq_length)`` boolean tensor. ``1`` means
+                keep the vector at this position; ``0`` means padding.
+
+        Returns:
+            ``(batch_size, seq_length, d_model)`` representation tensor.
+        """
+        # PyTorch transformers use [seq_length, batch_size, feat_dim].
+        inp = x.permute(1, 0, 2)
+        inp = self.project_inp(inp) * math.sqrt(self.d_model)
+        inp = self.pos_enc(inp)  # add positional encoding
+        # Padding-mask logic is reversed for MultiHeadAttention / TransformerEncoderLayer.
+        output = self.transformer_encoder(
+            inp, src_key_padding_mask=~padding_masks
+        )  # (seq_length, batch_size, d_model)
+        output = self.act(output)
+        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
+        return self.dropout1(output)

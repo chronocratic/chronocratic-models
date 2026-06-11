@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
@@ -66,7 +64,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         lambda1: float = 1.0,
         lambda2: float = 0.7,
         sync_dist: bool = False,
-        augmentation: DualAugmentation | None = None,
+        augmentation: 'DualAugmentation | None' = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=['augmentation'])
@@ -83,7 +81,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
                 TSTCCDualAugmentation,
             )
 
-            self._augmentation: DualAugmentation = TSTCCDualAugmentation()
+            self._augmentation = TSTCCDualAugmentation()
         else:
             self._augmentation = augmentation
 
@@ -174,7 +172,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
     ) -> torch.Tensor:
         """Compute and log validation loss."""
-        loss = self._compute_loss(batch)
+        with torch.no_grad():
+            loss = self._compute_loss(batch)
         self.log(
             'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )
@@ -184,7 +183,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Optimizers
     # ------------------------------------------------------------------
 
-    def configure_optimizers(self) -> OptimizerLRScheduler:
+    def configure_optimizers(self) -> 'OptimizerLRScheduler':
         """Return one Adam optimizer per sub-module (encoder and TC model)."""
         return [
             torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate),

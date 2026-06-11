@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+__all__ = ['BaseVariationalAutoencoder', 'Sampling']
+
 import lightning.pytorch as pl
 import numpy as np
 import torch
@@ -50,8 +52,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         z_mean, z_log_var, z = self.encoder(x)
         reconstruction = self.decoder(z)
         loss, recon_loss, kl_loss = self.loss_function(x, reconstruction, z_mean, z_log_var)
-        n = x.size(0)
-        return loss / n, recon_loss / n, kl_loss / n
+        return loss, recon_loss, kl_loss
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute, log, and return the training loss for one batch."""
@@ -75,11 +76,13 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Return reconstructions for a NumPy input batch."""
+        was_training = self.training
         self.eval()
         with torch.no_grad():
             x_t = torch.FloatTensor(x).to(next(self.parameters()).device)
             z_mean, _z_log_var, _z = self.encoder(x_t)
             x_decoded = self.decoder(z_mean)
+        self.train(was_training)
         return x_decoded.cpu().detach().numpy()
 
     def get_num_trainable_variables(self) -> int:
