@@ -1,15 +1,13 @@
 """Configuration for the TS-TCC model.
 
 Provides TSTCCModelParameters with all settings for the TCC encoder,
-temporal contrast head, and NT-Xent contextual loss across the three
-supported training modes.
+temporal contrast head, and NT-Xent contextual loss for self-supervised
+pretraining.
 """
 
 __all__ = ['TSTCCModelParameters']
 
 from dataclasses import dataclass
-
-from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTrainingMode
 
 
 @dataclass(kw_only=True)
@@ -25,8 +23,7 @@ class TSTCCModelParameters:
             encoder block (also used as the temporal-contrast input dim).
         features_len: Length of the encoder feature map fed into the
             logits head.
-        num_classes: Number of output classes for the supervised /
-            fine-tuning logits head.
+        num_classes: Number of output classes for the encoder logits head.
         dropout: Dropout probability applied inside the TCC encoder.
         tc_hidden_dim: Hidden dimensionality of the temporal-contrast
             module.
@@ -35,8 +32,6 @@ class TSTCCModelParameters:
         temperature: Temperature scaling for the NT-Xent contextual loss.
         use_cosine_similarity: Whether the NT-Xent loss uses cosine
             similarity (otherwise dot-product).
-        training_mode: A ``TSTCCTrainingMode`` value. Controls which loss is
-            active and which parameters are trainable.
         learning_rate: Base learning rate for the two Adam optimizers
             (encoder and temporal-contrast).
         lambda1: Weight of the temporal-contrast loss term in the
@@ -58,7 +53,6 @@ class TSTCCModelParameters:
     tc_timesteps: int = 6
     temperature: float = 0.2
     use_cosine_similarity: bool = True
-    training_mode: TSTCCTrainingMode = TSTCCTrainingMode.SELF_SUPERVISED
     learning_rate: float = 3e-4
     lambda1: float = 1.0
     lambda2: float = 0.7

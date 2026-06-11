@@ -6,10 +6,13 @@ Per D-03: remove TSTCCTrainingMode entirely; model becomes single-purpose
 
 from __future__ import annotations
 
+import inspect
+
 import pytest
 import torch
 
 from tscollection.models._finetuning import make_tstcc_finetuner
+from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
 
@@ -36,26 +39,38 @@ class TestTSTCCModelCleaned:
 
     def test_model_no_training_mode_param(self) -> None:
         """TSTCC.__init__ no longer accepts training_mode."""
-        import inspect
-
         sig = inspect.signature(TSTCC.__init__)
         assert 'training_mode' not in sig.parameters
 
     def test_only_self_supervised_contrastive(self) -> None:
         """TSTCC._compute_loss produces contrastive loss (no supervised branch)."""
+        # First find the actual features_len from the encoder with a given input.
+        # Then configure the model with the matching features_len.
+        # Using L=256, stride=4, kernel=8 to get a large enough seq_len.
+        # Conv+pool reduction: 256 → 65 → 33 → 34 → 17 → 18 → 10
+        # features_len=10 → logits in_features = 16*10 = 160
+        seq_len = 256
         model = TSTCC(
             input_channels=2,
             kernel_size=8,
             stride=4,
             final_out_channels=16,
-            features_len=4,
+            features_len=10,
             num_classes=3,
         )
-        # Build a batch with labels — labels should be ignored
-        x = torch.randn(4, 2, 128)
+        # Verify actual features shape matches the configured features_len
+        test_x = torch.randn(1, 2, seq_len)
+        _logits, features = model(test_x)
+        actual_flat = features.shape[1] * features.shape[2]
+        assert actual_flat == model._encoder.logits.in_features, (  # noqa: SLF001
+            f'features flattened ({actual_flat}) != logits in_features '
+            f'({model._encoder.logits.in_features})'  # noqa: SLF001
+        )
+        # Now run the contrastive loss
+        x = torch.randn(4, 2, seq_len)
         labels = torch.randint(0, 3, (4,))
         batch = (x, labels)
-        loss = model._compute_loss(batch)
+        loss = model._compute_loss(batch)  # noqa: SLF001
         assert loss.ndim == 0
         assert torch.isfinite(loss)
 
@@ -65,10 +80,6 @@ class TestTSTCCConfigCleaned:
 
     def test_config_no_training_mode_field(self) -> None:
         """TSTCCModelParameters dataclass no longer has training_mode."""
-        from tscollection.models.convolutional.standard.tstcc.config import (
-            TSTCCModelParameters,
-        )
-
         assert 'training_mode' not in TSTCCModelParameters.__dataclass_fields__
 
 
@@ -82,7 +93,7 @@ class TestTSTCCFineTuningModule:
             kernel_size=8,
             stride=4,
             final_out_channels=16,
-            features_len=4,
+            features_len=10,
             num_classes=3,
         )
         module = make_tstcc_finetuner(
@@ -99,13 +110,13 @@ class TestTSTCCFineTuningModule:
             kernel_size=8,
             stride=4,
             final_out_channels=16,
-            features_len=4,
+            features_len=10,
             num_classes=3,
         )
         module = make_tstcc_finetuner(
             backbone, num_classes=5, task='classification', freeze_backbone=False
         )
-        x = torch.randn(4, 2, 4)
+        x = torch.randn(4, 2, 256)
         targets = torch.randint(0, 5, (4,))
         batch = (x, targets)
         loss = module.training_step(batch, 0)

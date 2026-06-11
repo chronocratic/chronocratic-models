@@ -1,9 +1,4 @@
-__all__ = [
-    'TSTCC',
-    'TSTCCModelParameters',
-    'TSTCCTrainingMode',
-]
+__all__ = ['TSTCC', 'TSTCCModelParameters']
 
 from .config import TSTCCModelParameters
-from .enums import TSTCCTrainingMode
 from .model import TSTCC

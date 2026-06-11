@@ -9,7 +9,6 @@ from torch.nn import functional
 
 from tscollection.models._mixin import BasicEncodingMixin
 from tscollection.models.convolutional.standard.tstcc.encoder import TCCEncoder
-from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTrainingMode
 from tscollection.models.convolutional.standard.tstcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from tscollection.models.utils import extract_features_from_batch
@@ -21,18 +20,13 @@ if TYPE_CHECKING:
 
 
 class TSTCC(pl.LightningModule, BasicEncodingMixin):
-    """PyTorch Lightning module for TS-TCC.
+    """PyTorch Lightning module for TS-TCC (self-supervised pretraining only).
 
-    Three training modes controlled by ``training_mode``:
+    Single-purpose model for temporal + contextual contrastive pre-training
+    on augmented views. Labels are ignored during pretraining.
 
-    - ``self_supervised``: temporal + contextual contrastive pre-training on
-      augmented views; labels are ignored.
-    - ``supervised``: standard cross-entropy training on labeled data.
-    - ``fine_tuning``: cross-entropy training with only the logits head
-      trainable; backbone weights are frozen.
-
-    Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
-    augmented views of ``data`` are produced by the injected
+    Batch format: ``(data, labels)`` where ``labels`` is ignored.
+    Two augmented views of ``data`` are produced by the injected
     ``DualAugmentation`` (one augmentation per view). The default is
     ``TSTCCDualAugmentation``, which provides Gaussian scaling (weak)
     and segment-permutation + jitter (strong) views, matching the
@@ -40,6 +34,9 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
+
+    For downstream classification or regression, use :class:`FineTuningModule`
+    from ``tscollection.models._finetuning``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.
@@ -59,7 +56,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         temperature: float = 0.2,
         *,
         use_cosine_similarity: bool = True,
-        training_mode: TSTCCTrainingMode = TSTCCTrainingMode.SELF_SUPERVISED,
         learning_rate: float = 3e-4,
         lambda1: float = 1.0,
         lambda2: float = 0.7,
@@ -70,7 +66,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self.save_hyperparameters(ignore=['augmentation'])
         self.automatic_optimization = False
 
-        self._training_mode = training_mode
         self._learning_rate = learning_rate
         self._lambda1 = lambda1
         self._lambda2 = lambda2
@@ -100,11 +95,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._nt_xent_loss = NTXentLoss(
             temperature=temperature, use_cosine_similarity=use_cosine_similarity
         )
-        self._criterion = nn.CrossEntropyLoss()
-
-        if training_mode == TSTCCTrainingMode.FINE_TUNING:
-            for name, param in self._encoder.named_parameters():
-                param.requires_grad = name.startswith('logits')
 
     # ------------------------------------------------------------------
     # Forward
@@ -119,27 +109,26 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
 
     def _compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Compute contrastive pretraining loss.
+
+        Labels in the batch are ignored — this model handles self-supervised
+        pretraining only. For downstream supervised tasks, use FineTuningModule.
+        """
         data = extract_features_from_batch(batch).float()
 
-        if self._training_mode == TSTCCTrainingMode.SELF_SUPERVISED:
-            views = self._augmentation.augment(data)
-            aug1, aug2 = views.views[0], views.views[1]
-            _, features1 = self._encoder(aug1)
-            _, features2 = self._encoder(aug2)
-            features1 = functional.normalize(features1, dim=1)
-            features2 = functional.normalize(features2, dim=1)
+        views = self._augmentation.augment(data)
+        aug1, aug2 = views.views[0], views.views[1]
+        _, features1 = self._encoder(aug1)
+        _, features2 = self._encoder(aug2)
+        features1 = functional.normalize(features1, dim=1)
+        features2 = functional.normalize(features2, dim=1)
 
-            temp_loss1, proj1 = self._tc_model(features1, features2)
-            temp_loss2, proj2 = self._tc_model(features2, features1)
+        temp_loss1, proj1 = self._tc_model(features1, features2)
+        temp_loss2, proj2 = self._tc_model(features2, features1)
 
-            temporal_loss = temp_loss1 + temp_loss2
-            contextual_loss = self._nt_xent_loss(proj1, proj2)
-            return self._lambda1 * temporal_loss + self._lambda2 * contextual_loss
-
-        # supervised / fine_tuning
-        labels = batch[1]
-        predictions, _ = self._encoder(data)
-        return self._criterion(predictions, labels.long())
+        temporal_loss = temp_loss1 + temp_loss2
+        contextual_loss = self._nt_xent_loss(proj1, proj2)
+        return self._lambda1 * temporal_loss + self._lambda2 * contextual_loss
 
     # ------------------------------------------------------------------
     # Training & validation steps
