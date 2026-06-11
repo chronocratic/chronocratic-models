@@ -8,32 +8,26 @@ needed — only the public API contracts are verified.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Protocol, runtime_checkable
 from unittest.mock import MagicMock
 
-import lightning.pytorch as pl
-import pytest
 import torch
 from torch import nn
 
 from tscollection.models._finetuning import (
     BackboneUnfreeze,
-    BatchAdapter,
+    classification_loss,
     FineTuningModule,
     FlattenLinearHead,
-    RepresentationBackbone,
-    classification_loss,
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,
+    RepresentationBackbone,
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers: minimal stubs satisfying the protocols
@@ -54,10 +48,14 @@ class _DummyBackbone(nn.Module):
 
 
 def _dummy_rep_fn(backbone: nn.Module, *inputs: torch.Tensor) -> torch.Tensor:
-    """Return a (batch, rep_dim) tensor from the backbone."""
+    """Return a (batch, rep_dim) tensor from the backbone.
+
+    Uses the backbone's own parameters so the gradient chain is intact.
+    """
     x = inputs[0]
-    batch = x.shape[0]
-    return torch.randn(batch, backbone.representation_dim, device=x.device)
+    # Route through backbone.fc so gradients flow back to backbone params
+    sample = x.mean(dim=1)  # (B, feat_dim)
+    return backbone.fc(sample)  # type: ignore[attr-defined]
 
 
 def _dummy_batch_adapter(batch: tuple) -> tuple[tuple[torch.Tensor, ...], torch.Tensor]:
@@ -66,14 +64,23 @@ def _dummy_batch_adapter(batch: tuple) -> tuple[tuple[torch.Tensor, ...], torch.
 
 
 class _DummyHead(nn.Module):
-    """Head that returns (batch, num_outputs) regardless of input shape."""
+    """Head that returns (batch, num_outputs) regardless of input shape.
+
+    Uses a real Linear layer so parameters are registered for optimizer tests.
+    """
 
     def __init__(self, num_outputs: int = 3) -> None:
         super().__init__()
-        self.num_outputs = num_outputs
+        self._fc = nn.Linear(4, num_outputs)
 
     def forward(self, reps: torch.Tensor) -> torch.Tensor:
-        return torch.randn(reps.shape[0], self.num_outputs, device=reps.device)
+        # Pad or slice reps to match in_features=4
+        x = (
+            reps[:, :4]
+            if reps.shape[1] >= 4
+            else torch.nn.functional.pad(reps, (0, 4 - reps.shape[1]))
+        )
+        return self._fc(x)
 
 
 # ---------------------------------------------------------------------------
@@ -115,10 +122,6 @@ class TestFineTuningModule:
         batch: tuple = (torch.randn(4, 10, 2), torch.randn(4, 1))
         loss = module.training_step(batch, 0)
         assert loss.ndim == 0  # scalar
-        # Verify the metric was logged
-        assert 'train_loss' in module.current_epoch  # type: ignore[attr-defined]
-        # Better check: the LightningModule logs dict
-        # We just check that training_step doesn't crash and returns a finite value
         assert torch.isfinite(loss)
 
     def test_validation_step_returns_scalar_and_logs(self) -> None:
@@ -142,7 +145,7 @@ class TestFineTuningModule:
         """freeze_backbone=True sets requires_grad=False on all backbone params."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        _ = FineTuningModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -186,9 +189,7 @@ class TestFineTuningModule:
         batch: tuple = (torch.randn(2, 10, 2), torch.randn(2, 1))
         loss = module.training_step(batch, 0)
         loss.backward()
-        backbone_grads = [
-            p.grad for p in backbone.parameters() if p.requires_grad
-        ]
+        backbone_grads = [p.grad for p in backbone.parameters() if p.requires_grad]
         # At least one backbone param should have a gradient
         assert any(g is not None for g in backbone_grads)
 
@@ -259,7 +260,7 @@ class TestRepresentationFunctions:
 
     def test_tst_representations(self) -> None:
         """tst_representations calls backbone.get_representations and zeros padding."""
-        backbone = MagicMock(spec=nn.Module)
+        backbone = MagicMock()
         reps = torch.randn(2, 5, 8)  # (B, seq, d_model)
         backbone.get_representations.return_value = reps
         x = torch.randn(2, 5, 3)
@@ -273,8 +274,8 @@ class TestRepresentationFunctions:
 
     def test_series2vec_representations(self) -> None:
         """series2vec_representations calls backbone.network.encode(x)."""
-        backbone = MagicMock(spec=nn.Module)
-        network = MagicMock(spec=nn.Module)
+        backbone = MagicMock()
+        network = MagicMock()
         reps = torch.randn(2, 16)  # (B, 2*rep_dims)
         network.encode.return_value = reps
         backbone.network = network
@@ -285,7 +286,7 @@ class TestRepresentationFunctions:
 
     def test_tstcc_representations(self) -> None:
         """tstcc_representations calls backbone(x.float()), extracts features."""
-        backbone = MagicMock(spec=nn.Module)
+        backbone = MagicMock()
         logits = torch.randn(2, 5)
         features = torch.randn(2, 32)
         backbone.return_value = (logits, features)
@@ -310,9 +311,7 @@ class TestClassificationLoss:
         predictions = torch.tensor([[0.1, 0.9], [0.8, 0.2]])
         targets = torch.tensor([1.0, 0.0])  # float targets (common in dataloaders)
         loss = classification_loss(predictions, targets)
-        expected = nn.functional.cross_entropy(
-            predictions, targets.long().squeeze()
-        )
+        expected = nn.functional.cross_entropy(predictions, targets.long().squeeze())
         torch.testing.assert_close(loss, expected)
 
 
@@ -439,8 +438,8 @@ class TestFactoryFunctions:
             backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # The head should be a FlattenLinearHead with correct in_features
-        head = module._head
+        head = module._head  # noqa: SLF001
         assert isinstance(head, FlattenLinearHead)
-        fc = head._fc
+        fc = head._fc  # noqa: SLF001
         assert fc.in_features == 8
         assert fc.out_features == 5
