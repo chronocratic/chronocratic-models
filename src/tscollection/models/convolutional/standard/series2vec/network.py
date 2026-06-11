@@ -29,6 +29,8 @@ class Series2VecNetwork(nn.Module):
     ) -> None:
         super().__init__()
 
+        self._representation_dims = representation_dims
+
         self.embed_layer = DisjoinEncoder(
             input_dims=input_dims,
             embedding_dims=embedding_dims,
@@ -120,3 +122,12 @@ class Series2VecNetwork(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return representations of shape ``(batch, 2 * representation_dims)``."""
         return self.encode(x)
+
+    @property
+    def representation_dim(self) -> int:
+        """Per-dimension representation size (temporal or frequency, not concatenated).
+
+        Returns:
+            The number of features in a single branch before concatenation.
+        """
+        return self._representation_dims

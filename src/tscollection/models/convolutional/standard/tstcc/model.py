@@ -205,3 +205,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         """Return the pre-logits features from the ``(logits, features)`` encoder output."""
         return output[1]
+
+    @property
+    def representation_dim(self) -> int:
+        """Flattened pre-logits feature size of the TCC encoder.
+
+        Returns:
+            The input dimension of the encoder's logits ``nn.Linear`` layer,
+            which equals ``final_out_channels * features_len``.
+        """
+        return self._encoder.logits.in_features

@@ -211,3 +211,13 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             batch_x.shape[0], batch_x.shape[1], dtype=torch.bool, device=self.device
         )
         return (batch_x, padding_masks)
+
+    @property
+    def representation_dim(self) -> int:
+        """Flattened representation size handed to a downstream head.
+
+        Returns:
+            ``d_model * max_len`` — the number of features after flattening
+            the ``(batch, seq_len, d_model)`` representation.
+        """
+        return self._encoder.d_model * self._encoder.max_len

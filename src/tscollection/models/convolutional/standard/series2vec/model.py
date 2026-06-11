@@ -152,3 +152,13 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         optimizer_cls = _get_optimizer(self._optimizer_name)
         kwargs: dict = {'lr': self._learning_rate, 'weight_decay': self._weight_decay}
         return optimizer_cls(self.parameters(), **kwargs)
+
+    @property
+    def representation_dim(self) -> int:
+        """Flattened representation size (temporal + frequency concatenated).
+
+        Returns:
+            ``2 * representation_dims`` — the output dimension of
+            :meth:`Series2VecNetwork.encode`.
+        """
+        return 2 * self.network._representation_dims  # noqa: SLF001

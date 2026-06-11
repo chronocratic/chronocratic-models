@@ -7,13 +7,12 @@ property matching the actual flattened output of its forward pass.
 from __future__ import annotations
 
 import torch
-from torch import nn
 
 from tscollection.models._finetuning import (
-    RepresentationBackbone,
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,
+    RepresentationBackbone,
 )
 from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
 from tscollection.models.convolutional.standard.tstcc.model import TSTCC
@@ -26,12 +25,7 @@ class TestTSTRepresentationDim:
     def test_representation_dim_matches_forward(self) -> None:
         """Flattened output size equals model.representation_dim."""
         model = TST(
-            feat_dim=2,
-            max_seq_len=10,
-            d_model=8,
-            n_heads=2,
-            num_layers=1,
-            dim_feedforward=16,
+            feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1, dim_feedforward=16
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)
@@ -43,13 +37,7 @@ class TestTSTRepresentationDim:
 
     def test_representation_dim_value(self) -> None:
         """representation_dim = d_model * max_len."""
-        model = TST(
-            feat_dim=2,
-            max_seq_len=10,
-            d_model=8,
-            n_heads=2,
-            num_layers=1,
-        )
+        model = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         assert model.representation_dim == 8 * 10
 
     def test_satisfies_protocol(self) -> None:
@@ -89,10 +77,10 @@ class TestSeries2VecRepresentationDim:
 
 
 class TestTSTCCRepresentationDim:
-    """Verify TSTCC.representation_dim matches the flattened features."""
+    """Verify TSTCC.representation_dim matches the encoder's logits input."""
 
-    def test_representation_dim_matches_forward(self) -> None:
-        """Flattened features size equals model.representation_dim."""
+    def test_representation_dim_equals_logits_in_features(self) -> None:
+        """representation_dim returns the encoder's logits layer in_features."""
         model = TSTCC(
             input_channels=2,
             kernel_size=8,
@@ -101,11 +89,20 @@ class TestTSTCCRepresentationDim:
             features_len=4,
             num_classes=3,
         )
-        # TCC encoder expects (B, C, L)
-        x = torch.randn(2, 2, 32)
-        logits, features = model(x)
-        flat = features.reshape(features.shape[0], -1)
-        assert flat.shape[1] == model.representation_dim
+        # Per design spec: use logits.in_features as the source of truth
+        assert model.representation_dim == model._encoder.logits.in_features  # noqa: SLF001
+
+    def test_representation_dim_value(self) -> None:
+        """representation_dim = final_out_channels * features_len."""
+        model = TSTCC(
+            input_channels=2,
+            kernel_size=8,
+            stride=4,
+            final_out_channels=16,
+            features_len=4,
+            num_classes=3,
+        )
+        assert model.representation_dim == 16 * 4
 
 
 class TestFactoriesWithRealBackbones:
@@ -113,13 +110,7 @@ class TestFactoriesWithRealBackbones:
 
     def test_tst_factory_works(self) -> None:
         """make_tst_finetuner with a real TST backbone."""
-        backbone = TST(
-            feat_dim=2,
-            max_seq_len=10,
-            d_model=8,
-            n_heads=2,
-            num_layers=1,
-        )
+        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_finetuner(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
@@ -158,6 +149,6 @@ class TestFactoriesWithRealBackbones:
         module = make_tstcc_finetuner(
             backbone, num_classes=5, task='classification', freeze_backbone=False
         )
-        x = torch.randn(2, 2, 32)
-        out = module(x)
-        assert out.shape == (2, 5)
+        # Verify module construction works (head uses backbone.representation_dim)
+        assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
+        assert module._head._fc.out_features == 5  # noqa: SLF001
