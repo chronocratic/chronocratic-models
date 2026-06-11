@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models._finetuning import make_tst_finetuner
+from tscollection.models._supervised import make_tst_finetuner
 from tscollection.models.transformer.tst.model import TST
 
 

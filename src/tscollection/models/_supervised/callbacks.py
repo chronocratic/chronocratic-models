@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import lightning.pytorch as pl
     import torch
 
-    from tscollection.models._finetuning.finetuning import FineTuningModule
+    from tscollection.models._supervised.supervised import FineTuningModule
 
 __all__ = ['BackboneUnfreeze']
 

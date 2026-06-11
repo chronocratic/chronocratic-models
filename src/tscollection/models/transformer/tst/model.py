@@ -38,7 +38,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     pretraining.
 
     For downstream classification / regression, use :class:`FineTuningModule`
-    from ``tscollection.models._finetuning``.
+    from ``tscollection.models._supervised``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.

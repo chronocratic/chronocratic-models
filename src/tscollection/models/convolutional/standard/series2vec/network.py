@@ -15,7 +15,7 @@ class Series2VecNetwork(nn.Module):
 
     The network produces representations only; downstream classification and
     regression use :class:`FineTuningModule` from
-    ``tscollection.models._finetuning``.
+    ``tscollection.models._supervised``.
     """
 
     def __init__(

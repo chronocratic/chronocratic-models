@@ -9,8 +9,8 @@ from lightning.pytorch.trainer import Trainer
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from tscollection.models import _finetuning
-from tscollection.models._finetuning import (
+from tscollection.models import _supervised
+from tscollection.models._supervised import (
     FineTuningModule,
     make_series2vec_finetuner,
     make_tst_finetuner,
@@ -293,13 +293,13 @@ class TestRegressionTask:
 class TestBarrelExportsClean:
     """Verify barrel exports are clean — no leaked head classes."""
 
-    def test_finetuning_exports_match_all(self) -> None:
-        """tscollection.models._finetuning exports match __all__."""
-        exported = set(_finetuning.__all__)
+    def test_supervised_exports_match_all(self) -> None:
+        """tscollection.models._supervised exports match __all__."""
+        exported = set(_supervised.__all__)
         actual = {
             name
-            for name in dir(_finetuning)
-            if not name.startswith('_') and name in _finetuning.__all__
+            for name in dir(_supervised)
+            if not name.startswith('_') and name in _supervised.__all__
         }
         assert exported == actual
 

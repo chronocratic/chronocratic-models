@@ -7,7 +7,7 @@ Series2Vec, and TS-TCC backbones.
 
 Usage::
 
-    from tscollection.models._finetuning import make_tst_finetuner
+    from tscollection.models._supervised import make_tst_finetuner
 
     backbone = TST(feat_dim=1, max_seq_len=100, d_model=32, n_heads=4, num_layers=2)
     finetuner = make_tst_finetuner(backbone, num_outputs=5, task='classification')
@@ -18,26 +18,26 @@ See the design spec at
 
 from __future__ import annotations
 
-from tscollection.models._finetuning.adapters import (
+from tscollection.models._supervised.adapters import (
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._finetuning.callbacks import BackboneUnfreeze
-from tscollection.models._finetuning.factory import (
+from tscollection.models._supervised.callbacks import BackboneUnfreeze
+from tscollection.models._supervised.factory import (
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,
 )
-from tscollection.models._finetuning.finetuning import (
+from tscollection.models._supervised.supervised import (
     BatchAdapter,
     FineTuningModule,
     FlattenLinearHead,
     RepresentationBackbone,
 )
-from tscollection.models._finetuning.utils import (
+from tscollection.models._supervised.utils import (
     classification_loss,
     regression_loss,
 )

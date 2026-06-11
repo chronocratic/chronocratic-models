@@ -12,15 +12,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tscollection.models._finetuning.adapters import (
+from tscollection.models._supervised.adapters import (
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._finetuning.finetuning import FineTuningModule, FlattenLinearHead
-from tscollection.models._finetuning.utils import (
+from tscollection.models._supervised.supervised import FineTuningModule, FlattenLinearHead
+from tscollection.models._supervised.utils import (
     classification_loss,
     regression_loss,
 )

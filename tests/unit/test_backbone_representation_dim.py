@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models._finetuning import (
+from tscollection.models._supervised import (
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,

@@ -11,7 +11,7 @@ import inspect
 import pytest
 import torch
 
-from tscollection.models._finetuning import make_tstcc_finetuner
+from tscollection.models._supervised import make_tstcc_finetuner
 from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
