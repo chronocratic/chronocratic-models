@@ -6,8 +6,8 @@ creating temporary ``nn.Module`` objects at call time.
 
 from __future__ import annotations
 
-from torch import nn as nn
 import torch
+from torch import nn
 
 __all__ = [
     'classification_loss',

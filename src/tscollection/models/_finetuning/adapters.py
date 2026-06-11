@@ -7,8 +7,14 @@ stays model-agnostic.
 
 from __future__ import annotations
 
-import torch
-from torch import nn
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import torch
+
+    from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
+    from tscollection.models.convolutional.standard.tstcc.model import TSTCC
+    from tscollection.models.transformer.tst.model import TST
 
 __all__ = [
     'series2vec_representations',
@@ -49,7 +55,7 @@ def supervised_batch_adapter(batch: tuple) -> tuple[tuple[torch.Tensor, ...], to
 
 
 def tst_representations(
-    backbone: nn.Module, x: torch.Tensor, padding_masks: torch.Tensor
+    backbone: TST, x: torch.Tensor, padding_masks: torch.Tensor
 ) -> torch.Tensor:
     """Run the TST trunk and zero padded positions.
 
@@ -65,7 +71,7 @@ def tst_representations(
     return reps * padding_masks.unsqueeze(-1)
 
 
-def series2vec_representations(backbone: nn.Module, x: torch.Tensor) -> torch.Tensor:
+def series2vec_representations(backbone: Series2Vec, x: torch.Tensor) -> torch.Tensor:
     """Extract temporal + frequency representations.
 
     Args:
@@ -78,7 +84,7 @@ def series2vec_representations(backbone: nn.Module, x: torch.Tensor) -> torch.Te
     return backbone.network.encode(x)
 
 
-def tstcc_representations(backbone: nn.Module, x: torch.Tensor) -> torch.Tensor:
+def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
     """Extract pre-logits features from the TCC encoder.
 
     Args:

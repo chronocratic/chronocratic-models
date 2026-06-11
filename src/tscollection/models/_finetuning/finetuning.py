@@ -124,6 +124,11 @@ class FineTuningModule(pl.LightningModule):
         if freeze_backbone:
             self._backbone.requires_grad_(requires_grad=False)
 
+    @property
+    def backbone(self) -> nn.Module:
+        """The wrapped backbone (read-only access for finetuning callbacks)."""
+        return self._backbone
+
     def forward(self, *encoder_inputs: torch.Tensor) -> torch.Tensor:
         """Run representations through the head.
 

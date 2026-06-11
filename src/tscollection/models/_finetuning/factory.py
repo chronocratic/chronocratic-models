@@ -10,7 +10,7 @@ logits reuse). All three factories follow the same pattern.
 
 from __future__ import annotations
 
-from torch import nn
+from typing import TYPE_CHECKING
 
 from tscollection.models._finetuning.adapters import (
     series2vec_representations,
@@ -19,15 +19,16 @@ from tscollection.models._finetuning.adapters import (
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._finetuning.finetuning import (
-    FineTuningModule,
-    FlattenLinearHead,
-    RepresentationBackbone,
-)
+from tscollection.models._finetuning.finetuning import FineTuningModule, FlattenLinearHead
 from tscollection.models._finetuning.utils import (
     classification_loss,
     regression_loss,
 )
+
+if TYPE_CHECKING:
+    from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
+    from tscollection.models.convolutional.standard.tstcc.model import TSTCC
+    from tscollection.models.transformer.tst.model import TST
 
 __all__ = ['make_series2vec_finetuner', 'make_tst_finetuner', 'make_tstcc_finetuner']
 
@@ -42,7 +43,7 @@ def _validate_task(task: str) -> None:
 
 
 def make_tst_finetuner(
-    backbone: RepresentationBackbone,
+    backbone: TST,
     *,
     num_outputs: int,
     task: str = 'classification',
@@ -82,7 +83,7 @@ def make_tst_finetuner(
 
 
 def make_series2vec_finetuner(
-    backbone: RepresentationBackbone,
+    backbone: Series2Vec,
     *,
     num_outputs: int,
     task: str = 'classification',
@@ -122,7 +123,7 @@ def make_series2vec_finetuner(
 
 
 def make_tstcc_finetuner(
-    backbone: RepresentationBackbone,
+    backbone: TSTCC,
     *,
     num_outputs: int,
     task: str = 'classification',

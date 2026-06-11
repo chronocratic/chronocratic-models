@@ -367,12 +367,12 @@ class TestBackboneUnfreeze:
         initial_groups = len(opt.param_groups)
 
         # Before target epoch — should stay frozen
-        callback.finetune_function(module, current_epoch=1, optimizer=opt)
+        callback.finetune_function(module, epoch=1, optimizer=opt)
         for param in backbone.parameters():
             assert param.requires_grad is False
 
         # At target epoch — should unfreeze
-        callback.finetune_function(module, current_epoch=2, optimizer=opt)
+        callback.finetune_function(module, epoch=2, optimizer=opt)
         for param in backbone.parameters():
             assert param.requires_grad is True
         # A new param group was added

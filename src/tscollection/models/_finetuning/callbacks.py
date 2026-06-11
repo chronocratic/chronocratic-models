@@ -12,13 +12,15 @@ Note:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 from lightning.pytorch.callbacks import BaseFinetuning
 
 if TYPE_CHECKING:
     import lightning.pytorch as pl
     import torch
+
+    from tscollection.models._finetuning.finetuning import FineTuningModule
 
 __all__ = ['BackboneUnfreeze']
 
@@ -50,10 +52,11 @@ class BackboneUnfreeze(BaseFinetuning):
         Args:
             pl_module: The :class:`FineTuningModule` instance.
         """
-        self.freeze(pl_module._backbone)
+        module = cast('FineTuningModule', pl_module)
+        self.freeze(module.backbone)
 
     def finetune_function(
-        self, pl_module: pl.LightningModule, current_epoch: int, optimizer: torch.optim.Optimizer
+        self, pl_module: pl.LightningModule, epoch: int, optimizer: torch.optim.Optimizer
     ) -> None:
         """Unfreeze the backbone at the target epoch.
 
@@ -63,12 +66,13 @@ class BackboneUnfreeze(BaseFinetuning):
 
         Args:
             pl_module: The :class:`FineTuningModule` instance.
-            current_epoch: Current training epoch.
+            epoch: Current training epoch.
             optimizer: The active optimizer.
         """
-        if current_epoch == self._unfreeze_at_epoch:
+        if epoch == self._unfreeze_at_epoch:
+            module = cast('FineTuningModule', pl_module)
             self.unfreeze_and_add_param_group(
-                modules=pl_module._backbone,
+                modules=module.backbone,
                 optimizer=optimizer,
                 initial_denom_lr=self._initial_denom_lr,
             )
