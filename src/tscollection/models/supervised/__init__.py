@@ -22,14 +22,15 @@ See the design spec at
 
 from __future__ import annotations
 
-from tscollection.models.supervised.adapters import (
+from tscollection.models.supervised._adapters import (
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models.supervised.callbacks import BackboneUnfreeze
+from tscollection.models.supervised._callbacks import BackboneUnfreeze
+from tscollection.models.supervised._utils import classification_loss, regression_loss
 from tscollection.models.supervised.factory import (
     make_series2vec_supervised,
     make_tst_supervised,
@@ -41,7 +42,6 @@ from tscollection.models.supervised.supervised import (
     RepresentationBackbone,
     SupervisedModule,
 )
-from tscollection.models.supervised.utils import classification_loss, regression_loss
 
 __all__ = [
     'BackboneUnfreeze',
