@@ -11,7 +11,7 @@ import inspect
 import pytest
 import torch
 
-from tscollection.models._supervised import make_tstcc_finetuner
+from tscollection.models._supervised import make_tstcc_supervised
 from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
@@ -87,7 +87,7 @@ class TestTSTCCSupervisedModule:
     """Verify TSTCC downstream via SupervisedModule works."""
 
     def test_finetuner_classification_shape(self) -> None:
-        """make_tstcc_finetuner produces (B, num_classes) output."""
+        """make_tstcc_supervised produces (B, num_classes) output."""
         backbone = TSTCC(
             input_channels=2,
             kernel_size=8,
@@ -96,7 +96,7 @@ class TestTSTCCSupervisedModule:
             features_len=10,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(
+        module = make_tstcc_supervised(
             backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # Verify module construction (head uses backbone.representation_dim)
@@ -113,7 +113,7 @@ class TestTSTCCSupervisedModule:
             features_len=10,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(
+        module = make_tstcc_supervised(
             backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         x = torch.randn(4, 2, 256)

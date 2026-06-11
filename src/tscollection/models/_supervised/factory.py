@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from tscollection.models.convolutional.standard.tstcc.model import TSTCC
     from tscollection.models.transformer.tst.model import TST
 
-__all__ = ['make_series2vec_finetuner', 'make_tst_finetuner', 'make_tstcc_finetuner']
+__all__ = ['make_series2vec_supervised', 'make_tst_supervised', 'make_tstcc_supervised']
 
 _VALID_TASKS = ('classification', 'regression')
 
@@ -39,7 +39,7 @@ def _validate_task(task: str) -> None:
         raise ValueError(msg)
 
 
-def make_tst_finetuner(
+def make_tst_supervised(
     backbone: TST,
     *,
     num_outputs: int,
@@ -79,7 +79,7 @@ def make_tst_finetuner(
     )
 
 
-def make_series2vec_finetuner(
+def make_series2vec_supervised(
     backbone: Series2Vec,
     *,
     num_outputs: int,
@@ -119,7 +119,7 @@ def make_series2vec_finetuner(
     )
 
 
-def make_tstcc_finetuner(
+def make_tstcc_supervised(
     backbone: TSTCC,
     *,
     num_outputs: int,

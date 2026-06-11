@@ -9,9 +9,9 @@ from __future__ import annotations
 import torch
 
 from tscollection.models._supervised import (
-    make_series2vec_finetuner,
-    make_tst_finetuner,
-    make_tstcc_finetuner,
+    make_series2vec_supervised,
+    make_tst_supervised,
+    make_tstcc_supervised,
     RepresentationBackbone,
 )
 from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
@@ -109,9 +109,9 @@ class TestFactoriesWithRealBackbones:
     """Smoke tests: factories produce working SupervisedModule with real backbones."""
 
     def test_tst_factory_works(self) -> None:
-        """make_tst_finetuner with a real TST backbone."""
+        """make_tst_supervised with a real TST backbone."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
-        module = make_tst_finetuner(
+        module = make_tst_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         x = torch.randn(2, 10, 2)
@@ -120,7 +120,7 @@ class TestFactoriesWithRealBackbones:
         assert out.shape == (2, 3)
 
     def test_series2vec_factory_works(self) -> None:
-        """make_series2vec_finetuner with a real Series2Vec backbone."""
+        """make_series2vec_supervised with a real Series2Vec backbone."""
         backbone = Series2Vec(
             input_dims=2,
             embedding_dims=8,
@@ -129,7 +129,7 @@ class TestFactoriesWithRealBackbones:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        module = make_series2vec_finetuner(
+        module = make_series2vec_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         x = torch.randn(2, 20, 2)
@@ -137,7 +137,7 @@ class TestFactoriesWithRealBackbones:
         assert out.shape == (2, 3)
 
     def test_tstcc_factory_works(self) -> None:
-        """make_tstcc_finetuner with a real TSTCC backbone."""
+        """make_tstcc_supervised with a real TSTCC backbone."""
         backbone = TSTCC(
             input_channels=2,
             kernel_size=8,
@@ -146,7 +146,7 @@ class TestFactoriesWithRealBackbones:
             features_len=4,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(
+        module = make_tstcc_supervised(
             backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # Verify module construction works (head uses backbone.representation_dim)

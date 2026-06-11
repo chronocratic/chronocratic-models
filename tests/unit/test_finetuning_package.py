@@ -17,9 +17,9 @@ from tscollection.models._supervised import (
     BackboneUnfreeze,
     classification_loss,
     FlattenLinearHead,
-    make_series2vec_finetuner,
-    make_tst_finetuner,
-    make_tstcc_finetuner,
+    make_series2vec_supervised,
+    make_tst_supervised,
+    make_tstcc_supervised,
     regression_loss,
     RepresentationBackbone,
     series2vec_representations,
@@ -408,34 +408,34 @@ class TestRepresentationBackboneProtocol:
 class TestFactoryFunctions:
     """Verify factory constructors produce SupervisedModule instances."""
 
-    def test_make_tst_finetuner_classification(self) -> None:
-        """make_tst_finetuner with classification task returns SupervisedModule."""
+    def test_make_tst_supervised_classification(self) -> None:
+        """make_tst_supervised with classification task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
-        module = make_tst_finetuner(
+        module = make_tst_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
-    def test_make_tst_finetuner_regression(self) -> None:
-        """make_tst_finetuner with regression task returns SupervisedModule."""
+    def test_make_tst_supervised_regression(self) -> None:
+        """make_tst_supervised with regression task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
-        module = make_tst_finetuner(
+        module = make_tst_supervised(
             backbone, num_outputs=2, task='regression', freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
-    def test_make_series2vec_finetuner_classification(self) -> None:
-        """make_series2vec_finetuner with classification returns SupervisedModule."""
+    def test_make_series2vec_supervised_classification(self) -> None:
+        """make_series2vec_supervised with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
-        module = make_series2vec_finetuner(
+        module = make_series2vec_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
-    def test_make_tstcc_finetuner_classification(self) -> None:
-        """make_tstcc_finetuner with classification returns SupervisedModule."""
+    def test_make_tstcc_supervised_classification(self) -> None:
+        """make_tstcc_supervised with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
-        module = make_tstcc_finetuner(
+        module = make_tstcc_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
@@ -443,7 +443,7 @@ class TestFactoryFunctions:
     def test_factory_creates_correct_head_size(self) -> None:
         """Factory head size matches backbone.representation_dim * num_outputs."""
         backbone = _DummyBackbone(rep_dim=8)
-        module = make_tst_finetuner(
+        module = make_tst_supervised(
             backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # The head should be a FlattenLinearHead with correct in_features

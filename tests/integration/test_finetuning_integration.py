@@ -11,9 +11,9 @@ from torch.utils.data import DataLoader, Dataset
 
 from tscollection.models import _supervised
 from tscollection.models._supervised import (
-    make_series2vec_finetuner,
-    make_tst_finetuner,
-    make_tstcc_finetuner,
+    make_series2vec_supervised,
+    make_tst_supervised,
+    make_tstcc_supervised,
     RepresentationBackbone,
     SupervisedModule,
 )
@@ -137,7 +137,7 @@ class TestAllFactoriesProduceSupervisedModule:
 
     def test_tst_factory_type(self) -> None:
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
-        module = make_tst_finetuner(backbone, num_outputs=3, task='classification')
+        module = make_tst_supervised(backbone, num_outputs=3, task='classification')
         assert isinstance(module, SupervisedModule)
 
     def test_series2vec_factory_type(self) -> None:
@@ -149,7 +149,7 @@ class TestAllFactoriesProduceSupervisedModule:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        module = make_series2vec_finetuner(backbone, num_outputs=3, task='classification')
+        module = make_series2vec_supervised(backbone, num_outputs=3, task='classification')
         assert isinstance(module, SupervisedModule)
 
     def test_tstcc_factory_type(self) -> None:
@@ -161,7 +161,7 @@ class TestAllFactoriesProduceSupervisedModule:
             features_len=10,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(backbone, num_outputs=5, task='classification')
+        module = make_tstcc_supervised(backbone, num_outputs=5, task='classification')
         assert isinstance(module, SupervisedModule)
 
 
@@ -176,7 +176,7 @@ class TestEndToEndTraining:
     def test_tst_trains_end_to_end(self) -> None:
         """TST finetuner trains for 3 steps with finite loss."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
-        module = make_tst_finetuner(
+        module = make_tst_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         dataset = _DummyTSTDataset(size=20, seq_len=10, feat_dim=2, num_classes=3)
@@ -203,7 +203,7 @@ class TestEndToEndTraining:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        module = make_series2vec_finetuner(
+        module = make_series2vec_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         dataset = _DummySupervisedDataset(size=20, seq_len=20, channels=2, num_classes=3)
@@ -228,7 +228,7 @@ class TestEndToEndTraining:
             features_len=10,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(
+        module = make_tstcc_supervised(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         dataset = _DummyTSTCCDataset(size=20, seq_len=256, channels=2, num_classes=3)
@@ -279,7 +279,7 @@ class TestRegressionTask:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        module = make_series2vec_finetuner(
+        module = make_series2vec_supervised(
             backbone, num_outputs=2, task='regression', freeze_backbone=False
         )
         x = torch.randn(4, 20, 2)
