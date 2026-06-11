@@ -106,8 +106,8 @@ class Series2VecNetwork(nn.Module):
         x_f = self.gap_f(x_f)
         x_f = x_f.permute(2, 0, 1)
 
-        temporal_representation = out[:, 0, :]
-        frequency_representation = x_f[:, 0, :]
+        temporal_representation = out.squeeze(0)
+        frequency_representation = x_f.squeeze(0)
         temporal_distance = torch.cdist(temporal_representation, temporal_representation)
         frequency_distance = torch.cdist(frequency_representation, frequency_representation)
         return (
