@@ -50,7 +50,9 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = batch[0] if isinstance(batch, (tuple, list)) else batch
         z_mean, z_log_var, z = self.encoder(x)
-        reconstruction = self.decoder(z)
+        # Use sampled z during training, z_mean during validation for deterministic metrics.
+        latent = z if self.training else z_mean
+        reconstruction = self.decoder(latent)
         loss, recon_loss, kl_loss = self.loss_function(x, reconstruction, z_mean, z_log_var)
         return loss, recon_loss, kl_loss
 

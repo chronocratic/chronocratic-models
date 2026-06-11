@@ -76,7 +76,8 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation loss for one batch."""
-        loss = self._step(batch)
+        with torch.no_grad():
+            loss = self._step(batch)
 
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 

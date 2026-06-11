@@ -82,12 +82,12 @@ class TimeVAEDecoder(nn.Module):
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
         self.custom_seas = custom_seas
-        if self.trend_poly is not None and self.trend_poly > 0:
+        if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
                 self.seq_len, self.feat_dim, self.latent_dim, self.trend_poly
             )
-        if custom_seas is not None and len(custom_seas) > 0:
-            self.seasonal_layer = SeasonalLayer(seq_len, feat_dim, latent_dim, custom_seas)
+        if self.custom_seas is not None and len(self.custom_seas) > 0:
+            self.seasonal_layer = SeasonalLayer(seq_len, feat_dim, latent_dim, self.custom_seas)
         self.use_residual_conn = use_residual_conn
         self.encoder_last_dense_dim = encoder_last_dense_dim
         self.level_model = LevelModel(self.latent_dim, self.feat_dim, self.seq_len)
@@ -103,7 +103,7 @@ class TimeVAEDecoder(nn.Module):
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Decode latent samples into reconstructed time-series batches."""
         outputs = self.level_model(z)
-        if self.trend_poly is not None and self.trend_poly > 0:
+        if self.trend_poly > 0:
             outputs += self.trend_layer(z)
 
         # custom seasons

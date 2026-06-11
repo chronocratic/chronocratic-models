@@ -1,3 +1,5 @@
+__all__ = ['TSTCC']
+
 from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
@@ -11,8 +13,6 @@ from tscollection.models.convolutional.standard.tstcc.enums import TSTCCTraining
 from tscollection.models.convolutional.standard.tstcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from tscollection.models.utils import extract_features_from_batch
-
-__all__ = ['TSTCC']
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
