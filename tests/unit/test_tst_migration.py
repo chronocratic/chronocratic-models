@@ -76,9 +76,9 @@ class TestOldHeadRemoved:
     def test_classification_head_removed(self) -> None:
         """TSTClassificationHead is no longer importable from the tst package."""
         with pytest.raises(ImportError):
-            from tscollection.models.transformer.tst import TSTClassificationHead  # noqa: F401
+            from tscollection.models.transformer.tst import TSTClassificationHead  # noqa: F401, I001, PLC0415
 
     def test_regression_head_removed(self) -> None:
         """TSTRegressionHead is no longer importable from the tst package."""
         with pytest.raises(ImportError):
-            from tscollection.models.transformer.tst import TSTRegressionHead  # noqa: F401
+            from tscollection.models.transformer.tst import TSTRegressionHead  # noqa: F401, I001, PLC0415

@@ -37,8 +37,8 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     output. The reconstruction head is internal and used only during
     pretraining.
 
-    For downstream classification / regression, use the dedicated heads
-    in ``tscollection.models.transformer.tst.heads``.
+    For downstream classification / regression, use :class:`FineTuningModule`
+    from ``tscollection.models._finetuning``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
