@@ -19,7 +19,6 @@ See the design spec at
 from __future__ import annotations
 
 from tscollection.models._finetuning.adapters import (
-    classification_loss,
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
@@ -38,6 +37,10 @@ from tscollection.models._finetuning.finetuning import (
     FlattenLinearHead,
     RepresentationBackbone,
 )
+from tscollection.models._finetuning.utils import (
+    classification_loss,
+    regression_loss,
+)
 
 __all__ = [
     'BackboneUnfreeze',
@@ -49,6 +52,7 @@ __all__ = [
     'make_series2vec_finetuner',
     'make_tst_finetuner',
     'make_tstcc_finetuner',
+    'regression_loss',
     'series2vec_representations',
     'supervised_batch_adapter',
     'tst_batch_adapter',

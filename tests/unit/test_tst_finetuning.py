@@ -1,22 +1,21 @@
-"""Tests for TST downstream head migration to FineTuningModule.
+"""Tests for TST fine-tuning via FineTuningModule.
 
-Verifies that old head classes are removed and the new factory-based
-approach works correctly with real TST backbones.
+Verifies that the factory produces correct output shapes, logging works,
+and freeze/unfreeze behaviour is correct for real TST backbones.
 """
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from tscollection.models._finetuning import make_tst_finetuner
 from tscollection.models.transformer.tst.model import TST
 
 
-class TestTSTMigrateToFinetuningModule:
+class TestTSTFinetuningModule:
     """Verify TST fine-tuning via FineTuningModule works correctly."""
 
-    def test_classification_shape(self) -> None:
+    def test_classification_output_shape(self) -> None:
         """make_tst_finetuner classification produces (B, num_outputs) output."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_finetuner(
@@ -27,7 +26,7 @@ class TestTSTMigrateToFinetuningModule:
         out = module(x, padding_masks)
         assert out.shape == (3, 5)
 
-    def test_regression_shape(self) -> None:
+    def test_regression_output_shape(self) -> None:
         """make_tst_finetuner regression produces (B, num_outputs) output."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_finetuner(
@@ -38,8 +37,8 @@ class TestTSTMigrateToFinetuningModule:
         out = module(x, padding_masks)
         assert out.shape == (3, 2)
 
-    def test_training_step_logs(self) -> None:
-        """training_step returns a scalar loss and logs train_loss."""
+    def test_training_step_returns_scalar(self) -> None:
+        """training_step returns a finite scalar loss."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_finetuner(
             backbone, num_outputs=5, task='classification', freeze_backbone=False
@@ -69,16 +68,18 @@ class TestTSTMigrateToFinetuningModule:
         for param in backbone.parameters():
             assert param.grad is None
 
-
-class TestOldHeadRemoved:
-    """Verify old head classes are no longer importable."""
-
-    def test_classification_head_removed(self) -> None:
-        """TSTClassificationHead is no longer importable from the tst package."""
-        with pytest.raises(ImportError):
-            from tscollection.models.transformer.tst import TSTClassificationHead  # noqa: F401, I001, PLC0415
-
-    def test_regression_head_removed(self) -> None:
-        """TSTRegressionHead is no longer importable from the tst package."""
-        with pytest.raises(ImportError):
-            from tscollection.models.transformer.tst import TSTRegressionHead  # noqa: F401, I001, PLC0415
+    def test_unfrozen_backbone_receives_grads(self) -> None:
+        """freeze_backbone=False: backbone params receive gradients."""
+        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        module = make_tst_finetuner(
+            backbone, num_outputs=5, task='classification', freeze_backbone=False
+        )
+        x = torch.randn(2, 10, 2)
+        targets = torch.randint(0, 5, (2,))
+        padding_masks = torch.ones(2, 10, dtype=torch.bool)
+        ids = torch.arange(2)
+        batch = (x, targets, padding_masks, ids)
+        loss = module.training_step(batch, 0)
+        loss.backward()
+        grad_count = sum(1 for p in backbone.parameters() if p.grad is not None)
+        assert grad_count > 0

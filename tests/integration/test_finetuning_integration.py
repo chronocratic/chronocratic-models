@@ -46,7 +46,7 @@ class _DummyTSTDataset(Dataset):
         self, idx: int
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         x = torch.randn(self.seq_len, self.feat_dim)
-        targets = torch.tensor(self.num_classes, dtype=torch.long)
+        targets = torch.tensor(idx % self.num_classes, dtype=torch.long)
         padding_masks = torch.ones(self.seq_len, dtype=torch.bool)
         ids = torch.tensor(idx, dtype=torch.long)
         return x, targets, padding_masks, ids
@@ -68,7 +68,7 @@ class _DummySupervisedDataset(Dataset):
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.randn(self.seq_len, self.channels)
-        targets = torch.tensor(self.num_classes, dtype=torch.long)
+        targets = torch.tensor(idx % self.num_classes, dtype=torch.long)
         return x, targets
 
 
@@ -88,7 +88,7 @@ class _DummyTSTCCDataset(Dataset):
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.randn(self.channels, self.seq_len)
-        targets = torch.tensor(self.num_classes, dtype=torch.long)
+        targets = torch.tensor(idx % self.num_classes, dtype=torch.long)
         return x, targets
 
 
@@ -161,7 +161,7 @@ class TestAllFactoriesProduceFineTuningModule:
             features_len=10,
             num_classes=3,
         )
-        module = make_tstcc_finetuner(backbone, num_classes=5, task='classification')
+        module = make_tstcc_finetuner(backbone, num_outputs=5, task='classification')
         assert isinstance(module, FineTuningModule)
 
 
@@ -190,9 +190,8 @@ class TestEndToEndTraining:
             enable_progress_bar=False,
         )
         trainer.fit(module, train_dataloaders=dataloader)
-        # Verify logs have train_loss
-        # Trainer completed — no assertion needed beyond non-crash
-        assert True
+        assert 'train_loss' in trainer.callback_metrics
+        assert torch.isfinite(trainer.callback_metrics['train_loss'])
 
     def test_series2vec_trains_end_to_end(self) -> None:
         """Series2Vec finetuner trains for 3 steps with finite loss."""
@@ -230,9 +229,9 @@ class TestEndToEndTraining:
             num_classes=3,
         )
         module = make_tstcc_finetuner(
-            backbone, num_classes=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
-        dataset = _DummyTSTCCDataset(size=20, seq_len=256, channels=2, num_classes=5)
+        dataset = _DummyTSTCCDataset(size=20, seq_len=256, channels=2, num_classes=3)
         dataloader = DataLoader(dataset, batch_size=4)
         trainer = Trainer(
             max_epochs=1,

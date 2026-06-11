@@ -50,7 +50,7 @@ class BackboneUnfreeze(BaseFinetuning):
         Args:
             pl_module: The :class:`FineTuningModule` instance.
         """
-        self.freeze(pl_module._backbone)  # type: ignore[attr-defined]  # noqa: SLF001
+        self.freeze(pl_module._backbone)
 
     def finetune_function(
         self, pl_module: pl.LightningModule, current_epoch: int, optimizer: torch.optim.Optimizer
@@ -68,7 +68,7 @@ class BackboneUnfreeze(BaseFinetuning):
         """
         if current_epoch == self._unfreeze_at_epoch:
             self.unfreeze_and_add_param_group(
-                modules=pl_module._backbone,  # type: ignore[attr-defined]  # noqa: SLF001
+                modules=pl_module._backbone,
                 optimizer=optimizer,
                 initial_denom_lr=self._initial_denom_lr,
             )

@@ -10,24 +10,39 @@ logits reuse). All three factories follow the same pattern.
 
 from __future__ import annotations
 
-import torch
 from torch import nn
 
 from tscollection.models._finetuning.adapters import (
-    classification_loss,
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._finetuning.finetuning import FineTuningModule, FlattenLinearHead
+from tscollection.models._finetuning.finetuning import (
+    FineTuningModule,
+    FlattenLinearHead,
+    RepresentationBackbone,
+)
+from tscollection.models._finetuning.utils import (
+    classification_loss,
+    regression_loss,
+)
 
 __all__ = ['make_series2vec_finetuner', 'make_tst_finetuner', 'make_tstcc_finetuner']
 
+_VALID_TASKS = ('classification', 'regression')
+
+
+def _validate_task(task: str) -> None:
+    """Raise if *task* is not one of the recognized values."""
+    if task not in _VALID_TASKS:
+        msg = f"task must be 'classification' or 'regression', got '{task}'"
+        raise ValueError(msg)
+
 
 def make_tst_finetuner(
-    backbone: FineTuningModule,  # type: ignore[type-arg]
+    backbone: RepresentationBackbone,
     *,
     num_outputs: int,
     task: str = 'classification',
@@ -50,8 +65,9 @@ def make_tst_finetuner(
     Returns:
         Configured :class:`FineTuningModule` ready for training.
     """
+    _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
-    loss_fn = classification_loss if task == 'classification' else _mse_loss
+    loss_fn = classification_loss if task == 'classification' else regression_loss
     return FineTuningModule(
         backbone=backbone,
         head=head,
@@ -66,7 +82,7 @@ def make_tst_finetuner(
 
 
 def make_series2vec_finetuner(
-    backbone: FineTuningModule,  # type: ignore[type-arg]
+    backbone: RepresentationBackbone,
     *,
     num_outputs: int,
     task: str = 'classification',
@@ -89,8 +105,9 @@ def make_series2vec_finetuner(
     Returns:
         Configured :class:`FineTuningModule` ready for training.
     """
+    _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
-    loss_fn = classification_loss if task == 'classification' else _mse_loss
+    loss_fn = classification_loss if task == 'classification' else regression_loss
     return FineTuningModule(
         backbone=backbone,
         head=head,
@@ -105,9 +122,9 @@ def make_series2vec_finetuner(
 
 
 def make_tstcc_finetuner(
-    backbone: FineTuningModule,  # type: ignore[type-arg]
+    backbone: RepresentationBackbone,
     *,
-    num_classes: int,
+    num_outputs: int,
     task: str = 'classification',
     freeze_backbone: bool = True,
     learning_rate: float = 1e-3,
@@ -120,7 +137,7 @@ def make_tstcc_finetuner(
 
     Args:
         backbone: A :class:`TSTCC` instance with ``representation_dim``.
-        num_classes: Number of output classes (classification) or targets (regression).
+        num_outputs: Number of classes (classification) or targets (regression).
         task: ``'classification'`` or ``'regression'``.
         freeze_backbone: Freeze backbone params at construction (linear probe).
         learning_rate: Adam LR.
@@ -130,8 +147,9 @@ def make_tstcc_finetuner(
     Returns:
         Configured :class:`FineTuningModule` ready for training.
     """
-    head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_classes)
-    loss_fn = classification_loss if task == 'classification' else _mse_loss
+    _validate_task(task)
+    head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
+    loss_fn = classification_loss if task == 'classification' else regression_loss
     return FineTuningModule(
         backbone=backbone,
         head=head,
@@ -143,11 +161,3 @@ def make_tstcc_finetuner(
         freeze_backbone=freeze_backbone,
         sync_dist=sync_dist,
     )
-
-
-# -- private helpers -----------------------------------------------------------
-
-
-def _mse_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """MSE loss for regression tasks."""
-    return nn.MSELoss()(predictions, targets)

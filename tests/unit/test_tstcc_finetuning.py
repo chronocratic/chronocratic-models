@@ -97,7 +97,7 @@ class TestTSTCCFineTuningModule:
             num_classes=3,
         )
         module = make_tstcc_finetuner(
-            backbone, num_classes=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # Verify module construction (head uses backbone.representation_dim)
         assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
@@ -114,7 +114,7 @@ class TestTSTCCFineTuningModule:
             num_classes=3,
         )
         module = make_tstcc_finetuner(
-            backbone, num_classes=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         x = torch.randn(4, 2, 256)
         targets = torch.randint(0, 5, (4,))

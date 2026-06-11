@@ -11,7 +11,6 @@ import torch
 from torch import nn
 
 __all__ = [
-    'classification_loss',
     'series2vec_representations',
     'supervised_batch_adapter',
     'tst_batch_adapter',
@@ -95,19 +94,3 @@ def tstcc_representations(backbone: nn.Module, x: torch.Tensor) -> torch.Tensor:
     """
     _logits, features = backbone(x.float())
     return features
-
-
-# ---- loss helpers ------------------------------------------------------------
-
-
-def classification_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    """CrossEntropy with the target-squeeze the old heads applied.
-
-    Args:
-        predictions: Logits of shape ``(B, num_classes)``.
-        targets: Class indices (may be float from DataLoader).
-
-    Returns:
-        Scalar cross-entropy loss.
-    """
-    return nn.functional.cross_entropy(predictions, targets.long().squeeze())

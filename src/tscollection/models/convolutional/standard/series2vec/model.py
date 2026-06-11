@@ -161,4 +161,4 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             ``2 * representation_dims`` — the output dimension of
             :meth:`Series2VecNetwork.encode`.
         """
-        return 2 * self.network._representation_dims  # noqa: SLF001
+        return 2 * self.network.representation_dim

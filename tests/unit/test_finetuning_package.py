@@ -21,6 +21,7 @@ from tscollection.models._finetuning import (
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,
+    regression_loss,
     RepresentationBackbone,
     series2vec_representations,
     supervised_batch_adapter,
@@ -314,6 +315,14 @@ class TestClassificationLoss:
         expected = nn.functional.cross_entropy(predictions, targets.long().squeeze())
         torch.testing.assert_close(loss, expected)
 
+    def test_regression_loss_calls_mse(self) -> None:
+        """regression_loss uses nn.functional.mse_loss."""
+        predictions = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+        targets = torch.tensor([[1.1, 1.9], [3.1, 4.1]])
+        loss = regression_loss(predictions, targets)
+        expected = nn.functional.mse_loss(predictions, targets)
+        torch.testing.assert_close(loss, expected)
+
 
 # ---------------------------------------------------------------------------
 # BackboneUnfreeze tests
@@ -427,7 +436,7 @@ class TestFactoryFunctions:
         """make_tstcc_finetuner with classification returns FineTuningModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tstcc_finetuner(
-            backbone, num_classes=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
         assert isinstance(module, FineTuningModule)
 

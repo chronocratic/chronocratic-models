@@ -1,22 +1,21 @@
-"""Tests for Series2Vec downstream head migration to FineTuningModule.
+"""Tests for Series2Vec fine-tuning via FineTuningModule.
 
-Verifies that the old head class is removed and the new factory-based
-approach works correctly with real Series2Vec backbones.
+Verifies that the factory produces correct output shapes, logging works,
+and freeze/unfreeze behaviour is correct for real Series2Vec backbones.
 """
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from tscollection.models._finetuning import make_series2vec_finetuner
 from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
 
 
-class TestSeries2VecMigrateToFinetuningModule:
+class TestSeries2VecFinetuningModule:
     """Verify Series2Vec fine-tuning via FineTuningModule works correctly."""
 
-    def test_classification_shape(self) -> None:
+    def test_classification_output_shape(self) -> None:
         """make_series2vec_finetuner classification produces (B, num_outputs)."""
         backbone = Series2Vec(
             input_dims=2,
@@ -33,7 +32,7 @@ class TestSeries2VecMigrateToFinetuningModule:
         out = module(x)
         assert out.shape == (3, 5)
 
-    def test_regression_shape(self) -> None:
+    def test_regression_output_shape(self) -> None:
         """make_series2vec_finetuner regression produces (B, num_outputs)."""
         backbone = Series2Vec(
             input_dims=2,
@@ -50,8 +49,8 @@ class TestSeries2VecMigrateToFinetuningModule:
         out = module(x)
         assert out.shape == (3, 2)
 
-    def test_training_step_logs(self) -> None:
-        """training_step returns a scalar loss."""
+    def test_training_step_returns_scalar(self) -> None:
+        """training_step returns a finite scalar loss."""
         backbone = Series2Vec(
             input_dims=2,
             embedding_dims=8,
@@ -70,8 +69,8 @@ class TestSeries2VecMigrateToFinetuningModule:
         assert loss.ndim == 0
         assert torch.isfinite(loss)
 
-    def test_network_has_representation_dims_attr(self) -> None:
-        """Series2VecNetwork stores _representation_dims (per D-02)."""
+    def test_freeze_backbone_prevents_grads(self) -> None:
+        """freeze_backbone=True: backbone params don't receive gradients."""
         backbone = Series2Vec(
             input_dims=2,
             embedding_dims=8,
@@ -80,16 +79,13 @@ class TestSeries2VecMigrateToFinetuningModule:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        assert hasattr(backbone.network, '_representation_dims')
-        assert backbone.network._representation_dims == 4  # noqa: SLF001
-
-
-class TestOldHeadRemoved:
-    """Verify old head class is no longer importable."""
-
-    def test_classification_head_removed(self) -> None:
-        """Series2VecClassificationHead is no longer importable."""
-        with pytest.raises(ImportError):
-            from tscollection.models.convolutional.standard.series2vec import (  # noqa: F401, PLC0415
-                Series2VecClassificationHead,
-            )
+        module = make_series2vec_finetuner(
+            backbone, num_outputs=5, task='classification', freeze_backbone=True
+        )
+        x = torch.randn(2, 20, 2)
+        targets = torch.randint(0, 5, (2,))
+        batch = (x, targets)
+        loss = module.training_step(batch, 0)
+        loss.backward()
+        for param in backbone.parameters():
+            assert param.grad is None
