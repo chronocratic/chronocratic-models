@@ -11,7 +11,7 @@ gradual unfreeze, and supervised-from-scratch (a fresh backbone with
 
 Usage::
 
-    from tscollection.models._supervised import make_tst_supervised
+    from tscollection.models.supervised import make_tst_supervised
 
     backbone = TST(feat_dim=1, max_seq_len=100, d_model=32, n_heads=4, num_layers=2)
     module = make_tst_supervised(backbone, num_outputs=5, task='classification')
@@ -22,26 +22,26 @@ See the design spec at
 
 from __future__ import annotations
 
-from tscollection.models._supervised.adapters import (
+from tscollection.models.supervised.adapters import (
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._supervised.callbacks import BackboneUnfreeze
-from tscollection.models._supervised.factory import (
+from tscollection.models.supervised.callbacks import BackboneUnfreeze
+from tscollection.models.supervised.factory import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
 )
-from tscollection.models._supervised.supervised import (
+from tscollection.models.supervised.supervised import (
     BatchAdapter,
     FlattenLinearHead,
     RepresentationBackbone,
     SupervisedModule,
 )
-from tscollection.models._supervised.utils import classification_loss, regression_loss
+from tscollection.models.supervised.utils import classification_loss, regression_loss
 
 __all__ = [
     'BackboneUnfreeze',

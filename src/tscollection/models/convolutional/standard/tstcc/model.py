@@ -36,7 +36,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     (one per sub-module) must be stepped independently.
 
     For downstream classification or regression, use :class:`SupervisedModule`
-    from ``tscollection.models._supervised``.
+    from ``tscollection.models.supervised``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.

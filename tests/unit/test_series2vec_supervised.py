@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models._supervised import make_series2vec_supervised
+from tscollection.models.supervised import make_series2vec_supervised
 from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
 
 

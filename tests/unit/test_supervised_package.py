@@ -1,4 +1,4 @@
-"""Tests for the _supervised package.
+"""Tests for the supervised package.
 
 Covers SupervisedModule, FlattenLinearHead, BatchAdapter,
 RepresentationBackbone, all adapters, BackboneUnfreeze, and factory
@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import torch
 from torch import nn
 
-from tscollection.models._supervised import (
+from tscollection.models.supervised import (
     BackboneUnfreeze,
     classification_loss,
     FlattenLinearHead,

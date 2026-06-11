@@ -11,7 +11,7 @@ import inspect
 import pytest
 import torch
 
-from tscollection.models._supervised import make_tstcc_supervised
+from tscollection.models.supervised import make_tstcc_supervised
 from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
@@ -42,7 +42,7 @@ class TestTSTCCModelCleaned:
         sig = inspect.signature(TSTCC.__init__)
         assert 'training_mode' not in sig.parameters
 
-    def test_only_self_supervised_contrastive(self) -> None:
+    def test_only_selfsupervised_contrastive(self) -> None:
         """TSTCC._compute_loss produces contrastive loss (no supervised branch)."""
         # First find the actual features_len from the encoder with a given input.
         # Then configure the model with the matching features_len.

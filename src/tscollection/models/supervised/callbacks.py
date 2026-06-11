@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import lightning.pytorch as pl
     import torch
 
-    from tscollection.models._supervised.supervised import SupervisedModule
+    from tscollection.models.supervised.supervised import SupervisedModule
 
 __all__ = ['BackboneUnfreeze']
 

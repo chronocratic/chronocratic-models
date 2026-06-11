@@ -12,15 +12,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tscollection.models._supervised.adapters import (
+from tscollection.models.supervised.adapters import (
     series2vec_representations,
     supervised_batch_adapter,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._supervised.supervised import FlattenLinearHead, SupervisedModule
-from tscollection.models._supervised.utils import classification_loss, regression_loss
+from tscollection.models.supervised.supervised import FlattenLinearHead, SupervisedModule
+from tscollection.models.supervised.utils import classification_loss, regression_loss
 
 if TYPE_CHECKING:
     from tscollection.models.convolutional.standard.series2vec.model import Series2Vec

@@ -9,8 +9,8 @@ from lightning.pytorch.trainer import Trainer
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from tscollection.models import _supervised
-from tscollection.models._supervised import (
+from tscollection.models import supervised
+from tscollection.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
@@ -294,12 +294,12 @@ class TestBarrelExportsClean:
     """Verify barrel exports are clean — no leaked head classes."""
 
     def test_supervised_exports_match_all(self) -> None:
-        """tscollection.models._supervised exports match __all__."""
-        exported = set(_supervised.__all__)
+        """tscollection.models.supervised exports match __all__."""
+        exported = set(supervised.__all__)
         actual = {
             name
-            for name in dir(_supervised)
-            if not name.startswith('_') and name in _supervised.__all__
+            for name in dir(supervised)
+            if not name.startswith('_') and name in supervised.__all__
         }
         assert exported == actual
 
