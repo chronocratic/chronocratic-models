@@ -8,7 +8,7 @@ Contains:
 - :class:`ComposeAugmentation` — chains transforms sequentially on one view
   (analogous to ``torchvision.transforms.Compose``).
 - :class:`TSTCCPairedAugmentation` — the concrete subclass of the abstract
-  :class:`PairedAugmentation`, providing the original TS-TCC weak (scaling)
+  :class:`DualAugmentation`, providing the original TS-TCC weak (scaling)
   and strong (segment-permutation + jitter) views.
 
 TS-TCC operates on tensors of shape ``(batch, channels, time)``, so the
@@ -34,7 +34,7 @@ from typing import Any
 import torch
 
 from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
-from tscollection.models.augmentation.composition import PairedAugmentation
+from tscollection.models.augmentation.dual import DualAugmentation
 
 
 def _normalize_dim(data: torch.Tensor, dim: int) -> int:
@@ -216,7 +216,7 @@ class ComposeAugmentation(AugmentationMethod):
 # --------------------------------------------------------------------------- #
 
 
-class TSTCCPairedAugmentation(PairedAugmentation):
+class TSTCCPairedAugmentation(DualAugmentation):
     """TS-TCC's weak/strong augmentation pair.
 
     - Weak view: per-(sample, channel) Gaussian scaling around ``mean=2.0``.

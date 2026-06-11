@@ -19,7 +19,7 @@ __all__ = ['TSTCC']
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
-    from tscollection.models.augmentation.composition import PairedAugmentation
+    from tscollection.models.augmentation.dual import DualAugmentation
 
 
 class TSTCC(pl.LightningModule, BasicEncodingMixin):
@@ -35,7 +35,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
     augmented views of ``data`` are produced by the injected
-    ``PairedAugmentation`` (one augmentation per view). The default is
+    ``DualAugmentation`` (one augmentation per view). The default is
     ``TSTCCPairedAugmentation``, which provides Gaussian scaling (weak)
     and segment-permutation + jitter (strong) views, matching the
     original TS-TCC contract.
@@ -66,7 +66,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         lambda1: float = 1.0,
         lambda2: float = 0.7,
         sync_dist: bool = False,
-        augmentation: PairedAugmentation | None = None,
+        augmentation: DualAugmentation | None = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=['augmentation'])
@@ -83,7 +83,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
                 TSTCCPairedAugmentation,
             )
 
-            self._augmentation: PairedAugmentation = TSTCCPairedAugmentation()
+            self._augmentation: DualAugmentation = TSTCCPairedAugmentation()
         else:
             self._augmentation = augmentation
 

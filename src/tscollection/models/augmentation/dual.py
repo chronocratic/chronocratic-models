@@ -1,6 +1,6 @@
 """Abstract two-view augmentation contract.
 
-Defines :class:`PairedAugmentation` — the abstract base type for any
+Defines :class:`DualAugmentation` — the abstract base type for any
 augmentation that produces two views of the input, used by contrastive
 setups like TS-TCC. Concrete pairs live alongside the models that use
 them (e.g. ``tstcc/augmentations.py``).
@@ -8,7 +8,7 @@ them (e.g. ``tstcc/augmentations.py``).
 
 from __future__ import annotations
 
-__all__ = ['PairedAugmentation']
+__all__ = ['DualAugmentation']
 
 from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     import torch
 
 
-class PairedAugmentation(AugmentationMethod, ABC):
+class DualAugmentation(AugmentationMethod, ABC):
     """Abstract augmentation that produces two views from a single input.
 
     Subclasses implement :meth:`first` and :meth:`second` to return the

@@ -6,7 +6,7 @@ codes against:
 - :class:`AugmentationMethod` / :class:`TrainableAugmentation` /
   :class:`AugmentationTrainingStrategy` / :class:`TrainingViews` from
   ``base.py``.
-- :class:`PairedAugmentation` from ``composition.py`` — the abstract
+- :class:`DualAugmentation` from ``dual.py`` — the abstract
   two-view contract used by contrastive setups.
 
 Concrete augmentations live alongside the models that use them but are
@@ -18,13 +18,6 @@ re-exported here for callers that prefer a single import path:
 - TS-TCC: ``tstcc/augmentations.py``
 """
 
-from .base import (
-    AugmentationMethod,
-    AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
-)
-from .composition import PairedAugmentation
 from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,
@@ -42,6 +35,14 @@ from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentationParameters,
 )
 
+from .base import (
+    AugmentationMethod,
+    AugmentationTrainingStrategy,
+    TrainableAugmentation,
+    TrainingViews,
+)
+from .dual import DualAugmentation
+
 __all__ = [
     'AdversarialTrainingStrategy',
     'AugmentationMethod',
@@ -52,9 +53,8 @@ __all__ = [
     'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentation',
     'CropShiftAugmentationParameters',
-    'PairedAugmentation',
+    'DualAugmentation',
     'RIPTrainingStrategy',
     'TrainableAugmentation',
     'TrainingViews',
 ]
-
