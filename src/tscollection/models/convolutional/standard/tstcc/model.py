@@ -36,7 +36,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     Batch format: ``(data, labels)``. In ``self_supervised`` mode, two
     augmented views of ``data`` are produced by the injected
     ``DualAugmentation`` (one augmentation per view). The default is
-    ``TSTCCPairedAugmentation``, which provides Gaussian scaling (weak)
+    ``TSTCCDualAugmentation``, which provides Gaussian scaling (weak)
     and segment-permutation + jitter (strong) views, matching the
     original TS-TCC contract.
 
@@ -80,10 +80,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         if augmentation is None:
             from tscollection.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
-                TSTCCPairedAugmentation,
+                TSTCCDualAugmentation,
             )
 
-            self._augmentation: DualAugmentation = TSTCCPairedAugmentation()
+            self._augmentation: DualAugmentation = TSTCCDualAugmentation()
         else:
             self._augmentation = augmentation
 

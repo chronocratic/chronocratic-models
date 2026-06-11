@@ -7,7 +7,7 @@ Contains:
   :class:`TrainingViews`.
 - :class:`ComposeAugmentation` — chains transforms sequentially on one view
   (analogous to ``torchvision.transforms.Compose``).
-- :class:`TSTCCPairedAugmentation` — the concrete subclass of the abstract
+- :class:`TSTCCDualAugmentation` — the concrete subclass of the abstract
   :class:`DualAugmentation`, providing the original TS-TCC weak (scaling)
   and strong (segment-permutation + jitter) views.
 
@@ -25,7 +25,7 @@ __all__ = [
     'PermutationParameters',
     'Scaling',
     'ScalingParameters',
-    'TSTCCPairedAugmentation',
+    'TSTCCDualAugmentation',
 ]
 
 from dataclasses import dataclass
@@ -216,7 +216,7 @@ class ComposeAugmentation(AugmentationMethod):
 # --------------------------------------------------------------------------- #
 
 
-class TSTCCPairedAugmentation(DualAugmentation):
+class TSTCCDualAugmentation(DualAugmentation):
     """TS-TCC's weak/strong augmentation pair.
 
     - Weak view: per-(sample, channel) Gaussian scaling around ``mean=2.0``.
