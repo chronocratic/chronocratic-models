@@ -1,4 +1,4 @@
-"""Augmentation package — abstract types only.
+"""Augmentation package — abstract types and concrete re-exports.
 
 This package owns the augmentation ABCs that the rest of the codebase
 codes against:
@@ -9,21 +9,14 @@ codes against:
 - :class:`PairedAugmentation` from ``composition.py`` — the abstract
   two-view contract used by contrastive setups.
 
-Concrete augmentations live alongside the models that use them:
+Concrete augmentations live alongside the models that use them but are
+re-exported here for callers that prefer a single import path:
 
 - TS2Vec: ``ts2vec/augmentation.py``
 - CoST: ``cost/augmentation.py``
 - AutoTCL: ``autotcl/augmentation/`` package
 - TS-TCC: ``tstcc/augmentations.py``
-
-The lazy ``__getattr__`` below re-exports the per-model concrete classes
-through this barrel for callers that prefer one import path, without
-introducing circular dependencies during package load.
 """
-
-from __future__ import annotations
-
-from typing import Any
 
 from .base import (
     AugmentationMethod,
@@ -32,6 +25,22 @@ from .base import (
     TrainingViews,
 )
 from .composition import PairedAugmentation
+from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+    AutoTCLNeuralNetworkAugmentation,
+    AutoTCLNeuralNetworkAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+    AdversarialTrainingStrategy,
+    RIPTrainingStrategy,
+)
+from tscollection.models.convolutional.dilated.cost.augmentation import (
+    CosTRandomFunctionAugmentation,
+    CosTRandomFunctionAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+    CropShiftAugmentation,
+    CropShiftAugmentationParameters,
+)
 
 __all__ = [
     'AdversarialTrainingStrategy',
@@ -49,61 +58,3 @@ __all__ = [
     'TrainingViews',
 ]
 
-
-def __getattr__(name: str) -> Any:  # noqa: ANN401, PLR0911
-    """Lazy import of concrete per-model augmentations.
-
-    Defers imports until first access, breaking the circular dependency
-    chain when per-model __init__.py files trigger during package load.
-    """
-    if name == 'CropShiftAugmentationParameters':
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (  # noqa: PLC0415
-            CropShiftAugmentationParameters,
-        )
-
-        return CropShiftAugmentationParameters
-    if name == 'CosTRandomFunctionAugmentationParameters':
-        from tscollection.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
-            CosTRandomFunctionAugmentationParameters,
-        )
-
-        return CosTRandomFunctionAugmentationParameters
-    if name == 'AutoTCLNeuralNetworkAugmentationParameters':
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (  # noqa: PLC0415
-            AutoTCLNeuralNetworkAugmentationParameters,
-        )
-
-        return AutoTCLNeuralNetworkAugmentationParameters
-    if name == 'CropShiftAugmentation':
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (  # noqa: PLC0415
-            CropShiftAugmentation,
-        )
-
-        return CropShiftAugmentation
-    if name == 'CosTRandomFunctionAugmentation':
-        from tscollection.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
-            CosTRandomFunctionAugmentation,
-        )
-
-        return CosTRandomFunctionAugmentation
-    if name == 'AutoTCLNeuralNetworkAugmentation':
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (  # noqa: PLC0415
-            AutoTCLNeuralNetworkAugmentation,
-        )
-
-        return AutoTCLNeuralNetworkAugmentation
-    if name == 'RIPTrainingStrategy':
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (  # noqa: PLC0415
-            RIPTrainingStrategy,
-        )
-
-        return RIPTrainingStrategy
-    if name == 'AdversarialTrainingStrategy':
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (  # noqa: PLC0415
-            AdversarialTrainingStrategy,
-        )
-
-        return AdversarialTrainingStrategy
-
-    msg = f"module 'tscollection.models.augmentation' has no attribute '{name}'"
-    raise AttributeError(msg)
