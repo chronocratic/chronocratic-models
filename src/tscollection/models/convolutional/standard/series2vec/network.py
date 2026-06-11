@@ -125,8 +125,8 @@ class Series2VecNetwork(nn.Module):
         return self.encode(x)
 
     @property
-    def representation_dim(self) -> int:
-        """Per-dimension representation size (temporal or frequency, not concatenated).
+    def branch_representation_dim(self) -> int:
+        """Per-branch representation size (temporal OR frequency, not concatenated).
 
         Returns:
             The number of features in a single branch before concatenation.

@@ -24,7 +24,7 @@ from tscollection.models.distances.soft_dtw import SoftDTW
 from tscollection.models.utils import extract_features_from_batch
 
 
-def _get_optimizer(name: str) -> Callable[..., torch.optim.Optimizer]:
+def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
     if name == 'Adam':
         return torch.optim.Adam
     if name == 'RAdam':
@@ -161,4 +161,4 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             ``2 * representation_dims`` — the output dimension of
             :meth:`Series2VecNetwork.encode`.
         """
-        return 2 * self.network.representation_dim
+        return 2 * self.network.branch_representation_dim

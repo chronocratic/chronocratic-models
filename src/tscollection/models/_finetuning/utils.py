@@ -30,7 +30,7 @@ def classification_loss(predictions: torch.Tensor, targets: torch.Tensor) -> tor
     Returns:
         Scalar cross-entropy loss.
     """
-    return nn.functional.cross_entropy(predictions, targets.long().squeeze())
+    return nn.functional.cross_entropy(predictions, targets.long().view(-1))
 
 
 def regression_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
