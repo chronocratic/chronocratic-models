@@ -57,19 +57,17 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         soft_dtw_gamma: float = 0.1,
         *,
         sync_dist: bool = False,
-        optimizer_name: str = 'Adam',
+        optimizer_name: str = 'RAdam',
         weight_decay: float = 0.0,
-        warmup: int = 0,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
 
-        self.learning_rate = learning_rate
-        self.soft_dtw_gamma = soft_dtw_gamma
-        self.sync_dist = sync_dist
-        self.optimizer_name = optimizer_name
-        self.weight_decay = weight_decay
-        self.warmup = warmup
+        self._learning_rate = learning_rate
+        self._soft_dtw_gamma = soft_dtw_gamma
+        self._sync_dist = sync_dist
+        self._optimizer_name = optimizer_name
+        self._weight_decay = weight_decay
 
         self.network = Series2VecNetwork(
             input_dims=input_dims,
@@ -101,12 +99,14 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         return output.unsqueeze(1)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
-        return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self.soft_dtw_gamma)
+        return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
 
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
-        filtered_frequency_data = filter_frequencies(x.detach().cpu()).to(x.device)
+        filtered_frequency_data = filter_frequencies(x.detach().cpu(), training=self.training).to(
+            x.device
+        )
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         return pretraining_loss(
             temporal_distances=temporal_distances,
@@ -125,10 +125,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            sync_dist=self.sync_dist,
+            sync_dist=self._sync_dist,
         )
-        self.log('train_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self.sync_dist)
-        self.log('train_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self.sync_dist)
+        self.log('train_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log('train_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
         return train_loss
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
@@ -141,16 +141,14 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            sync_dist=self.sync_dist,
+            sync_dist=self._sync_dist,
         )
-        self.log('val_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self.sync_dist)
-        self.log('val_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self.sync_dist)
+        self.log('val_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log('val_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
         return val_loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Return the configured optimizer for Series2Vec pretraining."""
-        optimizer_cls = _get_optimizer(self.optimizer_name)
-        kwargs: dict = {'lr': self.learning_rate, 'weight_decay': self.weight_decay}
-        if self.optimizer_name == 'AdamW':
-            kwargs['warmup'] = self.warmup
+        optimizer_cls = _get_optimizer(self._optimizer_name)
+        kwargs: dict = {'lr': self._learning_rate, 'weight_decay': self._weight_decay}
         return optimizer_cls(self.parameters(), **kwargs)

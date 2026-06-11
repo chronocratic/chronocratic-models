@@ -38,7 +38,6 @@ class Series2VecModelParameters:
             or ``'AdamW'``.
         weight_decay: L2 weight-decay coefficient passed to the
             optimizer.
-        warmup: Number of warmup steps (only used by ``'AdamW'``).
     """
 
     input_dims: int
@@ -51,6 +50,5 @@ class Series2VecModelParameters:
     learning_rate: float = 1e-3
     soft_dtw_gamma: float = 0.1
     sync_dist: bool = False
-    optimizer_name: OptimizerName = 'Adam'
+    optimizer_name: OptimizerName = 'RAdam'
     weight_decay: float = 0.0
-    warmup: int = 0

@@ -20,17 +20,15 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         self,
         n_in: int,
         output_dims: int = 320,
-        batch_size: int = 8,
-        device: str = 'cuda',
         alpha: float = 1.0,
         learning_rate: float = 1e-3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        self.alpha = alpha
-        self.learning_rate = learning_rate
+        self._alpha = alpha
+        self._learning_rate = learning_rate
 
-        self.criterion = MixUpLoss(device=device, batch_size=batch_size)
+        self.criterion = MixUpLoss()
 
         self.encoder = FCNEncoder(input_channels=n_in, output_dims=output_dims)
         self.proj_head = nn.Sequential(
@@ -55,7 +53,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         x_1 = x
         x_2 = x[torch.randperm(len(x))]
 
-        concentration = torch.tensor(self.alpha, device=x.device)
+        concentration = torch.tensor(self._alpha, device=x.device)
         lam = torch.distributions.Beta(concentration, concentration).sample()
 
         x_aug = lam * x_1 + (1 - lam) * x_2
@@ -86,5 +84,5 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Return the Adam optimizer used to train MCL."""
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self._learning_rate)
         return optimizer

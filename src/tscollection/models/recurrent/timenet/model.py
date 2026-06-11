@@ -36,36 +36,47 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     """
 
     def __init__(
-        self, hidden_dims: int, num_layers: int, dropout: float = 0.1, learning_rate: float = 1e-3
+        self,
+        hidden_dims: int,
+        num_layers: int,
+        feat_dim: int = 1,
+        dropout: float = 0.1,
+        learning_rate: float = 1e-3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        self.hidden_dims: int = hidden_dims
-        self.num_layers: int = num_layers
-        self.dropout: int | float = dropout
+        self._feat_dim: int = feat_dim
+        self._hidden_dims: int = hidden_dims
+        self._num_layers: int = num_layers
+        self._dropout: int | float = dropout
         self.encoder: Sequential = self._build_encoder()
         self.decoder: Sequential = self._build_decoder()
-        self.learning_rate = learning_rate
+        self._learning_rate = learning_rate
         self.loss_fn = nn.MSELoss()
 
     def _build_encoder(self) -> nn.Sequential:
-        encoder_layers: list[nn.Module] = [GRUWrapper(1, self.hidden_dims, batch_first=True)]
-        for _ in range(1, self.num_layers):
-            if self.dropout > 0:
-                encoder_layers.append(nn.Dropout(self.dropout))
-            encoder_layers.append(GRUWrapper(self.hidden_dims, self.hidden_dims, batch_first=True))
+        encoder_layers: list[nn.Module] = [
+            GRUWrapper(self._feat_dim, self._hidden_dims, batch_first=True)
+        ]
+        for _ in range(1, self._num_layers):
+            if self._dropout > 0:
+                encoder_layers.append(nn.Dropout(self._dropout))
+            encoder_layers.append(
+                GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
+            )
         return nn.Sequential(*encoder_layers)
 
     def _build_decoder(self) -> nn.Sequential:
         decoder_layers: list[nn.Module] = [
-            GRUWrapper(self.hidden_dims, self.hidden_dims, batch_first=True)
+            GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
         ]
-        for i in range(1, self.num_layers):
-            if i > 1 and self.dropout > 0:
-                ## Add dropout only between GRU layers, not after the last GRU layer
-                decoder_layers.append(nn.Dropout(self.dropout))
-            decoder_layers.append(GRUWrapper(self.hidden_dims, self.hidden_dims, batch_first=True))
-        decoder_layers.append(nn.Linear(self.hidden_dims, 1))
+        for i in range(1, self._num_layers):
+            if i > 1 and self._dropout > 0:
+                decoder_layers.append(nn.Dropout(self._dropout))
+            decoder_layers.append(
+                GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
+            )
+        decoder_layers.append(nn.Linear(self._hidden_dims, self._feat_dim))
         return nn.Sequential(*decoder_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -76,6 +87,10 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     def _get_encoder(self) -> nn.Module:
         """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
         return self.encoder
+
+    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+        """Select the final timestep as the pooled representation."""
+        return output[:, -1, :]
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""
@@ -97,4 +112,4 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         """Return the Adam optimizer used to train TimeNet."""
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        return torch.optim.Adam(self.parameters(), lr=self._learning_rate)
