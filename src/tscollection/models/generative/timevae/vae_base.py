@@ -80,7 +80,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         """Return reconstructions for a NumPy input batch."""
         was_training = self.training
         self.eval()
-        with torch.no_grad():
+        with torch.inference_mode():
             x_t = torch.FloatTensor(x).to(next(self.parameters()).device)
             z_mean, _z_log_var, _z = self.encoder(x_t)
             x_decoded = self.decoder(z_mean)
@@ -94,8 +94,9 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def get_prior_samples(self, num_samples: int) -> np.ndarray:
         """Sample from the standard normal prior and decode the samples."""
         device = next(self.parameters()).device
-        z = torch.randn(num_samples, self.latent_dim).to(device)
-        samples = self.decoder(z)
+        with torch.inference_mode():
+            z = torch.randn(num_samples, self.latent_dim).to(device)
+            samples = self.decoder(z)
         return samples.cpu().detach().numpy()
 
     def get_prior_samples_given_z(self, z: np.ndarray) -> np.ndarray:
