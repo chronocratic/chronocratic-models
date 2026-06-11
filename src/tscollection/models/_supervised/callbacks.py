@@ -5,7 +5,7 @@ backbone at training start and unfreezes it at a target epoch with a
 reduced learning rate (discriminative LR pattern).
 
 Note:
-    When this callback is used, construct :class:`FineTuningModule` with
+    When this callback is used, construct :class:`SupervisedModule` with
     ``freeze_backbone=False`` so the callback is the sole owner of freeze
     state. Never let the module bool AND a callback both flip ``requires_grad``.
 """
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import lightning.pytorch as pl
     import torch
 
-    from tscollection.models._supervised.supervised import FineTuningModule
+    from tscollection.models._supervised.supervised import SupervisedModule
 
 __all__ = ['BackboneUnfreeze']
 
@@ -29,7 +29,7 @@ class BackboneUnfreeze(BaseFinetuning):
     """Freeze the backbone, then unfreeze at a target epoch with a reduced LR.
 
     Attach at the Trainer for the gradual strategy. When this callback is
-    used, construct the :class:`FineTuningModule` with ``freeze_backbone=False``
+    used, construct the :class:`SupervisedModule` with ``freeze_backbone=False``
     so this callback is the SOLE owner of freeze state.
 
     Args:
@@ -50,9 +50,9 @@ class BackboneUnfreeze(BaseFinetuning):
         Adam holds only head params.
 
         Args:
-            pl_module: The :class:`FineTuningModule` instance.
+            pl_module: The :class:`SupervisedModule` instance.
         """
-        module = cast('FineTuningModule', pl_module)
+        module = cast('SupervisedModule', pl_module)
         self.freeze(module.backbone)
 
     def finetune_function(
@@ -65,12 +65,12 @@ class BackboneUnfreeze(BaseFinetuning):
         LR clobber.
 
         Args:
-            pl_module: The :class:`FineTuningModule` instance.
+            pl_module: The :class:`SupervisedModule` instance.
             epoch: Current training epoch.
             optimizer: The active optimizer.
         """
         if epoch == self._unfreeze_at_epoch:
-            module = cast('FineTuningModule', pl_module)
+            module = cast('SupervisedModule', pl_module)
             self.unfreeze_and_add_param_group(
                 modules=module.backbone,
                 optimizer=optimizer,

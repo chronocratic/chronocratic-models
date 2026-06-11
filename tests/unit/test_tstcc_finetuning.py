@@ -1,7 +1,7 @@
 """Tests for TS-TCC enum removal and downstream mode migration.
 
 Per D-03: remove TSTCCTrainingMode entirely; model becomes single-purpose
-(pretrain only). Downstream tasks move to FineTuningModule.
+(pretrain only). Downstream tasks move to SupervisedModule.
 """
 
 from __future__ import annotations
@@ -83,8 +83,8 @@ class TestTSTCCConfigCleaned:
         assert 'training_mode' not in TSTCCModelParameters.__dataclass_fields__
 
 
-class TestTSTCCFineTuningModule:
-    """Verify TSTCC downstream via FineTuningModule works."""
+class TestTSTCCSupervisedModule:
+    """Verify TSTCC downstream via SupervisedModule works."""
 
     def test_finetuner_classification_shape(self) -> None:
         """make_tstcc_finetuner produces (B, num_classes) output."""

@@ -37,7 +37,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     output. The reconstruction head is internal and used only during
     pretraining.
 
-    For downstream classification / regression, use :class:`FineTuningModule`
+    For downstream classification / regression, use :class:`SupervisedModule`
     from ``tscollection.models._supervised``.
 
     This model was implemented based on the code available on this GitHub

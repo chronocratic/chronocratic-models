@@ -1,6 +1,6 @@
 """Cross-model fine-tuning integration tests.
 
-Verifies the end-to-end flow: backbone → factory → FineTuningModule → training.
+Verifies the end-to-end flow: backbone → factory → SupervisedModule → training.
 """
 
 from __future__ import annotations
@@ -11,11 +11,11 @@ from torch.utils.data import DataLoader, Dataset
 
 from tscollection.models import _supervised
 from tscollection.models._supervised import (
-    FineTuningModule,
     make_series2vec_finetuner,
     make_tst_finetuner,
     make_tstcc_finetuner,
     RepresentationBackbone,
+    SupervisedModule,
 )
 from tscollection.models.convolutional.standard import series2vec, tstcc
 from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
@@ -132,13 +132,13 @@ class TestAllBackbonesSatisfyProtocol:
 # ---------------------------------------------------------------------------
 
 
-class TestAllFactoriesProduceFineTuningModule:
-    """Verify each factory returns a FineTuningModule instance."""
+class TestAllFactoriesProduceSupervisedModule:
+    """Verify each factory returns a SupervisedModule instance."""
 
     def test_tst_factory_type(self) -> None:
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_finetuner(backbone, num_outputs=3, task='classification')
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_series2vec_factory_type(self) -> None:
         backbone = Series2Vec(
@@ -150,7 +150,7 @@ class TestAllFactoriesProduceFineTuningModule:
             dropout_rate=0.1,
         )
         module = make_series2vec_finetuner(backbone, num_outputs=3, task='classification')
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_tstcc_factory_type(self) -> None:
         backbone = TSTCC(
@@ -162,7 +162,7 @@ class TestAllFactoriesProduceFineTuningModule:
             num_classes=3,
         )
         module = make_tstcc_finetuner(backbone, num_outputs=5, task='classification')
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +267,7 @@ class TestEndToEndTraining:
 
 
 class TestRegressionTask:
-    """Verify regression task works with FineTuningModule."""
+    """Verify regression task works with SupervisedModule."""
 
     def test_regression_mse_loss(self) -> None:
         """Regression task uses MSELoss and produces finite loss."""

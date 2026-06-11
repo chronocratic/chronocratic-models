@@ -35,7 +35,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
 
-    For downstream classification or regression, use :class:`FineTuningModule`
+    For downstream classification or regression, use :class:`SupervisedModule`
     from ``tscollection.models._supervised``.
 
     This model was implemented based on the code available on this GitHub
@@ -112,7 +112,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Compute contrastive pretraining loss.
 
         Labels in the batch are ignored — this model handles self-supervised
-        pretraining only. For downstream supervised tasks, use FineTuningModule.
+        pretraining only. For downstream supervised tasks, use SupervisedModule.
         """
         data = extract_features_from_batch(batch).float()
 

@@ -1,7 +1,7 @@
 """Batch adapters, representation functions, and loss helpers.
 
 Each model has its own batch format and representation extraction path.
-This module provides the glue callables so :class:`FineTuningModule`
+This module provides the glue callables so :class:`SupervisedModule`
 stays model-agnostic.
 """
 

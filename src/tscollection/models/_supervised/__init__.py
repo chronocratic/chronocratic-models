@@ -1,6 +1,6 @@
 """Unified fine-tuning package for downstream classification and regression.
 
-Provides a single :class:`FineTuningModule` wrapper with injected collaborators
+Provides a single :class:`SupervisedModule` wrapper with injected collaborators
 (batch adapters, representation functions, loss) plus :class:`FlattenLinearHead`,
 a :class:`BackboneUnfreeze` callback, and factory constructors for TST,
 Series2Vec, and TS-TCC backbones.
@@ -33,21 +33,18 @@ from tscollection.models._supervised.factory import (
 )
 from tscollection.models._supervised.supervised import (
     BatchAdapter,
-    FineTuningModule,
     FlattenLinearHead,
     RepresentationBackbone,
+    SupervisedModule,
 )
-from tscollection.models._supervised.utils import (
-    classification_loss,
-    regression_loss,
-)
+from tscollection.models._supervised.utils import classification_loss, regression_loss
 
 __all__ = [
     'BackboneUnfreeze',
     'BatchAdapter',
-    'FineTuningModule',
     'FlattenLinearHead',
     'RepresentationBackbone',
+    'SupervisedModule',
     'classification_loss',
     'make_series2vec_finetuner',
     'make_tst_finetuner',

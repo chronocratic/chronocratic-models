@@ -1,6 +1,6 @@
 """Tests for the _supervised package.
 
-Covers FineTuningModule, FlattenLinearHead, BatchAdapter,
+Covers SupervisedModule, FlattenLinearHead, BatchAdapter,
 RepresentationBackbone, all adapters, BackboneUnfreeze, and factory
 functions. Tests use minimal nn.Module stubs so no real backbones are
 needed — only the public API contracts are verified.
@@ -16,7 +16,6 @@ from torch import nn
 from tscollection.models._supervised import (
     BackboneUnfreeze,
     classification_loss,
-    FineTuningModule,
     FlattenLinearHead,
     make_series2vec_finetuner,
     make_tst_finetuner,
@@ -25,6 +24,7 @@ from tscollection.models._supervised import (
     RepresentationBackbone,
     series2vec_representations,
     supervised_batch_adapter,
+    SupervisedModule,
     tst_batch_adapter,
     tst_representations,
     tstcc_representations,
@@ -85,18 +85,18 @@ class _DummyHead(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# FineTuningModule tests
+# SupervisedModule tests
 # ---------------------------------------------------------------------------
 
 
-class TestFineTuningModule:
+class TestSupervisedModule:
     """Verify the generic fine-tuning wrapper."""
 
     def test_forward_returns_expected_shape(self) -> None:
-        """FineTuningModule.forward returns (batch, num_outputs)."""
+        """SupervisedModule.forward returns (batch, num_outputs)."""
         backbone = _DummyBackbone(rep_dim=4)
         head = FlattenLinearHead(in_features=4, num_outputs=5)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -112,7 +112,7 @@ class TestFineTuningModule:
         """training_step returns a scalar loss and logs train_loss."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -129,7 +129,7 @@ class TestFineTuningModule:
         """validation_step returns a scalar loss and logs val_loss."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -146,7 +146,7 @@ class TestFineTuningModule:
         """freeze_backbone=True sets requires_grad=False on all backbone params."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        _ = FineTuningModule(
+        _ = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -161,7 +161,7 @@ class TestFineTuningModule:
         """When backbone is frozen, optimizer contains only head params."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -179,7 +179,7 @@ class TestFineTuningModule:
         """When freeze_backbone=False, backbone params receive gradients."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -336,7 +336,7 @@ class TestBackboneUnfreeze:
         """BackboneUnfreeze.freeze_before_training freezes backbone params."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -353,7 +353,7 @@ class TestBackboneUnfreeze:
         """BackboneUnfreeze.finetune_function unfreezes at the target epoch."""
         backbone = _DummyBackbone(rep_dim=4)
         head = _DummyHead(num_outputs=1)
-        module = FineTuningModule(
+        module = SupervisedModule(
             backbone=backbone,
             head=head,
             representation_fn=_dummy_rep_fn,
@@ -406,39 +406,39 @@ class TestRepresentationBackboneProtocol:
 
 
 class TestFactoryFunctions:
-    """Verify factory constructors produce FineTuningModule instances."""
+    """Verify factory constructors produce SupervisedModule instances."""
 
     def test_make_tst_finetuner_classification(self) -> None:
-        """make_tst_finetuner with classification task returns FineTuningModule."""
+        """make_tst_finetuner with classification task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tst_finetuner(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_make_tst_finetuner_regression(self) -> None:
-        """make_tst_finetuner with regression task returns FineTuningModule."""
+        """make_tst_finetuner with regression task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tst_finetuner(
             backbone, num_outputs=2, task='regression', freeze_backbone=False
         )
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_make_series2vec_finetuner_classification(self) -> None:
-        """make_series2vec_finetuner with classification returns FineTuningModule."""
+        """make_series2vec_finetuner with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_series2vec_finetuner(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_make_tstcc_finetuner_classification(self) -> None:
-        """make_tstcc_finetuner with classification returns FineTuningModule."""
+        """make_tstcc_finetuner with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tstcc_finetuner(
             backbone, num_outputs=3, task='classification', freeze_backbone=False
         )
-        assert isinstance(module, FineTuningModule)
+        assert isinstance(module, SupervisedModule)
 
     def test_factory_creates_correct_head_size(self) -> None:
         """Factory head size matches backbone.representation_dim * num_outputs."""

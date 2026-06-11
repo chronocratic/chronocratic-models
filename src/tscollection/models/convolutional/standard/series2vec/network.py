@@ -14,7 +14,7 @@ class Series2VecNetwork(nn.Module):
     class transposes internally before calling the encoders.
 
     The network produces representations only; downstream classification and
-    regression use :class:`FineTuningModule` from
+    regression use :class:`SupervisedModule` from
     ``tscollection.models._supervised``.
     """
 

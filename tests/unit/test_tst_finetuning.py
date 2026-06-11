@@ -1,4 +1,4 @@
-"""Tests for TST fine-tuning via FineTuningModule.
+"""Tests for TST fine-tuning via SupervisedModule.
 
 Verifies that the factory produces correct output shapes, logging works,
 and freeze/unfreeze behaviour is correct for real TST backbones.
@@ -13,7 +13,7 @@ from tscollection.models.transformer.tst.model import TST
 
 
 class TestTSTFinetuningModule:
-    """Verify TST fine-tuning via FineTuningModule works correctly."""
+    """Verify TST fine-tuning via SupervisedModule works correctly."""
 
     def test_classification_output_shape(self) -> None:
         """make_tst_finetuner classification produces (B, num_outputs) output."""

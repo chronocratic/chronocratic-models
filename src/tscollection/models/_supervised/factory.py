@@ -1,4 +1,4 @@
-"""Factory constructors for :class:`FineTuningModule`.
+"""Factory constructors for :class:`SupervisedModule`.
 
 Each factory wires the correct :class:`FlattenLinearHead`, batch adapter,
 representation function, and loss function for a given backbone — so
@@ -19,11 +19,8 @@ from tscollection.models._supervised.adapters import (
     tst_representations,
     tstcc_representations,
 )
-from tscollection.models._supervised.supervised import FineTuningModule, FlattenLinearHead
-from tscollection.models._supervised.utils import (
-    classification_loss,
-    regression_loss,
-)
+from tscollection.models._supervised.supervised import FlattenLinearHead, SupervisedModule
+from tscollection.models._supervised.utils import classification_loss, regression_loss
 
 if TYPE_CHECKING:
     from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
@@ -51,8 +48,8 @@ def make_tst_finetuner(
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
     sync_dist: bool = False,
-) -> FineTuningModule:
-    """Build a :class:`FineTuningModule` for a TST backbone.
+) -> SupervisedModule:
+    """Build a :class:`SupervisedModule` for a TST backbone.
 
     Args:
         backbone: A :class:`TST` instance with ``representation_dim``.
@@ -64,12 +61,12 @@ def make_tst_finetuner(
         sync_dist: Sync logged metrics across processes.
 
     Returns:
-        Configured :class:`FineTuningModule` ready for training.
+        Configured :class:`SupervisedModule` ready for training.
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
     loss_fn = classification_loss if task == 'classification' else regression_loss
-    return FineTuningModule(
+    return SupervisedModule(
         backbone=backbone,
         head=head,
         representation_fn=tst_representations,
@@ -91,8 +88,8 @@ def make_series2vec_finetuner(
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
     sync_dist: bool = False,
-) -> FineTuningModule:
-    """Build a :class:`FineTuningModule` for a Series2Vec backbone.
+) -> SupervisedModule:
+    """Build a :class:`SupervisedModule` for a Series2Vec backbone.
 
     Args:
         backbone: A :class:`Series2Vec` instance with ``representation_dim``.
@@ -104,12 +101,12 @@ def make_series2vec_finetuner(
         sync_dist: Sync logged metrics across processes.
 
     Returns:
-        Configured :class:`FineTuningModule` ready for training.
+        Configured :class:`SupervisedModule` ready for training.
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
     loss_fn = classification_loss if task == 'classification' else regression_loss
-    return FineTuningModule(
+    return SupervisedModule(
         backbone=backbone,
         head=head,
         representation_fn=series2vec_representations,
@@ -131,8 +128,8 @@ def make_tstcc_finetuner(
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
     sync_dist: bool = False,
-) -> FineTuningModule:
-    """Build a :class:`FineTuningModule` for a TS-TCC backbone.
+) -> SupervisedModule:
+    """Build a :class:`SupervisedModule` for a TS-TCC backbone.
 
     Per D-01, uses a fresh :class:`FlattenLinearHead` (not encoder logits reuse).
 
@@ -146,12 +143,12 @@ def make_tstcc_finetuner(
         sync_dist: Sync logged metrics across processes.
 
     Returns:
-        Configured :class:`FineTuningModule` ready for training.
+        Configured :class:`SupervisedModule` ready for training.
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
     loss_fn = classification_loss if task == 'classification' else regression_loss
-    return FineTuningModule(
+    return SupervisedModule(
         backbone=backbone,
         head=head,
         representation_fn=tstcc_representations,

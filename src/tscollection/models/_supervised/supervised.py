@@ -1,6 +1,6 @@
 """Fine-tuning wrapper and reusable head for downstream tasks.
 
-Provides a single :class:`FineTuningModule` (LightningModule) that owns
+Provides a single :class:`SupervisedModule` (LightningModule) that owns
 the train/val loop, optimizer, logging, and freeze logic. Model-specific
 concerns are injected via a :class:`BatchAdapter`, a representation
 function, and an :class:`nn.Module` head.
@@ -17,7 +17,7 @@ from torch import nn
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__all__ = ['BatchAdapter', 'FineTuningModule', 'FlattenLinearHead', 'RepresentationBackbone']
+__all__ = ['BatchAdapter', 'FlattenLinearHead', 'RepresentationBackbone', 'SupervisedModule']
 
 
 @runtime_checkable
@@ -40,7 +40,7 @@ class BatchAdapter(Protocol):
 
     Each model has a different batch format from its DataLoader.
     The adapter normalizes it into ``((encoder_inputs, ...), targets)``
-    so :class:`FineTuningModule` never sees model-specific tuple shapes.
+    so :class:`SupervisedModule` never sees model-specific tuple shapes.
     """
 
     def __call__(self, batch: tuple) -> tuple[tuple[torch.Tensor, ...], torch.Tensor]:
@@ -74,7 +74,7 @@ class FlattenLinearHead(nn.Module):
         return self._fc(reps.flatten(start_dim=1))
 
 
-class FineTuningModule(pl.LightningModule):
+class SupervisedModule(pl.LightningModule):
     """Generic downstream fine-tuning / linear-probe wrapper.
 
     Owns the train/val loop, optimizer, logging, and (static) freeze.

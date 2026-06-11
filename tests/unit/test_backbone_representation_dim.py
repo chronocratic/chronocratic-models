@@ -106,7 +106,7 @@ class TestTSTCCRepresentationDim:
 
 
 class TestFactoriesWithRealBackbones:
-    """Smoke tests: factories produce working FineTuningModule with real backbones."""
+    """Smoke tests: factories produce working SupervisedModule with real backbones."""
 
     def test_tst_factory_works(self) -> None:
         """make_tst_finetuner with a real TST backbone."""
