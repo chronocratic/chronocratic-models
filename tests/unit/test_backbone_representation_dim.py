@@ -147,7 +147,7 @@ class TestFactoriesWithRealBackbones:
             num_classes=3,
         )
         module = make_tstcc_finetuner(
-            backbone, num_classes=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task='classification', freeze_backbone=False
         )
         # Verify module construction works (head uses backbone.representation_dim)
         assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
