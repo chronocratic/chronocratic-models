@@ -62,6 +62,17 @@ def make_tst_supervised(
 
     Returns:
         Configured :class:`SupervisedModule` ready for training.
+
+    Example:
+        Linear probe on a pretrained backbone (default)::
+
+            module = make_tst_supervised(pretrained_tst, num_outputs=5)
+
+        Supervised from scratch — fresh backbone, train end-to-end::
+
+            module = make_tst_supervised(
+                TST(...), num_outputs=5, freeze_backbone=False
+            )
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
@@ -102,6 +113,13 @@ def make_series2vec_supervised(
 
     Returns:
         Configured :class:`SupervisedModule` ready for training.
+
+    Example:
+        Regression from scratch on a fresh backbone::
+
+            module = make_series2vec_supervised(
+                Series2Vec(...), num_outputs=1, task='regression', freeze_backbone=False
+            )
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
@@ -132,6 +150,8 @@ def make_tstcc_supervised(
     """Build a :class:`SupervisedModule` for a TS-TCC backbone.
 
     Per D-01, uses a fresh :class:`FlattenLinearHead` (not encoder logits reuse).
+    With ``freeze_backbone=False`` on a fresh (un-pretrained) :class:`TSTCC`, this
+    is the explicit replacement for the removed ``TSTCCTrainingMode.SUPERVISED``.
 
     Args:
         backbone: A :class:`TSTCC` instance with ``representation_dim``.
@@ -144,6 +164,13 @@ def make_tstcc_supervised(
 
     Returns:
         Configured :class:`SupervisedModule` ready for training.
+
+    Example:
+        Supervised from scratch (old ``SUPERVISED`` mode)::
+
+            module = make_tstcc_supervised(
+                TSTCC(...), num_outputs=6, freeze_backbone=False
+            )
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)

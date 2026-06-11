@@ -1,16 +1,20 @@
-"""Unified fine-tuning package for downstream classification and regression.
+"""Unified supervised-training package for downstream classification and regression.
 
 Provides a single :class:`SupervisedModule` wrapper with injected collaborators
 (batch adapters, representation functions, loss) plus :class:`FlattenLinearHead`,
 a :class:`BackboneUnfreeze` callback, and factory constructors for TST,
 Series2Vec, and TS-TCC backbones.
 
+Covers all supervised modes via configuration — linear probe, full fine-tune,
+gradual unfreeze, and supervised-from-scratch (a fresh backbone with
+``freeze_backbone=False``); see :class:`SupervisedModule` for the mode table.
+
 Usage::
 
     from tscollection.models._supervised import make_tst_supervised
 
     backbone = TST(feat_dim=1, max_seq_len=100, d_model=32, n_heads=4, num_layers=2)
-    finetuner = make_tst_supervised(backbone, num_outputs=5, task='classification')
+    module = make_tst_supervised(backbone, num_outputs=5, task='classification')
 
 See the design spec at
 ``.planning/todos/heads-design_structure.md`` for architecture details.

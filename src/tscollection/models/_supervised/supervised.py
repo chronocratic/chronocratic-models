@@ -1,4 +1,4 @@
-"""Fine-tuning wrapper and reusable head for downstream tasks.
+"""Supervised-training wrapper and reusable head for downstream tasks.
 
 Provides a single :class:`SupervisedModule` (LightningModule) that owns
 the train/val loop, optimizer, logging, and freeze logic. Model-specific
@@ -75,10 +75,24 @@ class FlattenLinearHead(nn.Module):
 
 
 class SupervisedModule(pl.LightningModule):
-    """Generic downstream fine-tuning / linear-probe wrapper.
+    """Generic supervised-training wrapper for labeled downstream tasks.
 
-    Owns the train/val loop, optimizer, logging, and (static) freeze.
-    Everything model-specific is injected:
+    Trains a ``backbone`` + ``head`` on labels for classification or
+    regression. Owns the train/val loop, optimizer, logging, and (static)
+    freeze. Everything model-specific is injected.
+
+    The four supervised modes are *configuration*, not subclasses::
+
+        Mode                  backbone state   freeze_backbone   Trainer callback
+        Linear probe          pretrained       True              none
+        Full fine-tune        pretrained       False             none
+        Gradual unfreeze      pretrained       False             BackboneUnfreeze
+        Supervised (scratch)  fresh / random   False             none
+
+    "Fine-tune" vs "supervised from scratch" is solely whether the injected
+    backbone was pretrained — same class, same call. The from-scratch path
+    (a freshly constructed, un-pretrained backbone with ``freeze_backbone=False``)
+    replaces the old TS-TCC ``SUPERVISED`` training mode.
 
     Args:
         backbone: A (possibly pretrained) model exposing the representation fn used below.
@@ -90,9 +104,10 @@ class SupervisedModule(pl.LightningModule):
         loss_fn: ``(predictions, targets) -> scalar``.
         learning_rate: Adam LR.
         weight_decay: Adam weight decay.
-        freeze_backbone: Freeze backbone params (linear probe). Set ``False`` when a
+        freeze_backbone: Freeze backbone params (linear probe). Set ``False`` for full
+            fine-tuning, for supervised-from-scratch (fresh backbone), or when a
             gradual-unfreeze callback owns freezing (see :class:`BackboneUnfreeze`).
-            Never have both.
+            Never have both the bool and a callback flip ``requires_grad``.
         sync_dist: Sync logged metrics across processes.
     """
 
