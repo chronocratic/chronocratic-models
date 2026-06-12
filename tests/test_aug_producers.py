@@ -11,16 +11,18 @@ import torch
 
 from tscollection.models.augmentation.base import (
     AlignedPair,
-    AugmentationProducer,
     SingleView,
     ViewPair,
 )
-from tscollection.models.augmentation.primitives import Jitter, Scaling
+from tscollection.models.augmentation.primitives import (
+    Jitter,
+    JitterParameters,
+    Scaling,
+)
 
 # --------------------------------------------------------------------------- #
 # Import producers under test
 # --------------------------------------------------------------------------- #
-
 from tscollection.models.augmentation.producers import (
     FullOverlapPair,
     IndependentPair,
@@ -107,11 +109,6 @@ class TestRolePair:
 
     def test_first_and_second_correspond_to_correct_primitives(self) -> None:
         """RolePair first/second correspond to correct primitives (VER-06)."""
-        # Jitter with large sigma produces visibly different values
-        from tscollection.models.augmentation.primitives import (
-            JitterParameters,
-        )
-
         # Use a deterministic input so we can detect which transform was applied
         torch.manual_seed(100)
         x = torch.zeros(1, 5, 2)
