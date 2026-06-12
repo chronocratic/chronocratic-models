@@ -15,15 +15,21 @@ Exported symbols:
 from __future__ import annotations
 
 __all__ = [
+    'AlignedPair',
+    'Augmentation',
     'AugmentationMethod',
+    'AugmentationProducer',
     'AugmentationTrainingStrategy',
+    'SingleView',
     'TrainableAugmentation',
+    'TrainableAugmentationProducer',
     'TrainingViews',
+    'ViewPair',
 ]
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol, TypeVar
 
 import torch
 from torch import nn
@@ -221,3 +227,222 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
             Loss tensor if training should run this step, otherwise None.
         """
         ...
+
+
+# --------------------------------------------------------------------------- #
+# New contract types (Phase 01: Augmentation Producer Contract)
+# --------------------------------------------------------------------------- #
+
+# Covariant type variable for AugmentationProducer[V].
+# V appears only in return position, enabling Liskov substitution:
+# AugmentationProducer[AlignedPair] is a subtype of AugmentationProducer[ViewPair].
+V = TypeVar("V", covariant=True)
+
+
+# --------------------------------------------------------------------------- #
+# Layer 1 — Primitives (Augmentation Protocol)
+# --------------------------------------------------------------------------- #
+
+
+class Augmentation(Protocol):
+    """A pointwise/sequence transform producing one view of the input.
+
+    Primitives are the smallest reusable building blocks: they accept a
+    single tensor and return a single transformed tensor. Examples include
+    jitter, scaling, permutation, and composition.
+
+    This is a structural Protocol — concrete classes satisfy it by having
+    the correct ``__call__`` signature, not by inheriting from it.
+    """
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the augmentation to a single batch.
+
+        Args:
+            x: Input tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            Transformed tensor of the same shape.
+        """
+        ...
+
+
+# --------------------------------------------------------------------------- #
+# Layer 2 — Typed view results (ViewSets)
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class SingleView:
+    """A single augmented view returned by a producer.
+
+    Used by models that need only one transformed copy of the input
+    (e.g. AutoTCL with a neural-network augmentation).
+
+    Args:
+        view: Augmented tensor of shape ``(batch, time, channels)``.
+    """
+
+    view: torch.Tensor
+
+
+@dataclass(frozen=True)
+class ViewPair:
+    """Two augmented views returned by a producer.
+
+    Used by models that need a pair of views for contrastive or
+    consistency losses (e.g. CoST query/key, TS-TCC weak/strong).
+
+    Args:
+        first: First augmented tensor.
+        second: Second augmented tensor.
+    """
+
+    first: torch.Tensor
+    second: torch.Tensor
+
+
+@dataclass(frozen=True)
+class AlignedPair(ViewPair):
+    """A pair of augmented views with a known aligned region.
+
+    Extends :class:`ViewPair` with an ``overlap_length`` field so that
+    consumers (e.g. TS2Vec) can slice embeddings to the aligned span
+    without a ``metadata`` dict.
+
+    ``AlignedPair`` is-a ``ViewPair`` (Liskov substitution), so a producer
+    returning ``AlignedPair`` satisfies any slot expecting ``ViewPair``.
+
+    Args:
+        first: First augmented tensor.
+        second: Second augmented tensor.
+        overlap_length: Number of time steps over which the two views align.
+            For non-crop augmentations this equals the full sequence length,
+            making the alignment slice a no-op.
+    """
+
+    overlap_length: int
+
+
+# --------------------------------------------------------------------------- #
+# Layer 3 — Producers (AugmentationProducer Protocol)
+# --------------------------------------------------------------------------- #
+
+
+class AugmentationProducer(Protocol[V]):
+    """Assembles the view set a model's loss requires from a batch.
+
+    A producer wraps one or more :class:`Augmentation` primitives and
+    returns a typed view set (:class:`SingleView`, :class:`ViewPair`, or
+    :class:`AlignedPair`). This is the object injected into a model at
+    construction time.
+
+    ``V`` is covariant — it appears only in return position — so a
+    ``AugmentationProducer[AlignedPair]`` can be used wherever
+    ``AugmentationProducer[ViewPair]`` is expected.
+
+    This is a structural Protocol; concrete classes satisfy it by having
+    the correct ``produce`` signature, not by inheriting from it.
+    """
+
+    def produce(self, x: torch.Tensor) -> V:
+        """Produce the model's view set from a batch.
+
+        Args:
+            x: Input tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            A typed view set (:class:`SingleView`, :class:`ViewPair`,
+            or :class:`AlignedPair`).
+        """
+        ...
+
+
+# --------------------------------------------------------------------------- #
+# Capability — Trainable producers
+# --------------------------------------------------------------------------- #
+
+
+class TrainableAugmentationProducer(nn.Module, ABC):
+    """A trainable augmentation producer with learnable parameters.
+
+    Combines the :class:`nn.Module` lifecycle (parameters, state_dict)
+    with a training strategy for the augmentation network. This is a
+    **nominal** ABC (not a Protocol) because it must be runtime-checkable
+    via ``isinstance()`` to gate the trainable path.
+
+    ``TrainableAugmentationProducer`` structurally satisfies
+    ``AugmentationProducer[SingleView]`` (it has ``produce(x) -> SingleView``),
+    so it type-checks in any ``SingleView`` slot.
+
+    Args:
+        training_strategy: Strategy for computing the augmentation loss
+            and determining training frequency.
+    """
+
+    def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
+        """Initialize a trainable augmentation producer.
+
+        Args:
+            training_strategy: Strategy for computing the augmentation loss.
+        """
+        super().__init__()
+        self._training_strategy = training_strategy
+
+    @abstractmethod
+    def produce(self, x: torch.Tensor) -> SingleView:
+        """Return an augmented view produced by the encoder model.
+
+        Args:
+            x: Input time-series tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            A single augmented view wrapped in :class:`SingleView`.
+        """
+        ...
+
+    @abstractmethod
+    def train_step(
+        self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+    ) -> torch.Tensor | None:
+        """Run one augmentation-network training step.
+
+        Subclasses define their own training loop. The base provides
+        ``configure_optimizer()`` and ``should_train_augmentation()``;
+        the composed ``_training_strategy`` provides ``compute_loss()``.
+
+        Args:
+            x: Original input data.
+            encoder: The main encoder module to compute embeddings.
+            batch_idx: Current batch index within the epoch.
+
+        Returns:
+            Loss tensor if training should run this step, otherwise None.
+        """
+        ...
+
+    def configure_optimizer(self, lr: float) -> AdamW:
+        """Return optimizer over this module's parameters.
+
+        Args:
+            lr: Learning rate for the augmentation network optimizer.
+
+        Returns:
+            AdamW optimizer for this module's parameters.
+        """
+        return AdamW(self.parameters(), lr=lr)
+
+    def should_train_augmentation(self, epoch: int, batch_idx: int) -> bool:
+        """Check whether the aug-network should train this step.
+
+        Delegates to the composed training strategy to avoid exposing
+        the private ``_training_strategy`` attribute.
+
+        Args:
+            epoch: Current training epoch.
+            batch_idx: Current batch index within the epoch.
+
+        Returns:
+            ``True`` if the augmentation network should be trained this step.
+        """
+        return self._training_strategy.should_train(epoch, batch_idx)
