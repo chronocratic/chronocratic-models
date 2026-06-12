@@ -213,11 +213,12 @@ class TestAutoTCLAugmentationMethods:
         assert AutoTCLNeuralNetworkAugmentationParameters is not None
 
     def test_is_trainable_augmentation(self) -> None:
+        from tscollection.models.augmentation.base import TrainableAugmentationProducer
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
         )
 
-        assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentation)
+        assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentationProducer)
 
     def test_constructor_with_dataclass(self) -> None:
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
@@ -240,6 +241,7 @@ class TestAutoTCLAugmentationMethods:
         assert len(list(aug.parameters())) > 0
 
     def test_augment_returns_views(self) -> None:
+        from tscollection.models.augmentation.base import SingleView
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
@@ -253,8 +255,7 @@ class TestAutoTCLAugmentationMethods:
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
             result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+        assert isinstance(result, SingleView)
 
     def test_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (

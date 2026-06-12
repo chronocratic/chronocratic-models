@@ -304,6 +304,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
+        from tscollection.models.augmentation.base import SingleView
 
         params = AutoTCLNeuralNetworkAugmentationParameters(
             input_dims=1, output_dims=320, kernel_sizes=[3]
@@ -316,8 +317,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
             result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+        assert isinstance(result, SingleView)
 
 
 class TestLazyImport:
