@@ -2,7 +2,7 @@
 
 This package provides the producer contract for augmentation strategies.
 
-**New contract**:
+**Contract types**:
 
 - :class:`Augmentation` / :class:`AugmentationProducer` /
   :class:`TrainableAugmentationProducer` from ``base.py``.
@@ -19,9 +19,6 @@ This package provides the producer contract for augmentation strategies.
 
 from __future__ import annotations
 
-# ---------------------------------------------------------------------------
-# New contract — base types and ViewSets
-# ---------------------------------------------------------------------------
 from .base import (
     AlignedPair,
     Augmentation,
@@ -31,10 +28,7 @@ from .base import (
     TrainableAugmentationProducer,
     ViewPair,
 )
-
-# ---------------------------------------------------------------------------
-# New contract — shared primitives
-# ---------------------------------------------------------------------------
+from .decorators import Seeded
 from .primitives import (
     ComposeAugmentation,
     Jitter,
@@ -44,80 +38,37 @@ from .primitives import (
     Scaling,
     ScalingParameters,
 )
-
-# ---------------------------------------------------------------------------
-# New contract — producer combinators
-# ---------------------------------------------------------------------------
 from .producers import (
     FullOverlapPair,
     IndependentPair,
     RolePair,
     SingleViewProducer,
 )
-
-# ---------------------------------------------------------------------------
-# New contract — decorator and trainable helpers
-# ---------------------------------------------------------------------------
-from .decorators import Seeded
 from .trainable_support import (
     maybe_configure_augmentation_optimizer,
     maybe_train_augmentation,
 )
 
-# ---------------------------------------------------------------------------
-# Per-model concrete augmentations (re-exported for convenience)
-# ---------------------------------------------------------------------------
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
-    AutoTCLNeuralNetworkAugmentation,
-    AutoTCLNeuralNetworkAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
-    AdversarialTrainingStrategy,
-    RIPTrainingStrategy,
-)
-from tscollection.models.convolutional.dilated.cost.augmentation import (
-    CosTRandomFunctionAugmentation,
-    CosTRandomFunctionAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftAugmentationParameters,
-    CropShiftProducer,
-)
-
-
 __all__ = [
-    # New contract — base
     'AlignedPair',
     'Augmentation',
     'AugmentationProducer',
     'AugmentationTrainingStrategy',
-    'SingleView',
-    'TrainableAugmentationProducer',
-    'ViewPair',
-    # New contract — primitives
     'ComposeAugmentation',
+    'FullOverlapPair',
+    'IndependentPair',
     'Jitter',
     'JitterParameters',
     'Permutation',
     'PermutationParameters',
+    'RolePair',
     'Scaling',
     'ScalingParameters',
-    # New contract — producers
-    'FullOverlapPair',
-    'IndependentPair',
-    'RolePair',
-    'SingleViewProducer',
-    # New contract — decorator / helpers
     'Seeded',
+    'SingleView',
+    'SingleViewProducer',
+    'TrainableAugmentationProducer',
+    'ViewPair',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
-    # Per-model concrete augmentations
-    'AdversarialTrainingStrategy',
-    'AutoTCLNeuralNetworkAugmentation',
-    'AutoTCLNeuralNetworkAugmentationParameters',
-    'CosTRandomFunctionAugmentation',
-    'CosTRandomFunctionAugmentationParameters',
-    'CropShiftAugmentationParameters',
-    'CropShiftProducer',
-    'RIPTrainingStrategy',
 ]

@@ -14,18 +14,28 @@ import torch
 
 from tscollection.models.augmentation import (
     AlignedPair,
-    AdversarialTrainingStrategy,
     Augmentation,
     AugmentationTrainingStrategy,
-    RIPTrainingStrategy,
     SingleView,
     SingleViewProducer,
     ViewPair,
 )
-
-# TrainingViews, AugmentationMethod, TrainableAugmentation deleted.
-# Tests for these legacy symbols have been removed.
-
+from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+    AutoTCLNeuralNetworkAugmentation,
+    AutoTCLNeuralNetworkAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+    AdversarialTrainingStrategy,
+    RIPTrainingStrategy,
+)
+from tscollection.models.convolutional.dilated.cost.augmentation import (
+    CosTRandomFunctionAugmentation,
+    CosTRandomFunctionAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+    CropShiftAugmentationParameters,
+    CropShiftProducer,
+)
 
 # --------------------------------------------------------------------------- #
 # AugmentationTrainingStrategy ABC
@@ -76,12 +86,7 @@ class TestRIPTrainingStrategy:
         assert loss.requires_grad
 
     def test_loss_equivalence_to_original_auto_tcl(self) -> None:
-        """RIPTrainingStrategy must match original AutoTCL loss for identical inputs.
-
-        calculate_regular_consistency uses internal randomness (torch.randint),
-        so we patch it to return a deterministic value to ensure both calls
-        produce identical consistency terms.
-        """
+        """RIPTrainingStrategy must match original AutoTCL loss for identical inputs."""
         from unittest.mock import patch
 
         from torch.nn import functional as F
@@ -95,12 +100,10 @@ class TestRIPTrainingStrategy:
         aug_x_emb = torch.randn(2, 10, 32)
         aug_factor = torch.rand(2, 10, 3)
 
-        # Original AutoTCL loss computation (from model.py:195-216)
         consistency_weight = 0.001
         regularization_weight = 0.001
         regularization_threshold = 0.4
 
-        # Compute original loss components
         vx_distance = maximum_mean_discrepancy_with_gaussian_kernel_loss(x_emb, aug_x_emb)
         fixed_consistency = torch.tensor(0.5)
         regularization_loss = F.relu(
@@ -112,13 +115,11 @@ class TestRIPTrainingStrategy:
             + consistency_weight * fixed_consistency
         )
 
-        # New strategy loss computation with patched consistency
         strategy = RIPTrainingStrategy(
             consistency_weight=consistency_weight,
             regularization_weight=regularization_weight,
             regularization_threshold=regularization_threshold,
         )
-        # Patch at the source module so lazy import in compute_loss returns fixed value
         with patch(
             'tscollection.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency',
             return_value=fixed_consistency,
@@ -163,10 +164,8 @@ class TestAdversarialTrainingStrategy:
         aug_x_emb = torch.randn(2, 10, 32)
         aug_factor = torch.rand(2, 10, 3)
 
-        # Original AutoTCL adversarial loss (from model.py:218-222)
         original_loss = -1 * info_nce_loss(x_emb, aug_x_emb, temperature=1.0)
 
-        # New strategy loss computation
         strategy = AdversarialTrainingStrategy()
         new_loss = strategy.compute_loss(
             x_embeddings=x_emb,
@@ -178,22 +177,15 @@ class TestAdversarialTrainingStrategy:
 
 
 # --------------------------------------------------------------------------- #
-# Concrete augmentations (Task 4)
+# Concrete augmentations
 # --------------------------------------------------------------------------- #
 
 
 class TestCropShiftProducer:
     """CropShiftProducer returns AlignedPair via .produce()."""
 
-    @pytest.fixture(autouse=True)
-    def _imports(self) -> None:
-        """Lazy import to avoid circular dependency at module load time."""
-        from tscollection.models.augmentation import CropShiftProducer
-        self.aug_cls = CropShiftProducer  # type: ignore[attr-defined]
-
     def test_produce_returns_aligned_pair(self) -> None:
-        """CropShiftProducer uses .produce() -> AlignedPair (new contract)."""
-        aug = self.aug_cls()  # type: ignore[attr-defined]
+        aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
@@ -202,9 +194,7 @@ class TestCropShiftProducer:
         assert isinstance(result.overlap_length, int)
 
     def test_produce_with_params(self) -> None:
-        from tscollection.models.augmentation import CropShiftAugmentationParameters
-
-        aug = self.aug_cls(  # type: ignore[attr-defined]
+        aug = CropShiftProducer(
             params=CropShiftAugmentationParameters(temporal_unit=1)
         )
         data = torch.randn(2, 100, 3)
@@ -212,9 +202,7 @@ class TestCropShiftProducer:
         assert isinstance(result, AlignedPair)
 
     def test_produce_with_temporal_unit_kwarg(self) -> None:
-        from tscollection.models.augmentation import CropShiftAugmentationParameters
-
-        aug = self.aug_cls(  # type: ignore[attr-defined]
+        aug = CropShiftProducer(
             params=CropShiftAugmentationParameters(temporal_unit=5)
         )
         data = torch.randn(2, 1000, 3)
@@ -223,15 +211,9 @@ class TestCropShiftProducer:
 
 
 class TestCosTRandomFunctionAugmentation:
-    """CosTRandomFunctionAugmentation supports Augmentation Protocol and backward-compat augment()."""
+    """CosTRandomFunctionAugmentation supports Augmentation Protocol."""
 
     def test_call_returns_tensor(self) -> None:
-        """CosTRandomFunctionAugmentation implements Augmentation Protocol (__call__)."""
-        from tscollection.models.augmentation import (
-            CosTRandomFunctionAugmentation,
-            CosTRandomFunctionAugmentationParameters,
-        )
-
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
         aug = CosTRandomFunctionAugmentation(params=params)
         data = torch.randn(2, 50, 3)
@@ -244,11 +226,6 @@ class TestAutoTCLNeuralNetworkAugmentation:
     """AutoTCLNeuralNetworkAugmentation constructor and augment behavior."""
 
     def test_constructor_accepts_dataclass(self) -> None:
-        from tscollection.models.augmentation import (
-            AutoTCLNeuralNetworkAugmentation,
-            AutoTCLNeuralNetworkAugmentationParameters,
-        )
-
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
         strategy = RIPTrainingStrategy()
         aug = AutoTCLNeuralNetworkAugmentation(
@@ -257,11 +234,6 @@ class TestAutoTCLNeuralNetworkAugmentation:
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
     def test_has_trainable_params(self) -> None:
-        from tscollection.models.augmentation import (
-            AutoTCLNeuralNetworkAugmentation,
-            AutoTCLNeuralNetworkAugmentationParameters,
-        )
-
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
         strategy = RIPTrainingStrategy()
         aug = AutoTCLNeuralNetworkAugmentation(
@@ -271,12 +243,6 @@ class TestAutoTCLNeuralNetworkAugmentation:
         assert param_count > 0
 
     def test_augment_returns_training_views(self) -> None:
-        from tscollection.models.augmentation import (
-            AutoTCLNeuralNetworkAugmentation,
-            AutoTCLNeuralNetworkAugmentationParameters,
-        )
-        from tscollection.models.augmentation.base import SingleView
-
         params = AutoTCLNeuralNetworkAugmentationParameters(
             input_dims=1, output_dims=320, kernel_sizes=[3]
         )
@@ -295,8 +261,6 @@ class TestLazyImport:
     """CropShift lazy import resolves at runtime."""
 
     def test_lazy_import_works(self) -> None:
-        from tscollection.models.augmentation import CropShiftProducer
-
         aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)

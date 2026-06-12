@@ -1,6 +1,6 @@
 __all__ = ['TSTCC']
 
-from typing import TYPE_CHECKING, cast
+from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
 import torch
@@ -8,7 +8,6 @@ from torch import nn
 from torch.nn import functional
 
 from tscollection.models._mixin import BasicEncodingMixin
-from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 from tscollection.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from tscollection.models.convolutional.standard.tstcc.losses import NTXentLoss
 from tscollection.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
@@ -16,6 +15,8 @@ from tscollection.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
+
+    from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 
 
 class TSTCC(pl.LightningModule, BasicEncodingMixin):

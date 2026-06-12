@@ -15,7 +15,6 @@ from torch import nn
 from tscollection.models.augmentation.base import (
     AlignedPair,
     Augmentation,
-    AugmentationProducer,
     AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
@@ -128,7 +127,9 @@ class TestTrainableAugmentationProducerBase:
 
     def test_is_abc(self) -> None:
         """TrainableAugmentationProducer cannot be instantiated directly."""
-        from tscollection.models.augmentation import RIPTrainingStrategy
+        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+            RIPTrainingStrategy,
+        )
 
         with pytest.raises(TypeError):
             TrainableAugmentationProducer(training_strategy=RIPTrainingStrategy())

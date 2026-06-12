@@ -61,9 +61,9 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
-            np_state = np.random.get_state()
-            np.random.seed(self._seed)
+            np_state = np.random.get_state()  # noqa: NPY002
+            np.random.seed(self._seed)  # noqa: NPY002
             try:
                 return self._inner.produce(x)
             finally:
-                np.random.set_state(np_state)
+                np.random.set_state(np_state)  # noqa: NPY002

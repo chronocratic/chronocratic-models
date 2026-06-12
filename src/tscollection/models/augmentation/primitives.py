@@ -188,7 +188,8 @@ class Permutation:
         t_dim = _normalize_dim(x, self._params.time_dim)
         seq_len = x.size(t_dim)
         # Cannot meaningfully permute segments on short sequences
-        if seq_len < 3:
+        _min_permute_len = 3
+        if seq_len < _min_permute_len:
             return x.clone()
         batch_size = x.size(0)
         max_segments = self._params.max_segments

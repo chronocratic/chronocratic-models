@@ -22,7 +22,8 @@ __all__ = [
 ]
 
 # Re-export shared primitives.
-from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
+from typing import TYPE_CHECKING
+
 from tscollection.models.augmentation.primitives import (
     ComposeAugmentation,
     Jitter,
@@ -33,6 +34,9 @@ from tscollection.models.augmentation.primitives import (
     ScalingParameters,
 )
 from tscollection.models.augmentation.producers import RolePair
+
+if TYPE_CHECKING:
+    from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 
 
 def _default_tstcc_pair() -> AugmentationProducer[ViewPair]:

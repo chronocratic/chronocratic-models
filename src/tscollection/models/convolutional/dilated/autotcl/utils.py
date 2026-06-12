@@ -79,16 +79,12 @@ def calculate_mutual_information(
         Average MI estimate (L1-out loss) between original and
         augmented data.
     """
-    import numpy as np  # noqa: PLC0415
-
     with torch.inference_mode():
         x = batch
         device = x.device
 
         if max_train_length is not None and x.size(1) > max_train_length:
-            window_offset = np.random.randint(  # noqa: NPY002
-                0, x.size(1) - max_train_length + 1
-            )
+            window_offset = int(torch.randint(0, x.size(1) - max_train_length + 1, (1,)).item())
             x = x[:, window_offset : window_offset + max_train_length]
         x = x.to(device)
 
