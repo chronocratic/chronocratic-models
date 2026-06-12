@@ -223,3 +223,7 @@ __marimo__/
 # _sources
 _sources/
 .planning/
+
+# graphify output
+graphify-out/
+.graphifyignore
