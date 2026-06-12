@@ -1,10 +1,126 @@
-"""Shared fixtures for tscollection model tests."""
+"""Shared fixtures for producer integration tests."""
 from __future__ import annotations
 
+import math
+
+import lightning.pytorch as pl
+import numpy as np
 import pytest
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+
+
+# --------------------------------------------------------------------------- #
+# Shared training helper
+# --------------------------------------------------------------------------- #
+
+
+def _run_train_steps(
+    model: pl.LightningModule,
+    batch_size: int = 4,
+    seq_length: int = 100,
+    input_dims: int = 1,
+    num_steps: int = 5,
+    seed: int | None = None,
+    layout: str = "NLC",  # "NLC"=(B,T,D), "NCL"=(B,C,T)
+) -> list[torch.Tensor]:
+    """Run *num_steps* training steps and return collected losses.
+
+    Shared implementation for all per-model producer tests so each test
+    file only constructs the model under test.
+    """
+    if seed is not None:
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+
+    if layout == "NLC":
+        data = torch.randn(batch_size * num_steps, seq_length, input_dims)
+    else:  # NCL
+        data = torch.randn(batch_size * num_steps, input_dims, seq_length)
+    dataset = TensorDataset(data)
+    dataloader = DataLoader(dataset, batch_size=batch_size)
+
+    collected: list[torch.Tensor] = []
+    original_step = model.training_step
+
+    def patched_step(batch, batch_idx: int):
+        loss = original_step(batch, batch_idx)
+        if loss is not None:
+            collected.append(loss.clone().detach())
+        return loss
+
+    model.training_step = patched_step  # type: ignore[method-assign]
+
+    trainer = pl.Trainer(
+        accelerator="cpu",
+        max_steps=num_steps,
+        enable_checkpointing=False,
+        enable_progress_bar=False,
+        logger=False,
+    )
+    trainer.fit(model, train_dataloaders=dataloader)
+    return collected
+
+
+# --------------------------------------------------------------------------- #
+# Reusable pytest fixtures
+# --------------------------------------------------------------------------- #
 
 
 @pytest.fixture
-def sample_input_dims() -> int:
-    """Return a sample input dimension for model configs."""
-    return 1
+def train_steps():
+    """Return the _run_train_steps helper so tests can pass a model.
+
+    Usage in tests:
+        losses = train_steps(model, batch_size=4, num_steps=5)
+    """
+    return _run_train_steps
+
+
+@pytest.fixture
+def random_data():
+    """Factory for random time-series tensors.
+
+    Usage:
+        data = random_data(batch=4, seq_length=100, input_dims=1)
+        data_ncl = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
+    """
+    def _factory(
+        batch: int = 4,
+        seq_length: int = 100,
+        input_dims: int = 1,
+        layout: str = "NLC",
+    ) -> torch.Tensor:
+        if layout == "NLC":
+            return torch.randn(batch, seq_length, input_dims)
+        return torch.randn(batch, input_dims, seq_length)
+
+    return _factory
+
+
+# --------------------------------------------------------------------------- #
+# Shared assertion helpers
+# --------------------------------------------------------------------------- #
+
+
+def assert_finite_losses(
+    losses: list[torch.Tensor], expected_min: int = 1
+) -> None:
+    """Assert all losses are finite scalars."""
+    assert len(losses) >= expected_min
+    for i, loss in enumerate(losses):
+        assert loss is not None
+        assert loss.ndim == 0, "Loss must be a scalar tensor"
+        assert math.isfinite(loss.item()), (
+            f"Loss at step {i} is not finite: {loss.item()}"
+        )
+
+
+@pytest.fixture
+def finite_losses():
+    """Return the assert_finite_losses helper.
+
+    Usage in tests:
+        finite_losses(losses, expected_min=5)
+    """
+    return assert_finite_losses
