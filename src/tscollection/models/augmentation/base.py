@@ -15,6 +15,7 @@ Exported symbols:
 from __future__ import annotations
 
 __all__ = [
+    'AlignedPair',
     'Augmentation',
     'AugmentationMethod',
     'AugmentationProducer',
@@ -28,7 +29,7 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 import torch
 from torch import nn
@@ -259,42 +260,10 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         ...
 
 
-# --------------------------------------------------------------------------- #
-# New contract types (Phase 01: Augmentation Producer Contract)
-# --------------------------------------------------------------------------- #
-
 # Covariant type variable for AugmentationProducer[V].
 # V appears only in return position, enabling Liskov substitution:
 # AugmentationProducer[AlignedPair] is a subtype of AugmentationProducer[ViewPair].
 V = TypeVar("V", covariant=True)
-
-
-# --------------------------------------------------------------------------- #
-# Layer 1 — Primitives (Augmentation Protocol)
-# --------------------------------------------------------------------------- #
-
-
-class Augmentation(Protocol):
-    """A pointwise/sequence transform producing one view of the input.
-
-    Primitives are the smallest reusable building blocks: they accept a
-    single tensor and return a single transformed tensor. Examples include
-    jitter, scaling, permutation, and composition.
-
-    This is a structural Protocol — concrete classes satisfy it by having
-    the correct ``__call__`` signature, not by inheriting from it.
-    """
-
-    def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply the augmentation to a single batch.
-
-        Args:
-            x: Input tensor of shape ``(batch, time, channels)``.
-
-        Returns:
-            Transformed tensor of the same shape.
-        """
-        ...
 
 
 # --------------------------------------------------------------------------- #
