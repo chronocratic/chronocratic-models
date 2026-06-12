@@ -44,6 +44,10 @@ def maybe_train_augmentation(
     For trainable producers it checks ``should_train_augmentation()``
     and delegates to ``train_step()`` when the strategy permits.
 
+    Mode management: sets ``encoder`` to eval and ``augmentation`` to train
+    during the forward pass, then restores augmentation to eval. The caller
+    is responsible for setting encoder back to train for Phase 2.
+
     This is the sole code path in the codebase that uses
     ``isinstance(..., TrainableAugmentationProducer)`` for the training
     loop (D-02).
@@ -63,7 +67,11 @@ def maybe_train_augmentation(
         return None
     if not augmentation.should_train_augmentation(epoch=epoch, batch_idx=batch_idx):
         return None
-    return augmentation.train_step(x=x, encoder=encoder, batch_idx=batch_idx)
+    encoder.eval()
+    augmentation.train()
+    loss = augmentation.train_step(x=x, encoder=encoder, batch_idx=batch_idx)
+    augmentation.eval()
+    return loss
 
 
 def maybe_configure_augmentation_optimizer(

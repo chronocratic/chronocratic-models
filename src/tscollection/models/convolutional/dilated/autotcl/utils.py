@@ -2,11 +2,13 @@ __all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 
 import torch
 
-from tscollection.models.augmentation.base import AugmentationMethod
+from tscollection.models.augmentation.base import (
+    AugmentationProducer,
+    SingleView,
+)
 from tscollection.models.convolutional.dilated.autotcl.losses import l1_out_loss
 
 _MIN_TIME_STEPS = 3
-
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     """Calculate regular consistency for weights.
@@ -60,7 +62,7 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
 
 def calculate_mutual_information(
     batch: torch.Tensor,
-    augmentation_method: AugmentationMethod,
+    augmentation_method: AugmentationProducer[SingleView],
     max_train_length: int | None = None,
 ) -> float:
     """Calculate mutual information between original and augmented data.
@@ -69,7 +71,7 @@ def calculate_mutual_information(
 
     Args:
         batch: Input batch of shape ``(batch, time, channels)``.
-        augmentation_method: Augmentation strategy to apply.
+        augmentation_method: Augmentation producer to apply.
         max_train_length: Optional maximum sequence length. Sequences
             longer than this are truncated randomly.
 
@@ -90,8 +92,8 @@ def calculate_mutual_information(
             x = x[:, window_offset : window_offset + max_train_length]
         x = x.to(device)
 
-        views = augmentation_method.augment(x)
-        augmented_x = views.views[0]
+        view = augmentation_method.produce(x)
+        augmented_x = view.view
 
         mi = l1_out_loss(x, augmented_x)
     return mi.item()
