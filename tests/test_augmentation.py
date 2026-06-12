@@ -1,10 +1,12 @@
 """Tests for the augmentation ABC hierarchy, new producer contract, and training strategies.
 
-Verifies that TrainingViews, AugmentationMethod, TrainableAugmentation,
-AugmentationTrainingStrategy, RIPTrainingStrategy, and AdversarialTrainingStrategy
-behave correctly (legacy backward compat). Also tests new Augmentation Protocol,
+Verifies that AugmentationTrainingStrategy, RIPTrainingStrategy,
+and AdversarialTrainingStrategy behave correctly. Tests new Augmentation Protocol,
 AugmentationProducer[ViewSet] contract, ViewSet types (SingleView, ViewPair,
 AlignedPair), and CropShiftProducer.
+
+Legacy symbols (TrainingViews, AugmentationMethod, TrainableAugmentation) were
+removed in plan 01-13 — their tests have been deleted.
 """
 
 import pytest
@@ -14,61 +16,15 @@ from tscollection.models.augmentation import (
     AlignedPair,
     AdversarialTrainingStrategy,
     Augmentation,
-    AugmentationMethod,
-    AugmentationProducer,
     AugmentationTrainingStrategy,
     RIPTrainingStrategy,
     SingleView,
     SingleViewProducer,
-    TrainableAugmentation,
-    TrainingViews,
     ViewPair,
 )
 
-# --------------------------------------------------------------------------- #
-# TrainingViews
-# --------------------------------------------------------------------------- #
-
-
-class TestTrainingViews:
-    """TrainingViews dataclass field access and structure."""
-
-    def test_views_tuple_access(self) -> None:
-        t1 = torch.randn(2, 10, 4)
-        t2 = torch.randn(2, 10, 4)
-        views = TrainingViews(views=(t1, t2), metadata={'k': 'v'})
-        assert views.views[0].shape == (2, 10, 4)
-        assert views.views[1].shape == (2, 10, 4)
-
-    def test_metadata_access(self) -> None:
-        views = TrainingViews(views=(torch.randn(1, 5, 2),), metadata={'k': 'v'})
-        assert views.metadata['k'] == 'v'
-
-
-# --------------------------------------------------------------------------- #
-# AugmentationMethod ABC
-# --------------------------------------------------------------------------- #
-
-
-class TestAugmentationMethod:
-    """AugmentationMethod is abstract and cannot be instantiated directly."""
-
-    def test_cannot_instantiate_abc(self) -> None:
-        with pytest.raises(TypeError):
-            AugmentationMethod()  # type: ignore[type-abstract]
-
-
-# --------------------------------------------------------------------------- #
-# TrainableAugmentation ABC
-# --------------------------------------------------------------------------- #
-
-
-class TestTrainableAugmentation:
-    """TrainableAugmentation is abstract and inherits nn.Module."""
-
-    def test_cannot_instantiate_abc(self) -> None:
-        with pytest.raises(TypeError):
-            TrainableAugmentation(training_strategy=RIPTrainingStrategy())
+# TrainingViews, AugmentationMethod, TrainableAugmentation deleted (plan 01-13).
+# Tests for these legacy symbols have been removed.
 
 
 # --------------------------------------------------------------------------- #
@@ -275,20 +231,7 @@ class TestCropShiftAugmentation:
 
 
 class TestCosTRandomFunctionAugmentation:
-    """CosTRandomFunctionAugmentation returns TrainingViews with single view."""
-
-    def test_augment_returns_training_views(self) -> None:
-        from tscollection.models.augmentation import (
-            CosTRandomFunctionAugmentation,
-            CosTRandomFunctionAugmentationParameters,
-        )
-
-        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
-        aug = CosTRandomFunctionAugmentation(params=params)
-        data = torch.randn(2, 50, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+    """CosTRandomFunctionAugmentation supports Augmentation Protocol and backward-compat augment()."""
 
     def test_call_returns_tensor(self) -> None:
         """CosTRandomFunctionAugmentation implements Augmentation Protocol (__call__)."""
@@ -360,9 +303,9 @@ class TestLazyImport:
     """CropShift lazy import resolves at runtime."""
 
     def test_lazy_import_works(self) -> None:
-        from tscollection.models.augmentation import CropShiftAugmentation
+        from tscollection.models.augmentation import CropShiftProducer
 
-        aug = CropShiftAugmentation()
+        aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)

@@ -10,7 +10,7 @@ Imports ``AugmentationProducer`` and ``AlignedPair`` directly from
 ``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = ['CropShiftAugmentation', 'CropShiftAugmentationParameters', 'CropShiftProducer']
+__all__ = ['CropShiftAugmentationParameters', 'CropShiftProducer']
 
 from dataclasses import dataclass
 
@@ -132,6 +132,3 @@ class CropShiftProducer:
             overlap_length=crop_length,
         )
 
-
-# D-05: Backward compat alias — keep until final delete commit
-CropShiftAugmentation = CropShiftProducer

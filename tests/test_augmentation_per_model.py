@@ -9,10 +9,7 @@ Verifies that concrete augmentations live in their model directories:
 import torch
 
 from tscollection.models.augmentation.base import (
-    AugmentationMethod,
     AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
 )
 
 # --------------------------------------------------------------------------- #
@@ -21,14 +18,14 @@ from tscollection.models.augmentation.base import (
 
 
 class TestTS2VecAugmentationModule:
-    """CropShiftAugmentation lives in ts2vec/augmentation.py."""
+    """CropShiftProducer lives in ts2vec/augmentation.py."""
 
     def test_import_from_ts2vec(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        assert CropShiftAugmentation is not None
+        assert CropShiftProducer is not None
 
     def test_import_params_from_ts2vec(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
@@ -40,25 +37,22 @@ class TestTS2VecAugmentationModule:
     def test_crop_shift_satisfies_producer_protocol(self) -> None:
         from tscollection.models.augmentation.base import (
             AlignedPair as AlignedPairType,
-            AugmentationProducer,
         )
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        aug = CropShiftAugmentation()
-        # CropShiftAugmentation is an alias for CropShiftProducer (D-05)
-        # It satisfies AugmentationProducer[AlignedPair] structurally
+        aug = CropShiftProducer()
         result = aug.produce(torch.randn(2, 100, 3))
         assert isinstance(result, AlignedPairType)
 
     def test_crop_shift_produce_returns_aligned_pair(self) -> None:
         from tscollection.models.augmentation.base import AlignedPair
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        aug = CropShiftAugmentation()
+        aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
@@ -66,30 +60,14 @@ class TestTS2VecAugmentationModule:
         assert result.second.shape[2] == 3
         assert isinstance(result.overlap_length, int)
 
-    def test_crop_shift_backward_compat_is_augmentation_method(self) -> None:
-        """Old CropShiftAugmentation (before refactor) was AugmentationMethod subclass.
-
-        D-05: CropShiftAugmentation is now an alias for CropShiftProducer which is not
-        a subclass of AugmentationMethod. This test documents the transition.
-        """
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
-            CropShiftProducer,
-        )
-
-        # CropShiftAugmentation == CropShiftProducer (alias, D-05)
-        assert CropShiftAugmentation is CropShiftProducer
-        # It is NOT a subclass of AugmentationMethod anymore
-        assert not issubclass(CropShiftAugmentation, AugmentationMethod)
-
     def test_crop_shift_with_params(self) -> None:
         from tscollection.models.augmentation.base import AlignedPair
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
             CropShiftAugmentationParameters,
+            CropShiftProducer,
         )
 
-        aug = CropShiftAugmentation(params=CropShiftAugmentationParameters(temporal_unit=1))
+        aug = CropShiftProducer(params=CropShiftAugmentationParameters(temporal_unit=1))
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
@@ -102,25 +80,13 @@ class TestTS2VecAugmentationModule:
         params = CropShiftAugmentationParameters()
         assert params.temporal_unit == 0
 
-    def test_crop_shift_with_params(self) -> None:
-        from tscollection.models.augmentation.base import AlignedPair
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
-            CropShiftAugmentationParameters,
-        )
-
-        aug = CropShiftAugmentation(params=CropShiftAugmentationParameters(temporal_unit=1))
-        data = torch.randn(2, 100, 3)
-        result = aug.produce(data)
-        assert isinstance(result, AlignedPair)
-
     def test_crop_shift_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
         assert (
-            CropShiftAugmentation.__module__
+            CropShiftProducer.__module__
             == 'tscollection.models.convolutional.dilated.ts2vec.augmentation'
         )
 
@@ -137,8 +103,8 @@ class TestTS2VecAugmentationModule:
     def test_all_exports(self) -> None:
         import tscollection.models.convolutional.dilated.ts2vec.augmentation as mod
 
-        assert 'CropShiftAugmentation' in mod.__all__
         assert 'CropShiftAugmentationParameters' in mod.__all__
+        assert 'CropShiftProducer' in mod.__all__
 
 
 # --------------------------------------------------------------------------- #
@@ -189,6 +155,7 @@ class TestCoSTAugmentationModule:
         assert isinstance(aug, Augmentation)
 
     def test_cost_augment_returns_views(self) -> None:
+        from tscollection.models.augmentation.base import TrainingViews
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -211,6 +178,7 @@ class TestCoSTAugmentationModule:
         assert params.p == 0.5
 
     def test_cost_dict_params_compat(self) -> None:
+        from tscollection.models.augmentation.base import TrainingViews
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )

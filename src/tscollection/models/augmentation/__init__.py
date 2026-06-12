@@ -96,9 +96,12 @@ from tscollection.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentationParameters,
 )
 from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftAugmentation,
     CropShiftAugmentationParameters,
+    CropShiftProducer,
 )
+
+# D-05: Backward compat alias — Barrel only (ts2vec/augmentation.py no longer exports it)
+CropShiftAugmentation = CropShiftProducer  # type: ignore[misc]
 
 __all__ = [
     # New contract — base
