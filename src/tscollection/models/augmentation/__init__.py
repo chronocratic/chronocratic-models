@@ -67,8 +67,7 @@ from .trainable_support import (
 # ---------------------------------------------------------------------------
 # Per-model concrete augmentations (re-exported for convenience)
 # ---------------------------------------------------------------------------
-# NOTE: cost/augmentation.py still imports a deleted base.py symbol — will be
-# fixed in plan 13. Its re-exports are deferred until then.
+# NOTE: cost/augmentation.py cleaned up — Cost symbols re-exportable again.
 from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,
@@ -76,6 +75,10 @@ from tscollection.models.convolutional.dilated.autotcl.augmentation.methods impo
 from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
     AdversarialTrainingStrategy,
     RIPTrainingStrategy,
+)
+from tscollection.models.convolutional.dilated.cost.augmentation import (
+    CosTRandomFunctionAugmentation,
+    CosTRandomFunctionAugmentationParameters,
 )
 from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentationParameters,
@@ -109,10 +112,12 @@ __all__ = [
     'Seeded',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
-    # Per-model concrete augmentations (cost deferred to plan 13)
+    # Per-model concrete augmentations
     'AdversarialTrainingStrategy',
     'AutoTCLNeuralNetworkAugmentation',
     'AutoTCLNeuralNetworkAugmentationParameters',
+    'CosTRandomFunctionAugmentation',
+    'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentationParameters',
     'RIPTrainingStrategy',
 ]

@@ -259,33 +259,6 @@ class TestAugmentationTrainingStrategyRetained:
 
 
 # --------------------------------------------------------------------------- #
-# Backward compatibility: existing symbols still importable
-# --------------------------------------------------------------------------- #
-
-
-class TestBackwardCompatibility:
-    """Existing symbols remain importable from base.py."""
-
-    def test_training_views_importable(self) -> None:
-        """TrainingViews is still importable."""
-        from tscollection.models.augmentation.base import TrainingViews
-
-        assert TrainingViews is not None
-
-    def test_augmentation_method_importable(self) -> None:
-        """AugmentationMethod is still importable."""
-        from tscollection.models.augmentation.base import AugmentationMethod
-
-        assert AugmentationMethod is not None
-
-    def test_trainable_augmentation_importable(self) -> None:
-        """TrainableAugmentation is still importable."""
-        from tscollection.models.augmentation.base import TrainableAugmentation
-
-        assert TrainableAugmentation is not None
-
-
-# --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
 

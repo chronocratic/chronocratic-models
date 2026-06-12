@@ -154,8 +154,7 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params=params)
         assert isinstance(aug, Augmentation)
 
-    def test_cost_augment_returns_views(self) -> None:
-        from tscollection.models.augmentation.base import TrainingViews
+    def test_cost_augment_returns_tensor(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -165,8 +164,8 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params=params)
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == data.shape
 
     def test_cost_params_required_sigma(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (
@@ -178,7 +177,6 @@ class TestCoSTAugmentationModule:
         assert params.p == 0.5
 
     def test_cost_dict_params_compat(self) -> None:
-        from tscollection.models.augmentation.base import TrainingViews
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
@@ -186,7 +184,7 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params={'sigma': 0.1, 'p': 0.5})
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
+        assert isinstance(result, torch.Tensor)
 
     def test_cost_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (

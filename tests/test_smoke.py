@@ -23,12 +23,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.models.augmentation import (
     AlignedPair,
-    AugmentationMethod,
     AugmentationProducer,
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
     SingleView,
-    TrainingViews,
     ViewPair,
 )
 from tscollection.models.augmentation.producers import IndependentPair
@@ -264,29 +262,6 @@ class TestAugmentationExtensibility:
         assert loss is not None
         assert loss.ndim == 0
         assert math.isfinite(loss.item())
-
-    def test_identity_augmentation_backward_compat_with_ts2vec(self) -> None:
-        """Legacy AugmentationMethod still works via backward-compat path."""
-
-        class IdentityAugmentation(AugmentationMethod):
-            """Pass-through augmentation that returns the original data as both views."""
-
-            def augment(
-                self, data: torch.Tensor, **kwargs: Any
-            ) -> TrainingViews:
-                seq_len = data.size(1)
-                return TrainingViews(
-                    views=(data, data),
-                    metadata={'crop_length': seq_len},
-                )
-
-        # Verify the old AugmentationMethod contract produces TrainingViews
-        aug = IdentityAugmentation()
-        data = torch.randn(4, 100, 1)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 2
-        assert result.metadata['crop_length'] == 100
 
     def test_custom_single_view_producer_works_with_autotcl(self) -> None:
         """Custom SingleView producer trains with AutoTCL model."""
