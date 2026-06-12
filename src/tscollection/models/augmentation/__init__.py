@@ -67,7 +67,7 @@ from .trainable_support import (
 # ---------------------------------------------------------------------------
 # Per-model concrete augmentations (re-exported for convenience)
 # ---------------------------------------------------------------------------
-# NOTE: cost/augmentation.py still imports deleted TrainingViews — will be
+# NOTE: cost/augmentation.py still imports a deleted base.py symbol — will be
 # fixed in plan 13. Its re-exports are deferred until then.
 from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
