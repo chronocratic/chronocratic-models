@@ -10,7 +10,11 @@ from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
-from tscollection.models.augmentation.base import AugmentationMethod
+from tscollection.models.augmentation.base import (
+    Augmentation,
+    AugmentationProducer,
+    ViewPair,
+)
 from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
 from tscollection.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from tscollection.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
@@ -31,7 +35,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         input_dims: int,
         sequence_length: int,
         kernel_sizes: list[int] | None = None,
-        augmentation: AugmentationMethod | None = None,
+        augmentation: AugmentationProducer[ViewPair] | None = None,
         max_train_length: int = 201,
         hidden_dims: int = 64,
         output_dims: int = 320,
@@ -57,11 +61,25 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self._sync_dist = sync_dist
 
         if augmentation is None:
+            from tscollection.models.augmentation.producers import (  # noqa: PLC0415
+                IndependentPair,
+            )
             from tscollection.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
                 CosTRandomFunctionAugmentation,
             )
 
-            self._augmentation: AugmentationMethod = CosTRandomFunctionAugmentation()
+            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(
+                aug=CosTRandomFunctionAugmentation()
+            )
+        elif isinstance(augmentation, Augmentation):
+            # Backward compat: wrap plain Augmentation in IndependentPair
+            from tscollection.models.augmentation.producers import (  # noqa: PLC0415
+                IndependentPair,
+            )
+
+            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(
+                aug=augmentation
+            )
         else:
             self._augmentation = augmentation
 
@@ -266,8 +284,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
-        query = self._augmentation.augment(x).views[0]
-        key = self._augmentation.augment(x).views[0]
+        pair = self._augmentation.produce(x)
+        query, key = pair.first, pair.second
 
         train_loss = self._compute_total_loss(query, key, update_key_encoder=True)
 
@@ -294,8 +312,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Compute and log the contrastive validation loss without updating model parameters."""
         x = extract_features_from_batch(batch)
 
-        query = self._augmentation.augment(x).views[0]
-        key = self._augmentation.augment(x).views[0]
+        pair = self._augmentation.produce(x)
+        query, key = pair.first, pair.second
 
         with torch.no_grad():
             val_loss = self._compute_total_loss(query, key, update_key_encoder=False)

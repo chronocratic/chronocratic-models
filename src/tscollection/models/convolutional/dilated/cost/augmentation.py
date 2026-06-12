@@ -5,11 +5,15 @@ Contains the ``CosTRandomFunctionAugmentation`` class and its
 ``augmentation/strategies.py`` and ``augmentation/config.py`` for per-model
 self-containment.
 
-Imports ``AugmentationMethod`` and ``TrainingViews`` directly from
-``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.
+Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
+Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators.
+Retains ``augment() -> TrainingViews`` for backward compatibility (D-05).
 """
 
-__all__ = ['CosTRandomFunctionAugmentation', 'CosTRandomFunctionAugmentationParameters']
+__all__ = [
+    'CosTRandomFunctionAugmentation',
+    'CosTRandomFunctionAugmentationParameters',
+]
 
 from dataclasses import dataclass
 from typing import Any
@@ -17,7 +21,10 @@ from typing import Any
 import numpy as np
 import torch
 
-from tscollection.models.augmentation.base import AugmentationMethod, TrainingViews
+from tscollection.models.augmentation.base import (
+    Augmentation,
+    TrainingViews,
+)
 
 
 @dataclass
@@ -37,11 +44,20 @@ class CosTRandomFunctionAugmentationParameters:
     p: float = 0.5
 
 
-class CosTRandomFunctionAugmentation(AugmentationMethod):
-    """Stochastic jitter/scale/shift augmentation used by CoST."""
+class CosTRandomFunctionAugmentation(Augmentation):
+    """Stochastic jitter/scale/shift augmentation used by CoST.
+
+    Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
+    Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators
+    like :class:`~tscollection.models.augmentation.producers.IndependentPair`.
+    Retains ``augment() -> TrainingViews`` for backward compatibility (D-05).
+    """
 
     def __init__(
-        self, params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None
+        self,
+        params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None,
+        *,
+        sigma: float | None = None,
     ) -> None:
         """Initialize the random-function augmentation.
 
@@ -52,7 +68,11 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
                 dict with ``sigma`` (required) and ``p`` (optional, default
                 ``0.5``) keys for backward compatibility. When ``None``, uses
                 dataclass defaults (sigma=0.1, p=0.5).
+            sigma: Convenience keyword argument to set sigma directly
+                when not using the ``params`` argument.
         """
+        if params is None and sigma is not None:
+            params = {'sigma': sigma}
         if params is None:
             self._params = CosTRandomFunctionAugmentationParameters()
         elif isinstance(params, CosTRandomFunctionAugmentationParameters):
@@ -90,6 +110,20 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
             return x
         return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
 
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply jitter/scale/shift and return the augmented tensor.
+
+        Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
+        Protocol: ``__call__(Tensor) -> Tensor``.
+
+        Args:
+            x: Input time-series tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            Augmented tensor with the same shape as ``x``.
+        """
+        return self._jitter(self._shift(self._scale(x)))
+
     def augment(
         self,
         data: torch.Tensor,
@@ -97,8 +131,7 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
     ) -> TrainingViews:
         """Return ``data`` after stochastically applying scale, shift, and jitter.
 
-        Each of the three transforms is applied independently with probability
-        ``p``. The composition order is scale -> shift -> jitter.
+        Backward-compatible interface returning ``TrainingViews``.
 
         Args:
             data: Input time-series tensor.
@@ -107,5 +140,5 @@ class CosTRandomFunctionAugmentation(AugmentationMethod):
         Returns:
             TrainingViews containing the augmented tensor.
         """
-        result = self._jitter(self._shift(self._scale(data)))
+        result = self(data)
         return TrainingViews(views=(result,), metadata={})

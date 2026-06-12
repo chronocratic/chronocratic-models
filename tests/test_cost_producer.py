@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 import torch
 
@@ -147,6 +148,7 @@ def _train_steps(
 
     if seed is not None:
         torch.manual_seed(seed)
+        np.random.seed(seed)
 
     data = torch.randn(batch_size * num_steps, seq_length, input_dims)
     dataset = TensorDataset(data)
