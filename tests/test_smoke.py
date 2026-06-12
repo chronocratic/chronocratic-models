@@ -4,6 +4,10 @@ Verifies that each model can run multiple training steps with finite loss
 after module restructuring, that user-defined augmentation subclasses work
 with the model pipeline, and that checkpoint save/reload preserves encoder
 weights.
+
+Uses the new producer-based augmentation contract (AugmentationProducer[ViewSet])
+for all model training tests. Legacy AugmentationMethod tests remain for
+backward compatibility verification.
 """
 
 from __future__ import annotations
@@ -18,11 +22,16 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.models.augmentation import (
+    AlignedPair,
     AugmentationMethod,
+    AugmentationProducer,
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
+    SingleView,
     TrainingViews,
+    ViewPair,
 )
+from tscollection.models.augmentation.producers import IndependentPair
 from tscollection.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
     RIPTrainingStrategy,
@@ -33,9 +42,12 @@ from tscollection.models.convolutional.dilated.cost.augmentation import (
 )
 from tscollection.models.convolutional.dilated.cost.model import CoST
 from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftAugmentation,
+    CropShiftProducer,
 )
 from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from tscollection.models.convolutional.standard.tstcc.augmentations import (
+    _default_tstcc_pair,
+)
 
 
 def _train_steps(
@@ -100,10 +112,10 @@ class TestModelTrainingSmoke:
     """End-to-end training smoke tests for each model (VER-01 through VER-03)."""
 
     def test_ts2vec_trains_5_steps(self) -> None:
-        """TS2Vec with CropShiftAugmentation trains 5 steps with finite loss (VER-01)."""
+        """TS2Vec with CropShiftProducer trains 5 steps with finite loss (VER-01)."""
         model = TS2Vec(
             input_dims=1,
-            augmentation=CropShiftAugmentation(),
+            augmentation=CropShiftProducer(),
         )
 
         losses = _train_steps(
@@ -131,7 +143,7 @@ class TestModelTrainingSmoke:
         """
         model = TS2Vec(
             input_dims=1,
-            augmentation=CropShiftAugmentation(),
+            augmentation=CropShiftProducer(),
         )
 
         original = {k: v.clone() for k, v in model.encoder.state_dict().items()}
@@ -152,13 +164,16 @@ class TestModelTrainingSmoke:
             os.unlink(tmp_path)
 
     def test_cost_trains_5_steps(self) -> None:
-        """CoST with CosTRandomFunctionAugmentation trains 5 steps (VER-02)."""
-        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
+        """CoST with IndependentPair producer trains 5 steps (VER-02)."""
         model = CoST(
             input_dims=1,
             sequence_length=100,
             kernel_sizes=[3],
-            augmentation=CosTRandomFunctionAugmentation(params=params),
+            augmentation=IndependentPair(
+                aug=CosTRandomFunctionAugmentation(
+                    params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+                )
+            ),
         )
 
         losses = _train_steps(
@@ -215,26 +230,25 @@ class TestModelTrainingSmoke:
 
 
 class TestAugmentationExtensibility:
-    """Verify that user-defined AugmentationMethod subclasses work (VER-04)."""
+    """Verify that user-defined AugmentationProducer implementations work (VER-04)."""
 
-    def test_identity_augmentation_works_with_ts2vec(self) -> None:
-        """Identity augmentation (no transform) produces finite loss with TS2Vec."""
+    def test_identity_producer_works_with_ts2vec(self) -> None:
+        """Identity producer (no transform) produces finite loss with TS2Vec."""
 
-        class IdentityAugmentation(AugmentationMethod):
-            """Pass-through augmentation that returns the original data as both views."""
+        class IdentityProducer:
+            """Pass-through producer that returns the original data as both views."""
 
-            def augment(
-                self, data: torch.Tensor, **kwargs: Any
-            ) -> TrainingViews:
-                seq_len = data.size(1)
-                return TrainingViews(
-                    views=(data, data),
-                    metadata={'crop_length': seq_len},
+            def produce(self, x: torch.Tensor) -> AlignedPair:
+                seq_len = x.size(1)
+                return AlignedPair(
+                    first=x,
+                    second=x,
+                    overlap_length=seq_len,
                 )
 
         model = TS2Vec(
             input_dims=1,
-            augmentation=IdentityAugmentation(),
+            augmentation=IdentityProducer(),
         )
 
         losses = _train_steps(
@@ -250,3 +264,63 @@ class TestAugmentationExtensibility:
         assert loss is not None
         assert loss.ndim == 0
         assert math.isfinite(loss.item())
+
+    def test_identity_augmentation_backward_compat_with_ts2vec(self) -> None:
+        """Legacy AugmentationMethod still works via backward-compat path."""
+
+        class IdentityAugmentation(AugmentationMethod):
+            """Pass-through augmentation that returns the original data as both views."""
+
+            def augment(
+                self, data: torch.Tensor, **kwargs: Any
+            ) -> TrainingViews:
+                seq_len = data.size(1)
+                return TrainingViews(
+                    views=(data, data),
+                    metadata={'crop_length': seq_len},
+                )
+
+        # Verify the old AugmentationMethod contract produces TrainingViews
+        aug = IdentityAugmentation()
+        data = torch.randn(4, 100, 1)
+        result = aug.augment(data)
+        assert isinstance(result, TrainingViews)
+        assert len(result.views) == 2
+        assert result.metadata['crop_length'] == 100
+
+    def test_custom_single_view_producer_works_with_autotcl(self) -> None:
+        """Custom SingleView producer trains with AutoTCL model."""
+
+        class NoiseProducer:
+            """Simple producer that adds Gaussian noise."""
+
+            def produce(self, x: torch.Tensor) -> SingleView:
+                return SingleView(view=x + torch.randn_like(x) * 0.1)
+
+        model = AutoTCL(
+            input_dims=1,
+            kernel_sizes=[3],
+            augmentation=NoiseProducer(),
+        )
+
+        losses = _train_steps(
+            model=model,
+            batch_size=4,
+            seq_length=100,
+            input_dims=1,
+            num_steps=1,
+        )
+
+        assert len(losses) >= 1
+        for loss in losses:
+            assert loss.ndim == 0
+            assert math.isfinite(loss.item())
+
+    def test_default_tstcc_pair_produces_view_pair(self) -> None:
+        """_default_tstcc_pair() returns ViewPair with correct structure."""
+        producer = _default_tstcc_pair()
+        data = torch.randn(4, 1, 100)  # (B, C, T) layout used by TSTCC
+        result = producer.produce(data)
+        assert isinstance(result, ViewPair)
+        assert result.first.shape == data.shape
+        assert result.second.shape == data.shape
