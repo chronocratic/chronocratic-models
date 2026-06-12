@@ -15,7 +15,6 @@ Exported symbols:
 from __future__ import annotations
 
 __all__ = [
-    'AlignedPair',
     'Augmentation',
     'AugmentationMethod',
     'AugmentationProducer',
@@ -29,7 +28,7 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol, runtime_checkable
 
 import torch
 from torch import nn
@@ -55,6 +54,37 @@ class TrainingViews:
 
     views: tuple[torch.Tensor, ...]
     metadata: dict[str, Any]
+
+
+# --------------------------------------------------------------------------- #
+# Augmentation Protocol (primitive, model-agnostic)
+# --------------------------------------------------------------------------- #
+
+
+@runtime_checkable
+class Augmentation(Protocol):
+    """Structural protocol for model-agnostic augmentation primitives.
+
+    Implements this protocol to create a primitive transform that accepts
+    a tensor and returns a transformed tensor of the same shape. Unlike
+    :class:`AugmentationMethod`, this protocol does not wrap results in
+    :class:`TrainingViews` — it returns a bare tensor.
+
+    Examples:
+        Jitter, Scaling, Permutation — shared across all models.
+    """
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the augmentation to ``x``.
+
+        Args:
+            x: Input tensor of shape ``(batch, channels, time)``
+               or ``(batch, time, channels)``.
+
+        Returns:
+            Transformed tensor with the same shape as ``x``.
+        """
+        ...
 
 
 # --------------------------------------------------------------------------- #

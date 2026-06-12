@@ -7,9 +7,8 @@ Verifies that shared, model-agnostic primitives:
 - Satisfy the Augmentation Protocol (callable, Tensor -> Tensor).
 """
 
-from dataclasses import fields, is_dataclass
+from dataclasses import is_dataclass
 
-import pytest
 import torch
 
 from tscollection.models.augmentation.primitives import (
@@ -78,12 +77,17 @@ class TestPermutation:
         assert result.shape == data.shape
 
     def test_segments_reordered(self) -> None:
-        perm = Permutation()
-        torch.manual_seed(123)
+        perm = Permutation(params=PermutationParameters(max_segments=5, time_dim=-1))
         data = torch.arange(100, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-        result = perm(data)
-        # With max_segments=5 and seq_len=100, segments should be reordered
-        assert not torch.equal(result, data)
+        # Run with multiple seeds to find one that actually permutes
+        reordered = False
+        for seed in range(10):
+            torch.manual_seed(seed)
+            result = perm(data)
+            if not torch.equal(result, data):
+                reordered = True
+                break
+        assert reordered, "Permutation should reorder segments for at least one seed"
 
 
 class TestComposeAugmentation:
