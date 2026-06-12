@@ -9,9 +9,10 @@ Covers:
 
 import pytest
 import torch
+from torch import nn
 
 from tscollection.models.augmentation.base import (
-    AugmentationProducer,
+    AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
     ViewPair,
@@ -22,6 +23,34 @@ from tscollection.models.augmentation.producers import (
     IndependentPair,
     SingleViewProducer,
 )
+
+
+class _DummyStrategy(AugmentationTrainingStrategy):
+    """Minimal training strategy for test doubles."""
+
+    def compute_loss(
+        self,
+        x_embeddings: torch.Tensor,
+        aug_x_embeddings: torch.Tensor,
+        augmentation_factor: torch.Tensor,
+    ) -> torch.Tensor:
+        return torch.tensor(0.0)
+
+
+class _DummyTrainableProducer(TrainableAugmentationProducer):
+    """Minimal trainable producer for tests."""
+
+    def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
+        super().__init__(training_strategy=training_strategy)
+        self._dummy = nn.Linear(4, 4)
+
+    def produce(self, x: torch.Tensor) -> SingleView:
+        return SingleView(view=x)
+
+    def train_step(
+        self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+    ) -> torch.Tensor | None:
+        return None
 
 
 class TestSeededWrapsProducer:
@@ -99,7 +128,6 @@ class TestSeededGeneric:
     def test_seeded_accepts_augmentation_producer(self) -> None:
         """Seeded inner parameter type is AugmentationProducer."""
         producer = SingleViewProducer(aug=Jitter())
-        # Verify producer satisfies the protocol structurally
         assert hasattr(producer, "produce")
         assert callable(producer.produce)
 
@@ -123,46 +151,13 @@ class TestSeededTrainableGuard:
 
     def test_seeded_raises_for_trainable_producer(self) -> None:
         """Seeded must not wrap TrainableAugmentationProducer (SPEC §4.6)."""
-
-        from tscollection.models.augmentation.base import (
-            AugmentationTrainingStrategy,
-        )
-
-        class _DummyStrategy(AugmentationTrainingStrategy):
-            def compute_loss(self, x_emb, aug_x_emb, aug_factor):
-                return torch.tensor(0.0)
-
-        class _DummyTrainableProducer(TrainableAugmentationProducer):
-            def produce(self, x: torch.Tensor) -> SingleView:
-                return SingleView(view=x)
-
-            def train_step(self, x, encoder, batch_idx):
-                return None
-
         trainable = _DummyTrainableProducer(training_strategy=_DummyStrategy())
         with pytest.raises(TypeError, match="TrainableAugmentationProducer"):
             Seeded(inner=trainable, seed=42)
 
     def test_seeded_isinstance_gate(self) -> None:
         """Guard uses isinstance(inner, TrainableAugmentationProducer)."""
-
-        from tscollection.models.augmentation.base import (
-            AugmentationTrainingStrategy,
-        )
-
-        class _DummyStrategy(AugmentationTrainingStrategy):
-            def compute_loss(self, x_emb, aug_x_emb, aug_factor):
-                return torch.tensor(0.0)
-
-        class _DummyTrainableProducer(TrainableAugmentationProducer):
-            def produce(self, x: torch.Tensor) -> SingleView:
-                return SingleView(view=x)
-
-            def train_step(self, x, encoder, batch_idx):
-                return None
-
         trainable = _DummyTrainableProducer(training_strategy=_DummyStrategy())
-        # Verify it is actually a TrainableAugmentationProducer
         assert isinstance(trainable, TrainableAugmentationProducer)
 
         with pytest.raises(TypeError):
@@ -171,7 +166,6 @@ class TestSeededTrainableGuard:
     def test_seeded_allows_stateless_producer(self) -> None:
         """Seeded accepts stateless (non-trainable) producers."""
         producer = SingleViewProducer(aug=Jitter())
-        # Verify it is NOT a TrainableAugmentationProducer
         assert not isinstance(producer, TrainableAugmentationProducer)
 
         seeded = Seeded(inner=producer, seed=42)

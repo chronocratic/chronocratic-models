@@ -11,18 +11,16 @@ Covers:
 from __future__ import annotations
 
 import pytest
-from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
+from torch.optim import AdamW
 
 from tscollection.models.augmentation.base import (
-    AlignedPair,
     AugmentationProducer,
     AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
-    ViewPair,
 )
 from tscollection.models.augmentation.primitives import Jitter
 from tscollection.models.augmentation.producers import SingleViewProducer
@@ -31,25 +29,40 @@ from tscollection.models.augmentation.trainable_support import (
     maybe_train_augmentation,
 )
 
-if TYPE_CHECKING:
-    from torch.optim import Optimizer
-
 
 class _DummyStrategy(AugmentationTrainingStrategy):
     """Minimal training strategy for test doubles."""
 
-    def compute_loss(self, x_embeddings, aug_x_embeddings, augmentation_factor):
+    def compute_loss(
+        self,
+        x_embeddings: torch.Tensor,
+        aug_x_embeddings: torch.Tensor,
+        augmentation_factor: torch.Tensor,
+    ) -> torch.Tensor:
         return torch.tensor(0.0)
 
-    def should_train(self, epoch, batch_idx):
-        return True
+
+class _NoTrainStrategy(AugmentationTrainingStrategy):
+    """Strategy that never trains."""
+
+    def compute_loss(
+        self,
+        x_embeddings: torch.Tensor,
+        aug_x_embeddings: torch.Tensor,
+        augmentation_factor: torch.Tensor,
+    ) -> torch.Tensor:
+        return torch.tensor(0.0)
+
+    def should_train(self, epoch: int, batch_idx: int) -> bool:
+        return False
 
 
 class _DummyTrainableProducer(TrainableAugmentationProducer):
     """Minimal trainable producer for tests."""
 
-    def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
-        super().__init__(training_strategy=training_strategy)
+    def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
+        super().__init__(training_strategy=strategy)
+        self._dummy = nn.Linear(4, 4)
         self._train_step_called = False
         self._configure_called = False
         self._last_loss = torch.tensor(1.5)
@@ -57,13 +70,15 @@ class _DummyTrainableProducer(TrainableAugmentationProducer):
     def produce(self, x: torch.Tensor) -> SingleView:
         return SingleView(view=x)
 
-    def train_step(self, x: torch.Tensor, encoder: nn.Module, batch_idx: int) -> torch.Tensor | None:
+    def train_step(
+        self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+    ) -> torch.Tensor | None:
         self._train_step_called = True
         return self._last_loss
 
-    def configure_optimizer(self, lr: float) -> nn.AdamW:
+    def configure_optimizer(self, lr: float) -> AdamW:
         self._configure_called = True
-        return nn.AdamW(self.parameters(), lr=lr)
+        return AdamW(self.parameters(), lr=lr)
 
 
 class TestMaybeTrainAugmentationNonTrainable:
@@ -87,7 +102,11 @@ class TestMaybeTrainAugmentationNonTrainable:
         assert not isinstance(producer, TrainableAugmentationProducer)
 
         result = maybe_train_augmentation(
-            producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=1, batch_idx=0
+            producer,
+            x=torch.randn(1, 5, 2),
+            encoder=nn.Linear(2, 4),
+            epoch=1,
+            batch_idx=0,
         )
 
         assert result is None
@@ -118,14 +137,8 @@ class TestMaybeTrainAugmentationTrainable:
 
     def test_delegates_to_train_step(self) -> None:
         """When producer is TrainableAugmentationProducer and should_train is True."""
-
-        class _ProducerWithDummyParam(_DummyTrainableProducer):
-            def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
-                super().__init__(strategy)
-                self._param = nn.Linear(4, 4)
-
         strategy = _DummyStrategy()
-        producer = _ProducerWithDummyParam(strategy)
+        producer = _DummyTrainableProducer(strategy)
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
@@ -138,20 +151,7 @@ class TestMaybeTrainAugmentationTrainable:
 
     def test_skips_train_step_when_should_train_false(self) -> None:
         """When should_train_augmentation returns False, train_step is not called."""
-
-        class _NoTrainStrategy(AugmentationTrainingStrategy):
-            def compute_loss(self, x_emb, aug_x_emb, aug_factor):
-                return torch.tensor(0.0)
-
-            def should_train(self, epoch, batch_idx):
-                return False
-
-        class _ProducerWithDummyParam(_DummyTrainableProducer):
-            def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
-                super().__init__(strategy)
-                self._param = nn.Linear(4, 4)
-
-        producer = _ProducerWithDummyParam(_NoTrainStrategy())
+        producer = _DummyTrainableProducer(_NoTrainStrategy())
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
@@ -164,14 +164,7 @@ class TestMaybeTrainAugmentationTrainable:
 
     def test_returns_loss_from_train_step(self) -> None:
         """The loss returned by train_step is propagated."""
-
-        class _ProducerWithDummyParam(_DummyTrainableProducer):
-            def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
-                super().__init__(strategy)
-                self._param = nn.Linear(4, 4)
-
-        strategy = _DummyStrategy()
-        producer = _ProducerWithDummyParam(strategy)
+        producer = _DummyTrainableProducer(_DummyStrategy())
         producer._last_loss = torch.tensor(2.7)
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
@@ -188,14 +181,7 @@ class TestMaybeConfigureOptimizerTrainable:
     """maybe_configure_augmentation_optimizer delegates to trainable producer."""
 
     def test_delegates_to_configure_optimizer(self) -> None:
-
-        class _ProducerWithDummyParam(_DummyTrainableProducer):
-            def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
-                super().__init__(strategy)
-                self._param = nn.Linear(4, 4)
-
-        strategy = _DummyStrategy()
-        producer = _ProducerWithDummyParam(strategy)
+        producer = _DummyTrainableProducer(_DummyStrategy())
 
         result = maybe_configure_augmentation_optimizer(producer, lr=0.001)
 
@@ -212,24 +198,24 @@ class TestIsinstanceGate:
 
         assert not isinstance(producer, TrainableAugmentationProducer)
         assert maybe_train_augmentation(
-            producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=0, batch_idx=0
+            producer,
+            x=torch.randn(1, 5, 2),
+            encoder=nn.Linear(2, 4),
+            epoch=0,
+            batch_idx=0,
         ) is None
         assert maybe_configure_augmentation_optimizer(producer, lr=0.001) is None
 
     def test_gate_check_on_trainable(self) -> None:
-
-        class _ProducerWithDummyParam(_DummyTrainableProducer):
-            def __init__(self, strategy: AugmentationTrainingStrategy) -> None:
-                super().__init__(strategy)
-                self._param = nn.Linear(4, 4)
-
-        strategy = _DummyStrategy()
-        producer = _ProducerWithDummyParam(strategy)
+        producer = _DummyTrainableProducer(_DummyStrategy())
 
         assert isinstance(producer, TrainableAugmentationProducer)
-        # Helpers should NOT return None for trainable producers
         assert maybe_configure_augmentation_optimizer(producer, lr=0.001) is not None
         result = maybe_train_augmentation(
-            producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=0, batch_idx=0
+            producer,
+            x=torch.randn(1, 5, 2),
+            encoder=nn.Linear(2, 4),
+            epoch=0,
+            batch_idx=0,
         )
         assert result is not None
