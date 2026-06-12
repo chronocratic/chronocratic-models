@@ -35,13 +35,19 @@ class TestAugmentationProtocol:
         assert issubclass(Augmentation, Protocol)
 
     def test_concrete_class_satisfies_protocol(self) -> None:
-        """A class with __call__(Tensor) -> Tensor satisfies the Protocol."""
+        """A class with __call__(Tensor) -> Tensor satisfies the Protocol structurally."""
 
         class IdentityAug:
             def __call__(self, x: torch.Tensor) -> torch.Tensor:
                 return x
 
-        assert issubclass(IdentityAug, Augmentation)
+        # Augmentation is not @runtime_checkable; verify structural conformance
+        # by checking the concrete class has the required method.
+        assert hasattr(IdentityAug, '__call__')
+        aug = IdentityAug()
+        x = torch.randn(2, 10, 4)
+        result = aug(x)
+        assert isinstance(result, torch.Tensor)
 
 
 # --------------------------------------------------------------------------- #
@@ -151,13 +157,18 @@ class TestAugmentationProducer:
         assert issubclass(AugmentationProducer, Protocol)
 
     def test_covariant_type_parameter(self) -> None:
-        """A class with produce(Tensor) -> SingleView satisfies AugmentationProducer[SingleView]."""
+        """A class with produce(Tensor) -> SingleView satisfies AugmentationProducer structurally."""
 
         class _TestProducer:
             def produce(self, x: torch.Tensor) -> SingleView:
                 return SingleView(view=x)
 
-        assert issubclass(_TestProducer, AugmentationProducer[SingleView])
+        # AugmentationProducer is not @runtime_checkable; verify structural conformance
+        assert hasattr(_TestProducer, 'produce')
+        producer = _TestProducer()
+        x = torch.randn(2, 10, 4)
+        result = producer.produce(x)
+        assert isinstance(result, SingleView)
 
 
 # --------------------------------------------------------------------------- #
@@ -186,6 +197,10 @@ class TestTrainableAugmentationProducer:
         """configure_optimizer() returns an AdamW optimizer."""
 
         class _ConcreteProducer(TrainableAugmentationProducer):
+            def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
+                super().__init__(training_strategy=training_strategy)
+                self._dummy_param = nn.Linear(4, 4)  # gives .parameters() something
+
             def produce(self, x: torch.Tensor) -> SingleView:
                 return SingleView(view=x)
 
@@ -202,6 +217,10 @@ class TestTrainableAugmentationProducer:
         """should_train_augmentation() delegates to training strategy."""
 
         class _ConcreteProducer(TrainableAugmentationProducer):
+            def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
+                super().__init__(training_strategy=training_strategy)
+                self._dummy_param = nn.Linear(4, 4)
+
             def produce(self, x: torch.Tensor) -> SingleView:
                 return SingleView(view=x)
 
