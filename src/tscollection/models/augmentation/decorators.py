@@ -14,6 +14,7 @@ __all__ = [
     'Seeded',
 ]
 
+import numpy as np
 import torch
 
 from tscollection.models.augmentation.base import (
@@ -25,9 +26,9 @@ from tscollection.models.augmentation.base import (
 class Seeded[V]:
     """Deterministic decorator wrapping a stateless AugmentationProducer.
 
-    Uses ``torch.random.fork_rng()`` so that inner randomness is isolated
-    from the outer process random state. Repeated calls with the same seed
-    produce identical output tensors.
+    Uses ``torch.random.fork_rng()`` and ``np.random.seed()`` so that
+    inner randomness is isolated from the outer process random state.
+    Repeated calls with the same seed produce identical output tensors.
 
     Constraint: must NOT wrap :class:`TrainableAugmentationProducer`.
     Trainable producers have their own parameterised state; seeding at the
@@ -52,7 +53,7 @@ class Seeded[V]:
         """Produce a view set with deterministic randomness.
 
         Isolates the inner producer's random state from the outer process
-        context using ``torch.random.fork_rng()``.
+        context using ``torch.random.fork_rng()`` and NumPy save/restore.
 
         Args:
             x: Input tensor of shape ``(batch, time, channels)``.
@@ -63,4 +64,9 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
-            return self._inner.produce(x)
+            np_state = np.random.get_state()
+            np.random.seed(self._seed)
+            try:
+                return self._inner.produce(x)
+            finally:
+                np.random.set_state(np_state)
