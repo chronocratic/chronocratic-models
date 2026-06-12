@@ -64,6 +64,24 @@ from .trainable_support import (
     maybe_train_augmentation,
 )
 
+# ---------------------------------------------------------------------------
+# Per-model concrete augmentations (re-exported for convenience)
+# ---------------------------------------------------------------------------
+# NOTE: cost/augmentation.py still imports deleted TrainingViews — will be
+# fixed in plan 13. Its re-exports are deferred until then.
+from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+    AutoTCLNeuralNetworkAugmentation,
+    AutoTCLNeuralNetworkAugmentationParameters,
+)
+from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+    AdversarialTrainingStrategy,
+    RIPTrainingStrategy,
+)
+from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+    CropShiftAugmentationParameters,
+    CropShiftProducer,
+)
+
 
 __all__ = [
     # New contract — base
@@ -91,4 +109,10 @@ __all__ = [
     'Seeded',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
+    # Per-model concrete augmentations (cost deferred to plan 13)
+    'AdversarialTrainingStrategy',
+    'AutoTCLNeuralNetworkAugmentation',
+    'AutoTCLNeuralNetworkAugmentationParameters',
+    'CropShiftAugmentationParameters',
+    'RIPTrainingStrategy',
 ]
