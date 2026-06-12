@@ -11,13 +11,11 @@ import torch
 
 from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
+    AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentation,
+    CosTRandomFunctionAugmentationParameters,
     CropShiftAugmentation,
     RIPTrainingStrategy,
-)
-from tscollection.models.augmentation import (
-    AutoTCLNeuralNetworkAugmentationParameters,
-    CosTRandomFunctionAugmentationParameters,
 )
 from tscollection.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,

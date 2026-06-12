@@ -8,37 +8,33 @@ weights.
 
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 from typing import Any
 
-import math
-
 import lightning.pytorch as pl
-import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.models.augmentation import (
     AugmentationMethod,
-    TrainingViews,
-)
-from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
+    TrainingViews,
 )
 from tscollection.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
     RIPTrainingStrategy,
 )
+from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
 from tscollection.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
 )
+from tscollection.models.convolutional.dilated.cost.model import CoST
 from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentation,
 )
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
-from tscollection.models.convolutional.dilated.cost.model import CoST
 from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 

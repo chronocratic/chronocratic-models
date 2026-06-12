@@ -14,7 +14,6 @@ from tscollection.models.augmentation import (
     CropShiftAugmentationParameters,
 )
 
-
 # --------------------------------------------------------------------------- #
 # CropShiftAugmentationParameters
 # --------------------------------------------------------------------------- #

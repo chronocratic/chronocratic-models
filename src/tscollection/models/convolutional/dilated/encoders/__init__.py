@@ -5,4 +5,9 @@ __all__ = [
     'TS2VecTimeSeriesEncoder',
 ]
 
-from .encoders import *
+from .encoders import (
+    AutoTCLAugmentationTimeSeriesEncoder,
+    AutoTCLTimeSeriesEncoder,
+    CoSTTimeSeriesEncoder,
+    TS2VecTimeSeriesEncoder,
+)

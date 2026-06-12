@@ -65,7 +65,9 @@ class TestMixinImports:
         assert PoolingEncodingMixin is not None
 
     def test_decomposition_mixin_import(self) -> None:
-        from tscollection.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
+        from tscollection.models.convolutional.dilated._mixin.encoding import (
+            DecompositionEncodingMixin,
+        )
 
         assert DecompositionEncodingMixin is not None
 

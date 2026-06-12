@@ -1,7 +1,42 @@
-"""Provide convenient imports for the main model classes."""
+"""Convenient imports for the main model classes and their configs."""
 
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
-from tscollection.models.convolutional.dilated.cost.model import CoST
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from __future__ import annotations
 
-__all__ = ['AutoTCL', 'CoST', 'TS2Vec']
+from .convolutional import (
+    AutoTCL,
+    AutoTCLModelParameters,
+    CoST,
+    CoSTModelParameters,
+    FCN,
+    MCLModelParameters,
+    Series2Vec,
+    Series2VecModelParameters,
+    TS2Vec,
+    TS2VecModelParameters,
+    TSTCC,
+    TSTCCModelParameters,
+)
+from .generative import TimeVAE, TimeVAEModelParameters
+from .recurrent import TimeNet, TimeNetModelParameters
+from .transformer import TST, TSTModelParameters
+
+__all__ = [
+    'FCN',
+    'TST',
+    'TSTCC',
+    'AutoTCL',
+    'AutoTCLModelParameters',
+    'CoST',
+    'CoSTModelParameters',
+    'MCLModelParameters',
+    'Series2Vec',
+    'Series2VecModelParameters',
+    'TS2Vec',
+    'TS2VecModelParameters',
+    'TSTCCModelParameters',
+    'TSTModelParameters',
+    'TimeNet',
+    'TimeNetModelParameters',
+    'TimeVAE',
+    'TimeVAEModelParameters',
+]
