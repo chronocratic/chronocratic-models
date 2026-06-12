@@ -4,6 +4,9 @@ Verifies that CropShiftAugmentationParameters,
 CosTRandomFunctionAugmentationParameters, and
 AutoTCLNeuralNetworkAugmentationParameters instantiate correctly
 with proper defaults and field types (CFG-02).
+
+Also tests primitive parameter dataclasses (JitterParameters, ScalingParameters,
+PermutationParameters) from augmentation/primitives.py.
 """
 
 import pytest
@@ -12,6 +15,9 @@ from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentationParameters,
     CropShiftAugmentationParameters,
+    JitterParameters,
+    PermutationParameters,
+    ScalingParameters,
 )
 
 # --------------------------------------------------------------------------- #
@@ -125,4 +131,92 @@ class TestConfigImports:
             AutoTCLNeuralNetworkAugmentationParameters,
             CosTRandomFunctionAugmentationParameters,
             CropShiftAugmentationParameters,
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Primitive parameter dataclasses
+# --------------------------------------------------------------------------- #
+
+
+class TestJitterParameters:
+    """JitterParameters defaults and fields."""
+
+    def test_default_sigma(self) -> None:
+        params = JitterParameters()
+        assert params.sigma == 0.1
+
+    def test_default_p(self) -> None:
+        params = JitterParameters()
+        assert params.p == 1.0
+
+    def test_custom_sigma(self) -> None:
+        params = JitterParameters(sigma=0.5)
+        assert params.sigma == 0.5
+
+    def test_custom_p(self) -> None:
+        params = JitterParameters(p=0.3)
+        assert params.p == 0.3
+
+    def test_vars_produces_expected_keys(self) -> None:
+        params = JitterParameters()
+        d = vars(params)
+        assert 'sigma' in d
+        assert 'p' in d
+
+
+class TestScalingParameters:
+    """ScalingParameters defaults and fields."""
+
+    def test_default_values(self) -> None:
+        params = ScalingParameters()
+        assert params.sigma == 0.1
+        assert params.mean == 1.0
+        assert params.p == 1.0
+        assert params.per_sample is False
+        assert params.channel_dim == 1
+
+    def test_custom_sigma(self) -> None:
+        params = ScalingParameters(sigma=0.5, mean=2.0, per_sample=True)
+        assert params.sigma == 0.5
+        assert params.mean == 2.0
+        assert params.per_sample is True
+
+    def test_vars_produces_expected_keys(self) -> None:
+        params = ScalingParameters()
+        d = vars(params)
+        assert 'sigma' in d
+        assert 'mean' in d
+        assert 'p' in d
+        assert 'per_sample' in d
+        assert 'channel_dim' in d
+
+
+class TestPermutationParameters:
+    """PermutationParameters defaults and fields."""
+
+    def test_default_values(self) -> None:
+        params = PermutationParameters()
+        assert params.max_segments == 5
+        assert params.time_dim == -1
+
+    def test_custom_max_segments(self) -> None:
+        params = PermutationParameters(max_segments=10)
+        assert params.max_segments == 10
+
+    def test_vars_produces_expected_keys(self) -> None:
+        params = PermutationParameters()
+        d = vars(params)
+        assert 'max_segments' in d
+        assert 'time_dim' in d
+
+
+class TestPrimitiveImports:
+    """Verify primitive config dataclasses are importable from the barrel."""
+
+    def test_import_primitive_params_from_barrel(self) -> None:
+        from tscollection.models.augmentation import (  # noqa: F401
+            JitterParameters,
+            PermutationParameters,
+            ScalingParameters,
         )

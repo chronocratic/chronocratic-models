@@ -1,20 +1,28 @@
-"""Tests for the augmentation ABC hierarchy and training strategies.
+"""Tests for the augmentation ABC hierarchy, new producer contract, and training strategies.
 
 Verifies that TrainingViews, AugmentationMethod, TrainableAugmentation,
 AugmentationTrainingStrategy, RIPTrainingStrategy, and AdversarialTrainingStrategy
-behave correctly and follow the documented interfaces.
+behave correctly (legacy backward compat). Also tests new Augmentation Protocol,
+AugmentationProducer[ViewSet] contract, ViewSet types (SingleView, ViewPair,
+AlignedPair), and CropShiftProducer.
 """
 
 import pytest
 import torch
 
 from tscollection.models.augmentation import (
+    AlignedPair,
     AdversarialTrainingStrategy,
+    Augmentation,
     AugmentationMethod,
+    AugmentationProducer,
     AugmentationTrainingStrategy,
     RIPTrainingStrategy,
+    SingleView,
+    SingleViewProducer,
     TrainableAugmentation,
     TrainingViews,
+    ViewPair,
 )
 
 # --------------------------------------------------------------------------- #
@@ -219,7 +227,7 @@ class TestAdversarialTrainingStrategy:
 
 
 class TestCropShiftAugmentation:
-    """CropShiftAugmentation returns TrainingViews with correct structure."""
+    """CropShiftAugmentation (alias for CropShiftProducer) returns AlignedPair."""
 
     @pytest.fixture(autouse=True)
     def _imports(self) -> None:
@@ -227,29 +235,43 @@ class TestCropShiftAugmentation:
         from tscollection.models.augmentation import CropShiftAugmentation
         self.aug_cls = CropShiftAugmentation  # type: ignore[attr-defined]
 
-    def test_augment_returns_training_views(self) -> None:
+    def test_produce_returns_aligned_pair(self) -> None:
+        """CropShiftAugmentation alias uses .produce() -> AlignedPair (new contract)."""
         aug = self.aug_cls()  # type: ignore[attr-defined]
         data = torch.randn(2, 100, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 2
-        assert 'crop_length' in result.metadata
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
+        assert result.first.shape[2] == 3
+        assert result.second.shape[2] == 3
+        assert isinstance(result.overlap_length, int)
 
-    def test_augment_with_params(self) -> None:
+    def test_produce_with_params(self) -> None:
         from tscollection.models.augmentation import CropShiftAugmentationParameters
 
         aug = self.aug_cls(  # type: ignore[attr-defined]
             params=CropShiftAugmentationParameters(temporal_unit=1)
         )
         data = torch.randn(2, 100, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
 
-    def test_augment_with_temporal_unit_kwarg(self) -> None:
-        aug = self.aug_cls()  # type: ignore[attr-defined]
-        data = torch.randn(2, 100, 3)
-        result = aug.augment(data, temporal_unit=5)
-        assert isinstance(result, TrainingViews)
+    def test_produce_with_temporal_unit_kwarg(self) -> None:
+        from tscollection.models.augmentation import CropShiftAugmentationParameters
+
+        aug = self.aug_cls(  # type: ignore[attr-defined]
+            params=CropShiftAugmentationParameters(temporal_unit=5)
+        )
+        data = torch.randn(2, 1000, 3)
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
+
+    def test_alias_is_crop_shift_producer(self) -> None:
+        """CropShiftAugmentation is an alias for CropShiftProducer (D-05)."""
+        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+            CropShiftProducer,
+        )
+
+        assert self.aug_cls is CropShiftProducer  # type: ignore[attr-defined]
 
 
 class TestCosTRandomFunctionAugmentation:
@@ -267,6 +289,20 @@ class TestCosTRandomFunctionAugmentation:
         result = aug.augment(data)
         assert isinstance(result, TrainingViews)
         assert len(result.views) == 1
+
+    def test_call_returns_tensor(self) -> None:
+        """CosTRandomFunctionAugmentation implements Augmentation Protocol (__call__)."""
+        from tscollection.models.augmentation import (
+            CosTRandomFunctionAugmentation,
+            CosTRandomFunctionAugmentationParameters,
+        )
+
+        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
+        aug = CosTRandomFunctionAugmentation(params=params)
+        data = torch.randn(2, 50, 3)
+        result = aug(data)
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == data.shape
 
 
 class TestAutoTCLNeuralNetworkAugmentation:
@@ -328,5 +364,89 @@ class TestLazyImport:
 
         aug = CropShiftAugmentation()
         data = torch.randn(2, 100, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
+
+
+# --------------------------------------------------------------------------- #
+# New contract — ViewSet types
+# --------------------------------------------------------------------------- #
+
+
+class TestViewSetTypes:
+    """ViewSet dataclass types (SingleView, ViewPair, AlignedPair)."""
+
+    def test_single_view_creation(self) -> None:
+        t = torch.randn(2, 10, 4)
+        sv = SingleView(view=t)
+        assert sv.view is t
+
+    def test_single_view_is_frozen(self) -> None:
+        sv = SingleView(view=torch.randn(2, 10, 4))
+        with pytest.raises(Exception):
+            sv.view = torch.randn(3, 5, 2)  # type: ignore[attr-defined]
+
+    def test_view_pair_creation(self) -> None:
+        t1 = torch.randn(2, 10, 4)
+        t2 = torch.randn(2, 10, 4)
+        vp = ViewPair(first=t1, second=t2)
+        assert vp.first is t1
+        assert vp.second is t2
+
+    def test_aligned_pair_extends_view_pair(self) -> None:
+        t1 = torch.randn(2, 10, 4)
+        t2 = torch.randn(2, 10, 4)
+        ap = AlignedPair(first=t1, second=t2, overlap_length=8)
+        assert isinstance(ap, ViewPair)
+        assert ap.overlap_length == 8
+
+    def test_aligned_pair_is_frozen(self) -> None:
+        ap = AlignedPair(
+            first=torch.randn(2, 10, 4),
+            second=torch.randn(2, 10, 4),
+            overlap_length=5,
+        )
+        with pytest.raises(Exception):
+            ap.overlap_length = 10  # type: ignore[attr-defined]
+
+
+# --------------------------------------------------------------------------- #
+# New contract — Augmentation Protocol
+# --------------------------------------------------------------------------- #
+
+
+class TestAugmentationProtocol:
+    """Augmentation Protocol structural checks."""
+
+    def test_primitive_jitter_satisfies_protocol(self) -> None:
+        from tscollection.models.augmentation import Jitter
+
+        aug = Jitter()
+        data = torch.randn(2, 10, 4)
+        result = aug(data)
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == data.shape
+
+    def test_augmentation_protocol_is_runtime_checkable(self) -> None:
+        from tscollection.models.augmentation import Jitter
+
+        aug = Jitter()
+        assert isinstance(aug, Augmentation)
+
+
+# --------------------------------------------------------------------------- #
+# New contract — SingleViewProducer
+# --------------------------------------------------------------------------- #
+
+
+class TestSingleViewProducer:
+    """SingleViewProducer wraps one Augmentation, returns SingleView."""
+
+    def test_produce_returns_single_view(self) -> None:
+        from tscollection.models.augmentation import Jitter
+
+        producer = SingleViewProducer(aug=Jitter())
+        data = torch.randn(2, 10, 4)
+        result = producer.produce(data)
+        assert isinstance(result, SingleView)
+        assert result.view.shape == data.shape

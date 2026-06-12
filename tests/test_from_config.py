@@ -1,10 +1,13 @@
-"""Integration tests for direct model instantiation on all three models.
+"""Integration tests for direct model instantiation on all four models.
 
 Verifies that each model can be instantiated from its typed config dataclass
 via ``Model(**vars(config))``, that config fields propagate correctly to
 ``__init__`` attributes, and that augmentation instances pass through.
 
 Also verifies the correct mixin inheritance for each model class.
+
+Tests both new producer-based augmentations (AugmentationProducer[ViewSet])
+and backward-compatible old symbol usage.
 """
 
 import torch
@@ -15,6 +18,7 @@ from tscollection.models.augmentation import (
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
     CropShiftAugmentation,
+    IndependentPair,
     RIPTrainingStrategy,
 )
 from tscollection.models.convolutional.dilated._mixin.encoding import (
@@ -27,6 +31,10 @@ from tscollection.models.convolutional.dilated.cost.config import CoSTModelParam
 from tscollection.models.convolutional.dilated.cost.model import CoST
 from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from tscollection.models.convolutional.standard.tstcc.augmentations import (
+    _default_tstcc_pair,
+)
+from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
 
 class TestModelInstantiation:
@@ -41,8 +49,10 @@ class TestModelInstantiation:
         config = CoSTModelParameters(input_dims=1, sequence_length=100)
         model = CoST(
             **vars(config),
-            augmentation=CosTRandomFunctionAugmentation(
-                params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+            augmentation=IndependentPair(
+                aug=CosTRandomFunctionAugmentation(
+                    params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+                )
             ),
         )
         assert isinstance(model, CoST)
@@ -128,3 +138,69 @@ class TestTrainingStepIntegration:
         loss = model.validation_step(batch, batch_idx=0)
         assert loss is not None
         assert loss.ndim == 0
+
+
+class TestTSTCCInstantiation:
+    """Test that TSTCC instantiates with _default_tstcc_pair() producer."""
+
+    def test_tstcc_with_default_pair(self) -> None:
+        model = TSTCC(
+            input_channels=1,
+            kernel_size=4,
+            stride=2,
+            final_out_channels=256,
+            features_len=16,
+            num_classes=10,
+            augmentation=_default_tstcc_pair(),
+        )
+        assert isinstance(model, TSTCC)
+
+    def test_tstcc_default_augmentation(self) -> None:
+        model = TSTCC(
+            input_channels=1,
+            kernel_size=4,
+            stride=2,
+            final_out_channels=256,
+            features_len=16,
+            num_classes=10,
+        )
+        assert model._augmentation is not None
+
+    def test_tstcc_produce_returns_view_pair(self) -> None:
+        from tscollection.models.augmentation import ViewPair
+
+        model = TSTCC(
+            input_channels=1,
+            kernel_size=4,
+            stride=2,
+            final_out_channels=256,
+            features_len=16,
+            num_classes=10,
+            augmentation=_default_tstcc_pair(),
+        )
+        data = torch.randn(4, 1, 100)
+        result = model._augmentation.produce(data)
+        assert isinstance(result, ViewPair)
+
+
+class TestBackwardCompatModelConstruction:
+    """Verify old-symbol construction patterns still work (D-05)."""
+
+    def test_ts2vec_with_crop_shift_augmentation_alias(self) -> None:
+        """CropShiftAugmentation alias still works with TS2Vec."""
+        from tscollection.models.augmentation import CropShiftAugmentation
+
+        model = TS2Vec(input_dims=1, augmentation=CropShiftAugmentation())
+        assert model._augmentation is not None
+
+    def test_cost_with_raw_augmentation(self) -> None:
+        """CoST still accepts raw Augmentation (wraps in IndependentPair)."""
+        model = CoST(
+            input_dims=1,
+            sequence_length=100,
+            kernel_sizes=[3],
+            augmentation=CosTRandomFunctionAugmentation(
+                params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
+            ),
+        )
+        assert model._augmentation is not None
