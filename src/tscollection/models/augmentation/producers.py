@@ -2,7 +2,7 @@
 
 Each class wraps one or more :class:`Augmentation` primitives and assembles
 a typed :class:`ViewSet` result. These are generic combinators — they import
-nothing model-specific (SPEC §4.4).
+nothing model-specific.
 
 Exported symbols:
     - ``SingleViewProducer``: wraps one Augmentation, returns SingleView.

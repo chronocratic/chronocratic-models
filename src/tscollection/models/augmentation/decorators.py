@@ -41,10 +41,7 @@ class Seeded[V]:
 
     def __init__(self, *, inner: AugmentationProducer[V], seed: int) -> None:
         if isinstance(inner, TrainableAugmentationProducer):
-            msg = (
-                "Seeded cannot wrap TrainableAugmentationProducer. "
-                "Stateless producers only (SPEC §4.6)."
-            )
+            msg = "Seeded cannot wrap TrainableAugmentationProducer. Stateless producers only."
             raise TypeError(msg)
         self._inner = inner
         self._seed = seed

@@ -67,7 +67,6 @@ from .trainable_support import (
 # ---------------------------------------------------------------------------
 # Per-model concrete augmentations (re-exported for convenience)
 # ---------------------------------------------------------------------------
-# NOTE: cost/augmentation.py cleaned up — Cost symbols re-exportable again.
 from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,

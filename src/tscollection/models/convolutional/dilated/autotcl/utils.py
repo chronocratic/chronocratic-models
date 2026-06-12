@@ -38,7 +38,7 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     selected_steps = torch.randint(1, time_steps - 2, [batch_size], device=weights.device)
     left_steps = selected_steps - 1
     right_steps = selected_steps + 1
-    other_selected_steps = torch.randint(1, time_steps - 2, [batch_size])
+    other_selected_steps = torch.randint(1, time_steps - 2, [batch_size], device=weights.device)
 
     # Create mask to differentiate between near and far time steps
     mask = torch.where(

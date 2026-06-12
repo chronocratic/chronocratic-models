@@ -5,7 +5,7 @@ Extracted from ``tstcc/augmentations.py`` and reshaped to satisfy the
 Protocol. Each primitive accepts a tensor and returns a transformed tensor
 of the same shape — no :class:`TrainingViews` wrapping.
 
-Shared across all models. Imports nothing model-specific (SPEC §4.9).
+Shared across all models. Imports nothing model-specific.
 
 Exported symbols:
     - ``Jitter``, ``JitterParameters``: Additive Gaussian noise.
