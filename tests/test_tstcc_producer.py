@@ -108,8 +108,6 @@ class TestTSTCCTraining:
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
 
-    # TODO: re-enable once conftest _run_train_steps is adapted for TSTCC's
-    # (data, labels) batch format. Lightning trainer setup adds ~28s/step.
     @pytest.mark.skip(reason="slow: Lightning trainer overhead")
     def test_trains_with_finite_loss(self, train_steps, finite_losses) -> None:
         from tscollection.models.convolutional.standard.tstcc.model import TSTCC
@@ -130,6 +128,7 @@ class TestTSTCCTraining:
             input_dims=1,
             num_steps=1,
             layout="NCL",
+            with_labels=True,
         )
         finite_losses(losses, expected_min=1)
 
@@ -162,8 +161,6 @@ class TestReExports:
         assert augmentations.ComposeAugmentation is primitives.ComposeAugmentation
 
 
-# TODO: re-enable once conftest is adapted for TSTCC batch format.
-# @pytest.mark.skip(reason="slow: Lightning trainer overhead")
 class TestDeterminism:
     """Seeded TSTCC produces identical loss across runs (SC-7)."""
 

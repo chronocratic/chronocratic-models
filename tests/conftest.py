@@ -23,11 +23,16 @@ def _run_train_steps(
     num_steps: int = 5,
     seed: int | None = None,
     layout: str = "NLC",  # "NLC"=(B,T,D), "NCL"=(B,C,T)
+    with_labels: bool = False,
 ) -> list[torch.Tensor]:
     """Run *num_steps* training steps and return collected losses.
 
     Shared implementation for all per-model producer tests so each test
     file only constructs the model under test.
+
+    Args:
+        with_labels: If True, produce (data, labels) tuple batches.
+            Needed for TSTCC which calls extract_features_from_batch(batch).
     """
     if seed is not None:
         torch.manual_seed(seed)
@@ -37,7 +42,13 @@ def _run_train_steps(
         data = torch.randn(batch_size * num_steps, seq_length, input_dims)
     else:  # NCL
         data = torch.randn(batch_size * num_steps, input_dims, seq_length)
-    dataset = TensorDataset(data)
+
+    if with_labels:
+        labels = torch.zeros(batch_size * num_steps, dtype=torch.long)
+        dataset = TensorDataset(data, labels)
+    else:
+        dataset = TensorDataset(data)
+
     dataloader = DataLoader(dataset, batch_size=batch_size)
 
     collected: list[torch.Tensor] = []
@@ -73,6 +84,7 @@ def train_steps():
 
     Usage in tests:
         losses = train_steps(model, batch_size=4, num_steps=5)
+        losses = train_steps(model, batch_size=4, num_steps=5, with_labels=True)
     """
     return _run_train_steps
 
