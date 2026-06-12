@@ -17,7 +17,7 @@ augmentation symbols for backward compatibility.
 - Shared primitives (:class:`Jitter`, :class:`Scaling`,
   :class:`Permutation`, :class:`ComposeAugmentation`) from ``primitives.py``.
 
-**Legacy symbols** (retained until plan 01-11 deletes them):
+**Legacy symbols** (retained for backward compatibility):
 
 - :class:`AugmentationMethod` / :class:`TrainableAugmentation` /
   :class:`TrainingViews` / :class:`DualAugmentation`.
@@ -70,7 +70,7 @@ from .trainable_support import (
 )
 
 # ---------------------------------------------------------------------------
-# Legacy symbols (retained for backward compatibility — D-05)
+# Legacy symbols (retained for backward compatibility)
 # ---------------------------------------------------------------------------
 from .base import (
     AugmentationMethod,
@@ -100,9 +100,6 @@ from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftProducer,
 )
 
-# D-05: Backward compat alias — Barrel only (ts2vec/augmentation.py no longer exports it)
-CropShiftAugmentation = CropShiftProducer  # type: ignore[misc]
-
 __all__ = [
     # New contract — base
     'AlignedPair',
@@ -128,7 +125,7 @@ __all__ = [
     'Seeded',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
-    # Legacy (D-05)
+    # Legacy symbols
     'AugmentationMethod',
     'AugmentationTrainingStrategy',
     'DualAugmentation',
@@ -140,7 +137,6 @@ __all__ = [
     'AutoTCLNeuralNetworkAugmentationParameters',
     'CosTRandomFunctionAugmentation',
     'CosTRandomFunctionAugmentationParameters',
-    'CropShiftAugmentation',
     'CropShiftAugmentationParameters',
     'RIPTrainingStrategy',
 ]

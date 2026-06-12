@@ -1,7 +1,7 @@
 """Centralized helpers for trainable augmentation producers.
 
 These functions are the **only** place in the codebase that branch on
-``isinstance(..., TrainableAugmentationProducer)`` (D-02). Models should
+``isinstance(..., TrainableAugmentationProducer)``. Models should
 call these helpers instead of checking the type themselves, keeping the
 model code branchless on the augmentation type.
 
@@ -50,7 +50,7 @@ def maybe_train_augmentation(
 
     This is the sole code path in the codebase that uses
     ``isinstance(..., TrainableAugmentationProducer)`` for the training
-    loop (D-02).
+    loop.
 
     Args:
         augmentation: The augmentation producer to optionally train.
@@ -86,7 +86,7 @@ def maybe_configure_augmentation_optimizer(
 
     This is the sole code path in the codebase that uses
     ``isinstance(..., TrainableAugmentationProducer)`` for optimizer
-    configuration (D-02).
+    configuration.
 
     Args:
         augmentation: The augmentation producer to optionally configure.

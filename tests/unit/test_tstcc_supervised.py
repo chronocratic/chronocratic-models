@@ -1,6 +1,6 @@
 """Tests for TS-TCC enum removal and downstream mode migration.
 
-Per D-03: remove TSTCCTrainingMode entirely; model becomes single-purpose
+TSTCCTrainingMode was removed; model becomes single-purpose
 (pretrain only). Downstream tasks move to SupervisedModule.
 """
 

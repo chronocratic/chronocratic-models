@@ -6,7 +6,7 @@ AugmentationProducer[ViewSet] contract, ViewSet types (SingleView, ViewPair,
 AlignedPair), and CropShiftProducer.
 
 Legacy symbols (TrainingViews, AugmentationMethod, TrainableAugmentation) were
-removed in plan 01-13 — their tests have been deleted.
+removed — their tests have been deleted.
 """
 
 import pytest
@@ -23,7 +23,7 @@ from tscollection.models.augmentation import (
     ViewPair,
 )
 
-# TrainingViews, AugmentationMethod, TrainableAugmentation deleted (plan 01-13).
+# TrainingViews, AugmentationMethod, TrainableAugmentation deleted.
 # Tests for these legacy symbols have been removed.
 
 
@@ -182,17 +182,17 @@ class TestAdversarialTrainingStrategy:
 # --------------------------------------------------------------------------- #
 
 
-class TestCropShiftAugmentation:
-    """CropShiftAugmentation (alias for CropShiftProducer) returns AlignedPair."""
+class TestCropShiftProducer:
+    """CropShiftProducer returns AlignedPair via .produce()."""
 
     @pytest.fixture(autouse=True)
     def _imports(self) -> None:
         """Lazy import to avoid circular dependency at module load time."""
-        from tscollection.models.augmentation import CropShiftAugmentation
-        self.aug_cls = CropShiftAugmentation  # type: ignore[attr-defined]
+        from tscollection.models.augmentation import CropShiftProducer
+        self.aug_cls = CropShiftProducer  # type: ignore[attr-defined]
 
     def test_produce_returns_aligned_pair(self) -> None:
-        """CropShiftAugmentation alias uses .produce() -> AlignedPair (new contract)."""
+        """CropShiftProducer uses .produce() -> AlignedPair (new contract)."""
         aug = self.aug_cls()  # type: ignore[attr-defined]
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
@@ -220,14 +220,6 @@ class TestCropShiftAugmentation:
         data = torch.randn(2, 1000, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
-
-    def test_alias_is_crop_shift_producer(self) -> None:
-        """CropShiftAugmentation is an alias for CropShiftProducer (D-05)."""
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
-
-        assert self.aug_cls is CropShiftProducer  # type: ignore[attr-defined]
 
 
 class TestCosTRandomFunctionAugmentation:

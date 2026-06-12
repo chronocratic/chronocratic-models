@@ -182,7 +182,7 @@ class TestSeededDecorator:
     def test_seeded_rejects_trainable(self) -> None:
         """Seeded raises TypeError for TrainableAugmentationProducer.
 
-        Verifies the isinstance guard from decorators.py (plan 04).
+        Verifies the isinstance guard from decorators.py.
         """
         from tscollection.models.augmentation.base import (
             AugmentationTrainingStrategy,

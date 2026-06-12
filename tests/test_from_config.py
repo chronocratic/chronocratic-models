@@ -17,7 +17,7 @@ from tscollection.models.augmentation import (
     AutoTCLNeuralNetworkAugmentationParameters,
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
-    CropShiftAugmentation,
+    CropShiftProducer,
     IndependentPair,
     RIPTrainingStrategy,
 )
@@ -42,7 +42,7 @@ class TestModelInstantiation:
 
     def test_ts2vec_instantiation_returns_instance(self) -> None:
         config = TS2VecModelParameters(input_dims=1)
-        model = TS2Vec(**vars(config), augmentation=CropShiftAugmentation())
+        model = TS2Vec(**vars(config), augmentation=CropShiftProducer())
         assert isinstance(model, TS2Vec)
 
     def test_cost_instantiation_returns_instance(self) -> None:
@@ -84,7 +84,7 @@ class TestConfigAttributePropagation:
             depth=8,
             dropout_rate=0.2,
         )
-        model = TS2Vec(**vars(config), augmentation=CropShiftAugmentation())
+        model = TS2Vec(**vars(config), augmentation=CropShiftProducer())
         assert model.hparams.input_dims == 3
         assert model.hparams.hidden_dims == 128
         assert model.hparams.output_dims == 256
@@ -93,7 +93,7 @@ class TestConfigAttributePropagation:
 
     def test_instantiation_passes_augmentation(self) -> None:
         config = TS2VecModelParameters(input_dims=1)
-        model = TS2Vec(**vars(config), augmentation=CropShiftAugmentation())
+        model = TS2Vec(**vars(config), augmentation=CropShiftProducer())
         # augmentation is ignored by save_hyperparameters, not in hparams
         assert not hasattr(model.hparams, 'augmentation')
 
@@ -132,7 +132,7 @@ class TestTrainingStepIntegration:
 
     def test_ts2vec_training_step_runs(self) -> None:
         config = TS2VecModelParameters(input_dims=1)
-        model = TS2Vec(**vars(config), augmentation=CropShiftAugmentation())
+        model = TS2Vec(**vars(config), augmentation=CropShiftProducer())
         model.eval()
         batch = torch.randn(4, 100, 1)
         loss = model.validation_step(batch, batch_idx=0)
@@ -184,13 +184,13 @@ class TestTSTCCInstantiation:
 
 
 class TestBackwardCompatModelConstruction:
-    """Verify old-symbol construction patterns still work (D-05)."""
+    """Verify old-symbol construction patterns still work."""
 
-    def test_ts2vec_with_crop_shift_augmentation_alias(self) -> None:
-        """CropShiftAugmentation alias still works with TS2Vec."""
-        from tscollection.models.augmentation import CropShiftAugmentation
+    def test_ts2vec_with_crop_shift_producer(self) -> None:
+        """CropShiftProducer still works with TS2Vec."""
+        from tscollection.models.augmentation import CropShiftProducer
 
-        model = TS2Vec(input_dims=1, augmentation=CropShiftAugmentation())
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
 
     def test_cost_with_raw_augmentation(self) -> None:

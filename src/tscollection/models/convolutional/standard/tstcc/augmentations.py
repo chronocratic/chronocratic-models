@@ -22,7 +22,7 @@ __all__ = [
     '_default_tstcc_pair',
 ]
 
-# Re-export shared primitives for backward compatibility (D-06).
+# Re-export shared primitives for backward compatibility.
 from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 from tscollection.models.augmentation.primitives import (
     ComposeAugmentation,

@@ -1,7 +1,7 @@
 """Tests for per-model augmentation modules.
 
 Verifies that concrete augmentations live in their model directories:
-    - ts2vec/augmentation.py: CropShiftAugmentation + CropShiftAugmentationParameters
+    - ts2vec/augmentation.py: CropShiftProducer + CropShiftAugmentationParameters
     - cost/augmentation.py: CosTRandomFunctionAugmentation + CosTRandomFunctionAugmentationParameters
     - autotcl/augmentation/: methods.py, training.py, __init__.py
 """
@@ -431,11 +431,11 @@ class TestBackwardCompatibility:
             AdversarialTrainingStrategy,
             AutoTCLNeuralNetworkAugmentation,
             CosTRandomFunctionAugmentation,
-            CropShiftAugmentation,
+            CropShiftProducer,
             RIPTrainingStrategy,
         )
 
-        assert CropShiftAugmentation is not None
+        assert CropShiftProducer is not None
         assert CosTRandomFunctionAugmentation is not None
         assert AutoTCLNeuralNetworkAugmentation is not None
         assert RIPTrainingStrategy is not None

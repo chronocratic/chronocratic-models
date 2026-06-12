@@ -264,7 +264,7 @@ class TestAugmentationTrainingStrategyRetained:
 
 
 class TestBackwardCompatibility:
-    """Existing symbols remain importable from base.py (D-05)."""
+    """Existing symbols remain importable from base.py."""
 
     def test_training_views_importable(self) -> None:
         """TrainingViews is still importable."""

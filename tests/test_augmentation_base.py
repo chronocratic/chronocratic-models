@@ -5,7 +5,7 @@ Also tests new contract types: Augmentation Protocol, AugmentationProducer[ViewS
 TrainableAugmentationProducer, and ViewSet dataclasses (SingleView, ViewPair, AlignedPair).
 
 Legacy symbols (TrainingViews, AugmentationMethod, TrainableAugmentation) were
-removed in plan 01-13 — their tests have been deleted.
+removed — their tests have been deleted.
 """
 
 import pytest
@@ -22,7 +22,7 @@ from tscollection.models.augmentation.base import (
     ViewPair,
 )
 
-# TrainingViews, AugmentationMethod, TrainableAugmentation deleted (plan 01-13).
+# TrainingViews, AugmentationMethod, TrainableAugmentation deleted.
 
 
 # --------------------------------------------------------------------------- #

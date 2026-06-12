@@ -7,7 +7,7 @@ self-containment.
 
 Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
 Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators.
-Retains ``augment() -> TrainingViews`` for backward compatibility (D-05).
+Retains ``augment() -> TrainingViews`` for backward compatibility.
 """
 
 __all__ = [
@@ -50,7 +50,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
     Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
     Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators
     like :class:`~tscollection.models.augmentation.producers.IndependentPair`.
-    Retains ``augment() -> TrainingViews`` for backward compatibility (D-05).
+    Retains ``augment() -> TrainingViews`` for backward compatibility.
     """
 
     def __init__(
