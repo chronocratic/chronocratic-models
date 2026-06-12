@@ -42,7 +42,7 @@ class CosTRandomFunctionAugmentationParameters:
     p: float = 0.5
 
 
-class CosTRandomFunctionAugmentation(Augmentation):
+class CosTRandomFunctionAugmentation:
     """Stochastic jitter/scale/shift augmentation used by CoST.
 
     Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
@@ -63,11 +63,17 @@ class CosTRandomFunctionAugmentation(Augmentation):
                 probability. Accepts either a
                 ``CosTRandomFunctionAugmentationParameters`` dataclass or a
                 dict with ``sigma`` (required) and ``p`` (optional, default
-                ``0.5``) keys for backward compatibility. When ``None``, uses
-                dataclass defaults (sigma=0.1, p=0.5).
+                ``0.5``) keys. When ``None``, uses dataclass defaults
+                (sigma=0.1, p=0.5).
             sigma: Convenience keyword argument to set sigma directly
                 when not using the ``params`` argument.
+
+        Raises:
+            ValueError: If both ``params`` and ``sigma`` are provided.
         """
+        if params is not None and sigma is not None:
+            msg = "Cannot specify both 'params' and 'sigma'. Use one or the other."
+            raise ValueError(msg)
         if params is None and sigma is not None:
             params = {'sigma': sigma}
         if params is None:

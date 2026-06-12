@@ -201,7 +201,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             calculate_mutual_information,
         )
 
-        # SPEC §4.5.1 exception: diagnostic method may branch on TrainableAugmentationProducer directly
+        # Diagnostic method: branch on trainable producer to manage eval/train mode
         if isinstance(self._augmentation, TrainableAugmentationProducer):
             prev_mode = self._augmentation.training
             self._augmentation.eval()
@@ -210,7 +210,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             augmentation_method=self._augmentation,
             max_train_length=self._max_train_length,
         )
-        # SPEC §4.5.1 exception: diagnostic method may branch on TrainableAugmentationProducer directly
+        # Restore training mode for diagnostic method
         if isinstance(self._augmentation, TrainableAugmentationProducer):
             self._augmentation.train(prev_mode)
         return mi

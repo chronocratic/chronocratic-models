@@ -69,8 +69,11 @@ def maybe_train_augmentation(
         return None
     encoder.eval()
     augmentation.train()
-    loss = augmentation.train_step(x=x, encoder=encoder, batch_idx=batch_idx)
-    augmentation.eval()
+    try:
+        loss = augmentation.train_step(x=x, encoder=encoder, batch_idx=batch_idx)
+    finally:
+        augmentation.eval()
+        encoder.train()
     return loss
 
 

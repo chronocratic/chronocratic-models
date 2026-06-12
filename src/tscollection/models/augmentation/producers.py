@@ -151,16 +151,19 @@ class FullOverlapPair:
 
     Args:
         aug: The augmentation primitive to apply (called twice independently).
+        time_dim: The time dimension index in the input tensor.
+            Defaults to 1 for (batch, time, channels). Use -1 for (batch, channels, time).
     """
 
-    def __init__(self, *, aug: Augmentation) -> None:
+    def __init__(self, *, aug: Augmentation, time_dim: int = 1) -> None:
         self._aug = aug
+        self._time_dim = time_dim
 
     def produce(self, x: torch.Tensor) -> AlignedPair:
         """Produce two aligned augmented views with full overlap.
 
         Args:
-            x: Input tensor of shape ``(batch, time, channels)``.
+            x: Input tensor.
 
         Returns:
             AlignedPair with overlap_length equal to the time dimension of x.
@@ -168,5 +171,5 @@ class FullOverlapPair:
         return AlignedPair(
             first=self._aug(x),
             second=self._aug(x),
-            overlap_length=x.size(1),
+            overlap_length=x.size(self._time_dim),
         )

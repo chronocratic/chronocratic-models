@@ -118,5 +118,6 @@ __all__ = [
     'CosTRandomFunctionAugmentation',
     'CosTRandomFunctionAugmentationParameters',
     'CropShiftAugmentationParameters',
+    'CropShiftProducer',
     'RIPTrainingStrategy',
 ]

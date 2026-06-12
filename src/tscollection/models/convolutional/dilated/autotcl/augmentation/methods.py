@@ -4,8 +4,7 @@ Contains ``AutoTCLNeuralNetworkAugmentation`` and its
 ``AutoTCLNeuralNetworkAugmentationParameters`` dataclass.
 
 Implements ``TrainableAugmentationProducer`` (nominal ABC + nn.Module)
-with a ``produce() -> SingleView`` contract, replacing the old
-``TrainableAugmentation`` + ``augment() -> TrainingViews`` pattern.
+with a ``produce() -> SingleView`` contract.
 """
 
 __all__ = ['AutoTCLNeuralNetworkAugmentation', 'AutoTCLNeuralNetworkAugmentationParameters']

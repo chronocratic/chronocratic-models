@@ -1,10 +1,8 @@
 """TS2Vec augmentation: crop-and-shift producer.
 
-Contains the ``CropShiftProducer`` class (reshaped from
-``CropShiftAugmentation``) and its ``CropShiftAugmentationParameters``
-dataclass. Returns :class:`AlignedPair` instead of
-:class:`TrainingViews`, eliminating the metadata dict dependency
-(SPEC §2.3 root cause #1, §4.7, §5).
+Contains the ``CropShiftProducer`` class and its
+``CropShiftAugmentationParameters`` dataclass.
+Returns :class:`AlignedPair` instead of the old untyped metadata pattern.
 
 Imports ``AugmentationProducer`` and ``AlignedPair`` directly from
 ``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.

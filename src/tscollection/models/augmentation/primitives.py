@@ -3,7 +3,7 @@
 Extracted from ``tstcc/augmentations.py`` and reshaped to satisfy the
 :model-agnostic :class:`~tscollection.models.augmentation.base.Augmentation`
 Protocol. Each primitive accepts a tensor and returns a transformed tensor
-of the same shape — no :class:`TrainingViews` wrapping.
+of the same shape.
 
 Shared across all models. Imports nothing model-specific.
 
@@ -186,8 +186,11 @@ class Permutation:
             shuffled independently per batch element.
         """
         t_dim = _normalize_dim(x, self._params.time_dim)
-        batch_size = x.size(0)
         seq_len = x.size(t_dim)
+        # Cannot meaningfully permute segments on short sequences
+        if seq_len < 3:
+            return x.clone()
+        batch_size = x.size(0)
         max_segments = self._params.max_segments
 
         result = torch.empty_like(x)
