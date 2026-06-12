@@ -28,7 +28,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     Two augmented views of ``data`` are produced by the injected
     ``AugmentationProducer[ViewPair]`` (e.g. :func:`_default_tstcc_pair`),
     which provides Gaussian scaling (weak) and segment-permutation + jitter
-    (strong) views, matching the original TS-TCC contract.
+    (strong) views.
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.

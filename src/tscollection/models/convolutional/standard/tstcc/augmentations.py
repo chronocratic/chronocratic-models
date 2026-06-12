@@ -21,7 +21,7 @@ __all__ = [
     '_default_tstcc_pair',
 ]
 
-# Re-export shared primitives for backward compatibility.
+# Re-export shared primitives.
 from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 from tscollection.models.augmentation.primitives import (
     ComposeAugmentation,
@@ -40,8 +40,7 @@ def _default_tstcc_pair() -> AugmentationProducer[ViewPair]:
 
     Returns a :class:`RolePair` producer whose first view applies Gaussian
     scaling (weak) and whose second view applies segment permutation followed
-    by jitter (strong). These defaults reproduce the original TS-TCC dual
-    augmentation contract.
+    by jitter (strong).
 
     Returns:
         A producer that returns :class:`ViewPair` instances when
