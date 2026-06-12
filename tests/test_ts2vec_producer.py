@@ -4,54 +4,14 @@ Verifies CropShiftProducer returns AlignedPair, TS2Vec accepts
 AugmentationProducer[AlignedPair], and training runs with finite loss.
 """
 
-import math
 from copy import deepcopy
 
-import lightning.pytorch as pl
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.models.augmentation.base import AlignedPair
 from tscollection.models.augmentation.decorators import Seeded
 from tscollection.models.augmentation.primitives import Jitter
 from tscollection.models.augmentation.producers import FullOverlapPair
-
-
-def _train_steps(
-    model: pl.LightningModule,
-    batch_size: int,
-    seq_length: int,
-    input_dims: int,
-    num_steps: int,
-) -> list[torch.Tensor]:
-    """Run ``num_steps`` training steps via a minimal Lightning Trainer."""
-    data = torch.randn(batch_size * num_steps, seq_length, input_dims)
-    dataset = TensorDataset(data)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
-
-    model._test_losses = []  # type: ignore[attr-defined]
-
-    original_training_step = model.training_step
-
-    def _wrapped_training_step(
-        batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int
-    ) -> torch.Tensor | None:
-        loss = original_training_step(batch, batch_idx)
-        if loss is not None:
-            model._test_losses.append(loss.detach())  # type: ignore[attr-defined]
-        return loss
-
-    model.training_step = _wrapped_training_step  # type: ignore[method-assign]
-
-    trainer = pl.Trainer(
-        accelerator='cpu',
-        max_steps=num_steps,
-        enable_checkpointing=False,
-        enable_progress_bar=False,
-        logger=False,
-    )
-    trainer.fit(model, train_dataloaders=dataloader)
-    return model._test_losses  # type: ignore[attr-defined]
 
 
 # --------------------------------------------------------------------------- #
@@ -175,7 +135,7 @@ class TestTS2VecConstructor:
 class TestTS2VecTraining:
     """TS2Vec trains with producer augmentations."""
 
-    def test_trains_5_steps_with_crop_shift_producer(self) -> None:
+    def test_trains_5_steps_with_crop_shift_producer(self, train_steps, finite_losses) -> None:
         """TS2Vec trains 5 steps with CropShiftProducer (finite loss)."""
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftProducer,
@@ -187,7 +147,7 @@ class TestTS2VecTraining:
             augmentation=CropShiftProducer(),
         )
 
-        losses = _train_steps(
+        losses = train_steps(
             model=model,
             batch_size=4,
             seq_length=100,
@@ -195,15 +155,9 @@ class TestTS2VecTraining:
             num_steps=5,
         )
 
-        assert len(losses) == 5
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        finite_losses(losses, expected_min=5)
 
-    def test_trains_5_steps_with_full_overlap_pair_jitter(self) -> None:
+    def test_trains_5_steps_with_full_overlap_pair_jitter(self, train_steps, finite_losses) -> None:
         """TS2Vec trains 5 steps with FullOverlapPair(Jitter(...)) (finite loss)."""
         from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
 
@@ -211,7 +165,7 @@ class TestTS2VecTraining:
         producer = FullOverlapPair(aug=jitter)
         model = TS2Vec(input_dims=1, augmentation=producer)
 
-        losses = _train_steps(
+        losses = train_steps(
             model=model,
             batch_size=4,
             seq_length=100,
@@ -219,13 +173,7 @@ class TestTS2VecTraining:
             num_steps=5,
         )
 
-        assert len(losses) == 5
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        finite_losses(losses, expected_min=5)
 
 
 # --------------------------------------------------------------------------- #

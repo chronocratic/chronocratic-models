@@ -7,7 +7,6 @@ self-containment.
 
 Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
 Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators.
-Retains ``augment() -> TrainingViews`` for backward compatibility.
 """
 
 __all__ = [
@@ -23,7 +22,6 @@ import torch
 
 from tscollection.models.augmentation.base import (
     Augmentation,
-    TrainingViews,
 )
 
 
@@ -50,7 +48,6 @@ class CosTRandomFunctionAugmentation(Augmentation):
     Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
     Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators
     like :class:`~tscollection.models.augmentation.producers.IndependentPair`.
-    Retains ``augment() -> TrainingViews`` for backward compatibility.
     """
 
     def __init__(
@@ -128,17 +125,16 @@ class CosTRandomFunctionAugmentation(Augmentation):
         self,
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401, ARG002
-    ) -> TrainingViews:
+    ) -> torch.Tensor:
         """Return ``data`` after stochastically applying scale, shift, and jitter.
 
-        Backward-compatible interface returning ``TrainingViews``.
+        Backward-compatible interface. Returns the augmented tensor directly.
 
         Args:
             data: Input time-series tensor.
             **kwargs: Unused; present for interface compatibility.
 
         Returns:
-            TrainingViews containing the augmented tensor.
+            Augmented tensor with the same shape as ``data``.
         """
-        result = self(data)
-        return TrainingViews(views=(result,), metadata={})
+        return self(data)

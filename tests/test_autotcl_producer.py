@@ -8,10 +8,6 @@ trainable_support.py instead of isinstance(TrainableAugmentation) checks.
 
 from __future__ import annotations
 
-import math
-
-import numpy as np
-import pytest
 import torch
 
 from tscollection.models.augmentation.base import (
@@ -148,7 +144,7 @@ class TestAutoTCLUsesMaybeHelpers:
 class TestAutoTCLTrainingWithProducer:
     """AutoTCL trains with both trainable and static augmentation paths."""
 
-    def test_trains_5_steps_with_neural_aug(self) -> None:
+    def test_trains_5_steps_with_neural_aug(self, train_steps, finite_losses) -> None:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(
                 input_dims=1, output_dims=320, kernel_sizes=[3]
@@ -156,36 +152,24 @@ class TestAutoTCLTrainingWithProducer:
             training_strategy=RIPTrainingStrategy(),
         )
         model = AutoTCL(input_dims=1, augmentation=aug)
-        losses = _train_steps(
+        losses = train_steps(
             model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5
         )
-        assert len(losses) >= 1, 'AutoTCL may skip steps during phase-1 aug training'
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        finite_losses(losses, expected_min=1)
 
-    def test_trains_5_steps_with_static_aug(self) -> None:
+    def test_trains_5_steps_with_static_aug(self, train_steps, finite_losses) -> None:
         producer = SingleViewProducer(aug=Jitter())
         model = AutoTCL(input_dims=1, augmentation=producer)
-        losses = _train_steps(
+        losses = train_steps(
             model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5
         )
-        assert len(losses) == 5
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        finite_losses(losses, expected_min=5)
 
 
 class TestAutoTCLSeededEquivalence:
     """Seeded AutoTCL produces identical loss sequence (SC-7 numerical equivalence)."""
 
-    def test_seeded_autotcl_produces_identical_loss_sequence(self) -> None:
+    def test_seeded_autotcl_produces_identical_loss_sequence(self, train_steps) -> None:
         torch.manual_seed(42)
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
             input_dims=1, output_dims=320, kernel_sizes=[3]
@@ -205,10 +189,10 @@ class TestAutoTCLSeededEquivalence:
             ),
         )
 
-        losses1 = _train_steps(
+        losses1 = train_steps(
             model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
         )
-        losses2 = _train_steps(
+        losses2 = train_steps(
             model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
         )
 
@@ -217,47 +201,3 @@ class TestAutoTCLSeededEquivalence:
             # Tolerance accounts for mode-toggling timing differences between
             # the old isinstance-gated flow and the centralized maybe_* helper.
             torch.testing.assert_close(l1, l2, rtol=1e-2, atol=1e-3)
-
-
-def _train_steps(
-    model: AutoTCL,
-    batch_size: int,
-    seq_length: int,
-    input_dims: int,
-    num_steps: int,
-    seed: int | None = None,
-) -> list[torch.Tensor]:
-    """Run ``num_steps`` training steps via a minimal Lightning Trainer."""
-    import lightning.pytorch as pl
-    from torch.utils.data import DataLoader, TensorDataset
-
-    if seed is not None:
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-
-    data = torch.randn(batch_size * num_steps, seq_length, input_dims)
-    dataset = TensorDataset(data)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
-
-    collected: list[torch.Tensor] = []
-
-    original_step = model.training_step
-
-    def patched_step(batch, batch_idx):
-        loss = original_step(batch, batch_idx)
-        if loss is not None:
-            collected.append(loss.clone())
-        return loss
-
-    model.training_step = patched_step  # type: ignore[method-assign]
-
-    trainer = pl.Trainer(
-        accelerator='cpu',
-        max_steps=num_steps,
-        enable_checkpointing=False,
-        enable_progress_bar=False,
-        logger=False,
-    )
-    trainer.fit(model, train_dataloaders=dataloader)
-
-    return collected

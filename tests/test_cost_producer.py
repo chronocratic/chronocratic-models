@@ -7,9 +7,6 @@ with IndependentPair as default, replacing the old double-augment pattern.
 
 from __future__ import annotations
 
-import math
-
-import numpy as np
 import pytest
 import torch
 
@@ -89,7 +86,7 @@ class TestCoSTProducerIntegration:
 class TestCoSTTrainingWithProducer:
     """CoST trains 5 steps with finite loss using producer contract."""
 
-    def test_cost_trains_5_steps_with_producer(self) -> None:
+    def test_cost_trains_5_steps_with_producer(self, train_steps, finite_losses) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPair(aug=aug)
         model = CoST(
@@ -97,88 +94,33 @@ class TestCoSTTrainingWithProducer:
             sequence_length=100,
             augmentation=producer,
         )
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
-        assert len(losses) == 5
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        finite_losses(losses, expected_min=5)
 
-    def test_cost_trains_5_steps_with_default_augmentation(self) -> None:
+    def test_cost_trains_5_steps_with_default_augmentation(
+        self, train_steps, finite_losses
+    ) -> None:
         model = CoST(input_dims=1, sequence_length=100)
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
-        assert len(losses) == 5
-        for step_idx, loss in enumerate(losses):
-            assert loss is not None
-            assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
-            )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        finite_losses(losses, expected_min=5)
 
 
 class TestCoSTSeededEquivalence:
     """Seeded CoST produces identical loss sequence (SC-7 numerical equivalence)."""
 
-    def test_seeded_cost_produces_identical_loss_sequence(self) -> None:
+    def test_seeded_cost_produces_identical_loss_sequence(self, train_steps) -> None:
         torch.manual_seed(42)
         model1 = CoST(input_dims=1, sequence_length=100)
         torch.manual_seed(42)
         model2 = CoST(input_dims=1, sequence_length=100)
 
-        losses1 = _train_steps(model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123)
-        losses2 = _train_steps(model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123)
+        losses1 = train_steps(
+            model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+        )
+        losses2 = train_steps(
+            model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+        )
 
         assert len(losses1) == len(losses2) == 5
         for i, (l1, l2) in enumerate(zip(losses1, losses2, strict=True)):
             torch.testing.assert_close(l1, l2, rtol=1e-5, atol=1e-5)
-
-
-def _train_steps(
-    model: CoST,
-    batch_size: int,
-    seq_length: int,
-    input_dims: int,
-    num_steps: int,
-    seed: int | None = None,
-) -> list[torch.Tensor]:
-    """Run ``num_steps`` training steps via a minimal Lightning Trainer."""
-    import lightning.pytorch as pl
-    from torch.utils.data import DataLoader, TensorDataset
-
-    if seed is not None:
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-
-    data = torch.randn(batch_size * num_steps, seq_length, input_dims)
-    dataset = TensorDataset(data)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
-
-    # Collect losses manually
-    collected: list[torch.Tensor] = []
-
-    class _LossCollector(pl.Callback):
-        def on_train_batch_end(self, *args, **kwargs) -> None:  # noqa: ARG002
-            collected.append(model._last_loss.clone() if hasattr(model, '_last_loss') else torch.tensor(0.0))
-
-    # Patch training_step to capture loss
-    original_step = model.training_step
-
-    def patched_step(batch, batch_idx):
-        loss = original_step(batch, batch_idx)
-        if loss is not None:
-            collected.append(loss.clone())
-        return loss
-
-    model.training_step = patched_step  # type: ignore[method-assign]
-
-    trainer = pl.Trainer(
-        accelerator='cpu',
-        max_steps=num_steps,
-        enable_checkpointing=False,
-        enable_progress_bar=False,
-        logger=False,
-    )
-    trainer.fit(model, train_dataloaders=dataloader)
-
-    return collected
