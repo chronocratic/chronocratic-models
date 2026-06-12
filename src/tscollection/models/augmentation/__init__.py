@@ -1,9 +1,8 @@
 """Augmentation package — abstract types and concrete re-exports.
 
-This package provides the new producer contract and retains the legacy
-augmentation symbols for backward compatibility.
+This package provides the producer contract for augmentation strategies.
 
-**New contract** (preferred):
+**New contract**:
 
 - :class:`Augmentation` / :class:`AugmentationProducer` /
   :class:`TrainableAugmentationProducer` from ``base.py``.
@@ -16,11 +15,6 @@ augmentation symbols for backward compatibility.
   from ``trainable_support.py``.
 - Shared primitives (:class:`Jitter`, :class:`Scaling`,
   :class:`Permutation`, :class:`ComposeAugmentation`) from ``primitives.py``.
-
-**Legacy symbols** (retained for backward compatibility):
-
-- :class:`AugmentationMethod` / :class:`TrainableAugmentation` /
-  :class:`TrainingViews` / :class:`DualAugmentation`.
 """
 
 from __future__ import annotations
@@ -32,6 +26,7 @@ from .base import (
     AlignedPair,
     Augmentation,
     AugmentationProducer,
+    AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
     ViewPair,
@@ -69,42 +64,13 @@ from .trainable_support import (
     maybe_train_augmentation,
 )
 
-# ---------------------------------------------------------------------------
-# Legacy symbols (retained for backward compatibility)
-# ---------------------------------------------------------------------------
-from .base import (
-    AugmentationMethod,
-    AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
-)
-from .dual import DualAugmentation
-
-# ---------------------------------------------------------------------------
-# Per-model concrete augmentations (re-exported for convenience)
-# ---------------------------------------------------------------------------
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
-    AutoTCLNeuralNetworkAugmentation,
-    AutoTCLNeuralNetworkAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
-    AdversarialTrainingStrategy,
-    RIPTrainingStrategy,
-)
-from tscollection.models.convolutional.dilated.cost.augmentation import (
-    CosTRandomFunctionAugmentation,
-    CosTRandomFunctionAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftAugmentationParameters,
-    CropShiftProducer,
-)
 
 __all__ = [
     # New contract — base
     'AlignedPair',
     'Augmentation',
     'AugmentationProducer',
+    'AugmentationTrainingStrategy',
     'SingleView',
     'TrainableAugmentationProducer',
     'ViewPair',
@@ -125,13 +91,7 @@ __all__ = [
     'Seeded',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
-    # Legacy symbols
-    'AugmentationMethod',
-    'AugmentationTrainingStrategy',
-    'DualAugmentation',
-    'TrainableAugmentation',
-    'TrainingViews',
-    # Per-model concrete augmentations
+    # Per-model concrete augmentations (re-exported from per-model __init__.py)
     'AdversarialTrainingStrategy',
     'AutoTCLNeuralNetworkAugmentation',
     'AutoTCLNeuralNetworkAugmentationParameters',
