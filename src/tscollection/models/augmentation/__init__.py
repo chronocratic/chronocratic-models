@@ -91,12 +91,4 @@ __all__ = [
     'Seeded',
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
-    # Per-model concrete augmentations (re-exported from per-model __init__.py)
-    'AdversarialTrainingStrategy',
-    'AutoTCLNeuralNetworkAugmentation',
-    'AutoTCLNeuralNetworkAugmentationParameters',
-    'CosTRandomFunctionAugmentation',
-    'CosTRandomFunctionAugmentationParameters',
-    'CropShiftAugmentationParameters',
-    'RIPTrainingStrategy',
 ]
