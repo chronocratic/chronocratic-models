@@ -42,7 +42,7 @@ class CosTRandomFunctionAugmentationParameters:
     p: float = 0.5
 
 
-class CosTRandomFunctionAugmentation:
+class CosTRandomFunctionAugmentation(Augmentation):
     """Stochastic jitter/scale/shift augmentation used by CoST.
 
     Implements the :class:`~tscollection.models.augmentation.base.Augmentation`
