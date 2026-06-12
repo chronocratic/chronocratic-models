@@ -29,7 +29,7 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeVar, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import torch
 from torch import nn
@@ -260,10 +260,10 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         ...
 
 
-# Covariant type variable for AugmentationProducer[V].
+# Covariant type parameter for AugmentationProducer[V].
 # V appears only in return position, enabling Liskov substitution:
 # AugmentationProducer[AlignedPair] is a subtype of AugmentationProducer[ViewPair].
-V = TypeVar("V", covariant=True)
+# PEP 695: variance is inferred by type checkers based on usage (covariant here).
 
 
 # --------------------------------------------------------------------------- #
@@ -328,7 +328,7 @@ class AlignedPair(ViewPair):
 # --------------------------------------------------------------------------- #
 
 
-class AugmentationProducer(Protocol[V]):
+class AugmentationProducer[V](Protocol):
     """Assembles the view set a model's loss requires from a batch.
 
     A producer wraps one or more :class:`Augmentation` primitives and
