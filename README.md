@@ -8,7 +8,7 @@
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![GitHub stars](https://img.shields.io/github/stars/chronocratic/chronocratic-models)](https://github.com/chronocratic/chronocratic-models/stargazers)
 
-Self-supervised time-series representation learning models built with PyTorch and Lightning.
+Ready-to-use time series models implemented in PyTorch and Lightning.
 
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
