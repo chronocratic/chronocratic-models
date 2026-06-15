@@ -17,7 +17,6 @@ __all__ = [
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 import torch
 
 from tscollection.models.augmentation.base import (
@@ -97,19 +96,19 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
     def _jitter(self, x: torch.Tensor) -> torch.Tensor:
         """Add Gaussian noise with std ``sigma`` with probability ``p``."""
-        if np.random.random() > self._p:  # noqa: NPY002
+        if torch.rand(1).item() > self._p:
             return x
         return x + (torch.randn(x.shape, device=x.device) * self._sigma)
 
     def _scale(self, x: torch.Tensor) -> torch.Tensor:
         """Multiply each channel by a Gaussian factor around 1 with probability ``p``."""
-        if np.random.random() > self._p:  # noqa: NPY002
+        if torch.rand(1).item() > self._p:
             return x
         return x * (torch.randn(x.size(-1), device=x.device) * self._sigma + 1)
 
     def _shift(self, x: torch.Tensor) -> torch.Tensor:
         """Add a per-channel Gaussian offset with probability ``p``."""
-        if np.random.random() > self._p:  # noqa: NPY002
+        if torch.rand(1).item() > self._p:
             return x
         return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
 
