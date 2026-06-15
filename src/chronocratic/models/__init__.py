@@ -26,7 +26,6 @@ from .recurrent import TimeNet, TimeNetModelParameters
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
-    "__version__",
     'FCN',
     'TST',
     'TSTCC',
@@ -45,4 +44,5 @@ __all__ = [
     'TimeNetModelParameters',
     'TimeVAE',
     'TimeVAEModelParameters',
+    "__version__",
 ]
