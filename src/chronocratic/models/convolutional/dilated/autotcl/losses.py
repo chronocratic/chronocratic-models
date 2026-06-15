@@ -182,6 +182,12 @@ def info_nce_loss(
         msg = f'Invalid pooling method: {pooling}'
         raise ValueError(msg)
 
+    if z1.shape[0] != z2.shape[0]:
+        msg = f'Batch size mismatch: z1 has {z1.shape[0]} samples, z2 has {z2.shape[0]}'
+        raise ValueError(msg)
+    if z1.shape[0] < 2:
+        return z1.new_tensor(0.0)
+
     z1t = torch.nn.functional.normalize(z1, dim=2)
     z2t = torch.nn.functional.normalize(z2, dim=2)
 
