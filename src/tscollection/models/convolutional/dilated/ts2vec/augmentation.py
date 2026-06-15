@@ -91,24 +91,19 @@ class CropShiftProducer:
                 f'or provide longer sequences.'
             )
             raise ValueError(msg)
+        rng = np.random.default_rng()
 
         # Randomly determine the length of the crop
-        crop_length = np.random.randint(  # noqa: NPY002
-            low=min_crop_length, high=total_length + 1
-        )
+        crop_length = rng.integers(low=min_crop_length, high=total_length + 1)
 
         # Randomly determine the starting and ending points for the crops
-        crop_start = np.random.randint(  # noqa: NPY002
-            total_length - crop_length + 1
-        )
+        crop_start = rng.integers(total_length - crop_length + 1)
         crop_end = crop_start + crop_length
-        crop_extension_start = np.random.randint(crop_start + 1)  # noqa: NPY002
-        crop_extension_end = np.random.randint(  # noqa: NPY002
-            low=crop_end, high=total_length + 1
-        )
+        crop_extension_start = rng.integers(crop_start + 1)
+        crop_extension_end = rng.integers(low=crop_end, high=total_length + 1)
 
         # Random offset for each sample in the batch
-        crop_offsets = np.random.randint(  # noqa: NPY002
+        crop_offsets = rng.integers(
             low=-crop_extension_start, high=total_length - crop_extension_end + 1, size=x.size(0)
         )
 
@@ -129,4 +124,3 @@ class CropShiftProducer:
             second=augmented_subsequences_2,
             overlap_length=crop_length,
         )
-
