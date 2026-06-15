@@ -45,8 +45,8 @@ def maybe_train_augmentation(
     and delegates to ``train_step()`` when the strategy permits.
 
     Mode management: sets ``encoder`` to eval and ``augmentation`` to train
-    during the forward pass, then restores augmentation to eval. The caller
-    is responsible for setting encoder back to train for Phase 2.
+    during the forward pass, then restores both ``encoder`` to train and
+    ``augmentation`` to eval in the ``finally`` block.
 
     This is the sole code path in the codebase that uses
     ``isinstance(..., TrainableAugmentationProducer)`` for the training

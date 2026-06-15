@@ -85,8 +85,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         self.automatic_optimization = False
 
-        # Seeded RNG for reproducible temporal index selection
-        self._rng = np.random.default_rng(seed=int(torch.random.initial_seed()))
+        # Seeded RNG for reproducible temporal index selection.
+        # Deferred until on_fit_start() or first use so it picks up the seed
+        # set by the trainer (see _ensure_rng).
 
         length = min(max_train_length, sequence_length)
 
@@ -149,6 +150,15 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self.momentum = momentum
         self.temperature = temperature
         self.seasonal_loss_weight = seasonal_loss_weight
+
+    def on_fit_start(self) -> None:
+        """Initialize the numpy RNG after the trainer has set the PyTorch seed."""
+        self._ensure_rng()
+
+    def _ensure_rng(self) -> None:
+        """Lazily create the numpy RNG if it has not been initialized yet."""
+        if not hasattr(self, '_rng'):
+            self._rng = np.random.default_rng(seed=int(torch.random.initial_seed()))
 
     def configure_optimizers(self) -> SGD:
         """Return SGD optimizer over trainable query encoder and projection head parameters."""
@@ -229,6 +239,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self, query: torch.Tensor, key: torch.Tensor, *, update_key_encoder: bool = True
     ) -> torch.Tensor:
         # compute query features
+        self._ensure_rng()
         random_index = self._rng.integers(0, query.shape[1])
 
         query_trend, query_seasonality = self.query_encoder(query)

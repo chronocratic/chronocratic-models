@@ -1,4 +1,4 @@
-__all__ = ['instance_contrastive_loss']
+__all__ = ['_compute_contrastive_loss_logits', 'instance_contrastive_loss']
 
 import numpy as np
 import torch

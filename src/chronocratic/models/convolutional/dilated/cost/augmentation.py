@@ -101,16 +101,24 @@ class CosTRandomFunctionAugmentation(Augmentation):
         return x + (torch.randn(x.shape, device=x.device) * self._sigma)
 
     def _scale(self, x: torch.Tensor) -> torch.Tensor:
-        """Multiply each channel by a Gaussian factor around 1 with probability ``p``."""
+        """Multiply each channel by a Gaussian factor around 1 with probability ``p``.
+
+        Expects input of shape ``(batch, time, channels)``.
+        """
         if torch.rand(1).item() > self._p:
             return x
-        return x * (torch.randn(x.size(-1), device=x.device) * self._sigma + 1)
+        channels = x.size(-1)
+        return x * (torch.randn(channels, device=x.device) * self._sigma + 1)
 
     def _shift(self, x: torch.Tensor) -> torch.Tensor:
-        """Add a per-channel Gaussian offset with probability ``p``."""
+        """Add a per-channel Gaussian offset with probability ``p``.
+
+        Expects input of shape ``(batch, time, channels)``.
+        """
         if torch.rand(1).item() > self._p:
             return x
-        return x + (torch.randn(x.size(-1), device=x.device) * self._sigma)
+        channels = x.size(-1)
+        return x + (torch.randn(channels, device=x.device) * self._sigma)
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         """Apply jitter/scale/shift and return the augmented tensor.

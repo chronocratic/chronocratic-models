@@ -449,6 +449,10 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         mask_mode: MaskMode = MaskMode.BINOMIAL,
         num_bands: int = 1,
     ) -> None:
+        if output_dims % 2 != 0:
+            msg = f'output_dims must be even for CoST, got {output_dims}'
+            raise ValueError(msg)
+
         super().__init__(
             input_dims=input_dims,
             output_dims=output_dims,

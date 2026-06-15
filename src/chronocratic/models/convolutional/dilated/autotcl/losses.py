@@ -5,8 +5,6 @@ __all__ = [
     'maximum_mean_discrepancy_with_gaussian_kernel_loss',
 ]
 
-import random
-
 import torch
 import torch.nn.functional as F  # noqa: N812
 
@@ -49,7 +47,9 @@ def local_info_nce_loss(
         return torch.tensor(0.0, device=z1.device)
 
     crop_length = crop_size * k
-    start = random.randint(0, sequence_length - crop_length)  # noqa: S311
+    start = int(
+        torch.randint(0, sequence_length - crop_length + 1, (1,), device=z1.device).item()
+    )
     crop_z1 = z1[:, start : start + crop_length, :].reshape(batch_size, k, crop_size, embedding_dim)
 
     if pooling == 'max':
@@ -181,6 +181,12 @@ def info_nce_loss(
     else:
         msg = f'Invalid pooling method: {pooling}'
         raise ValueError(msg)
+
+    if z1.shape[0] != z2.shape[0]:
+        msg = f'Batch size mismatch: z1 has {z1.shape[0]} samples, z2 has {z2.shape[0]}'
+        raise ValueError(msg)
+    if z1.shape[0] < 2:
+        return z1.new_tensor(0.0)
 
     z1t = torch.nn.functional.normalize(z1, dim=2)
     z2t = torch.nn.functional.normalize(z2, dim=2)

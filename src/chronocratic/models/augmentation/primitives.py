@@ -137,6 +137,12 @@ class Scaling:
         if not _should_apply(self._params.p):
             return x
         c_dim = _normalize_dim(x, self._params.channel_dim)
+        if c_dim >= x.dim():
+            msg = (
+                f'channel_dim={self._params.channel_dim} exceeds tensor dimensions '
+                f'({x.dim()})'
+            )
+            raise ValueError(msg)
         shape = [1] * x.dim()
         shape[c_dim] = x.size(c_dim)
         if self._params.per_sample:
@@ -202,8 +208,10 @@ class Permutation:
                 splits = torch.tensor_split(torch.arange(seq_len), split_points)
                 permutation = torch.randperm(len(splits))
                 warp = torch.cat([splits[int(p)] for p in permutation]).to(x.device)
-                # x[i] removes the batch dim, so the time dim shifts down by 1.
-                result[i] = x[i].index_select(t_dim - 1, warp)
+                # x[i] removes the batch dim, so the time dim shifts by -1 only
+                # when t_dim > 0 (i.e., the normalized time_dim was after dim 0).
+                time_dim_after_batch = t_dim - 1 if t_dim > 0 else t_dim
+                result[i] = x[i].index_select(time_dim_after_batch, warp)
             else:
                 result[i] = x[i]
         return result

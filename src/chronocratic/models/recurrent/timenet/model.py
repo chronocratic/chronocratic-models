@@ -48,7 +48,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         self._feat_dim: int = feat_dim
         self._hidden_dims: int = hidden_dims
         self._num_layers: int = num_layers
-        self._dropout: int | float = dropout
+        self._dropout: float = dropout
         self.encoder: Sequential = self._build_encoder()
         self.decoder: Sequential = self._build_decoder()
         self._learning_rate = learning_rate
