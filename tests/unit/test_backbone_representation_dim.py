@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models.supervised import (
+from chronocratic.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
     RepresentationBackbone,
 )
-from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-from tscollection.models.transformer.tst.model import TST
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.transformer.tst.model import TST
 
 
 class TestTSTRepresentationDim:
@@ -112,7 +112,7 @@ class TestFactoriesWithRealBackbones:
         """make_tst_supervised with a real TST backbone."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)
@@ -130,7 +130,7 @@ class TestFactoriesWithRealBackbones:
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
-            backbone, num_outputs=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         x = torch.randn(2, 20, 2)
         out = module(x)
@@ -147,7 +147,7 @@ class TestFactoriesWithRealBackbones:
             num_classes=3,
         )
         module = make_tstcc_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # Verify module construction works (head uses backbone.representation_dim)
         assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001

@@ -9,14 +9,12 @@ from copy import deepcopy
 
 import torch
 
-from tscollection.models.augmentation.base import AlignedPair
-from tscollection.models.augmentation.decorators import Seeded
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import FullOverlapPair
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftProducer,
-)
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from chronocratic.models.augmentation.base import AlignedPair
+from chronocratic.models.augmentation.decorators import Seeded
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import FullOverlapPair
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
+from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # --------------------------------------------------------------------------- #
 # CropShiftProducer unit tests
@@ -70,7 +68,7 @@ class TestCropShiftProducer:
             if not torch.equal(pair.first[0], pair.first[i]):
                 all_equal = False
                 break
-        assert not all_equal, 'Expected per-sample crop offsets to produce different views'
+        assert not all_equal, "Expected per-sample crop offsets to produce different views"
 
 
 # --------------------------------------------------------------------------- #
@@ -112,43 +110,24 @@ class TestTS2VecTraining:
     """TS2Vec trains with producer augmentations."""
 
     def test_trains_5_steps_with_crop_shift_producer(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         """TS2Vec trains 5 steps with CropShiftProducer (finite loss)."""
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=CropShiftProducer(),
-        )
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
 
-        losses = train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=5,
-        )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
         finite_losses(losses, expected_min=5)
 
     def test_trains_5_steps_with_full_overlap_pair_jitter(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         """TS2Vec trains 5 steps with FullOverlapPair(Jitter(...)) (finite loss)."""
         jitter = Jitter()
         producer = FullOverlapPair(aug=jitter)
         model = TS2Vec(input_dims=1, augmentation=producer)
 
-        losses = train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=5,
-        )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
         finite_losses(losses, expected_min=5)
 

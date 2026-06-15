@@ -1,0 +1,44 @@
+name: Sync release notes
+
+# When a GitHub release is published, replace its body with the matching
+# section from CHANGELOG.md so the repo, GitHub, and Read the Docs all show
+# identical notes. CHANGELOG.md is assembled from towncrier fragments on `dev`
+# before the release, so the section already exists at tag time.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync notes from CHANGELOG.md
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract changelog section
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          awk -v v="$VERSION" '
+            index($0, "## v" v " ") == 1 { f = 1; print; next }
+            f && /^## v/ { exit }
+            f { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::No CHANGELOG.md section found for $TAG (expected a '## v$VERSION ' heading)."
+            exit 1
+          fi
+          echo "Extracted notes for $TAG:"
+          cat release-notes.md
+
+      - name: Update release body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.event.release.tag_name }}" --notes-file release-notes.md

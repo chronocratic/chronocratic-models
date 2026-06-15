@@ -11,18 +11,15 @@ import pytest
 import torch
 from torch import nn
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
     ViewPair,
 )
-from tscollection.models.augmentation.decorators import Seeded
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import (
-    IndependentPair,
-    SingleViewProducer,
-)
+from chronocratic.models.augmentation.decorators import Seeded
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import IndependentPair, SingleViewProducer
 
 
 class _DummyStrategy(AugmentationTrainingStrategy):

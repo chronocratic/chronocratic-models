@@ -1,0 +1,128 @@
+name: Changelog fragment
+
+# Single source of truth for changelog fragments on PRs targeting `dev`:
+#   1. Same-repo PR with no fragment  -> create one from the PR title and push it.
+#   2. Always (incl. fork PRs)         -> `towncrier check` so every PR has a fragment.
+#
+# Both happen in one job so the check sees the freshly-created fragment in the
+# same run. A push made with GITHUB_TOKEN does NOT re-trigger workflows, so the
+# check must not live in a separate workflow that never re-runs after the push.
+#
+# Fork PRs cannot be pushed to, so they are only checked — the contributor must
+# add a fragment by hand (or a maintainer pushes one to the PR branch).
+#
+# Label convention for fragment type (defaults to `changed`):
+#   changelog:added | changelog:fixed | changelog:changed
+#   changelog:removed | changelog:deprecated | changelog:security
+# `skip-changelog` opts the PR out entirely.
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, edited, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: write
+
+jobs:
+  fragment:
+    name: Changelog fragment
+    runs-on: ubuntu-latest
+    # Skip release-prep PRs two ways: the `skip-changelog` label (may be missing
+    # if the PR was opened by hand) AND the `release-prep/*` head branch, which is
+    # always present in the event payload regardless of labelling.
+    if: >-
+      !contains(github.event.pull_request.labels.*.name, 'skip-changelog') &&
+      !startsWith(github.event.pull_request.head.ref, 'release-prep/')
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # For same-repo PRs check out the head branch so we can commit + push
+          # a fragment. For forks this ref is still readable for the check step.
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install towncrier
+        run: pip install towncrier
+
+      - name: Check if a fragment already exists
+        id: check
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if compgen -G "changelog.d/${PR}.*.md" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A `changelog:<type>` label wins; otherwise infer from the Conventional
+      # Commits prefix of the PR title; otherwise fall back to `changed`.
+      - name: Resolve fragment type
+        if: steps.check.outputs.exists == 'false'
+        id: type
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          TYPE=""
+          if   echo "$LABELS" | grep -q '"changelog:added"';      then TYPE="added"
+          elif echo "$LABELS" | grep -q '"changelog:fixed"';      then TYPE="fixed"
+          elif echo "$LABELS" | grep -q '"changelog:changed"';    then TYPE="changed"
+          elif echo "$LABELS" | grep -q '"changelog:removed"';    then TYPE="removed"
+          elif echo "$LABELS" | grep -q '"changelog:deprecated"'; then TYPE="deprecated"
+          elif echo "$LABELS" | grep -q '"changelog:security"';   then TYPE="security"
+          fi
+
+          if [ -z "$TYPE" ]; then
+            # Lowercase Conventional Commits verb before the first ( or : or !
+            PREFIX="$(printf '%s' "$PR_TITLE" | sed -E 's/^([a-zA-Z]+).*/\1/' | tr '[:upper:]' '[:lower:]')"
+            case "$PREFIX" in
+              fix)                       TYPE="fixed" ;;
+              feat)                      TYPE="added" ;;
+              revert|remove)             TYPE="removed" ;;
+              deprecate)                 TYPE="deprecated" ;;
+              security)                  TYPE="security" ;;
+              refactor|perf|change)      TYPE="changed" ;;
+              *)                         TYPE="changed" ;;
+            esac
+          fi
+
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+
+      # Only same-repo PRs can be pushed to. Forks fall through to the check
+      # step, which fails until the contributor adds a fragment by hand.
+      - name: Create and commit fragment
+        if: >-
+          steps.check.outputs.exists == 'false' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FRAGMENT_TYPE: ${{ steps.type.outputs.type }}
+        run: |
+          # Strip a leading Conventional Commits prefix (e.g. "ci(changelog): ")
+          # so the changelog reads as user-facing prose, then capitalise and
+          # ensure a single trailing period.
+          BODY="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
+          BODY="$(printf '%s' "${BODY}" | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
+          BODY="${BODY%.}."
+
+          FRAGMENT="changelog.d/${PR_NUMBER}.${FRAGMENT_TYPE}.md"
+          printf '%s\n' "${BODY}" > "${FRAGMENT}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${FRAGMENT}"
+          git commit -m "ci: add towncrier fragment for PR #${PR_NUMBER}"
+          git push
+
+      - name: Verify a fragment is present
+        run: towncrier check --compare-with origin/${{ github.base_ref }}

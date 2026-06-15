@@ -10,29 +10,24 @@ from collections.abc import Callable
 
 import torch
 
-from tscollection.models.augmentation.base import (
-    SingleView,
-    TrainableAugmentationProducer,
-)
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import SingleViewProducer
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.augmentation.base import SingleView, TrainableAugmentationProducer
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import SingleViewProducer
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
     RIPTrainingStrategy,
 )
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
+from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
 
 
 class TestAutoTCLNeuralNetworkAugmentationIsTrainableProducer:
     """AutoTCLNeuralNetworkAugmentation is subclass of TrainableAugmentationProducer."""
 
     def test_is_subclass_of_trainable_augmentation_producer(self) -> None:
-        assert issubclass(
-            AutoTCLNeuralNetworkAugmentation, TrainableAugmentationProducer
-        )
+        assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentationProducer)
 
     def test_is_nn_module(self) -> None:
         assert issubclass(AutoTCLNeuralNetworkAugmentation, torch.nn.Module)
@@ -75,7 +70,7 @@ class TestAutoTCLNeuralNetworkAugmentationProduce:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
         )
-        assert hasattr(aug, 'produce')
+        assert hasattr(aug, "produce")
         result = aug.produce(torch.randn(2, 50, 1))
         assert isinstance(result, SingleView)
 
@@ -117,7 +112,8 @@ class TestAutoTCLAcceptsProducer:
     def test_default_augmentation_is_trainable_producer(self) -> None:
         model = AutoTCL(input_dims=1)
         assert isinstance(
-            model._augmentation, TrainableAugmentationProducer  # noqa: SLF001
+            model._augmentation,
+            TrainableAugmentationProducer,  # noqa: SLF001
         )
 
 
@@ -144,9 +140,7 @@ class TestAutoTCLTrainingWithProducer:
     """AutoTCL trains with both trainable and static augmentation paths."""
 
     def test_trains_5_steps_with_neural_aug(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(
@@ -155,21 +149,15 @@ class TestAutoTCLTrainingWithProducer:
             training_strategy=RIPTrainingStrategy(),
         )
         model = AutoTCL(input_dims=1, augmentation=aug)
-        losses = train_steps(
-            model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5
-        )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
         finite_losses(losses, expected_min=1)
 
     def test_trains_5_steps_with_static_aug(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         producer = SingleViewProducer(aug=Jitter())
         model = AutoTCL(input_dims=1, augmentation=producer)
-        losses = train_steps(
-            model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5
-        )
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
 

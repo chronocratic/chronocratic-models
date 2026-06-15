@@ -16,15 +16,15 @@ import torch
 from torch import nn
 from torch.optim import AdamW
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AugmentationProducer,
     AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
 )
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import SingleViewProducer
-from tscollection.models.augmentation.trainable_support import (
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import SingleViewProducer
+from chronocratic.models.augmentation.trainable_support import (
     maybe_configure_augmentation_optimizer,
     maybe_train_augmentation,
 )
@@ -90,9 +90,7 @@ class TestMaybeTrainAugmentationNonTrainable:
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
-        result = maybe_train_augmentation(
-            producer, x=x, encoder=encoder, epoch=0, batch_idx=0
-        )
+        result = maybe_train_augmentation(producer, x=x, encoder=encoder, epoch=0, batch_idx=0)
 
         assert result is None
 
@@ -102,11 +100,7 @@ class TestMaybeTrainAugmentationNonTrainable:
         assert not isinstance(producer, TrainableAugmentationProducer)
 
         result = maybe_train_augmentation(
-            producer,
-            x=torch.randn(1, 5, 2),
-            encoder=nn.Linear(2, 4),
-            epoch=1,
-            batch_idx=0,
+            producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=1, batch_idx=0
         )
 
         assert result is None
@@ -142,9 +136,7 @@ class TestMaybeTrainAugmentationTrainable:
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
-        result = maybe_train_augmentation(
-            producer, x=x, encoder=encoder, epoch=0, batch_idx=0
-        )
+        result = maybe_train_augmentation(producer, x=x, encoder=encoder, epoch=0, batch_idx=0)
 
         assert result is not None
         assert producer._train_step_called
@@ -155,9 +147,7 @@ class TestMaybeTrainAugmentationTrainable:
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
-        result = maybe_train_augmentation(
-            producer, x=x, encoder=encoder, epoch=5, batch_idx=0
-        )
+        result = maybe_train_augmentation(producer, x=x, encoder=encoder, epoch=5, batch_idx=0)
 
         assert result is None
         assert not producer._train_step_called
@@ -169,9 +159,7 @@ class TestMaybeTrainAugmentationTrainable:
         x = torch.randn(2, 10, 3)
         encoder = nn.Linear(3, 8)
 
-        result = maybe_train_augmentation(
-            producer, x=x, encoder=encoder, epoch=0, batch_idx=0
-        )
+        result = maybe_train_augmentation(producer, x=x, encoder=encoder, epoch=0, batch_idx=0)
 
         assert result is not None
         torch.testing.assert_close(result, torch.tensor(2.7))
@@ -197,13 +185,12 @@ class TestIsinstanceGate:
         producer = SingleViewProducer(aug=Jitter())
 
         assert not isinstance(producer, TrainableAugmentationProducer)
-        assert maybe_train_augmentation(
-            producer,
-            x=torch.randn(1, 5, 2),
-            encoder=nn.Linear(2, 4),
-            epoch=0,
-            batch_idx=0,
-        ) is None
+        assert (
+            maybe_train_augmentation(
+                producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=0, batch_idx=0
+            )
+            is None
+        )
         assert maybe_configure_augmentation_optimizer(producer, lr=0.001) is None
 
     def test_gate_check_on_trainable(self) -> None:
@@ -212,10 +199,6 @@ class TestIsinstanceGate:
         assert isinstance(producer, TrainableAugmentationProducer)
         assert maybe_configure_augmentation_optimizer(producer, lr=0.001) is not None
         result = maybe_train_augmentation(
-            producer,
-            x=torch.randn(1, 5, 2),
-            encoder=nn.Linear(2, 4),
-            epoch=0,
-            batch_idx=0,
+            producer, x=torch.randn(1, 5, 2), encoder=nn.Linear(2, 4), epoch=0, batch_idx=0
         )
         assert result is not None

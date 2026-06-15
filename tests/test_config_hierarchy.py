@@ -8,10 +8,10 @@ Verifies that config classes live in their own module files:
 
 import pytest
 
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
-from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
+from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
+from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
 class TestTS2VecModelParametersLocation:
@@ -20,7 +20,7 @@ class TestTS2VecModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             TS2VecModelParameters.__module__
-            == 'tscollection.models.convolutional.dilated.ts2vec.config'
+            == "chronocratic.models.convolutional.dilated.ts2vec.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -33,7 +33,7 @@ class TestCoSTModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             CoSTModelParameters.__module__
-            == 'tscollection.models.convolutional.dilated.cost.config'
+            == "chronocratic.models.convolutional.dilated.cost.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -46,7 +46,7 @@ class TestAutoTCLModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             AutoTCLModelParameters.__module__
-            == 'tscollection.models.convolutional.dilated.autotcl.config'
+            == "chronocratic.models.convolutional.dilated.autotcl.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -144,19 +144,19 @@ class TestConfigAllExports:
     """Each config module exposes its class via __all__."""
 
     def test_ts2vec_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
 
-        assert 'TS2VecModelParameters' in mod.__all__
+        assert "TS2VecModelParameters" in mod.__all__
 
     def test_cost_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
 
-        assert 'CoSTModelParameters' in mod.__all__
+        assert "CoSTModelParameters" in mod.__all__
 
     def test_autotcl_config_all(self) -> None:
-        import tscollection.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
 
-        assert 'AutoTCLModelParameters' in mod.__all__
+        assert "AutoTCLModelParameters" in mod.__all__
 
 
 class TestNoDilatedCNNConfig:
@@ -164,6 +164,6 @@ class TestNoDilatedCNNConfig:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from tscollection.models.convolutional.dilated.config import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.dilated.config import (  # noqa: F401, PLC0415
                 DilatedCNNModelParameters,
             )

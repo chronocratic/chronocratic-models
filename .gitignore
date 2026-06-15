@@ -227,3 +227,6 @@ _sources/
 # graphify output
 graphify-out/
 .graphifyignore
+
+# setuptools_scm generated version file
+src/chronocratic/models/_version.py

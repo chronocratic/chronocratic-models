@@ -8,9 +8,7 @@ Verifies that concrete augmentations live in their model directories:
 
 import torch
 
-from tscollection.models.augmentation.base import (
-    AugmentationTrainingStrategy,
-)
+from chronocratic.models.augmentation.base import AugmentationTrainingStrategy
 
 # --------------------------------------------------------------------------- #
 # Task 1: ts2vec/augmentation.py
@@ -21,36 +19,28 @@ class TestTS2VecAugmentationModule:
     """CropShiftProducer lives in ts2vec/augmentation.py."""
 
     def test_import_from_ts2vec(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         assert CropShiftProducer is not None
 
     def test_import_params_from_ts2vec(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
         )
 
         assert CropShiftAugmentationParameters is not None
 
     def test_crop_shift_satisfies_producer_protocol(self) -> None:
-        from tscollection.models.augmentation.base import (
-            AlignedPair as AlignedPairType,
-        )
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.augmentation.base import AlignedPair as AlignedPairType
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         aug = CropShiftProducer()
         result = aug.produce(torch.randn(2, 100, 3))
         assert isinstance(result, AlignedPairType)
 
     def test_crop_shift_produce_returns_aligned_pair(self) -> None:
-        from tscollection.models.augmentation.base import AlignedPair
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.augmentation.base import AlignedPair
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
@@ -61,8 +51,8 @@ class TestTS2VecAugmentationModule:
         assert isinstance(result.overlap_length, int)
 
     def test_crop_shift_with_params(self) -> None:
-        from tscollection.models.augmentation.base import AlignedPair
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.augmentation.base import AlignedPair
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
             CropShiftProducer,
         )
@@ -73,7 +63,7 @@ class TestTS2VecAugmentationModule:
         assert isinstance(result, AlignedPair)
 
     def test_crop_shift_params_defaults(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
         )
 
@@ -81,30 +71,28 @@ class TestTS2VecAugmentationModule:
         assert params.temporal_unit == 0
 
     def test_crop_shift_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         assert (
             CropShiftProducer.__module__
-            == 'tscollection.models.convolutional.dilated.ts2vec.augmentation'
+            == "chronocratic.models.convolutional.dilated.ts2vec.augmentation"
         )
 
     def test_params_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
         )
 
         assert (
             CropShiftAugmentationParameters.__module__
-            == 'tscollection.models.convolutional.dilated.ts2vec.augmentation'
+            == "chronocratic.models.convolutional.dilated.ts2vec.augmentation"
         )
 
     def test_all_exports(self) -> None:
-        import tscollection.models.convolutional.dilated.ts2vec.augmentation as mod
+        import chronocratic.models.convolutional.dilated.ts2vec.augmentation as mod
 
-        assert 'CropShiftAugmentationParameters' in mod.__all__
-        assert 'CropShiftProducer' in mod.__all__
+        assert "CropShiftAugmentationParameters" in mod.__all__
+        assert "CropShiftProducer" in mod.__all__
 
 
 # --------------------------------------------------------------------------- #
@@ -116,14 +104,14 @@ class TestCoSTAugmentationModule:
     """CosTRandomFunctionAugmentation lives in cost/augmentation.py."""
 
     def test_import_from_cost(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
 
         assert CosTRandomFunctionAugmentation is not None
 
     def test_import_params_from_cost(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentationParameters,
         )
 
@@ -131,8 +119,8 @@ class TestCoSTAugmentationModule:
 
     def test_cost_aug_is_augmentation_method(self) -> None:
         """CoST aug still has .augment() for backward compat, but inherits from Augmentation Protocol."""
-        from tscollection.models.augmentation.base import Augmentation
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.augmentation.base import Augmentation
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
         )
@@ -144,8 +132,8 @@ class TestCoSTAugmentationModule:
         assert isinstance(aug, Augmentation)
 
     def test_cost_aug_satisfies_augmentation_protocol(self) -> None:
-        from tscollection.models.augmentation.base import Augmentation
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.augmentation.base import Augmentation
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
         )
@@ -155,7 +143,7 @@ class TestCoSTAugmentationModule:
         assert isinstance(aug, Augmentation)
 
     def test_cost_augment_returns_tensor(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
         )
@@ -168,7 +156,7 @@ class TestCoSTAugmentationModule:
         assert result.shape == data.shape
 
     def test_cost_params_required_sigma(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentationParameters,
         )
 
@@ -177,40 +165,40 @@ class TestCoSTAugmentationModule:
         assert params.p == 0.5
 
     def test_cost_dict_params_compat(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
 
-        aug = CosTRandomFunctionAugmentation(params={'sigma': 0.1, 'p': 0.5})
+        aug = CosTRandomFunctionAugmentation(params={"sigma": 0.1, "p": 0.5})
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
         assert isinstance(result, torch.Tensor)
 
     def test_cost_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
 
         assert (
             CosTRandomFunctionAugmentation.__module__
-            == 'tscollection.models.convolutional.dilated.cost.augmentation'
+            == "chronocratic.models.convolutional.dilated.cost.augmentation"
         )
 
     def test_cost_params_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentationParameters,
         )
 
         assert (
             CosTRandomFunctionAugmentationParameters.__module__
-            == 'tscollection.models.convolutional.dilated.cost.augmentation'
+            == "chronocratic.models.convolutional.dilated.cost.augmentation"
         )
 
     def test_cost_all_exports(self) -> None:
-        import tscollection.models.convolutional.dilated.cost.augmentation as mod
+        import chronocratic.models.convolutional.dilated.cost.augmentation as mod
 
-        assert 'CosTRandomFunctionAugmentation' in mod.__all__
-        assert 'CosTRandomFunctionAugmentationParameters' in mod.__all__
+        assert "CosTRandomFunctionAugmentation" in mod.__all__
+        assert "CosTRandomFunctionAugmentationParameters" in mod.__all__
 
 
 # --------------------------------------------------------------------------- #
@@ -222,29 +210,29 @@ class TestAutoTCLAugmentationMethods:
     """AutoTCLNeuralNetworkAugmentation lives in autotcl/augmentation/methods.py."""
 
     def test_import_from_autotcl_methods(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
         )
 
         assert AutoTCLNeuralNetworkAugmentation is not None
 
     def test_import_params_from_autotcl_methods(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
         assert AutoTCLNeuralNetworkAugmentationParameters is not None
 
     def test_is_trainable_augmentation(self) -> None:
-        from tscollection.models.augmentation.base import TrainableAugmentationProducer
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.augmentation.base import TrainableAugmentationProducer
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
         )
 
         assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentationProducer)
 
     def test_constructor_with_dataclass(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -254,7 +242,7 @@ class TestAutoTCLAugmentationMethods:
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
     def test_has_trainable_params(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -264,8 +252,8 @@ class TestAutoTCLAugmentationMethods:
         assert len(list(aug.parameters())) > 0
 
     def test_augment_returns_views(self) -> None:
-        from tscollection.models.augmentation.base import SingleView
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.augmentation.base import SingleView
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -281,23 +269,23 @@ class TestAutoTCLAugmentationMethods:
         assert isinstance(result, SingleView)
 
     def test_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
         )
 
         assert (
             AutoTCLNeuralNetworkAugmentation.__module__
-            == 'tscollection.models.convolutional.dilated.autotcl.augmentation.methods'
+            == "chronocratic.models.convolutional.dilated.autotcl.augmentation.methods"
         )
 
     def test_params_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
         assert (
             AutoTCLNeuralNetworkAugmentationParameters.__module__
-            == 'tscollection.models.convolutional.dilated.autotcl.augmentation.methods'
+            == "chronocratic.models.convolutional.dilated.autotcl.augmentation.methods"
         )
 
 
@@ -305,35 +293,35 @@ class TestAutoTCLTrainingStrategies:
     """Training strategies live in autotcl/augmentation/training.py."""
 
     def test_import_rip_strategy(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
         assert RIPTrainingStrategy is not None
 
     def test_import_adversarial_strategy(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             AdversarialTrainingStrategy,
         )
 
         assert AdversarialTrainingStrategy is not None
 
     def test_rip_is_training_strategy(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
         assert issubclass(RIPTrainingStrategy, AugmentationTrainingStrategy)
 
     def test_adversarial_is_training_strategy(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             AdversarialTrainingStrategy,
         )
 
         assert issubclass(AdversarialTrainingStrategy, AugmentationTrainingStrategy)
 
     def test_rip_compute_loss_scalar(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
@@ -348,7 +336,7 @@ class TestAutoTCLTrainingStrategies:
         assert loss.requires_grad
 
     def test_adversarial_compute_loss_scalar(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             AdversarialTrainingStrategy,
         )
 
@@ -363,23 +351,23 @@ class TestAutoTCLTrainingStrategies:
         assert loss.requires_grad
 
     def test_rip_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
         assert (
             RIPTrainingStrategy.__module__
-            == 'tscollection.models.convolutional.dilated.autotcl.augmentation.training'
+            == "chronocratic.models.convolutional.dilated.autotcl.augmentation.training"
         )
 
     def test_adversarial_module_location(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             AdversarialTrainingStrategy,
         )
 
         assert (
             AdversarialTrainingStrategy.__module__
-            == 'tscollection.models.convolutional.dilated.autotcl.augmentation.training'
+            == "chronocratic.models.convolutional.dilated.autotcl.augmentation.training"
         )
 
 
@@ -387,7 +375,7 @@ class TestAutoTCLAugmentationBarrel:
     """autotcl/augmentation/__init__.py re-exports all symbols."""
 
     def test_barrel_exports_methods(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -396,7 +384,7 @@ class TestAutoTCLAugmentationBarrel:
         assert AutoTCLNeuralNetworkAugmentationParameters is not None
 
     def test_barrel_exports_strategies(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
             AdversarialTrainingStrategy,
             RIPTrainingStrategy,
         )
@@ -405,13 +393,13 @@ class TestAutoTCLAugmentationBarrel:
         assert RIPTrainingStrategy is not None
 
     def test_barrel_all_list(self) -> None:
-        import tscollection.models.convolutional.dilated.autotcl.augmentation as mod
+        import chronocratic.models.convolutional.dilated.autotcl.augmentation as mod
 
         expected = {
-            'AutoTCLNeuralNetworkAugmentation',
-            'AutoTCLNeuralNetworkAugmentationParameters',
-            'RIPTrainingStrategy',
-            'AdversarialTrainingStrategy',
+            "AutoTCLNeuralNetworkAugmentation",
+            "AutoTCLNeuralNetworkAugmentationParameters",
+            "RIPTrainingStrategy",
+            "AdversarialTrainingStrategy",
         }
         assert expected.issubset(set(mod.__all__))
 
@@ -424,17 +412,6 @@ class TestAutoTCLAugmentationBarrel:
 class TestBackwardCompatibility:
     """Barrel import paths still work after per-model migration."""
 
-    def test_barrel_still_exports(self) -> None:
-        from tscollection.models.augmentation import (
-            AdversarialTrainingStrategy,
-            AutoTCLNeuralNetworkAugmentation,
-            CosTRandomFunctionAugmentation,
-            CropShiftProducer,
-            RIPTrainingStrategy,
-        )
-
-        assert CropShiftProducer is not None
-        assert CosTRandomFunctionAugmentation is not None
-        assert AutoTCLNeuralNetworkAugmentation is not None
-        assert RIPTrainingStrategy is not None
-        assert AdversarialTrainingStrategy is not None
+    # No barrel exports for model-specific augmentations - they are imported from their
+    # respective model subpackages to avoid circular dependencies and lazy imports.
+    # See: src/chronocratic/models/augmentation/__init__.py docstring for import paths.

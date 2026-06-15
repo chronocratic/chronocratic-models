@@ -9,19 +9,18 @@ Also tests primitive parameter dataclasses (JitterParameters, ScalingParameters,
 PermutationParameters) from augmentation/primitives.py.
 """
 
-
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     JitterParameters,
     PermutationParameters,
     ScalingParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.cost.augmentation import (
+from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentationParameters,
 )
 
@@ -40,6 +39,7 @@ class TestCropShiftAugmentationParameters:
     def test_custom_temporal_unit(self) -> None:
         params = CropShiftAugmentationParameters(temporal_unit=2)
         assert params.temporal_unit == 2
+
 
 # --------------------------------------------------------------------------- #
 # CosTRandomFunctionAugmentationParameters
@@ -66,6 +66,7 @@ class TestCosTRandomFunctionAugmentationParameters:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
         assert params.p == 0.5
 
+
 # --------------------------------------------------------------------------- #
 # AutoTCLNeuralNetworkAugmentationParameters
 # --------------------------------------------------------------------------- #
@@ -80,9 +81,9 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
 
     def test_encoder_kwargs_not_none(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={'kernel_sizes': [3, 5]}
+            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
-        assert params.encoder_kwargs == {'kernel_sizes': [3, 5]}
+        assert params.encoder_kwargs == {"kernel_sizes": [3, 5]}
 
     def test_input_dims_is_int(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
@@ -90,13 +91,14 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
 
     def test_encoder_kwargs_is_dict(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={'kernel_sizes': [3, 5]}
+            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
         assert isinstance(params.encoder_kwargs, dict)
 
     def test_encoder_kwargs_none_by_default(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
         assert params.encoder_kwargs is None
+
 
 # --------------------------------------------------------------------------- #
 # JitterParameters
@@ -108,11 +110,12 @@ class TestJitterParameters:
 
     def test_default_sigma(self) -> None:
         params = JitterParameters()
-        assert params.sigma == 0.2
+        assert params.sigma == 0.1
 
     def test_custom_sigma(self) -> None:
         params = JitterParameters(sigma=0.1)
         assert params.sigma == 0.1
+
 
 # --------------------------------------------------------------------------- #
 # ScalingParameters
@@ -124,11 +127,12 @@ class TestScalingParameters:
 
     def test_default_sigma(self) -> None:
         params = ScalingParameters()
-        assert params.sigma == 0.5
+        assert params.sigma == 0.1
 
     def test_custom_sigma(self) -> None:
         params = ScalingParameters(sigma=0.1)
         assert params.sigma == 0.1
+
 
 # --------------------------------------------------------------------------- #
 # PermutationParameters
@@ -154,6 +158,7 @@ class TestPermutationParameters:
         params = PermutationParameters(max_segments=3, time_dim=1)
         assert params.time_dim == 1
 
+
 # --------------------------------------------------------------------------- #
 # Barrel exports
 # --------------------------------------------------------------------------- #
@@ -163,7 +168,7 @@ class TestBarrelExports:
     """Verify that parameter dataclasses are importable from the barrel."""
 
     def test_primitive_params_importable_from_barrel(self) -> None:
-        from tscollection.models.augmentation import (
+        from chronocratic.models.augmentation import (
             JitterParameters,
             PermutationParameters,
             ScalingParameters,
@@ -174,13 +179,13 @@ class TestBarrelExports:
         assert ScalingParameters is not None
 
     def test_per_model_params_importable_from_source(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentationParameters,
         )
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
         )
 
@@ -189,7 +194,7 @@ class TestBarrelExports:
         assert CropShiftAugmentationParameters is not None
 
     def test_auto_tcl_params_defaults(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 

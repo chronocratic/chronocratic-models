@@ -8,10 +8,10 @@ from dataclasses import fields, is_dataclass
 
 import pytest
 
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
-from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
+from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
+from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
 class TestTS2VecModelParameters:
@@ -56,17 +56,17 @@ class TestTS2VecModelParameters:
         params = TS2VecModelParameters(input_dims=1)
         result = vars(params)
         expected_keys = {
-            'input_dims',
-            'hidden_dims',
-            'output_dims',
-            'depth',
-            'dropout_rate',
-            'conv_kernel_size',
-            'mask_mode',
-            'learning_rate',
-            'max_train_length',
-            'temporal_unit',
-            'sync_dist',
+            "input_dims",
+            "hidden_dims",
+            "output_dims",
+            "depth",
+            "dropout_rate",
+            "conv_kernel_size",
+            "mask_mode",
+            "learning_rate",
+            "max_train_length",
+            "temporal_unit",
+            "sync_dist",
         }
         assert set(result.keys()) == expected_keys
 
@@ -155,21 +155,21 @@ class TestCoSTModelParameters:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         result = vars(params)
         expected_keys = {
-            'input_dims',
-            'sequence_length',
-            'kernel_sizes',
-            'max_train_length',
-            'hidden_dims',
-            'output_dims',
-            'depth',
-            'dropout_rate',
-            'mask_mode',
-            'learning_rate',
-            'seasonal_loss_weight',
-            'queue_size',
-            'momentum',
-            'temperature',
-            'sync_dist',
+            "input_dims",
+            "sequence_length",
+            "kernel_sizes",
+            "max_train_length",
+            "hidden_dims",
+            "output_dims",
+            "depth",
+            "dropout_rate",
+            "mask_mode",
+            "learning_rate",
+            "seasonal_loss_weight",
+            "queue_size",
+            "momentum",
+            "temperature",
+            "sync_dist",
         }
         assert set(result.keys()) == expected_keys
 
@@ -233,19 +233,19 @@ class TestAutoTCLModelParameters:
         params = AutoTCLModelParameters(input_dims=1)
         result = vars(params)
         expected_keys = {
-            'input_dims',
-            'kernel_sizes',
-            'hidden_dims',
-            'output_dims',
-            'depth',
-            'dropout_rate',
-            'conv_kernel_size',
-            'mask_mode',
-            'learning_rate',
-            'max_train_length',
-            'meta_learning_rate',
-            'local_loss_weight',
-            'sync_dist',
+            "input_dims",
+            "kernel_sizes",
+            "hidden_dims",
+            "output_dims",
+            "depth",
+            "dropout_rate",
+            "conv_kernel_size",
+            "mask_mode",
+            "learning_rate",
+            "max_train_length",
+            "meta_learning_rate",
+            "local_loss_weight",
+            "sync_dist",
         }
         assert set(result.keys()) == expected_keys
 
@@ -258,4 +258,4 @@ class TestNoModelParameters:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from tscollection.models.config import ModelParameters  # noqa: F401, PLC0415
+            from chronocratic.models.config import ModelParameters  # noqa: F401, PLC0415

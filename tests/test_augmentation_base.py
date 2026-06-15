@@ -12,7 +12,7 @@ import pytest
 import torch
 from torch import nn
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AlignedPair,
     Augmentation,
     AugmentationTrainingStrategy,
@@ -91,9 +91,7 @@ class TestAlignedPairBase:
 
     def test_aligned_pair_is_frozen(self) -> None:
         ap = AlignedPair(
-            first=torch.randn(2, 10, 4),
-            second=torch.randn(2, 10, 4),
-            overlap_length=5,
+            first=torch.randn(2, 10, 4), second=torch.randn(2, 10, 4), overlap_length=5
         )
         with pytest.raises(Exception):
             ap.overlap_length = 10  # type: ignore[attr-defined]
@@ -127,7 +125,7 @@ class TestTrainableAugmentationProducerBase:
 
     def test_is_abc(self) -> None:
         """TrainableAugmentationProducer cannot be instantiated directly."""
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
@@ -138,7 +136,7 @@ class TestTrainableAugmentationProducerBase:
         assert issubclass(TrainableAugmentationProducer, nn.Module)
 
     def test_has_abstract_produce(self) -> None:
-        assert 'produce' in TrainableAugmentationProducer.__abstractmethods__
+        assert "produce" in TrainableAugmentationProducer.__abstractmethods__
 
     def test_has_abstract_train_step(self) -> None:
-        assert 'train_step' in TrainableAugmentationProducer.__abstractmethods__
+        assert "train_step" in TrainableAugmentationProducer.__abstractmethods__

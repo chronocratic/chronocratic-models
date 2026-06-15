@@ -5,7 +5,7 @@ target-version = "py312"
 extend-exclude = [
     "dependencies",
     "experiments_output",
-    "src/tscollection/models/distances/soft_dtw/soft_dtw_cuda.py",
+    "src/chronocratic/models/distances/soft_dtw/soft_dtw_cuda.py",
 ]
 
 [lint]
@@ -14,7 +14,7 @@ select = ["ALL"]
 ignore = [
     "D107", # Allow missing docstring in __init__ if class docstring is present,
     "D212", # Disable first-line summary style in favor of D213 second-line style
-    "Q000", # Allow double quotes,
+    "Q000", # Formatter enforces double quotes; lint rule redundant but silenced
     "D100", # Allow missing docstring in public modules
     "INP001", # Allow implicit namespace packages
     "COM812", # Skip the check for trailing commas in function calls
@@ -39,10 +39,12 @@ combine-as-imports = true
 force-sort-within-sections = true
 # Do not order imports by type
 order-by-type = false
+# Required: compatible with format.skip-magic-trailing-comma = true
+split-on-trailing-comma = false
 
 [format]
-# Use single quotes for strings
-quote-style = "single"
+# Use double quotes for strings
+quote-style = "double"
 # Use spaces for indentation
 indent-style = "space"
 # Avoid adding trailing commas unnecessarily

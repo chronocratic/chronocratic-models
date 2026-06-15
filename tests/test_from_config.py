@@ -9,21 +9,20 @@ Also verifies the correct mixin inheritance for each model class.
 
 import torch
 
-from tscollection.models.augmentation import IndependentPair
-from tscollection.models.convolutional.dilated._mixin.encoding import (
+from chronocratic.models._mixin.encoding import BasicEncodingMixin
+from chronocratic.models.augmentation import IndependentPair
+from chronocratic.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
-from tscollection.models.convolutional.dilated.cost.model import CoST
-from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
-from tscollection.models.convolutional.standard.tstcc.augmentations import (
-    _default_tstcc_pair,
-)
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
+from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
+from chronocratic.models.convolutional.dilated.cost.model import CoST
+from chronocratic.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
+from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
+from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
 class TestModelInstantiation:
@@ -36,14 +35,11 @@ class TestModelInstantiation:
 
     def test_cost_instantiation_returns_instance(self) -> None:
         config = CoSTModelParameters(input_dims=1, sequence_length=100)
-        model = CoST(
-            **vars(config),
-            augmentation=IndependentPair(aug=None),
-        )
+        model = CoST(**vars(config), augmentation=IndependentPair(aug=None))
         assert isinstance(model, CoST)
 
     def test_autotcl_instantiation_returns_instance(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -58,7 +54,7 @@ class TestModelInstantiation:
         assert isinstance(model, AutoTCL)
 
     def test_tstcc_instantiation_returns_instance(self) -> None:
-        from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
+        from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
         config = TSTCCModelParameters(
             input_channels=1,
@@ -81,10 +77,10 @@ class TestMixinInheritance:
 
     def test_cost_is_pooling_encoding_mixin(self) -> None:
         model = CoST(input_dims=1, sequence_length=100)
-        assert isinstance(model, PoolingEncodingMixin)
+        assert isinstance(model, DecompositionEncodingMixin)
 
     def test_autotcl_is_pooling_encoding_mixin(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -97,7 +93,7 @@ class TestMixinInheritance:
         )
         assert isinstance(model, PoolingEncodingMixin)
 
-    def test_tstcc_is_decomposition_encoding_mixin(self) -> None:
+    def test_tstcc_is_basic_encoding_mixin(self) -> None:
         model = TSTCC(
             input_channels=1,
             kernel_size=5,
@@ -106,27 +102,24 @@ class TestMixinInheritance:
             features_len=12,
             num_classes=10,
         )
-        assert isinstance(model, DecompositionEncodingMixin)
+        assert isinstance(model, BasicEncodingMixin)
 
 
 class TestAugmentationConfigPropagation:
     """Test that augmentation config fields propagate to __init__ attributes."""
 
     def test_ts2vec_augmentation_config_propagates(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
             CropShiftProducer,
         )
 
         config = CropShiftAugmentationParameters(temporal_unit=2)
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=CropShiftProducer(params=config),
-        )
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer(params=config))
         assert model._augmentation._params.temporal_unit == 2
 
     def test_cost_augmentation_config_propagates(self) -> None:
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
         )
@@ -137,31 +130,27 @@ class TestAugmentationConfigPropagation:
             sequence_length=100,
             augmentation=CosTRandomFunctionAugmentation(params=config),
         )
-        assert model._augmentation._params.sigma == 0.2
-        assert model._augmentation._params.p == 0.8
+        # CoST wraps plain Augmentation in IndependentPair
+        assert model._augmentation._aug._params.sigma == 0.2
+        assert model._augmentation._aug._params.p == 0.8
 
     def test_autotcl_augmentation_config_propagates(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
         config = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
-        model = AutoTCL(
-            input_dims=1,
-            augmentation=AutoTCLNeuralNetworkAugmentation(params=config),
-        )
-        assert model._augmentation._params.input_dims == 1
+        model = AutoTCL(input_dims=1, augmentation=AutoTCLNeuralNetworkAugmentation(params=config))
+        assert model._augmentation.params.input_dims == 1
 
 
 class TestAugmentationPassThrough:
     """Test that augmentation instances pass through to __init__ attributes."""
 
     def test_ts2vec_augmentation_pass_through(self) -> None:
-        from tscollection.models.augmentation.base import ViewPair
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.augmentation.base import ViewPair
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
@@ -169,8 +158,8 @@ class TestAugmentationPassThrough:
         assert isinstance(result, ViewPair)
 
     def test_cost_augmentation_pass_through(self) -> None:
-        from tscollection.models.augmentation.base import ViewPair
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.augmentation.base import ViewPair
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
 
@@ -184,8 +173,8 @@ class TestAugmentationPassThrough:
         assert isinstance(result, ViewPair)
 
     def test_autotcl_augmentation_pass_through(self) -> None:
-        from tscollection.models.augmentation.base import SingleView
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.augmentation.base import SingleView
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
@@ -201,7 +190,7 @@ class TestAugmentationPassThrough:
         assert isinstance(result, SingleView)
 
     def test_tstcc_augmentation_pass_through(self) -> None:
-        from tscollection.models.augmentation.base import ViewPair
+        from chronocratic.models.augmentation.base import ViewPair
 
         model = TSTCC(
             input_channels=1,
@@ -222,16 +211,14 @@ class TestBackwardCompatModelConstruction:
 
     def test_ts2vec_with_crop_shift_producer(self) -> None:
         """CropShiftProducer still works with TS2Vec."""
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
 
     def test_cost_with_raw_augmentation(self) -> None:
         """CoST still accepts raw Augmentation (wraps in IndependentPair)."""
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
 
@@ -244,7 +231,7 @@ class TestBackwardCompatModelConstruction:
 
     def test_autotcl_with_neural_augmentation(self) -> None:
         """AutoTCL still accepts neural augmentation."""
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
         )
