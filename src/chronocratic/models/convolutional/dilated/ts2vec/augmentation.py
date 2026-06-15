@@ -56,6 +56,11 @@ class CropShiftProducer:
                 When ``None``, defaults to ``CropShiftAugmentationParameters()``.
         """
         self._params = params if params is not None else CropShiftAugmentationParameters()
+        self._rng: np.random.Generator = np.random.default_rng()
+
+    def reseed(self, rng: np.random.Generator) -> None:
+        """Replace the internal RNG (called by Seeded decorator for determinism)."""
+        self._rng = rng
 
     def produce(self, x: torch.Tensor) -> AlignedPair:
         """Return two overlapping random crops of ``x`` with random per-sample shifts.
@@ -91,18 +96,14 @@ class CropShiftProducer:
                 f'or provide longer sequences.'
             )
             raise ValueError(msg)
-        # Use legacy np.random (seeded by Seeded decorator for determinism)
-        # Randomly determine the length of the crop
-        crop_length = np.random.randint(min_crop_length, total_length + 1)  # noqa: NPY002
+        crop_length = self._rng.integers(min_crop_length, total_length + 1)
 
-        # Randomly determine the starting and ending points for the crops
-        crop_start = np.random.randint(0, total_length - crop_length + 1)  # noqa: NPY002
+        crop_start = self._rng.integers(0, total_length - crop_length + 1)
         crop_end = crop_start + crop_length
-        crop_extension_start = np.random.randint(0, crop_start + 1)  # noqa: NPY002
-        crop_extension_end = np.random.randint(crop_end, total_length + 1)  # noqa: NPY002
+        crop_extension_start = self._rng.integers(0, crop_start + 1)
+        crop_extension_end = self._rng.integers(crop_end, total_length + 1)
 
-        # Random offset for each sample in the batch
-        crop_offsets = np.random.randint(  # noqa: NPY002
+        crop_offsets = self._rng.integers(
             -crop_extension_start, total_length - crop_extension_end + 1, size=x.size(0)
         )
 
