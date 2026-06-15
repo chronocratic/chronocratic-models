@@ -2,11 +2,13 @@ __all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
 
 import torch
 
-from tscollection.models.augmentation.base import AugmentationMethod
+from tscollection.models.augmentation.base import (
+    AugmentationProducer,
+    SingleView,
+)
 from tscollection.models.convolutional.dilated.autotcl.losses import l1_out_loss
 
 _MIN_TIME_STEPS = 3
-
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     """Calculate regular consistency for weights.
@@ -36,7 +38,7 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     selected_steps = torch.randint(1, time_steps - 2, [batch_size], device=weights.device)
     left_steps = selected_steps - 1
     right_steps = selected_steps + 1
-    other_selected_steps = torch.randint(1, time_steps - 2, [batch_size])
+    other_selected_steps = torch.randint(1, time_steps - 2, [batch_size], device=weights.device)
 
     # Create mask to differentiate between near and far time steps
     mask = torch.where(
@@ -60,7 +62,7 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
 
 def calculate_mutual_information(
     batch: torch.Tensor,
-    augmentation_method: AugmentationMethod,
+    augmentation_method: AugmentationProducer[SingleView],
     max_train_length: int | None = None,
 ) -> float:
     """Calculate mutual information between original and augmented data.
@@ -69,7 +71,7 @@ def calculate_mutual_information(
 
     Args:
         batch: Input batch of shape ``(batch, time, channels)``.
-        augmentation_method: Augmentation strategy to apply.
+        augmentation_method: Augmentation producer to apply.
         max_train_length: Optional maximum sequence length. Sequences
             longer than this are truncated randomly.
 
@@ -77,21 +79,17 @@ def calculate_mutual_information(
         Average MI estimate (L1-out loss) between original and
         augmented data.
     """
-    import numpy as np  # noqa: PLC0415
-
     with torch.inference_mode():
         x = batch
         device = x.device
 
         if max_train_length is not None and x.size(1) > max_train_length:
-            window_offset = np.random.randint(  # noqa: NPY002
-                0, x.size(1) - max_train_length + 1
-            )
+            window_offset = int(torch.randint(0, x.size(1) - max_train_length + 1, (1,)).item())
             x = x[:, window_offset : window_offset + max_train_length]
         x = x.to(device)
 
-        views = augmentation_method.augment(x)
-        augmented_x = views.views[0]
+        view = augmentation_method.produce(x)
+        augmented_x = view.view
 
         mi = l1_out_loss(x, augmented_x)
     return mi.item()

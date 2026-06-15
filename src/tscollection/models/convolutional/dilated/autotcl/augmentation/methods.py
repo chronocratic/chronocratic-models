@@ -1,13 +1,10 @@
 """AutoTCL augmentation methods.
 
 Contains ``AutoTCLNeuralNetworkAugmentation`` and its
-``AutoTCLNeuralNetworkAugmentationParameters`` dataclass, moved from the
-shared ``augmentation/strategies.py`` and ``augmentation/config.py`` for
-per-model self-containment.
+``AutoTCLNeuralNetworkAugmentationParameters`` dataclass.
 
-Imports ``TrainableAugmentation``, ``TrainingViews``, and
-``AugmentationTrainingStrategy`` directly from ``augmentation/base.py`` (NOT
-the barrel) to avoid circular dependencies.
+Implements ``TrainableAugmentationProducer`` (nominal ABC + nn.Module)
+with a ``produce() -> SingleView`` contract.
 """
 
 __all__ = ['AutoTCLNeuralNetworkAugmentation', 'AutoTCLNeuralNetworkAugmentationParameters']
@@ -20,8 +17,8 @@ from torch import nn
 
 from tscollection.models.augmentation.base import (
     AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
+    SingleView,
+    TrainableAugmentationProducer,
 )
 from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
     RIPTrainingStrategy,
@@ -72,11 +69,13 @@ class AutoTCLNeuralNetworkAugmentationParameters:
     hard_mask: bool = True
 
 
-class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
+class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
     """Augmentation driven by a learned neural network (AutoTCL).
 
-    Inherits from ``TrainableAugmentation`` to provide optimizer configuration
-    and training-step delegation via a composed ``AugmentationTrainingStrategy``.
+    Inherits from ``TrainableAugmentationProducer`` (nominal ABC + nn.Module)
+    to provide optimizer configuration and training-step delegation via a
+    composed ``AugmentationTrainingStrategy``. Satisfies
+    ``AugmentationProducer[SingleView]`` structurally through ``produce()``.
     """
 
     def __init__(
@@ -117,21 +116,32 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentation):
         """
         return self.model(data)
 
+    def produce(self, x: torch.Tensor) -> SingleView:
+        """Return an augmented view produced by the encoder model.
+
+        Args:
+            x: Input time-series tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            A single augmented view wrapped in :class:`SingleView`.
+        """
+        return SingleView(view=self.model.augment(x))
+
     def augment(
         self,
         data: torch.Tensor,
         **kwargs: Any,  # noqa: ANN401, ARG002
-    ) -> TrainingViews:
-        """Return an augmented view produced by the encoder model.
+    ) -> SingleView:
+        """Backward-compat alias for :meth:`produce`.
 
         Args:
             data: Input time-series tensor.
             **kwargs: Unused; present for interface compatibility.
 
         Returns:
-            TrainingViews containing the augmented tensor.
+            A single augmented view wrapped in :class:`SingleView`.
         """
-        return TrainingViews(views=(self.model.augment(data),), metadata={})
+        return self.produce(data)
 
     def get_model(self) -> AutoTCLAugmentationTimeSeriesEncoder:
         """Return the underlying ``AutoTCLAugmentationTimeSeriesEncoder``."""

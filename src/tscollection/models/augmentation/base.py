@@ -1,81 +1,63 @@
 """Abstract base classes for augmentation strategies.
 
 This module defines the shared augmentation hierarchy extracted from the
-monolithic ``strategies.py``. It contains only abstract base classes and the
-``TrainingViews`` dataclass (~200 lines). Concrete implementations live in
+monolithic ``strategies.py``. It contains only abstract base classes and
+typed view-set dataclasses (~350 lines). Concrete implementations live in
 per-model augmentation files.
 
 Exported symbols:
-    - ``AugmentationMethod``: Abstract transform interface.
+    - ``Augmentation``: Structural protocol for primitive transforms.
+    - ``AugmentationProducer[V]``: Protocol for typed view-set production.
     - ``AugmentationTrainingStrategy``: Abstract training-loss interface.
-    - ``TrainableAugmentation``: Abstract trainable augmentation (nn.Module).
-    - ``TrainingViews``: Dataclass for augmentation output views + metadata.
+    - ``TrainableAugmentationProducer``: Abstract trainable augmentation (nn.Module).
+    - ``SingleView`` / ``ViewPair`` / ``AlignedPair``: Typed view-set dataclasses.
 """
 
 from __future__ import annotations
 
 __all__ = [
-    'AugmentationMethod',
+    'AlignedPair',
+    'Augmentation',
+    'AugmentationProducer',
     'AugmentationTrainingStrategy',
-    'TrainableAugmentation',
-    'TrainingViews',
+    'SingleView',
+    'TrainableAugmentationProducer',
+    'ViewPair',
 ]
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Protocol, runtime_checkable
 
 import torch
 from torch import nn
 from torch.optim import AdamW
 
 # --------------------------------------------------------------------------- #
-# TrainingViews
+# Augmentation Protocol (primitive, model-agnostic)
 # --------------------------------------------------------------------------- #
 
 
-@dataclass
-class TrainingViews:
-    """Container for augmentation output views and metadata.
+@runtime_checkable
+class Augmentation(Protocol):
+    """Structural protocol for model-agnostic augmentation primitives.
 
-    The number and shape of views is defined by the model-augmentation contract,
-    not enforced at runtime. Models should document their expected view structure.
+    Implements this protocol to create a primitive transform that accepts
+    a tensor and returns a transformed tensor of the same shape.
 
     Examples:
-        TS2Vec: views has 2 tensors, metadata has 'crop_length' (int).
-        CoST: views has 1 tensor, metadata is empty.
-        AutoTCL: views has 1 tensor, metadata may have 'augmentation_factor'.
+        Jitter, Scaling, Permutation — shared across all models.
     """
 
-    views: tuple[torch.Tensor, ...]
-    metadata: dict[str, Any]
-
-
-# --------------------------------------------------------------------------- #
-# AugmentationMethod ABC
-# --------------------------------------------------------------------------- #
-
-
-class AugmentationMethod(ABC):
-    """Abstract base class for all time-series augmentation strategies.
-
-    Subclass this to create a new augmentation. Implement ``augment()`` to
-    define the transform. The model calls this polymorphically -- no enum
-    dispatch needed.
-
-    Pure transform. No ``train_step``, no ``configure_optimizer``, no ``_setup``.
-    """
-
-    @abstractmethod
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401
-        """Return augmented views of ``data``.
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the augmentation to ``x``.
 
         Args:
-            data: Input tensor of shape ``(batch, time, channels)``.
-            **kwargs: Strategy-specific keyword arguments.
+            x: Input tensor of shape ``(batch, channels, time)``
+               or ``(batch, time, channels)``.
 
         Returns:
-            TrainingViews containing augmented tensor(s) and metadata.
+            Transformed tensor with the same shape as ``x``.
         """
         ...
 
@@ -138,21 +120,127 @@ class AugmentationTrainingStrategy(ABC):
         return epoch % self._training_ratio_step == 0
 
 
+# Covariant type parameter for AugmentationProducer[V].
+# V appears only in return position, enabling Liskov substitution:
+# AugmentationProducer[AlignedPair] is a subtype of AugmentationProducer[ViewPair].
+# PEP 695: variance is inferred by type checkers based on usage (covariant here).
+
+
 # --------------------------------------------------------------------------- #
-# TrainableAugmentation
+# Layer 2 — Typed view results (ViewSets)
 # --------------------------------------------------------------------------- #
 
 
-class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
-    """Augmentation with learnable parameters.
+@dataclass(frozen=True)
+class SingleView:
+    """A single augmented view returned by a producer.
 
-    Composes an ``AugmentationTrainingStrategy`` for loss computation.
-    Subclasses implement ``train_step()`` to define their own training loop.
-    AutoTCL-specific; not a general pattern for TS2Vec/CoST.
+    Used by models that need only one transformed copy of the input
+    (e.g. AutoTCL with a neural-network augmentation).
+
+    Args:
+        view: Augmented tensor of shape ``(batch, time, channels)``.
+    """
+
+    view: torch.Tensor
+
+
+@dataclass(frozen=True)
+class ViewPair:
+    """Two augmented views returned by a producer.
+
+    Used by models that need a pair of views for contrastive or
+    consistency losses (e.g. CoST query/key, TS-TCC weak/strong).
+
+    Args:
+        first: First augmented tensor.
+        second: Second augmented tensor.
+    """
+
+    first: torch.Tensor
+    second: torch.Tensor
+
+
+@dataclass(frozen=True)
+class AlignedPair(ViewPair):
+    """A pair of augmented views with a known aligned region.
+
+    Extends :class:`ViewPair` with an ``overlap_length`` field so that
+    consumers (e.g. TS2Vec) can slice embeddings to the aligned span
+    without a ``metadata`` dict.
+
+    ``AlignedPair`` is-a ``ViewPair`` (Liskov substitution), so a producer
+    returning ``AlignedPair`` satisfies any slot expecting ``ViewPair``.
+
+    Args:
+        first: First augmented tensor.
+        second: Second augmented tensor.
+        overlap_length: Number of time steps over which the two views align.
+            For non-crop augmentations this equals the full sequence length,
+            making the alignment slice a no-op.
+    """
+
+    overlap_length: int
+
+
+# --------------------------------------------------------------------------- #
+# Layer 3 — Producers (AugmentationProducer Protocol)
+# --------------------------------------------------------------------------- #
+
+
+class AugmentationProducer[V](Protocol):
+    """Assembles the view set a model's loss requires from a batch.
+
+    A producer wraps one or more :class:`Augmentation` primitives and
+    returns a typed view set (:class:`SingleView`, :class:`ViewPair`, or
+    :class:`AlignedPair`). This is the object injected into a model at
+    construction time.
+
+    ``V`` is covariant — it appears only in return position — so a
+    ``AugmentationProducer[AlignedPair]`` can be used wherever
+    ``AugmentationProducer[ViewPair]`` is expected.
+
+    This is a structural Protocol; concrete classes satisfy it by having
+    the correct ``produce`` signature, not by inheriting from it.
+    """
+
+    def produce(self, x: torch.Tensor) -> V:
+        """Produce the model's view set from a batch.
+
+        Args:
+            x: Input tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            A typed view set (:class:`SingleView`, :class:`ViewPair`,
+            or :class:`AlignedPair`).
+        """
+        ...
+
+
+# --------------------------------------------------------------------------- #
+# Capability — Trainable producers
+# --------------------------------------------------------------------------- #
+
+
+class TrainableAugmentationProducer(nn.Module, ABC):
+    """A trainable augmentation producer with learnable parameters.
+
+    Combines the :class:`nn.Module` lifecycle (parameters, state_dict)
+    with a training strategy for the augmentation network. This is a
+    **nominal** ABC (not a Protocol) because it must be runtime-checkable
+    via ``isinstance()`` to gate the trainable path.
+
+    ``TrainableAugmentationProducer`` structurally satisfies
+    ``AugmentationProducer[SingleView]`` (it has ``produce(x) -> SingleView``),
+    so it type-checks in any ``SingleView`` slot.
+
+    Args:
+        training_strategy: Strategy for computing the augmentation loss
+            and determining training frequency.
     """
 
     def __init__(self, training_strategy: AugmentationTrainingStrategy) -> None:
-        """Initialize a trainable augmentation.
+        """Initialize a trainable augmentation producer.
 
         Args:
             training_strategy: Strategy for computing the augmentation loss.
@@ -160,51 +248,21 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
         super().__init__()
         self._training_strategy = training_strategy
 
-    def should_train_augmentation(self, epoch: int, batch_idx: int) -> bool:
-        """Check whether the aug-network should train this step.
-
-        Delegates to the composed training strategy to avoid exposing
-        the private ``_training_strategy`` attribute.
-
-        Args:
-            epoch: Current training epoch.
-            batch_idx: Current batch index within the epoch.
-
-        Returns:
-            ``True`` if the augmentation network should be trained this step.
-        """
-        return self._training_strategy.should_train(epoch, batch_idx)
-
     @abstractmethod
-    def augment(self, data: torch.Tensor, **kwargs: Any) -> TrainingViews:  # noqa: ANN401
+    def produce(self, x: torch.Tensor) -> SingleView:
         """Return an augmented view produced by the encoder model.
 
         Args:
-            data: Input time-series tensor.
-            **kwargs: Strategy-specific keyword arguments.
+            x: Input time-series tensor of shape ``(batch, time, channels)``.
 
         Returns:
-            TrainingViews containing the augmented tensor(s) and metadata.
+            A single augmented view wrapped in :class:`SingleView`.
         """
         ...
 
-    def configure_optimizer(self, lr: float) -> AdamW:
-        """Return optimizer over this module's parameters.
-
-        Args:
-            lr: Learning rate for the augmentation network optimizer.
-
-        Returns:
-            AdamW optimizer for this module's parameters.
-        """
-        return AdamW(self.parameters(), lr=lr)
-
     @abstractmethod
     def train_step(
-        self,
-        x: torch.Tensor,
-        encoder: nn.Module,
-        batch_idx: int,
+        self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
     ) -> torch.Tensor | None:
         """Run one augmentation-network training step.
 
@@ -221,3 +279,29 @@ class TrainableAugmentation(AugmentationMethod, nn.Module, ABC):
             Loss tensor if training should run this step, otherwise None.
         """
         ...
+
+    def configure_optimizer(self, lr: float) -> AdamW:
+        """Return optimizer over this module's parameters.
+
+        Args:
+            lr: Learning rate for the augmentation network optimizer.
+
+        Returns:
+            AdamW optimizer for this module's parameters.
+        """
+        return AdamW(self.parameters(), lr=lr)
+
+    def should_train_augmentation(self, epoch: int, batch_idx: int) -> bool:
+        """Check whether the aug-network should train this step.
+
+        Delegates to the composed training strategy to avoid exposing
+        the private ``_training_strategy`` attribute.
+
+        Args:
+            epoch: Current training epoch.
+            batch_idx: Current batch index within the epoch.
+
+        Returns:
+            ``True`` if the augmentation network should be trained this step.
+        """
+        return self._training_strategy.should_train(epoch, batch_idx)

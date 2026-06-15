@@ -16,7 +16,7 @@ from tscollection.models.utils import extract_features_from_batch
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
-    from tscollection.models.augmentation.dual import DualAugmentation
+    from tscollection.models.augmentation.base import AugmentationProducer, ViewPair
 
 
 class TSTCC(pl.LightningModule, BasicEncodingMixin):
@@ -27,10 +27,9 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     Batch format: ``(data, labels)`` where ``labels`` is ignored.
     Two augmented views of ``data`` are produced by the injected
-    ``DualAugmentation`` (one augmentation per view). The default is
-    ``TSTCCDualAugmentation``, which provides Gaussian scaling (weak)
-    and segment-permutation + jitter (strong) views, matching the
-    original TS-TCC contract.
+    ``AugmentationProducer[ViewPair]`` (e.g. :func:`_default_tstcc_pair`),
+    which provides Gaussian scaling (weak) and segment-permutation + jitter
+    (strong) views.
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
@@ -60,7 +59,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         lambda1: float = 1.0,
         lambda2: float = 0.7,
         sync_dist: bool = False,
-        augmentation: 'DualAugmentation | None' = None,
+        augmentation: 'AugmentationProducer[ViewPair] | None' = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=['augmentation'])
@@ -73,10 +72,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         if augmentation is None:
             from tscollection.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
-                TSTCCDualAugmentation,
+                _default_tstcc_pair,
             )
 
-            self._augmentation = TSTCCDualAugmentation()
+            self._augmentation: AugmentationProducer[ViewPair] = _default_tstcc_pair()
         else:
             self._augmentation = augmentation
 
@@ -116,8 +115,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """
         data = extract_features_from_batch(batch).float()
 
-        views = self._augmentation.augment(data)
-        aug1, aug2 = views.views[0], views.views[1]
+        pair = self._augmentation.produce(data)
+        aug1, aug2 = pair.first, pair.second
         _, features1 = self._encoder(aug1)
         _, features2 = self._encoder(aug2)
         features1 = functional.normalize(features1, dim=1)

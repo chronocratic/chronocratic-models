@@ -1,60 +1,74 @@
 """Augmentation package — abstract types and concrete re-exports.
 
-This package owns the augmentation ABCs that the rest of the codebase
-codes against:
+This package provides the producer contract for augmentation strategies.
 
-- :class:`AugmentationMethod` / :class:`TrainableAugmentation` /
-  :class:`AugmentationTrainingStrategy` / :class:`TrainingViews` from
-  ``base.py``.
-- :class:`DualAugmentation` from ``dual.py`` — the abstract
-  two-view contract used by contrastive setups.
+**Contract types**:
 
-Concrete augmentations live alongside the models that use them but are
-re-exported here for callers that prefer a single import path:
-
-- TS2Vec: ``ts2vec/augmentation.py``
-- CoST: ``cost/augmentation.py``
-- AutoTCL: ``autotcl/augmentation/`` package
-- TS-TCC: ``tstcc/augmentations.py``
+- :class:`Augmentation` / :class:`AugmentationProducer` /
+  :class:`TrainableAugmentationProducer` from ``base.py``.
+- :class:`SingleView` / :class:`ViewPair` / :class:`AlignedPair` typed
+  ViewSets from ``base.py``.
+- :class:`SingleViewProducer` / :class:`IndependentPair` /
+  :class:`RolePair` / :class:`FullOverlapPair` from ``producers.py``.
+- :class:`Seeded` decorator from ``decorators.py``.
+- :func:`maybe_train_augmentation` / :func:`maybe_configure_augmentation_optimizer`
+  from ``trainable_support.py``.
+- Shared primitives (:class:`Jitter`, :class:`Scaling`,
+  :class:`Permutation`, :class:`ComposeAugmentation`) from ``primitives.py``.
 """
 
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
-    AutoTCLNeuralNetworkAugmentation,
-    AutoTCLNeuralNetworkAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
-    AdversarialTrainingStrategy,
-    RIPTrainingStrategy,
-)
-from tscollection.models.convolutional.dilated.cost.augmentation import (
-    CosTRandomFunctionAugmentation,
-    CosTRandomFunctionAugmentationParameters,
-)
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftAugmentation,
-    CropShiftAugmentationParameters,
-)
+from __future__ import annotations
 
 from .base import (
-    AugmentationMethod,
+    AlignedPair,
+    Augmentation,
+    AugmentationProducer,
     AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
+    SingleView,
+    TrainableAugmentationProducer,
+    ViewPair,
 )
-from .dual import DualAugmentation
+from .decorators import Seeded
+from .primitives import (
+    ComposeAugmentation,
+    Jitter,
+    JitterParameters,
+    Permutation,
+    PermutationParameters,
+    Scaling,
+    ScalingParameters,
+)
+from .producers import (
+    FullOverlapPair,
+    IndependentPair,
+    RolePair,
+    SingleViewProducer,
+)
+from .trainable_support import (
+    maybe_configure_augmentation_optimizer,
+    maybe_train_augmentation,
+)
 
 __all__ = [
-    'AdversarialTrainingStrategy',
-    'AugmentationMethod',
+    'AlignedPair',
+    'Augmentation',
+    'AugmentationProducer',
     'AugmentationTrainingStrategy',
-    'AutoTCLNeuralNetworkAugmentation',
-    'AutoTCLNeuralNetworkAugmentationParameters',
-    'CosTRandomFunctionAugmentation',
-    'CosTRandomFunctionAugmentationParameters',
-    'CropShiftAugmentation',
-    'CropShiftAugmentationParameters',
-    'DualAugmentation',
-    'RIPTrainingStrategy',
-    'TrainableAugmentation',
-    'TrainingViews',
+    'ComposeAugmentation',
+    'FullOverlapPair',
+    'IndependentPair',
+    'Jitter',
+    'JitterParameters',
+    'Permutation',
+    'PermutationParameters',
+    'RolePair',
+    'Scaling',
+    'ScalingParameters',
+    'Seeded',
+    'SingleView',
+    'SingleViewProducer',
+    'TrainableAugmentationProducer',
+    'ViewPair',
+    'maybe_configure_augmentation_optimizer',
+    'maybe_train_augmentation',
 ]

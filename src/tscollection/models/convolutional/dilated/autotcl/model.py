@@ -8,7 +8,15 @@ import torch
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models.augmentation.base import AugmentationMethod, TrainableAugmentation
+from tscollection.models.augmentation.base import (
+    AugmentationProducer,
+    SingleView,
+    TrainableAugmentationProducer,
+)
+from tscollection.models.augmentation.trainable_support import (
+    maybe_configure_augmentation_optimizer,
+    maybe_train_augmentation,
+)
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.autotcl.losses import (
     info_nce_loss,
@@ -30,7 +38,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         *,
         input_dims: int,
         kernel_sizes: list[int] | None = None,
-        augmentation: AugmentationMethod | None = None,
+        augmentation: AugmentationProducer[SingleView] | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -63,9 +71,11 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
                 RIPTrainingStrategy,
             )
 
-            self._augmentation: AugmentationMethod = AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
-                training_strategy=RIPTrainingStrategy(),
+            self._augmentation: AugmentationProducer[SingleView] = (
+                AutoTCLNeuralNetworkAugmentation(
+                    params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
+                    training_strategy=RIPTrainingStrategy(),
+                )
             )
         else:
             self._augmentation = augmentation
@@ -87,12 +97,14 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self._averaged_encoder.update_parameters(self._encoder)
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
-        """Return encoder optimizer(s); two optimizers when using TrainableAugmentation."""
-        if isinstance(self._augmentation, TrainableAugmentation):
-            main_optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
-            meta_optimizer = self._augmentation.configure_optimizer(lr=self._meta_learning_rate)
-            return [main_optimizer, meta_optimizer]
-        return AdamW(self._encoder.parameters(), lr=self._learning_rate)
+        """Return encoder optimizer(s); two optimizers when using trainable aug."""
+        main_optimizer = AdamW(self._encoder.parameters(), lr=self._learning_rate)
+        aug_opt = maybe_configure_augmentation_optimizer(
+            self._augmentation, lr=self._meta_learning_rate
+        )
+        if aug_opt is not None:
+            return [main_optimizer, cast('AdamW', aug_opt)]
+        return main_optimizer
 
     def _calculate_encoder_loss(
         self, x_embeddings: torch.Tensor, augmented_x_embeddings: torch.Tensor
@@ -111,42 +123,39 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         """Run one AutoTCL training step with manual optimization.
 
         Two-phase training:
-        1. Aug network self-training (only for TrainableAugmentation).
+        1. Aug network self-training (via centralized maybe_train_augmentation gate).
         2. Uniform encoder training (all augmentation types).
         """
         x = extract_features_from_batch(batch)
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
-        # Cache optimizers once
         opts = self.optimizers()
 
-        # Phase 1: Aug network self-training (TrainableAugmentation only)
-        if isinstance(self._augmentation, TrainableAugmentation):
+        # Phase 1: Aug network self-training (centralized gate, not isinstance in model)
+        aug_loss = maybe_train_augmentation(
+            self._augmentation,
+            x=x, encoder=self._encoder,
+            epoch=self.current_epoch, batch_idx=batch_idx,
+        )
+        if aug_loss is not None:
             main_opt, meta_opt = cast('list[AdamW]', opts)
-            if self._augmentation.should_train_augmentation(self.current_epoch, batch_idx):
-                self._encoder.eval()
-                self._augmentation.train()
-                aug_loss = self._augmentation.train_step(x, self._encoder, batch_idx)
-                if aug_loss is not None:
-                    meta_opt.zero_grad()
-                    self.manual_backward(aug_loss)
-                    meta_opt.step()
-                    self.log(
-                        'aug_train_loss',
-                        aug_loss,
-                        on_step=True,
-                        on_epoch=True,
-                        prog_bar=True,
-                        sync_dist=self._sync_dist,
-                    )
+            meta_opt.zero_grad()
+            self.manual_backward(aug_loss)
+            meta_opt.step()
+            self.log(
+                'aug_train_loss',
+                aug_loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                sync_dist=self._sync_dist,
+            )
 
         # Phase 2: Uniform encoder training
         self._encoder.train()
-        if isinstance(self._augmentation, TrainableAugmentation):
-            self._augmentation.eval()
 
-        views = self._augmentation.augment(x)
-        aug_x = views.views[0]
+        view = self._augmentation.produce(x)
+        aug_x = view.view
 
         # Defensive device transfer — original model called .to(x.device)
         if aug_x.device != x.device:
@@ -192,7 +201,8 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             calculate_mutual_information,
         )
 
-        if isinstance(self._augmentation, TrainableAugmentation):
+        # Diagnostic method: branch on trainable producer to manage eval/train mode
+        if isinstance(self._augmentation, TrainableAugmentationProducer):
             prev_mode = self._augmentation.training
             self._augmentation.eval()
         mi = calculate_mutual_information(
@@ -200,7 +210,8 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             augmentation_method=self._augmentation,
             max_train_length=self._max_train_length,
         )
-        if isinstance(self._augmentation, TrainableAugmentation):
+        # Restore training mode for diagnostic method
+        if isinstance(self._augmentation, TrainableAugmentationProducer):
             self._augmentation.train(prev_mode)
         return mi
 
@@ -212,8 +223,8 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         """Compute validation contrastive loss using the averaged encoder."""
         x = extract_features_from_batch(batch)
 
-        views = self._augmentation.augment(x)
-        aug_x = views.views[0]
+        view = self._augmentation.produce(x)
+        aug_x = view.view
 
         # Defensive device transfer — original model called .to(x.device)
         if aug_x.device != x.device:

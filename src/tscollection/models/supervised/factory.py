@@ -4,7 +4,7 @@ Each factory wires the correct :class:`FlattenLinearHead`, batch adapter,
 representation function, and loss function for a given backbone — so
 callers don't hand-assemble four collaborators.
 
-Per D-01, TS-TCC uses a fresh :class:`FlattenLinearHead` (not encoder
+TS-TCC uses a fresh :class:`FlattenLinearHead` (not encoder
 logits reuse). All three factories follow the same pattern.
 """
 
@@ -149,7 +149,7 @@ def make_tstcc_supervised(
 ) -> SupervisedModule:
     """Build a :class:`SupervisedModule` for a TS-TCC backbone.
 
-    Per D-01, uses a fresh :class:`FlattenLinearHead` (not encoder logits reuse).
+    Uses a fresh :class:`FlattenLinearHead` (not encoder logits reuse).
     With ``freeze_backbone=False`` on a fresh (un-pretrained) :class:`TSTCC`, this
     is the explicit replacement for the removed ``TSTCCTrainingMode.SUPERVISED``.
 

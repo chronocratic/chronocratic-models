@@ -6,6 +6,8 @@ from enum import Enum
 import numpy as np
 import torch
 
+_rng = np.random.default_rng()
+
 
 class MaskMode(Enum):
     """Masking strategies applied to time-series encoder inputs.
@@ -54,7 +56,7 @@ def generate_continuous_mask(
 
     for i in range(batch_size):
         for _ in range(n_segments):
-            start = np.random.randint(seq_length - segment_length + 1)  ## noqa: NPY002
+            start = _rng.integers(seq_length - segment_length + 1)
             mask[i, start : start + segment_length] = False
 
     return mask
@@ -74,7 +76,7 @@ def generate_binomial_mask(
     Returns:
         torch.Tensor: A boolean mask tensor of shape (batch_size, seq_length).
     """
-    samples = np.random.binomial(1, probability, size=(batch_size, seq_length))  ## noqa: NPY002
+    samples = _rng.binomial(1, probability, size=(batch_size, seq_length))
     return torch.from_numpy(samples).to(torch.bool)
 
 

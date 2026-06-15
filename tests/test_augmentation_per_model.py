@@ -1,7 +1,7 @@
 """Tests for per-model augmentation modules.
 
 Verifies that concrete augmentations live in their model directories:
-    - ts2vec/augmentation.py: CropShiftAugmentation + CropShiftAugmentationParameters
+    - ts2vec/augmentation.py: CropShiftProducer + CropShiftAugmentationParameters
     - cost/augmentation.py: CosTRandomFunctionAugmentation + CosTRandomFunctionAugmentationParameters
     - autotcl/augmentation/: methods.py, training.py, __init__.py
 """
@@ -9,10 +9,7 @@ Verifies that concrete augmentations live in their model directories:
 import torch
 
 from tscollection.models.augmentation.base import (
-    AugmentationMethod,
     AugmentationTrainingStrategy,
-    TrainableAugmentation,
-    TrainingViews,
 )
 
 # --------------------------------------------------------------------------- #
@@ -21,14 +18,14 @@ from tscollection.models.augmentation.base import (
 
 
 class TestTS2VecAugmentationModule:
-    """CropShiftAugmentation lives in ts2vec/augmentation.py."""
+    """CropShiftProducer lives in ts2vec/augmentation.py."""
 
     def test_import_from_ts2vec(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        assert CropShiftAugmentation is not None
+        assert CropShiftProducer is not None
 
     def test_import_params_from_ts2vec(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
@@ -37,24 +34,43 @@ class TestTS2VecAugmentationModule:
 
         assert CropShiftAugmentationParameters is not None
 
-    def test_crop_shift_is_augmentation_method(self) -> None:
+    def test_crop_shift_satisfies_producer_protocol(self) -> None:
+        from tscollection.models.augmentation.base import (
+            AlignedPair as AlignedPairType,
+        )
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        assert issubclass(CropShiftAugmentation, AugmentationMethod)
+        aug = CropShiftProducer()
+        result = aug.produce(torch.randn(2, 100, 3))
+        assert isinstance(result, AlignedPairType)
 
-    def test_crop_shift_augment_returns_views(self) -> None:
+    def test_crop_shift_produce_returns_aligned_pair(self) -> None:
+        from tscollection.models.augmentation.base import AlignedPair
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
-        aug = CropShiftAugmentation()
+        aug = CropShiftProducer()
         data = torch.randn(2, 100, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 2
-        assert 'crop_length' in result.metadata
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
+        assert result.first.shape[2] == 3
+        assert result.second.shape[2] == 3
+        assert isinstance(result.overlap_length, int)
+
+    def test_crop_shift_with_params(self) -> None:
+        from tscollection.models.augmentation.base import AlignedPair
+        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+            CropShiftAugmentationParameters,
+            CropShiftProducer,
+        )
+
+        aug = CropShiftProducer(params=CropShiftAugmentationParameters(temporal_unit=1))
+        data = torch.randn(2, 100, 3)
+        result = aug.produce(data)
+        assert isinstance(result, AlignedPair)
 
     def test_crop_shift_params_defaults(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
@@ -64,24 +80,13 @@ class TestTS2VecAugmentationModule:
         params = CropShiftAugmentationParameters()
         assert params.temporal_unit == 0
 
-    def test_crop_shift_with_params(self) -> None:
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
-            CropShiftAugmentationParameters,
-        )
-
-        aug = CropShiftAugmentation(params=CropShiftAugmentationParameters(temporal_unit=1))
-        data = torch.randn(2, 100, 3)
-        result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-
     def test_crop_shift_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftAugmentation,
+            CropShiftProducer,
         )
 
         assert (
-            CropShiftAugmentation.__module__
+            CropShiftProducer.__module__
             == 'tscollection.models.convolutional.dilated.ts2vec.augmentation'
         )
 
@@ -98,8 +103,8 @@ class TestTS2VecAugmentationModule:
     def test_all_exports(self) -> None:
         import tscollection.models.convolutional.dilated.ts2vec.augmentation as mod
 
-        assert 'CropShiftAugmentation' in mod.__all__
         assert 'CropShiftAugmentationParameters' in mod.__all__
+        assert 'CropShiftProducer' in mod.__all__
 
 
 # --------------------------------------------------------------------------- #
@@ -125,13 +130,31 @@ class TestCoSTAugmentationModule:
         assert CosTRandomFunctionAugmentationParameters is not None
 
     def test_cost_aug_is_augmentation_method(self) -> None:
+        """CoST aug still has .augment() for backward compat, but inherits from Augmentation Protocol."""
+        from tscollection.models.augmentation.base import Augmentation
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
+            CosTRandomFunctionAugmentationParameters,
         )
 
-        assert issubclass(CosTRandomFunctionAugmentation, AugmentationMethod)
+        # CosTRandomFunctionAugmentation implements the Augmentation Protocol
+        # (structural typing) and provides augment() for backward compatibility
+        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
+        aug = CosTRandomFunctionAugmentation(params=params)
+        assert isinstance(aug, Augmentation)
 
-    def test_cost_augment_returns_views(self) -> None:
+    def test_cost_aug_satisfies_augmentation_protocol(self) -> None:
+        from tscollection.models.augmentation.base import Augmentation
+        from tscollection.models.convolutional.dilated.cost.augmentation import (
+            CosTRandomFunctionAugmentation,
+            CosTRandomFunctionAugmentationParameters,
+        )
+
+        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
+        aug = CosTRandomFunctionAugmentation(params=params)
+        assert isinstance(aug, Augmentation)
+
+    def test_cost_augment_returns_tensor(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -141,8 +164,8 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params=params)
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+        assert isinstance(result, torch.Tensor)
+        assert result.shape == data.shape
 
     def test_cost_params_required_sigma(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (
@@ -161,7 +184,7 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params={'sigma': 0.1, 'p': 0.5})
         data = torch.randn(2, 50, 3)
         result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
+        assert isinstance(result, torch.Tensor)
 
     def test_cost_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.cost.augmentation import (
@@ -213,11 +236,12 @@ class TestAutoTCLAugmentationMethods:
         assert AutoTCLNeuralNetworkAugmentationParameters is not None
 
     def test_is_trainable_augmentation(self) -> None:
+        from tscollection.models.augmentation.base import TrainableAugmentationProducer
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
         )
 
-        assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentation)
+        assert issubclass(AutoTCLNeuralNetworkAugmentation, TrainableAugmentationProducer)
 
     def test_constructor_with_dataclass(self) -> None:
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
@@ -240,6 +264,7 @@ class TestAutoTCLAugmentationMethods:
         assert len(list(aug.parameters())) > 0
 
     def test_augment_returns_views(self) -> None:
+        from tscollection.models.augmentation.base import SingleView
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentation,
             AutoTCLNeuralNetworkAugmentationParameters,
@@ -253,8 +278,7 @@ class TestAutoTCLAugmentationMethods:
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
             result = aug.augment(data)
-        assert isinstance(result, TrainingViews)
-        assert len(result.views) == 1
+        assert isinstance(result, SingleView)
 
     def test_module_location(self) -> None:
         from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
@@ -405,11 +429,11 @@ class TestBackwardCompatibility:
             AdversarialTrainingStrategy,
             AutoTCLNeuralNetworkAugmentation,
             CosTRandomFunctionAugmentation,
-            CropShiftAugmentation,
+            CropShiftProducer,
             RIPTrainingStrategy,
         )
 
-        assert CropShiftAugmentation is not None
+        assert CropShiftProducer is not None
         assert CosTRandomFunctionAugmentation is not None
         assert AutoTCLNeuralNetworkAugmentation is not None
         assert RIPTrainingStrategy is not None

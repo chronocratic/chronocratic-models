@@ -8,7 +8,10 @@ import torch
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from tscollection.models.augmentation.base import AugmentationMethod
+from tscollection.models.augmentation.base import (
+    AlignedPair,
+    AugmentationProducer,
+)
 from tscollection.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from tscollection.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
@@ -26,7 +29,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self,
         *,
         input_dims: int,
-        augmentation: AugmentationMethod | None = None,
+        augmentation: AugmentationProducer[AlignedPair] | None = None,
         hidden_dims: int = 64,
         output_dims: int = 320,
         depth: int = 10,
@@ -49,10 +52,10 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         if augmentation is None:
             from tscollection.models.convolutional.dilated.ts2vec.augmentation import (  # noqa: PLC0415
-                CropShiftAugmentation,
+                CropShiftProducer,
             )
 
-            self._augmentation: AugmentationMethod = CropShiftAugmentation()
+            self._augmentation: AugmentationProducer[AlignedPair] = CropShiftProducer()
         else:
             self._augmentation = augmentation
 
@@ -89,13 +92,12 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         )
 
     def _encode_augmented_views(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Augment ``x`` and encode both views, slicing by ``crop_length``."""
-        views = self._augmentation.augment(x, temporal_unit=self._temporal_unit)
-        crop_length = views.metadata['crop_length']
+        """Augment ``x`` and encode both views, slicing by ``overlap_length``."""
+        pair = self._augmentation.produce(x)
 
         encoder = self._encoder if self.training else self._averaged_encoder
-        emb_1 = encoder(views.views[0])[:, -crop_length:]
-        emb_2 = encoder(views.views[1])[:, :crop_length]
+        emb_1 = encoder(pair.first)[:, -pair.overlap_length:]
+        emb_2 = encoder(pair.second)[:, :pair.overlap_length]
 
         return emb_1, emb_2
 
