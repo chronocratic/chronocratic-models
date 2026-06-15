@@ -23,7 +23,7 @@ class TimeVAEEncoder(nn.Module):
         self.feat_dim = feat_dim
         self.latent_dim = latent_dim
         self.hidden_layer_sizes = hidden_layer_sizes
-        self.layers: list[nn.Module] = []
+        self.layers: nn.ModuleList = nn.ModuleList()
         self.layers.append(
             nn.Conv1d(feat_dim, hidden_layer_sizes[0], kernel_size=3, stride=2, padding=1)
         )
