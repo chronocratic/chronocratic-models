@@ -33,11 +33,7 @@ if TYPE_CHECKING:
         ViewPair,
     )
 
-from chronocratic.models.augmentation.base import (
-    AlignedPair,
-    SingleView,
-    ViewPair,
-)
+from chronocratic.models.augmentation.base import AlignedPair, SingleView, ViewPair
 
 # --------------------------------------------------------------------------- #
 # SingleViewProducer

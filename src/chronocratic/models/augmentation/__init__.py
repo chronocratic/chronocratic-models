@@ -27,6 +27,7 @@ from .base import (
     Augmentation,
     AugmentationProducer,
     AugmentationTrainingStrategy,
+    Reseedable,
     SingleView,
     TrainableAugmentationProducer,
     ViewPair,
@@ -41,16 +42,8 @@ from .primitives import (
     Scaling,
     ScalingParameters,
 )
-from .producers import (
-    FullOverlapPair,
-    IndependentPair,
-    RolePair,
-    SingleViewProducer,
-)
-from .trainable_support import (
-    maybe_configure_augmentation_optimizer,
-    maybe_train_augmentation,
-)
+from .producers import FullOverlapPair, IndependentPair, RolePair, SingleViewProducer
+from .trainable_support import maybe_configure_augmentation_optimizer, maybe_train_augmentation
 
 __all__ = [
     'AlignedPair',

@@ -19,6 +19,7 @@ import torch
 
 from chronocratic.models.augmentation.base import (
     AugmentationProducer,
+    Reseedable,
     TrainableAugmentationProducer,
 )
 
@@ -61,6 +62,6 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
-            if hasattr(self._inner, 'reseed'):
+            if isinstance(self._inner, Reseedable):
                 self._inner.reseed(np.random.default_rng(self._seed))
             return self._inner.produce(x)

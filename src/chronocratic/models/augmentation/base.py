@@ -20,6 +20,7 @@ __all__ = [
     'Augmentation',
     'AugmentationProducer',
     'AugmentationTrainingStrategy',
+    'Reseedable',
     'SingleView',
     'TrainableAugmentationProducer',
     'ViewPair',
@@ -27,15 +28,35 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    import numpy as np
 from torch import nn
 from torch.optim import AdamW
 
 # --------------------------------------------------------------------------- #
 # Augmentation Protocol (primitive, model-agnostic)
 # --------------------------------------------------------------------------- #
+
+
+@runtime_checkable
+class Reseedable(Protocol):
+    """Protocol for producers that accept an external RNG for determinism.
+
+    Implement ``reseed()`` to allow :class:`Seeded` to inject a fresh
+    ``np.random.Generator`` before each ``produce()`` call.
+    """
+
+    def reseed(self, rng: np.random.Generator) -> None:
+        """Replace the internal RNG with ``rng``.
+
+        Args:
+            rng: A seeded ``np.random.Generator`` instance.
+        """
+        ...
 
 
 @runtime_checkable
