@@ -8,6 +8,8 @@ __all__ = [
 import torch
 import torch.nn.functional as F  # noqa: N812
 
+_MIN_BATCH_SIZE = 2
+
 
 def local_info_nce_loss(
     z1: torch.Tensor,
@@ -185,7 +187,7 @@ def info_nce_loss(
     if z1.shape[0] != z2.shape[0]:
         msg = f'Batch size mismatch: z1 has {z1.shape[0]} samples, z2 has {z2.shape[0]}'
         raise ValueError(msg)
-    if z1.shape[0] < 2:
+    if z1.shape[0] < _MIN_BATCH_SIZE:
         return z1.new_tensor(0.0)
 
     z1t = torch.nn.functional.normalize(z1, dim=2)
