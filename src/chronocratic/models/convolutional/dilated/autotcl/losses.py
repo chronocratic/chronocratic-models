@@ -5,8 +5,6 @@ __all__ = [
     'maximum_mean_discrepancy_with_gaussian_kernel_loss',
 ]
 
-import random
-
 import torch
 import torch.nn.functional as F  # noqa: N812
 
@@ -49,7 +47,9 @@ def local_info_nce_loss(
         return torch.tensor(0.0, device=z1.device)
 
     crop_length = crop_size * k
-    start = random.randint(0, sequence_length - crop_length)  # noqa: S311
+    start = int(
+        torch.randint(0, sequence_length - crop_length + 1, (1,), device=z1.device).item()
+    )
     crop_z1 = z1[:, start : start + crop_length, :].reshape(batch_size, k, crop_size, embedding_dim)
 
     if pooling == 'max':
