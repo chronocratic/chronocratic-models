@@ -5,7 +5,7 @@ target-version = "py312"
 extend-exclude = [
     "dependencies",
     "experiments_output",
-    "src/tscollection/models/distances/soft_dtw/soft_dtw_cuda.py",
+    "src/chronocratic/models/distances/soft_dtw/soft_dtw_cuda.py",
 ]
 
 [lint]
