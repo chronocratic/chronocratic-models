@@ -45,7 +45,8 @@ def process_sample_length(
     """Randomly crop the sample to `max_sample_length` along the time axis; no-op if unset."""
     if max_sample_length is not None and sample.size(1) > max_sample_length:
         device = sample.device
-        window_offset = np.random.randint(sample.size(1) - max_sample_length + 1)  # noqa: NPY002
+        rng = np.random.default_rng()
+        window_offset = rng.integers(sample.size(1) - max_sample_length + 1)
         sample = sample[:, window_offset : window_offset + max_sample_length]
 
         sample = sample.to(device)
