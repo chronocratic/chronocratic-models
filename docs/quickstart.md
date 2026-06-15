@@ -16,10 +16,10 @@ The following example demonstrates how to create a TS2Vec model and encode a syn
 
 ```python
 import torch
-from chronocratic.models import TS2Vec, TS2VecModelParameters
+from chronocratic.models import TS2Vec
 
 # Create model with default parameters
-model = TS2Vec(TS2VecModelParameters(input_dim=1))
+model = TS2Vec(input_dims=1)
 model.eval()
 
 # Encode a synthetic time series (batch, channels, seq_len)
@@ -33,20 +33,19 @@ with torch.no_grad():
 
 ## Model Catalog
 
-Ten models are available across five architecture families. All models follow the same import pattern:
+Ten models are available across five architecture families. All models take keyword arguments matching their `*ModelParameters` dataclass:
 
 ```python
-from chronocratic.models import (
-    TS2Vec, TS2VecModelParameters,
-    CoST, CoSTModelParameters,
-    AutoTCL, AutoTCLModelParameters,
-    Series2Vec, Series2VecModelParameters,
-    TSTCC, TSTCCModelParameters,
-    FCN, MCLModelParameters,
-    TST, TSTModelParameters,
-    TimeNet, TimeNetModelParameters,
-    TimeVAE, TimeVAEModelParameters,
-)
+from chronocratic.models import TS2Vec, TST, TimeVAE, Series2Vec, TSTCC, FCN, TimeNet, CoST, AutoTCL
+
+# Most models accept keyword-only args
+model = TS2Vec(input_dims=1)
+model = Series2Vec(input_dims=1, sequence_length=100)
+model = TimeNet(input_dims=1, seq_len=100)
+
+# Some use different param names — see each model's config dataclass
+model = TST(feat_dim=1, max_seq_len=100)
+model = TimeVAE(input_dims=1, seq_len=100)
 ```
 
-Each model accepts a configuration dataclass that defines architecture hyperparameters. See the [](api/index) for full API documentation per model family.
+See the [](api/index) for full API documentation per model family.
