@@ -16,18 +16,11 @@ This package provides the producer contract for augmentation strategies.
 - Shared primitives (:class:`Jitter`, :class:`Scaling`,
   :class:`Permutation`, :class:`ComposeAugmentation`) from ``primitives.py``.
 
-**Concrete augmentations** (lazy-imported for backward compatibility):
-
-- :class:`CropShiftProducer` — TS2Vec crop-and-shift producer.
-- :class:`CosTRandomFunctionAugmentation` — CoST random-function augmentation.
-- :class:`AutoTCLNeuralNetworkAugmentation` — AutoTCL neural-network augmentation.
-- :class:`RIPTrainingStrategy` — AutoTCL RIP training strategy.
-- :class:`AdversarialTrainingStrategy` — AutoTCL adversarial training strategy.
+**Note:** Model-specific augmentations are imported from their respective
+model subpackages (e.g., ``chronocratic.models.convolutional.dilated.ts2vec.augmentation``).
 """
 
 from __future__ import annotations
-
-from typing import Any
 
 from .base import (
     AlignedPair,
@@ -60,22 +53,17 @@ from .trainable_support import (
 )
 
 __all__ = [
-    'AdversarialTrainingStrategy',
     'AlignedPair',
     'Augmentation',
     'AugmentationProducer',
     'AugmentationTrainingStrategy',
-    'AutoTCLNeuralNetworkAugmentation',
     'ComposeAugmentation',
-    'CosTRandomFunctionAugmentation',
-    'CropShiftProducer',
     'FullOverlapPair',
     'IndependentPair',
     'Jitter',
     'JitterParameters',
     'Permutation',
     'PermutationParameters',
-    'RIPTrainingStrategy',
     'RolePair',
     'Scaling',
     'ScalingParameters',
@@ -87,39 +75,3 @@ __all__ = [
     'maybe_configure_augmentation_optimizer',
     'maybe_train_augmentation',
 ]
-
-
-def __getattr__(name: str) -> Any:  # noqa: ANN401
-    """Lazy import of concrete augmentations.
-
-    Defers imports until first access, breaking the circular dependency
-    chain when per-model __init__.py files trigger during package load.
-    """
-    if name == 'CropShiftProducer':
-        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (  # noqa: PLC0415
-            CropShiftProducer,
-        )
-
-        return CropShiftProducer
-    if name == 'CosTRandomFunctionAugmentation':
-        from chronocratic.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
-            CosTRandomFunctionAugmentation,
-        )
-
-        return CosTRandomFunctionAugmentation
-    if name == 'AutoTCLNeuralNetworkAugmentation':
-        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (  # noqa: PLC0415
-            AutoTCLNeuralNetworkAugmentation,
-        )
-
-        return AutoTCLNeuralNetworkAugmentation
-    if name in {'RIPTrainingStrategy', 'AdversarialTrainingStrategy'}:
-        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (  # noqa: PLC0415
-            AdversarialTrainingStrategy,
-            RIPTrainingStrategy,
-        )
-
-        return RIPTrainingStrategy if name == 'RIPTrainingStrategy' else AdversarialTrainingStrategy
-
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
