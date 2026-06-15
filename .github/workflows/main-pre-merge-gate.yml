@@ -1,0 +1,61 @@
+name: Main Pre-merge Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pre-merge-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  forbidden-files:
+    name: Check forbidden paths
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject non-dev PRs
+        if: ${{ github.head_ref != 'dev' }}
+        run: |
+          echo "::error::PRs from '${{ github.head_ref }}' to main are not allowed. Only dev→main merges are permitted."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan PR for forbidden files
+        run: |
+          FORBIDDEN=(
+            ".claude/"
+            ".remember/"
+            ".planning/"
+            "MEMORY.md"
+            "CLAUDE.md"
+            "CONTEXT.md"
+            "STATE.md"
+            "ROADMAP.md"
+            ".continue-here.md"
+            "HANDOFF.json"
+          )
+
+          CHANGED=$(git diff --diff-filter=ACMR --name-only ${{ github.event.pull_request.base.sha }}..HEAD)
+          MATCHED=()
+
+          for path in "${FORBIDDEN[@]}"; do
+            # Anchor to a path boundary (start of path or after a '/') so e.g.
+            # CLAUDE.md does not match NOTCLAUDE.md.
+            while IFS= read -r f; do
+              [ -n "$f" ] && MATCHED+=("$f")
+            done < <(printf '%s\n' "$CHANGED" | grep -E "(^|/)$path" || true)
+          done
+
+          if [ "${#MATCHED[@]}" -gt 0 ]; then
+            echo "::error::Forbidden files detected:"
+            for f in "${MATCHED[@]}"; do
+              echo "::error::  - $f"
+            done
+            exit 1
+          fi
+          echo "All clear."

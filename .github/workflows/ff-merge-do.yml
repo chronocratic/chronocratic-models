@@ -2,22 +2,97 @@ name: Fast Forward Merge
 
 on:
   issue_comment:
-    types: [created, edited]
+    types: [created]
+
+concurrency:
+  group: fast-forward-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
 jobs:
   fast-forward:
     if: ${{ contains(github.event.comment.body, '/fast-forward')
             && github.event.issue.pull_request }}
     runs-on: ubuntu-latest
+    # The FF_MERGE_TOKEN secret lives in the `ff_merge` environment. It is a PAT
+    # of a ruleset bypass actor — the GITHUB_TOKEN (github-actions[bot]) is not on
+    # the main ruleset bypass list, so its push to main is rejected.
     environment: ff_merge
     permissions:
       contents: write
       pull-requests: write
       issues: write
     steps:
-      - name: Fast forwarding
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.FF_MERGE_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Verify PR and actor permissions
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            if (pr.base.ref !== 'main') {
+              core.setFailed('Fast-forward is only allowed for PRs targeting main.');
+            }
+            if (pr.head.ref !== 'dev') {
+              core.setFailed('Fast-forward is only allowed for PRs from dev to main.');
+            }
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+            if (!['admin', 'maintain'].includes(perm.permission)) {
+              core.setFailed(`@${context.actor} (role: ${perm.permission}) — only admin/maintainer can fast-forward.`);
+            }
+
+      # Disabled while repo is a personal fork with no org reviewers — a
+      # solo maintainer cannot approve their own PR. Re-enable once moved
+      # to an org with a second reviewer (or branch-protection approval rule).
+      # - name: Check PR is approved
+      #   uses: actions/github-script@v9
+      #   with:
+      #     script: |
+      #       const { data: reviews } = await github.rest.pulls.listReviews({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         pull_number: context.issue.number
+      #       });
+      #       const approved = reviews.filter(r => r.state === 'APPROVED');
+      #       if (approved.length === 0) {
+      #         core.setFailed('PR must have at least one approval before fast-forward merge.');
+      #       }
+
+      - name: Backup main before merge
+        run: |
+          BACKUP="main.backup.${{ github.event.issue.number }}.$(date +%Y%m%d-%H%M%S)"
+          git branch "$BACKUP" origin/main
+          git push origin "$BACKUP"
+          echo "Created backup: $BACKUP"
+
+      - name: Fast-forward merge
         uses: sequoia-pgp/fast-forward@v1
         with:
           merge: true
           comment: always
           github_token: ${{ secrets.FF_MERGE_TOKEN }}
+
+      - name: Clean up old backups
+        run: |
+          git fetch --prune origin
+          # Sort by the trailing YYYYMMDD-HHMMSS timestamp (4th dot field) so
+          # retention is chronological regardless of PR-number digit width.
+          git branch -r | grep 'origin/main.backup.' | sed 's| *origin/||' | \
+            sort -t. -k4 | head -n -5 | \
+            xargs -I {} git push origin --delete {} || true
