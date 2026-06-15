@@ -137,6 +137,12 @@ class Scaling:
         if not _should_apply(self._params.p):
             return x
         c_dim = _normalize_dim(x, self._params.channel_dim)
+        if c_dim >= x.dim():
+            msg = (
+                f'channel_dim={self._params.channel_dim} exceeds tensor dimensions '
+                f'({x.dim()})'
+            )
+            raise ValueError(msg)
         shape = [1] * x.dim()
         shape[c_dim] = x.size(c_dim)
         if self._params.per_sample:
