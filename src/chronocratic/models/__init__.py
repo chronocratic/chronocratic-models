@@ -5,7 +5,7 @@ from __future__ import annotations
 try:
     from ._version import __version__
 except ImportError:
-    __version__ = "0.0.0.dev0"  # ponytail: placeholder until setuptools_scm generates _version.py
+    __version__ = "0.0.0.dev0"  # fallback for editable installs before _version.py is generated
 
 from .convolutional import (
     AutoTCL,
