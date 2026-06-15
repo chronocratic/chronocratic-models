@@ -92,12 +92,21 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         )
 
     def _encode_augmented_views(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Augment ``x`` and encode both views, slicing by ``overlap_length``."""
+        """Augment ``x`` and encode both views, slicing by ``overlap_length``.
+
+        Clamps the overlap to the actual temporal length of both embeddings to
+        prevent misaligned or truncated outputs when the augmentation produces
+        sequences shorter than ``overlap_length``.
+        """
         pair = self._augmentation.produce(x)
 
         encoder = self._encoder if self.training else self._averaged_encoder
-        emb_1 = encoder(pair.first)[:, -pair.overlap_length:]
-        emb_2 = encoder(pair.second)[:, :pair.overlap_length]
+        emb_1 = encoder(pair.first)
+        emb_2 = encoder(pair.second)
+
+        overlap = min(pair.overlap_length, emb_1.size(1), emb_2.size(1))
+        emb_1 = emb_1[:, -overlap:]
+        emb_2 = emb_2[:, :overlap]
 
         return emb_1, emb_2
 
