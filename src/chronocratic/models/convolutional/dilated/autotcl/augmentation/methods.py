@@ -13,6 +13,20 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import torch
+from torch import nn
+
+from chronocratic.models.augmentation.base import (
+    AugmentationTrainingStrategy,
+    SingleView,
+    TrainableAugmentationProducer,
+)
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
+    RIPTrainingStrategy,
+)
+from chronocratic.models.convolutional.dilated.encoders.encoders import (
+    AutoTCLAugmentationTimeSeriesEncoder,
+)
+from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 def _build_encoder_kwargs(
@@ -28,20 +42,6 @@ def _build_encoder_kwargs(
     encoder_overrides = kw.pop("encoder_kwargs") or {}
     kw.update(encoder_overrides)
     return kw
-from torch import nn
-
-from chronocratic.models.augmentation.base import (
-    AugmentationTrainingStrategy,
-    SingleView,
-    TrainableAugmentationProducer,
-)
-from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
-    RIPTrainingStrategy,
-)
-from chronocratic.models.convolutional.dilated.encoders.encoders import (
-    AutoTCLAugmentationTimeSeriesEncoder,
-)
-from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
 @dataclass

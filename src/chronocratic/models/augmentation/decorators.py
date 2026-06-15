@@ -61,5 +61,5 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
-            np.random.seed(self._seed)
+            np.random.seed(self._seed)  # noqa: NPY002 — required for legacy RNG seeding
             return self._inner.produce(x)

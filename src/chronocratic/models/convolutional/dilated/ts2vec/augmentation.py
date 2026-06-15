@@ -93,16 +93,16 @@ class CropShiftProducer:
             raise ValueError(msg)
         # Use legacy np.random (seeded by Seeded decorator for determinism)
         # Randomly determine the length of the crop
-        crop_length = np.random.randint(min_crop_length, total_length + 1)
+        crop_length = np.random.randint(min_crop_length, total_length + 1)  # noqa: NPY002
 
         # Randomly determine the starting and ending points for the crops
-        crop_start = np.random.randint(0, total_length - crop_length + 1)
+        crop_start = np.random.randint(0, total_length - crop_length + 1)  # noqa: NPY002
         crop_end = crop_start + crop_length
-        crop_extension_start = np.random.randint(0, crop_start + 1)
-        crop_extension_end = np.random.randint(crop_end, total_length + 1)
+        crop_extension_start = np.random.randint(0, crop_start + 1)  # noqa: NPY002
+        crop_extension_end = np.random.randint(crop_end, total_length + 1)  # noqa: NPY002
 
         # Random offset for each sample in the batch
-        crop_offsets = np.random.randint(
+        crop_offsets = np.random.randint(  # noqa: NPY002
             -crop_extension_start, total_length - crop_extension_end + 1, size=x.size(0)
         )
 

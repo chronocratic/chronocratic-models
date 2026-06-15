@@ -89,7 +89,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401, PLR0911
+def __getattr__(name: str) -> Any:  # noqa: ANN401
     """Lazy import of concrete augmentations.
 
     Defers imports until first access, breaking the circular dependency

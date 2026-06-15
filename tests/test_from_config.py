@@ -9,12 +9,12 @@ Also verifies the correct mixin inheritance for each model class.
 
 import torch
 
+from chronocratic.models._mixin.encoding import BasicEncodingMixin
 from chronocratic.models.augmentation import IndependentPair
 from chronocratic.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
-from chronocratic.models._mixin.encoding import BasicEncodingMixin
 from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
 from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
 from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
