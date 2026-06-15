@@ -8,14 +8,11 @@ import torch
 from torch.optim import AdamW
 from torch.optim.swa_utils import AveragedModel
 
-from chronocratic.models.augmentation.base import (
-    AlignedPair,
-    AugmentationProducer,
-)
+from chronocratic.models.augmentation.base import AlignedPair, AugmentationProducer
 from chronocratic.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from chronocratic.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
-from chronocratic.models.convolutional.dilated.ts2vec.losses import hierarchical_contrastive_loss
+from chronocratic.models.losses import hierarchical_contrastive_loss
 from chronocratic.models.utils import extract_features_from_batch, process_sample_length
 
 
@@ -111,7 +108,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         return emb_1, emb_2
 
     def training_step(
-        self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int  # noqa: ARG002
+        self,
+        batch: torch.Tensor | tuple[torch.Tensor, ...],
+        batch_idx: int,  # noqa: ARG002
     ) -> torch.Tensor:
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
@@ -141,7 +140,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         return train_loss
 
     def validation_step(
-        self, batch: torch.Tensor | tuple[torch.Tensor, ...], batch_idx: int  # noqa: ARG002
+        self,
+        batch: torch.Tensor | tuple[torch.Tensor, ...],
+        batch_idx: int,  # noqa: ARG002
     ) -> torch.Tensor:
         """Compute and log the TS2Vec validation loss."""
         x = extract_features_from_batch(batch)
