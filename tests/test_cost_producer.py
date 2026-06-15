@@ -5,14 +5,12 @@ Verifies CosTRandomFunctionAugmentation satisfies the Augmentation Protocol
 with IndependentPair as default, replacing the old double-augment pattern.
 """
 
-from __future__ import annotations
+from collections.abc import Callable
 
-import pytest
 import torch
 
 from tscollection.models.augmentation.base import (
     Augmentation,
-    AugmentationProducer,
     ViewPair,
 )
 from tscollection.models.augmentation.producers import IndependentPair
@@ -42,13 +40,15 @@ class TestCosTRandomFunctionAugmentationProtocol:
         assert result.shape == x.shape
 
     def test_call_with_sigma_zero_returns_unchanged(self) -> None:
-        aug = CosTRandomFunctionAugmentation(params=CosTRandomFunctionAugmentationParameters(sigma=0.0, p=1.0))
+        params = CosTRandomFunctionAugmentationParameters(sigma=0.0, p=1.0)
+        aug = CosTRandomFunctionAugmentation(params=params)
         x = torch.randn(2, 50, 1)
         result = aug(x)
         torch.testing.assert_close(result, x)
 
     def test_call_with_p_zero_returns_unchanged(self) -> None:
-        aug = CosTRandomFunctionAugmentation(params=CosTRandomFunctionAugmentationParameters(sigma=1.0, p=0.0))
+        params = CosTRandomFunctionAugmentationParameters(sigma=1.0, p=0.0)
+        aug = CosTRandomFunctionAugmentation(params=params)
         x = torch.randn(2, 50, 1)
         result = aug(x)
         torch.testing.assert_close(result, x)
@@ -70,7 +70,7 @@ class TestCoSTProducerIntegration:
     def test_cost_default_is_independent_pair(self) -> None:
         model = CoST(input_dims=1, sequence_length=100)
         # Default augmentation should be an IndependentPair
-        pair = model._augmentation.produce(torch.randn(2, 100, 1))
+        pair = model._augmentation.produce(torch.randn(2, 100, 1))  # noqa: SLF001
         assert isinstance(pair, ViewPair)
         assert pair.first.shape == (2, 100, 1)
         assert pair.second.shape == (2, 100, 1)
@@ -78,7 +78,7 @@ class TestCoSTProducerIntegration:
     def test_cost_produce_returns_view_pair(self) -> None:
         model = CoST(input_dims=1, sequence_length=100)
         x = torch.randn(2, 100, 1)
-        pair = model._augmentation.produce(x)
+        pair = model._augmentation.produce(x)  # noqa: SLF001
         assert hasattr(pair, 'first')
         assert hasattr(pair, 'second')
 
@@ -86,7 +86,11 @@ class TestCoSTProducerIntegration:
 class TestCoSTTrainingWithProducer:
     """CoST trains 5 steps with finite loss using producer contract."""
 
-    def test_cost_trains_5_steps_with_producer(self, train_steps, finite_losses) -> None:
+    def test_cost_trains_5_steps_with_producer(
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
+        finite_losses: Callable[..., None],
+    ) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPair(aug=aug)
         model = CoST(
@@ -98,7 +102,9 @@ class TestCoSTTrainingWithProducer:
         finite_losses(losses, expected_min=5)
 
     def test_cost_trains_5_steps_with_default_augmentation(
-        self, train_steps, finite_losses
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
+        finite_losses: Callable[..., None],
     ) -> None:
         model = CoST(input_dims=1, sequence_length=100)
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
@@ -108,7 +114,9 @@ class TestCoSTTrainingWithProducer:
 class TestCoSTSeededEquivalence:
     """Seeded CoST produces identical loss sequence (SC-7 numerical equivalence)."""
 
-    def test_seeded_cost_produces_identical_loss_sequence(self, train_steps) -> None:
+    def test_seeded_cost_produces_identical_loss_sequence(
+        self, train_steps: Callable[..., list[torch.Tensor]]
+    ) -> None:
         torch.manual_seed(42)
         model1 = CoST(input_dims=1, sequence_length=100)
         torch.manual_seed(42)
@@ -122,5 +130,5 @@ class TestCoSTSeededEquivalence:
         )
 
         assert len(losses1) == len(losses2) == 5
-        for i, (l1, l2) in enumerate(zip(losses1, losses2, strict=True)):
+        for _i, (l1, l2) in enumerate(zip(losses1, losses2, strict=True)):
             torch.testing.assert_close(l1, l2, rtol=1e-5, atol=1e-5)

@@ -5,18 +5,19 @@ SingleView/ViewPair/AlignedPair dataclasses, and
 TrainableAugmentationProducer nominal ABC.
 """
 
-import pytest
-import torch
-from dataclasses import is_dataclass
-from torch import nn
-from torch.optim import AdamW
+from dataclasses import FrozenInstanceError, is_dataclass
 from typing import Protocol
 
+import pytest
+import torch
+from torch import nn
+from torch.optim import AdamW
+
 from tscollection.models.augmentation.base import (
+    AlignedPair,
     Augmentation,
     AugmentationProducer,
     AugmentationTrainingStrategy,
-    AlignedPair,
     SingleView,
     TrainableAugmentationProducer,
     ViewPair,
@@ -41,9 +42,8 @@ class TestAugmentationProtocol:
             def __call__(self, x: torch.Tensor) -> torch.Tensor:
                 return x
 
-        # Augmentation is not @runtime_checkable; verify structural conformance
-        # by checking the concrete class has the required method.
-        assert hasattr(IdentityAug, '__call__')
+        # Augmentation is not @runtime_checkable; structural conformance
+        # verified by instantiation and call below.
         aug = IdentityAug()
         x = torch.randn(2, 10, 4)
         result = aug(x)
@@ -72,8 +72,8 @@ class TestSingleView:
     def test_frozen(self) -> None:
         """SingleView is immutable (frozen)."""
         sv = SingleView(view=torch.randn(1, 5, 2))
-        with pytest.raises(Exception):
-            sv.view = torch.randn(1, 5, 2)  # type: ignore
+        with pytest.raises(FrozenInstanceError):
+            sv.view = torch.randn(1, 5, 2)  # type: ignore[misc]
 
 
 # --------------------------------------------------------------------------- #
@@ -101,8 +101,8 @@ class TestViewPair:
     def test_frozen(self) -> None:
         """ViewPair is immutable (frozen)."""
         vp = ViewPair(first=torch.randn(1, 5, 2), second=torch.randn(1, 5, 2))
-        with pytest.raises(Exception):
-            vp.first = torch.randn(1, 5, 2)  # type: ignore
+        with pytest.raises(FrozenInstanceError):
+            vp.first = torch.randn(1, 5, 2)  # type: ignore[misc]
 
 
 # --------------------------------------------------------------------------- #
@@ -140,8 +140,8 @@ class TestAlignedPair:
             second=torch.randn(1, 5, 2),
             overlap_length=5,
         )
-        with pytest.raises(Exception):
-            ap.overlap_length = 10  # type: ignore
+        with pytest.raises(FrozenInstanceError):
+            ap.overlap_length = 10  # type: ignore[misc]
 
 
 # --------------------------------------------------------------------------- #
@@ -157,7 +157,7 @@ class TestAugmentationProducer:
         assert issubclass(AugmentationProducer, Protocol)
 
     def test_covariant_type_parameter(self) -> None:
-        """A class with produce(Tensor) -> SingleView satisfies AugmentationProducer structurally."""
+        """produce(Tensor) -> SingleView satisfies AugmentationProducer structurally."""
 
         class _TestProducer:
             def produce(self, x: torch.Tensor) -> SingleView:
@@ -201,11 +201,11 @@ class TestTrainableAugmentationProducer:
                 super().__init__(training_strategy=training_strategy)
                 self._dummy_param = nn.Linear(4, 4)  # gives .parameters() something
 
-            def produce(self, x: torch.Tensor) -> SingleView:
-                return SingleView(view=x)
+            def produce(self, _x: torch.Tensor) -> SingleView:
+                return SingleView(view=_x)
 
             def train_step(
-                self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+                self, _x: torch.Tensor, _encoder: nn.Module, _batch_idx: int
             ) -> torch.Tensor | None:
                 return None
 
@@ -221,11 +221,11 @@ class TestTrainableAugmentationProducer:
                 super().__init__(training_strategy=training_strategy)
                 self._dummy_param = nn.Linear(4, 4)
 
-            def produce(self, x: torch.Tensor) -> SingleView:
-                return SingleView(view=x)
+            def produce(self, _x: torch.Tensor) -> SingleView:
+                return SingleView(view=_x)
 
             def train_step(
-                self, x: torch.Tensor, encoder: nn.Module, batch_idx: int
+                self, _x: torch.Tensor, _encoder: nn.Module, _batch_idx: int
             ) -> torch.Tensor | None:
                 return None
 
@@ -263,7 +263,7 @@ class TestAugmentationTrainingStrategyRetained:
 # --------------------------------------------------------------------------- #
 
 
-def make_strategy(training_ratio_step: int = 1):
+def make_strategy(training_ratio_step: int = 1) -> AugmentationTrainingStrategy:
     """Create a minimal AugmentationTrainingStrategy for tests."""
 
     class _TestStrategy(AugmentationTrainingStrategy):
@@ -272,9 +272,9 @@ def make_strategy(training_ratio_step: int = 1):
 
         def compute_loss(
             self,
-            x_embeddings: torch.Tensor,
-            aug_x_embeddings: torch.Tensor,
-            augmentation_factor: torch.Tensor,
+            _x_embeddings: torch.Tensor,
+            _aug_x_embeddings: torch.Tensor,
+            _augmentation_factor: torch.Tensor,
         ) -> torch.Tensor:
             return torch.tensor(0.0)
 

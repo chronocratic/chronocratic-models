@@ -4,30 +4,31 @@ Verifies TSTCC accepts AugmentationProducer[ViewPair] via
 _default_tstcc_pair(), uses .produce().first/.second, and trains with finite loss.
 """
 
-from __future__ import annotations
+from collections.abc import Callable
 
 import pytest
 import torch
+
+from tscollection.models.augmentation import primitives
+from tscollection.models.augmentation.base import ViewPair
+from tscollection.models.augmentation.producers import RolePair
+from tscollection.models.convolutional.standard.tstcc import augmentations
+from tscollection.models.convolutional.standard.tstcc.augmentations import (
+    _default_tstcc_pair,
+)
+from tscollection.models.convolutional.standard.tstcc.model import TSTCC
 
 
 class TestDefaultTSTCCPair:
     """_default_tstcc_pair() builder function."""
 
     def test_returns_role_pair_type(self) -> None:
-        from tscollection.models.augmentation.producers import RolePair
-        from tscollection.models.convolutional.standard.tstcc.augmentations import (
-            _default_tstcc_pair,
-        )
-
         producer = _default_tstcc_pair()
         assert isinstance(producer, RolePair)
 
-    def test_produce_returns_view_pair(self, random_data) -> None:
-        from tscollection.models.augmentation.base import ViewPair
-        from tscollection.models.convolutional.standard.tstcc.augmentations import (
-            _default_tstcc_pair,
-        )
-
+    def test_produce_returns_view_pair(
+        self, random_data: Callable[..., torch.Tensor]
+    ) -> None:
         producer = _default_tstcc_pair()
         x = random_data(batch=2, seq_length=50, input_dims=3, layout="NCL")
         result = producer.produce(x)
@@ -37,12 +38,9 @@ class TestDefaultTSTCCPair:
         assert result.second.shape == x.shape
         assert not torch.allclose(result.first, result.second)
 
-    def test_satisfies_protocol(self, random_data) -> None:
-        from tscollection.models.augmentation.base import ViewPair
-        from tscollection.models.convolutional.standard.tstcc.augmentations import (
-            _default_tstcc_pair,
-        )
-
+    def test_satisfies_protocol(
+        self, random_data: Callable[..., torch.Tensor]
+    ) -> None:
         producer = _default_tstcc_pair()
         assert hasattr(producer, "produce")
         x = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
@@ -54,11 +52,6 @@ class TestTSTCCConstructor:
     """TSTCC constructor with new producer contract."""
 
     def test_accepts_default_tstcc_pair(self) -> None:
-        from tscollection.models.convolutional.standard.tstcc.augmentations import (
-            _default_tstcc_pair,
-        )
-        from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-
         producer = _default_tstcc_pair()
         model = TSTCC(
             input_channels=1,
@@ -69,12 +62,9 @@ class TestTSTCCConstructor:
             num_classes=10,
             augmentation=producer,
         )
-        assert model._augmentation is producer
+        assert model._augmentation is producer  # noqa: SLF001
 
     def test_default_producer_is_role_pair(self) -> None:
-        from tscollection.models.augmentation.producers import RolePair
-        from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-
         model = TSTCC(
             input_channels=1,
             kernel_size=5,
@@ -83,15 +73,13 @@ class TestTSTCCConstructor:
             features_len=15,
             num_classes=10,
         )
-        assert isinstance(model._augmentation, RolePair)
+        assert isinstance(model._augmentation, RolePair)  # noqa: SLF001
 
 
 class TestTSTCCTraining:
     """TSTCC training with new producer contract."""
 
     def test_compute_loss_uses_produce_first_second(self) -> None:
-        from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-
         model = TSTCC(
             input_channels=1,
             kernel_size=5,
@@ -104,14 +92,16 @@ class TestTSTCCTraining:
         labels = torch.zeros(4, dtype=torch.long)
         batch = (data, labels)
 
-        loss = model._compute_loss(batch)
+        loss = model._compute_loss(batch)  # noqa: SLF001
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
 
     @pytest.mark.skip(reason="slow: Lightning trainer overhead")
-    def test_trains_with_finite_loss(self, train_steps, finite_losses) -> None:
-        from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-
+    def test_trains_with_finite_loss(
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
+        finite_losses: Callable[..., None],
+    ) -> None:
         model = TSTCC(
             input_channels=1,
             kernel_size=5,
@@ -137,27 +127,15 @@ class TestReExports:
     """tstcc/augmentations.py re-exports from primitives.py."""
 
     def test_jitter_reexported(self) -> None:
-        from tscollection.models.augmentation import primitives
-        from tscollection.models.convolutional.standard.tstcc import augmentations
-
         assert augmentations.Jitter is primitives.Jitter
 
     def test_scaling_reexported(self) -> None:
-        from tscollection.models.augmentation import primitives
-        from tscollection.models.convolutional.standard.tstcc import augmentations
-
         assert augmentations.Scaling is primitives.Scaling
 
     def test_permutation_reexported(self) -> None:
-        from tscollection.models.augmentation import primitives
-        from tscollection.models.convolutional.standard.tstcc import augmentations
-
         assert augmentations.Permutation is primitives.Permutation
 
     def test_compose_reexported(self) -> None:
-        from tscollection.models.augmentation import primitives
-        from tscollection.models.convolutional.standard.tstcc import augmentations
-
         assert augmentations.ComposeAugmentation is primitives.ComposeAugmentation
 
 
@@ -166,10 +144,9 @@ class TestDeterminism:
 
     @pytest.mark.skip(reason="slow: Lightning trainer overhead")
     def test_seeded_determinism(
-        self, train_steps,
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
     ) -> None:
-        from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-
         losses_list: list[list[torch.Tensor]] = []
 
         for _run in range(2):
@@ -195,7 +172,7 @@ class TestDeterminism:
             losses_list.append(losses)
 
         assert len(losses_list[0]) == len(losses_list[1])
-        for i, (a, b) in enumerate(zip(losses_list[0], losses_list[1])):
+        for i, (a, b) in enumerate(zip(losses_list[0], losses_list[1], strict=True)):
             assert abs(a.item() - b.item()) < 1e-5, (
                 f"Loss at step {i} differs: {a.item()} vs {b.item()}"
             )

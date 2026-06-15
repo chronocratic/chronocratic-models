@@ -6,12 +6,11 @@ AugmentationProducer[SingleView] | None, using maybe_* helpers from
 trainable_support.py instead of isinstance(TrainableAugmentation) checks.
 """
 
-from __future__ import annotations
+from collections.abc import Callable
 
 import torch
 
 from tscollection.models.augmentation.base import (
-    AugmentationProducer,
     SingleView,
     TrainableAugmentationProducer,
 )
@@ -118,7 +117,7 @@ class TestAutoTCLAcceptsProducer:
     def test_default_augmentation_is_trainable_producer(self) -> None:
         model = AutoTCL(input_dims=1)
         assert isinstance(
-            model._augmentation, TrainableAugmentationProducer
+            model._augmentation, TrainableAugmentationProducer  # noqa: SLF001
         )
 
 
@@ -144,7 +143,11 @@ class TestAutoTCLUsesMaybeHelpers:
 class TestAutoTCLTrainingWithProducer:
     """AutoTCL trains with both trainable and static augmentation paths."""
 
-    def test_trains_5_steps_with_neural_aug(self, train_steps, finite_losses) -> None:
+    def test_trains_5_steps_with_neural_aug(
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
+        finite_losses: Callable[..., None],
+    ) -> None:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(
                 input_dims=1, output_dims=320, kernel_sizes=[3]
@@ -157,7 +160,11 @@ class TestAutoTCLTrainingWithProducer:
         )
         finite_losses(losses, expected_min=1)
 
-    def test_trains_5_steps_with_static_aug(self, train_steps, finite_losses) -> None:
+    def test_trains_5_steps_with_static_aug(
+        self,
+        train_steps: Callable[..., list[torch.Tensor]],
+        finite_losses: Callable[..., None],
+    ) -> None:
         producer = SingleViewProducer(aug=Jitter())
         model = AutoTCL(input_dims=1, augmentation=producer)
         losses = train_steps(
@@ -169,7 +176,9 @@ class TestAutoTCLTrainingWithProducer:
 class TestAutoTCLSeededEquivalence:
     """Seeded AutoTCL produces identical loss sequence (SC-7 numerical equivalence)."""
 
-    def test_seeded_autotcl_produces_identical_loss_sequence(self, train_steps) -> None:
+    def test_seeded_autotcl_produces_identical_loss_sequence(
+        self, train_steps: Callable[..., list[torch.Tensor]]
+    ) -> None:
         torch.manual_seed(42)
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
             input_dims=1, output_dims=320, kernel_sizes=[3]
@@ -197,7 +206,7 @@ class TestAutoTCLSeededEquivalence:
         )
 
         assert len(losses1) == len(losses2)
-        for i, (l1, l2) in enumerate(zip(losses1, losses2, strict=True)):
+        for _i, (l1, l2) in enumerate(zip(losses1, losses2, strict=True)):
             # Tolerance accounts for mode-toggling timing differences between
             # the old isinstance-gated flow and the centralized maybe_* helper.
             torch.testing.assert_close(l1, l2, rtol=1e-2, atol=1e-3)

@@ -1,14 +1,11 @@
 """Shared fixtures for producer integration tests."""
-from __future__ import annotations
-
+from collections.abc import Callable
 import math
 
 import lightning.pytorch as pl
-import numpy as np
 import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-
 
 # --------------------------------------------------------------------------- #
 # Shared training helper
@@ -23,6 +20,7 @@ def _run_train_steps(
     num_steps: int = 5,
     seed: int | None = None,
     layout: str = "NLC",  # "NLC"=(B,T,D), "NCL"=(B,C,T)
+    *,
     with_labels: bool = False,
 ) -> list[torch.Tensor]:
     """Run *num_steps* training steps and return collected losses.
@@ -36,7 +34,6 @@ def _run_train_steps(
     """
     if seed is not None:
         torch.manual_seed(seed)
-        np.random.seed(seed)
 
     if layout == "NLC":
         data = torch.randn(batch_size * num_steps, seq_length, input_dims)
@@ -54,7 +51,10 @@ def _run_train_steps(
     collected: list[torch.Tensor] = []
     original_step = model.training_step
 
-    def patched_step(batch, batch_idx: int):
+    def patched_step(
+        batch: torch.Tensor | tuple[torch.Tensor, torch.LongTensor],
+        batch_idx: int,
+    ) -> torch.Tensor | None:
         loss = original_step(batch, batch_idx)
         if loss is not None:
             collected.append(loss.clone().detach())
@@ -79,7 +79,7 @@ def _run_train_steps(
 
 
 @pytest.fixture
-def train_steps():
+def train_steps() -> Callable[..., list[torch.Tensor]]:
     """Return the _run_train_steps helper so tests can pass a model.
 
     Usage in tests:
@@ -90,7 +90,7 @@ def train_steps():
 
 
 @pytest.fixture
-def random_data():
+def random_data() -> Callable[..., torch.Tensor]:
     """Factory for random time-series tensors.
 
     Usage:
@@ -129,7 +129,7 @@ def assert_finite_losses(
 
 
 @pytest.fixture
-def finite_losses():
+def finite_losses() -> Callable[..., None]:
     """Return the assert_finite_losses helper.
 
     Usage in tests:
