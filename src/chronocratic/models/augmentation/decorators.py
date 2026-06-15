@@ -61,5 +61,9 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
+            original_state = np.random.get_state()
             np.random.seed(self._seed)  # noqa: NPY002 — required for legacy RNG seeding
-            return self._inner.produce(x)
+            try:
+                return self._inner.produce(x)
+            finally:
+                np.random.set_state(original_state)
