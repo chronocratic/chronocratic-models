@@ -1,0 +1,205 @@
+__all__ = ['TSTCC']
+
+from typing import cast, TYPE_CHECKING
+
+import lightning.pytorch as pl
+import torch
+from torch import nn
+from torch.nn import functional
+
+from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
+from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
+from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
+from chronocratic.models.utils import extract_features_from_batch
+
+if TYPE_CHECKING:
+    from lightning.pytorch.utilities.types import OptimizerLRScheduler
+
+    from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
+
+
+class TSTCC(pl.LightningModule, BasicEncodingMixin):
+    """PyTorch Lightning module for TS-TCC (self-supervised pretraining only).
+
+    Single-purpose model for temporal + contextual contrastive pre-training
+    on augmented views. Labels are ignored during pretraining.
+
+    Batch format: ``(data, labels)`` where ``labels`` is ignored.
+    Two augmented views of ``data`` are produced by the injected
+    ``AugmentationProducer[ViewPair]`` (e.g. :func:`_default_tstcc_pair`),
+    which provides Gaussian scaling (weak) and segment-permutation + jitter
+    (strong) views.
+
+    Uses ``automatic_optimization = False`` because two separate optimizers
+    (one per sub-module) must be stepped independently.
+
+    For downstream classification or regression, use :class:`SupervisedModule`
+    from ``chronocratic.models.supervised``.
+
+    This model was implemented based on the code available on this GitHub
+    repo https://github.com/emadeldeen24/TS-TCC under MIT License.
+    """
+
+    def __init__(
+        self,
+        input_channels: int,
+        kernel_size: int,
+        stride: int,
+        final_out_channels: int,
+        features_len: int,
+        num_classes: int,
+        dropout: float = 0.35,
+        tc_hidden_dim: int = 100,
+        tc_timesteps: int = 6,
+        temperature: float = 0.2,
+        *,
+        use_cosine_similarity: bool = True,
+        learning_rate: float = 3e-4,
+        lambda1: float = 1.0,
+        lambda2: float = 0.7,
+        sync_dist: bool = False,
+        augmentation: 'AugmentationProducer[ViewPair] | None' = None,
+    ) -> None:
+        super().__init__()
+        self.save_hyperparameters(ignore=['augmentation'])
+        self.automatic_optimization = False
+
+        self._learning_rate = learning_rate
+        self._lambda1 = lambda1
+        self._lambda2 = lambda2
+        self._sync_dist = sync_dist
+
+        if augmentation is None:
+            from chronocratic.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
+                _default_tstcc_pair,
+            )
+
+            self._augmentation: AugmentationProducer[ViewPair] = _default_tstcc_pair()
+        else:
+            self._augmentation = augmentation
+
+        self._encoder = TCCEncoder(
+            input_channels=input_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            final_out_channels=final_out_channels,
+            features_len=features_len,
+            num_classes=num_classes,
+            dropout=dropout,
+        )
+        self._tc_model = TemporalContrast(
+            num_channels=final_out_channels, hidden_dim=tc_hidden_dim, timesteps=tc_timesteps
+        )
+        self._nt_xent_loss = NTXentLoss(
+            temperature=temperature, use_cosine_similarity=use_cosine_similarity
+        )
+
+    # ------------------------------------------------------------------
+    # Forward
+    # ------------------------------------------------------------------
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Run the encoder. Returns ``(logits, features)``."""
+        return self._encoder(x)
+
+    # ------------------------------------------------------------------
+    # Loss
+    # ------------------------------------------------------------------
+
+    def _compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Compute contrastive pretraining loss.
+
+        Labels in the batch are ignored — this model handles self-supervised
+        pretraining only. For downstream supervised tasks, use SupervisedModule.
+        """
+        data = extract_features_from_batch(batch).float()
+
+        pair = self._augmentation.produce(data)
+        aug1, aug2 = pair.first, pair.second
+        _, features1 = self._encoder(aug1)
+        _, features2 = self._encoder(aug2)
+        features1 = functional.normalize(features1, dim=1)
+        features2 = functional.normalize(features2, dim=1)
+
+        temp_loss1, proj1 = self._tc_model(features1, features2)
+        temp_loss2, proj2 = self._tc_model(features2, features1)
+
+        temporal_loss = temp_loss1 + temp_loss2
+        contextual_loss = self._nt_xent_loss(proj1, proj2)
+        return self._lambda1 * temporal_loss + self._lambda2 * contextual_loss
+
+    # ------------------------------------------------------------------
+    # Training & validation steps
+    # ------------------------------------------------------------------
+
+    def training_step(
+        self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
+    ) -> torch.Tensor:
+        """Manual optimization step for both sub-module optimizers."""
+        optimizers = cast('list[torch.optim.Optimizer]', self.optimizers(use_pl_optimizer=False))
+        model_opt, tc_opt = optimizers
+        model_opt.zero_grad()
+        tc_opt.zero_grad()
+
+        loss = self._compute_loss(batch)
+        self.log(
+            'train_loss',
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=self._sync_dist,
+        )
+        self.manual_backward(loss)
+        model_opt.step()
+        tc_opt.step()
+        return loss
+
+    def validation_step(
+        self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
+    ) -> torch.Tensor:
+        """Compute and log validation loss."""
+        with torch.no_grad():
+            loss = self._compute_loss(batch)
+        self.log(
+            'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+        )
+        return loss
+
+    # ------------------------------------------------------------------
+    # Optimizers
+    # ------------------------------------------------------------------
+
+    def configure_optimizers(self) -> 'OptimizerLRScheduler':
+        """Return one Adam optimizer per sub-module (encoder and TC model)."""
+        return [
+            torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate),
+            torch.optim.Adam(self._tc_model.parameters(), lr=self._learning_rate),
+        ]
+
+    # ------------------------------------------------------------------
+    # Representation extraction (via BasicEncodingMixin.encode)
+    # ------------------------------------------------------------------
+
+    def _get_encoder(self) -> nn.Module:
+        """Expose the conv encoder to ``BasicEncodingMixin.encode``."""
+        return self._encoder
+
+    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
+        """Cast to float — the TCC encoder expects float inputs."""
+        return (batch_x.float(),)
+
+    def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Return the pre-logits features from the ``(logits, features)`` encoder output."""
+        return output[1]
+
+    @property
+    def representation_dim(self) -> int:
+        """Flattened pre-logits feature size of the TCC encoder.
+
+        Returns:
+            The input dimension of the encoder's logits ``nn.Linear`` layer,
+            which equals ``final_out_channels * features_len``.
+        """
+        return self._encoder.logits.in_features
