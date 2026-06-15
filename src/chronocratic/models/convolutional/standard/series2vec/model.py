@@ -104,9 +104,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
-        filtered_frequency_data = filter_frequencies(x.detach().cpu(), training=self.training).to(
-            x.device
-        )
+        filtered_frequency_data = filter_frequencies(x.detach(), training=self.training)
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         return pretraining_loss(
             temporal_distances=temporal_distances,
