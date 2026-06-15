@@ -1,4 +1,4 @@
-__all__ = ['TemporalContrast']
+__all__ = ["TemporalContrast"]
 
 from typing import cast
 
@@ -57,15 +57,15 @@ class _Attention(nn.Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         h = self.heads
         qkv = self.to_qkv(x).chunk(3, dim=-1)
-        q, k, v = (rearrange(t, 'b n (h d) -> b h n d', h=h) for t in qkv)
-        dots = torch.einsum('bhid,bhjd->bhij', q, k) * self.scale
+        q, k, v = (rearrange(t, "b n (h d) -> b h n d", h=h) for t in qkv)
+        dots = torch.einsum("bhid,bhjd->bhij", q, k) * self.scale
         if mask is not None:
             mask = functional.pad(mask.flatten(1), (1, 0), value=True)
             mask = mask[:, None, :] * mask[:, :, None]
-            dots.masked_fill_(~mask, float('-inf'))
+            dots.masked_fill_(~mask, float("-inf"))
         attn = dots.softmax(dim=-1)
-        out = torch.einsum('bhij,bhjd->bhid', attn, v)
-        out = rearrange(out, 'b h n d -> b n (h d)')
+        out = torch.einsum("bhij,bhjd->bhid", attn, v)
+        out = rearrange(out, "b h n d -> b n (h d)")
         return self.to_out(out)
 
 
@@ -85,7 +85,7 @@ class _Transformer(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        for attn, ff in cast('list[tuple[nn.Module, nn.Module]]', self.layers):
+        for attn, ff in cast("list[tuple[nn.Module, nn.Module]]", self.layers):
             x = attn(x, mask=mask)
             x = ff(x)
         return x
@@ -110,7 +110,7 @@ class _SeqTransformer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.patch_to_embedding(x)
         b = x.shape[0]
-        c_tokens = repeat(self.c_token, '() n d -> b n d', b=b)
+        c_tokens = repeat(self.c_token, "() n d -> b n d", b=b)
         x = torch.cat((c_tokens, x), dim=1)
         x = self.transformer(x)
         return x[:, 0]

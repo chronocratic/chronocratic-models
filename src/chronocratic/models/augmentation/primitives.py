@@ -17,13 +17,13 @@ Exported symbols:
 from __future__ import annotations
 
 __all__ = [
-    'ComposeAugmentation',
-    'Jitter',
-    'JitterParameters',
-    'Permutation',
-    'PermutationParameters',
-    'Scaling',
-    'ScalingParameters',
+    "ComposeAugmentation",
+    "Jitter",
+    "JitterParameters",
+    "Permutation",
+    "PermutationParameters",
+    "Scaling",
+    "ScalingParameters",
 ]
 
 from dataclasses import dataclass
@@ -138,10 +138,7 @@ class Scaling:
             return x
         c_dim = _normalize_dim(x, self._params.channel_dim)
         if c_dim >= x.dim():
-            msg = (
-                f'channel_dim={self._params.channel_dim} exceeds tensor dimensions '
-                f'({x.dim()})'
-            )
+            msg = f"channel_dim={self._params.channel_dim} exceeds tensor dimensions ({x.dim()})"
             raise ValueError(msg)
         shape = [1] * x.dim()
         shape[c_dim] = x.size(c_dim)

@@ -4,7 +4,7 @@ Provides TimeNetModelParameters with settings for the GRU encoder /
 decoder pair used by the autoencoder pretraining objective.
 """
 
-__all__ = ['TimeNetModelParameters']
+__all__ = ["TimeNetModelParameters"]
 
 from dataclasses import dataclass
 

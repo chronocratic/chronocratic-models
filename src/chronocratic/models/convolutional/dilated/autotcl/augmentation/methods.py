@@ -7,7 +7,7 @@ Implements ``TrainableAugmentationProducer`` (nominal ABC + nn.Module)
 with a ``produce() -> SingleView`` contract.
 """
 
-__all__ = ['AutoTCLNeuralNetworkAugmentation', 'AutoTCLNeuralNetworkAugmentationParameters']
+__all__ = ["AutoTCLNeuralNetworkAugmentation", "AutoTCLNeuralNetworkAugmentationParameters"]
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -29,9 +29,7 @@ from chronocratic.models.convolutional.dilated.encoders.encoders import (
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
-def _build_encoder_kwargs(
-    params: "AutoTCLNeuralNetworkAugmentationParameters",
-) -> dict[str, Any]:
+def _build_encoder_kwargs(params: "AutoTCLNeuralNetworkAugmentationParameters") -> dict[str, Any]:
     """Build encoder kwargs from params, filtering out encoder_kwargs itself.
 
     The ``encoder_kwargs`` field is an override mechanism; it merges into
@@ -121,9 +119,7 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
 
     def _build_model(self) -> None:
         """Instantiate the underlying encoder model."""
-        self.model = AutoTCLAugmentationTimeSeriesEncoder(
-            **_build_encoder_kwargs(self.params)
-        )
+        self.model = AutoTCLAugmentationTimeSeriesEncoder(**_build_encoder_kwargs(self.params))
 
     def forward(self, data: torch.Tensor) -> dict[str, torch.Tensor]:
         """Run the encoder forward pass.
@@ -188,8 +184,8 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
             Loss tensor from the training strategy.
         """
         features = self.forward(x)
-        augmentation_factor = features['augmentation_factor']
-        augmented_x = features['augmented_data']
+        augmentation_factor = features["augmentation_factor"]
+        augmented_x = features["augmented_data"]
         x_embeddings = encoder(x)
         aug_x_embeddings = encoder(augmented_x)
 

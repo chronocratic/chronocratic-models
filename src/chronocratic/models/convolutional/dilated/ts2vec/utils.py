@@ -1,4 +1,4 @@
-__all__ = ['extract_subsequences_per_row']
+__all__ = ["extract_subsequences_per_row"]
 
 import numpy as np
 import torch

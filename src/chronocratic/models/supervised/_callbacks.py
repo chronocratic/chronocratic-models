@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from chronocratic.models.supervised.supervised import SupervisedModule
 
-__all__ = ['BackboneUnfreeze']
+__all__ = ["BackboneUnfreeze"]
 
 
 class BackboneUnfreeze(BaseFinetuning):
@@ -52,7 +52,7 @@ class BackboneUnfreeze(BaseFinetuning):
         Args:
             pl_module: The :class:`SupervisedModule` instance.
         """
-        module = cast('SupervisedModule', pl_module)
+        module = cast("SupervisedModule", pl_module)
         self.freeze(module.backbone)
 
     def finetune_function(
@@ -70,7 +70,7 @@ class BackboneUnfreeze(BaseFinetuning):
             optimizer: The active optimizer.
         """
         if epoch == self._unfreeze_at_epoch:
-            module = cast('SupervisedModule', pl_module)
+            module = cast("SupervisedModule", pl_module)
             self.unfreeze_and_add_param_group(
                 modules=module.backbone,
                 optimizer=optimizer,

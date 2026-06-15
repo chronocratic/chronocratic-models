@@ -13,9 +13,7 @@ from chronocratic.models.augmentation import primitives
 from chronocratic.models.augmentation.base import ViewPair
 from chronocratic.models.augmentation.producers import RolePair
 from chronocratic.models.convolutional.standard.tstcc import augmentations
-from chronocratic.models.convolutional.standard.tstcc.augmentations import (
-    _default_tstcc_pair,
-)
+from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
@@ -26,9 +24,7 @@ class TestDefaultTSTCCPair:
         producer = _default_tstcc_pair()
         assert isinstance(producer, RolePair)
 
-    def test_produce_returns_view_pair(
-        self, random_data: Callable[..., torch.Tensor]
-    ) -> None:
+    def test_produce_returns_view_pair(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
         x = random_data(batch=2, seq_length=50, input_dims=3, layout="NCL")
         result = producer.produce(x)
@@ -38,9 +34,7 @@ class TestDefaultTSTCCPair:
         assert result.second.shape == x.shape
         assert not torch.allclose(result.first, result.second)
 
-    def test_satisfies_protocol(
-        self, random_data: Callable[..., torch.Tensor]
-    ) -> None:
+    def test_satisfies_protocol(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
         assert hasattr(producer, "produce")
         x = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
@@ -98,9 +92,7 @@ class TestTSTCCTraining:
 
     @pytest.mark.skip(reason="slow: Lightning trainer overhead")
     def test_trains_with_finite_loss(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         model = TSTCC(
             input_channels=1,
@@ -143,10 +135,7 @@ class TestDeterminism:
     """Seeded TSTCC produces identical loss across runs (SC-7)."""
 
     @pytest.mark.skip(reason="slow: Lightning trainer overhead")
-    def test_seeded_determinism(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-    ) -> None:
+    def test_seeded_determinism(self, train_steps: Callable[..., list[torch.Tensor]]) -> None:
         losses_list: list[list[torch.Tensor]] = []
 
         for _run in range(2):

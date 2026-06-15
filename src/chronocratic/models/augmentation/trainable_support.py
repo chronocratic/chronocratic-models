@@ -12,10 +12,7 @@ Exported symbols:
 
 from __future__ import annotations
 
-__all__ = [
-    'maybe_configure_augmentation_optimizer',
-    'maybe_train_augmentation',
-]
+__all__ = ["maybe_configure_augmentation_optimizer", "maybe_train_augmentation"]
 
 from typing import Any, TYPE_CHECKING
 
@@ -78,9 +75,7 @@ def maybe_train_augmentation(
 
 
 def maybe_configure_augmentation_optimizer(
-    augmentation: AugmentationProducer[Any],
-    *,
-    lr: float,
+    augmentation: AugmentationProducer[Any], *, lr: float
 ) -> Optimizer | None:
     """Configure an optimizer for the augmentation network if trainable.
 

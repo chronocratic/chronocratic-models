@@ -4,7 +4,7 @@ Provides TSTModelParameters with all settings for the transformer
 backbone used during masked-reconstruction pretraining.
 """
 
-__all__ = ['TSTModelParameters']
+__all__ = ["TSTModelParameters"]
 
 from dataclasses import dataclass
 
@@ -55,9 +55,9 @@ class TSTModelParameters:
     num_layers: int = 3
     dim_feedforward: int = 256
     dropout: float = 0.1
-    pos_encoding: str = 'fixed'
-    activation: str = 'gelu'
-    norm: str = 'BatchNorm'
+    pos_encoding: str = "fixed"
+    activation: str = "gelu"
+    norm: str = "BatchNorm"
     freeze: bool = False
     learning_rate: float = 1e-3
     lr_step: list[int] | None = None

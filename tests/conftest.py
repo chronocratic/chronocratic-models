@@ -1,4 +1,5 @@
 """Shared fixtures for producer integration tests."""
+
 from collections.abc import Callable
 import math
 
@@ -52,8 +53,7 @@ def _run_train_steps(
     original_step = model.training_step
 
     def patched_step(
-        batch: torch.Tensor | tuple[torch.Tensor, torch.LongTensor],
-        batch_idx: int,
+        batch: torch.Tensor | tuple[torch.Tensor, torch.LongTensor], batch_idx: int
     ) -> torch.Tensor | None:
         loss = original_step(batch, batch_idx)
         if loss is not None:
@@ -97,11 +97,9 @@ def random_data() -> Callable[..., torch.Tensor]:
         data = random_data(batch=4, seq_length=100, input_dims=1)
         data_ncl = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
     """
+
     def _factory(
-        batch: int = 4,
-        seq_length: int = 100,
-        input_dims: int = 1,
-        layout: str = "NLC",
+        batch: int = 4, seq_length: int = 100, input_dims: int = 1, layout: str = "NLC"
     ) -> torch.Tensor:
         if layout == "NLC":
             return torch.randn(batch, seq_length, input_dims)
@@ -115,17 +113,13 @@ def random_data() -> Callable[..., torch.Tensor]:
 # --------------------------------------------------------------------------- #
 
 
-def assert_finite_losses(
-    losses: list[torch.Tensor], expected_min: int = 1
-) -> None:
+def assert_finite_losses(losses: list[torch.Tensor], expected_min: int = 1) -> None:
     """Assert all losses are finite scalars."""
     assert len(losses) >= expected_min
     for i, loss in enumerate(losses):
         assert loss is not None
         assert loss.ndim == 0, "Loss must be a scalar tensor"
-        assert math.isfinite(loss.item()), (
-            f"Loss at step {i} is not finite: {loss.item()}"
-        )
+        assert math.isfinite(loss.item()), f"Loss at step {i} is not finite: {loss.item()}"
 
 
 @pytest.fixture

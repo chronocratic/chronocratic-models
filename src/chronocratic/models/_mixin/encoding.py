@@ -15,7 +15,7 @@ invocation, and result concatenation.
 
 from __future__ import annotations
 
-__all__ = ['BasicEncodingMixin']
+__all__ = ["BasicEncodingMixin"]
 
 from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
@@ -72,8 +72,8 @@ class BasicEncodingMixin(ABC):
         if isinstance(encoder, nn.Module):
             return encoder
         msg = (
-            '_get_encoder() returned a non-Module callable. Override '
-            '_get_encoder_module() to return the underlying nn.Module.'
+            "_get_encoder() returned a non-Module callable. Override "
+            "_get_encoder_module() to return the underlying nn.Module."
         )
         raise NotImplementedError(msg)
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['Series2Vec']
+__all__ = ["Series2Vec"]
 
 from typing import TYPE_CHECKING
 
@@ -25,13 +25,13 @@ from chronocratic.models.utils import extract_features_from_batch
 
 
 def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
-    if name == 'Adam':
+    if name == "Adam":
         return torch.optim.Adam
-    if name == 'RAdam':
+    if name == "RAdam":
         return torch.optim.RAdam
-    if name == 'AdamW':
+    if name == "AdamW":
         return torch.optim.AdamW
-    msg = f'Unknown optimizer: {name}'
+    msg = f"Unknown optimizer: {name}"
     raise ValueError(msg)
 
 
@@ -57,7 +57,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         soft_dtw_gamma: float = 0.1,
         *,
         sync_dist: bool = False,
-        optimizer_name: str = 'RAdam',
+        optimizer_name: str = "RAdam",
         weight_decay: float = 0.0,
     ) -> None:
         super().__init__()
@@ -118,15 +118,15 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         train_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
-            'train_loss',
+            "train_loss",
             train_loss,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
-        self.log('train_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
-        self.log('train_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log("train_temporal_loss", temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log("train_frequency_loss", frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
         return train_loss
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
@@ -134,21 +134,21 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         val_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
-            'val_loss',
+            "val_loss",
             val_loss,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
-        self.log('val_temporal_loss', temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
-        self.log('val_frequency_loss', frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log("val_temporal_loss", temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
+        self.log("val_frequency_loss", frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
         return val_loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Return the configured optimizer for Series2Vec pretraining."""
         optimizer_cls = _get_optimizer(self._optimizer_name)
-        kwargs: dict = {'lr': self._learning_rate, 'weight_decay': self._weight_decay}
+        kwargs: dict = {"lr": self._learning_rate, "weight_decay": self._weight_decay}
         return optimizer_cls(self.parameters(), **kwargs)
 
     @property

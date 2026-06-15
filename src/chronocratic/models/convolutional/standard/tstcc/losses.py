@@ -1,4 +1,4 @@
-__all__ = ['NTXentLoss']
+__all__ = ["NTXentLoss"]
 
 import torch
 from torch import nn
@@ -16,7 +16,7 @@ class NTXentLoss(nn.Module):
         super().__init__()
         self.temperature = temperature
         self.use_cosine_similarity = use_cosine_similarity
-        self.criterion = nn.CrossEntropyLoss(reduction='sum')
+        self.criterion = nn.CrossEntropyLoss(reduction="sum")
 
     def forward(self, zis: torch.Tensor, zjs: torch.Tensor) -> torch.Tensor:
         """Return the NT-Xent loss for paired projection embeddings.

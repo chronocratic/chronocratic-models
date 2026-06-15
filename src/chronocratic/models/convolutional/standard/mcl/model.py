@@ -1,4 +1,4 @@
-__all__ = ['FCN']
+__all__ = ["FCN"]
 
 import lightning.pytorch as pl
 import torch
@@ -17,11 +17,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
     """
 
     def __init__(
-        self,
-        n_in: int,
-        output_dims: int = 320,
-        alpha: float = 1.0,
-        learning_rate: float = 1e-3,
+        self, n_in: int, output_dims: int = 320, alpha: float = 1.0, learning_rate: float = 1e-3
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -70,7 +66,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         """Compute and log the training loss for one batch."""
         loss = self._step(batch)
 
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return loss
 
@@ -79,7 +75,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         with torch.no_grad():
             loss = self._step(batch)
 
-        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return loss
 

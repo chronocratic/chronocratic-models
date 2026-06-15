@@ -1,8 +1,8 @@
 __all__ = [
-    'info_nce_loss',
-    'l1_out_loss',
-    'local_info_nce_loss',
-    'maximum_mean_discrepancy_with_gaussian_kernel_loss',
+    "info_nce_loss",
+    "l1_out_loss",
+    "local_info_nce_loss",
+    "maximum_mean_discrepancy_with_gaussian_kernel_loss",
 ]
 
 import torch
@@ -14,7 +14,7 @@ _MIN_BATCH_SIZE = 2
 def local_info_nce_loss(
     z1: torch.Tensor,
     z2: torch.Tensor,  # noqa: ARG001
-    pooling: str = 'max',
+    pooling: str = "max",
     temperature: float = 1.0,
     k: int = 16,
 ) -> torch.Tensor:
@@ -49,21 +49,19 @@ def local_info_nce_loss(
         return torch.tensor(0.0, device=z1.device)
 
     crop_length = crop_size * k
-    start = int(
-        torch.randint(0, sequence_length - crop_length + 1, (1,), device=z1.device).item()
-    )
+    start = int(torch.randint(0, sequence_length - crop_length + 1, (1,), device=z1.device).item())
     crop_z1 = z1[:, start : start + crop_length, :].reshape(batch_size, k, crop_size, embedding_dim)
 
-    if pooling == 'max':
+    if pooling == "max":
         crop_z1 = crop_z1.reshape(batch_size * k, crop_size, embedding_dim)
         crop_z1_pooling = F.max_pool1d(
             crop_z1.transpose(1, 2).contiguous(), kernel_size=crop_size
         ).transpose(1, 2)
         crop_z1_pooling = crop_z1_pooling.reshape(batch_size, k, embedding_dim)
-    elif pooling == 'mean':
+    elif pooling == "mean":
         crop_z1_pooling = torch.mean(crop_z1, dim=2)
     else:
-        msg = f'Invalid pooling method: {pooling}'
+        msg = f"Invalid pooling method: {pooling}"
         raise ValueError(msg)
 
     crop_z1_pooling_T = crop_z1_pooling.transpose(1, 2)  # noqa: N806
@@ -96,7 +94,7 @@ def local_info_nce_loss(
 def l1_out_loss(
     z1: torch.Tensor,
     z2: torch.Tensor,
-    pooling: str = 'max',
+    pooling: str = "max",
     temperature: float = 1.0,  ## noqa: ARG001
 ) -> torch.Tensor:
     """
@@ -118,10 +116,10 @@ def l1_out_loss(
     torch.Tensor
         The computed L1out loss.
     """
-    if pooling == 'max':
+    if pooling == "max":
         z1 = F.max_pool1d(z1.transpose(1, 2).contiguous(), kernel_size=z1.size(1)).transpose(1, 2)
         z2 = F.max_pool1d(z2.transpose(1, 2).contiguous(), kernel_size=z2.size(1)).transpose(1, 2)
-    elif pooling == 'mean':
+    elif pooling == "mean":
         z1 = torch.unsqueeze(torch.mean(z1, 1), 1)
         z2 = torch.unsqueeze(torch.mean(z2, 1), 1)
 
@@ -153,7 +151,7 @@ def l1_out_loss(
 
 
 def info_nce_loss(
-    z1: torch.Tensor, z2: torch.Tensor, pooling: str = 'max', temperature: float = 1.0
+    z1: torch.Tensor, z2: torch.Tensor, pooling: str = "max", temperature: float = 1.0
 ) -> torch.Tensor:
     """
     Compute InfoNCE loss for contrastive learning.
@@ -174,18 +172,18 @@ def info_nce_loss(
     torch.Tensor
         The computed InfoNCE loss.
     """
-    if pooling == 'max':
+    if pooling == "max":
         z1 = F.max_pool1d(z1.transpose(1, 2).contiguous(), kernel_size=z1.size(1)).transpose(1, 2)
         z2 = F.max_pool1d(z2.transpose(1, 2).contiguous(), kernel_size=z2.size(1)).transpose(1, 2)
-    elif pooling == 'mean':
+    elif pooling == "mean":
         z1 = torch.unsqueeze(torch.mean(z1, 1), 1)
         z2 = torch.unsqueeze(torch.mean(z2, 1), 1)
     else:
-        msg = f'Invalid pooling method: {pooling}'
+        msg = f"Invalid pooling method: {pooling}"
         raise ValueError(msg)
 
     if z1.shape[0] != z2.shape[0]:
-        msg = f'Batch size mismatch: z1 has {z1.shape[0]} samples, z2 has {z2.shape[0]}'
+        msg = f"Batch size mismatch: z1 has {z1.shape[0]} samples, z2 has {z2.shape[0]}"
         raise ValueError(msg)
     if z1.shape[0] < _MIN_BATCH_SIZE:
         return z1.new_tensor(0.0)
@@ -255,14 +253,14 @@ def _compute_gaussian_kernel(
         bandwidth += epsilon
 
     if bandwidth <= 0:
-        msg = f'Error in function {__name__}: bandwidth is invalid; got {bandwidth}'
+        msg = f"Error in function {__name__}: bandwidth is invalid; got {bandwidth}"
         raise ValueError(msg)
 
     bandwidth /= kernel_mul ** (kernel_num // 2)
 
     if bandwidth <= 0:
         msg = (
-            f'Error in function {__name__}: bandwidth after adjustment is invalid; got {bandwidth}'
+            f"Error in function {__name__}: bandwidth after adjustment is invalid; got {bandwidth}"
         )
         raise ValueError(msg)
 
@@ -278,7 +276,7 @@ def maximum_mean_discrepancy_with_gaussian_kernel_loss(
     kernel_mul: float = 2.0,
     kernel_num: int = 5,
     fix_sigma: float | None = None,
-    pooling: str = 'max',
+    pooling: str = "max",
 ) -> torch.Tensor:
     """
     Compute Maximum Mean Discrepancy (MMD) loss with Gaussian kernel.
@@ -303,18 +301,18 @@ def maximum_mean_discrepancy_with_gaussian_kernel_loss(
     torch.Tensor
         The computed MMD loss.
     """
-    if pooling == 'max':
+    if pooling == "max":
         source = F.max_pool1d(
             source.transpose(1, 2).contiguous(), kernel_size=source.size(1)
         ).transpose(1, 2)
         target = F.max_pool1d(
             target.transpose(1, 2).contiguous(), kernel_size=target.size(1)
         ).transpose(1, 2)
-    elif pooling == 'mean':
+    elif pooling == "mean":
         source = torch.unsqueeze(torch.mean(source, 1), 1)
         target = torch.unsqueeze(torch.mean(target, 1), 1)
     else:
-        msg = f'Invalid pooling method: {pooling}'
+        msg = f"Invalid pooling method: {pooling}"
         raise ValueError(msg)
 
     batch_size = int(source.size()[0])

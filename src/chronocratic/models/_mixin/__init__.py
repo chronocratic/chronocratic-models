@@ -1,3 +1,3 @@
-__all__ = ['BasicEncodingMixin']
+__all__ = ["BasicEncodingMixin"]
 
 from chronocratic.models._mixin.encoding import BasicEncodingMixin

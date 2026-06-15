@@ -20,7 +20,7 @@ class TestTS2VecModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             TS2VecModelParameters.__module__
-            == 'chronocratic.models.convolutional.dilated.ts2vec.config'
+            == "chronocratic.models.convolutional.dilated.ts2vec.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -33,7 +33,7 @@ class TestCoSTModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             CoSTModelParameters.__module__
-            == 'chronocratic.models.convolutional.dilated.cost.config'
+            == "chronocratic.models.convolutional.dilated.cost.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -46,7 +46,7 @@ class TestAutoTCLModelParametersLocation:
     def test_module_location(self) -> None:
         assert (
             AutoTCLModelParameters.__module__
-            == 'chronocratic.models.convolutional.dilated.autotcl.config'
+            == "chronocratic.models.convolutional.dilated.autotcl.config"
         )
 
     def test_no_parent_class(self) -> None:
@@ -146,17 +146,17 @@ class TestConfigAllExports:
     def test_ts2vec_config_all(self) -> None:
         import chronocratic.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
 
-        assert 'TS2VecModelParameters' in mod.__all__
+        assert "TS2VecModelParameters" in mod.__all__
 
     def test_cost_config_all(self) -> None:
         import chronocratic.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
 
-        assert 'CoSTModelParameters' in mod.__all__
+        assert "CoSTModelParameters" in mod.__all__
 
     def test_autotcl_config_all(self) -> None:
         import chronocratic.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
 
-        assert 'AutoTCLModelParameters' in mod.__all__
+        assert "AutoTCLModelParameters" in mod.__all__
 
 
 class TestNoDilatedCNNConfig:

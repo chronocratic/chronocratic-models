@@ -9,7 +9,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-__all__ = ['classification_loss', 'regression_loss']
+__all__ = ["classification_loss", "regression_loss"]
 
 
 def classification_loss(predictions: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:

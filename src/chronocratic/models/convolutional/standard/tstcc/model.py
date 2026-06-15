@@ -1,4 +1,4 @@
-__all__ = ['TSTCC']
+__all__ = ["TSTCC"]
 
 from typing import cast, TYPE_CHECKING
 
@@ -59,10 +59,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         lambda1: float = 1.0,
         lambda2: float = 0.7,
         sync_dist: bool = False,
-        augmentation: 'AugmentationProducer[ViewPair] | None' = None,
+        augmentation: "AugmentationProducer[ViewPair] | None" = None,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=['augmentation'])
+        self.save_hyperparameters(ignore=["augmentation"])
         self.automatic_optimization = False
 
         self._learning_rate = learning_rate
@@ -137,14 +137,14 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self, batch: tuple[torch.Tensor, torch.Tensor], _batch_idx: int
     ) -> torch.Tensor:
         """Manual optimization step for both sub-module optimizers."""
-        optimizers = cast('list[torch.optim.Optimizer]', self.optimizers(use_pl_optimizer=False))
+        optimizers = cast("list[torch.optim.Optimizer]", self.optimizers(use_pl_optimizer=False))
         model_opt, tc_opt = optimizers
         model_opt.zero_grad()
         tc_opt.zero_grad()
 
         loss = self._compute_loss(batch)
         self.log(
-            'train_loss',
+            "train_loss",
             loss,
             on_step=True,
             on_epoch=True,
@@ -163,7 +163,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         with torch.no_grad():
             loss = self._compute_loss(batch)
         self.log(
-            'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )
         return loss
 
@@ -171,7 +171,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Optimizers
     # ------------------------------------------------------------------
 
-    def configure_optimizers(self) -> 'OptimizerLRScheduler':
+    def configure_optimizers(self) -> "OptimizerLRScheduler":
         """Return one Adam optimizer per sub-module (encoder and TC model)."""
         return [
             torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate),

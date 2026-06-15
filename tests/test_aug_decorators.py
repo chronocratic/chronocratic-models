@@ -19,10 +19,7 @@ from chronocratic.models.augmentation.base import (
 )
 from chronocratic.models.augmentation.decorators import Seeded
 from chronocratic.models.augmentation.primitives import Jitter
-from chronocratic.models.augmentation.producers import (
-    IndependentPair,
-    SingleViewProducer,
-)
+from chronocratic.models.augmentation.producers import IndependentPair, SingleViewProducer
 
 
 class _DummyStrategy(AugmentationTrainingStrategy):

@@ -1,4 +1,4 @@
-__all__ = ['BaseEncodingMixin', 'DecompositionEncodingMixin', 'PoolingEncodingMixin']
+__all__ = ["BaseEncodingMixin", "DecompositionEncodingMixin", "PoolingEncodingMixin"]
 
 from abc import ABC, abstractmethod
 import logging
@@ -56,7 +56,7 @@ class BaseEncodingMixin(ABC):
         return self._averaged_encoder
 
     @abstractmethod
-    def _get_eval_method(self) -> 'Callable[..., torch.Tensor]':
+    def _get_eval_method(self) -> "Callable[..., torch.Tensor]":
         """Return the evaluation function reference.
 
         Must be overridden by subclasses to provide model-specific evaluation.
@@ -91,7 +91,7 @@ class BaseEncodingMixin(ABC):
         sliding_padding: int,
         *,
         causal: bool,
-        mask: 'MaskMode | None',
+        mask: "MaskMode | None",
         encoding_window: str | int | None,
         num_samples: int,
         batch_size: int,
@@ -121,8 +121,8 @@ class BaseEncodingMixin(ABC):
 
         for start_index in tqdm.tqdm(
             range(0, time_series_length, sliding_length),
-            desc='Sliding inference',
-            unit='window',
+            desc="Sliding inference",
+            unit="window",
             leave=False,
         ):
             left_index = start_index - sliding_padding
@@ -169,7 +169,7 @@ class BaseEncodingMixin(ABC):
 
         concatenated_representations = torch.cat(all_representations, dim=1)
 
-        if encoding_window == 'full_series':
+        if encoding_window == "full_series":
             concatenated_representations = (
                 F.max_pool1d(
                     concatenated_representations.transpose(1, 2).contiguous(),
@@ -185,7 +185,7 @@ class BaseEncodingMixin(ABC):
         data: torch.Tensor,
         batch_size: int,
         num_workers: int,
-        mask: 'MaskMode | None' = None,
+        mask: "MaskMode | None" = None,
         encoding_window: str | int | None = None,
         *,
         causal: bool = False,
@@ -214,7 +214,7 @@ class BaseEncodingMixin(ABC):
         eval_method = self._get_eval_method()
 
         if data.ndim != _EXPECTED_INPUT_DIMS:
-            msg = 'Input data must have shape (n_instance, n_timestamps, n_features).'
+            msg = "Input data must have shape (n_instance, n_timestamps, n_features)."
             raise ValueError(msg)
 
         num_samples, time_series_length, _ = data.shape  # noqa: RUF059
@@ -225,7 +225,7 @@ class BaseEncodingMixin(ABC):
 
             dataset = TensorDataset(data)
             _logger.info(
-                'building data loader with batch size %s and num workers %s',
+                "building data loader with batch size %s and num workers %s",
                 batch_size,
                 num_workers,
             )
@@ -240,7 +240,7 @@ class BaseEncodingMixin(ABC):
             with torch.inference_mode():
                 all_outputs: list[torch.Tensor] = []
                 for batch in tqdm.tqdm(
-                    loader, desc='Encoding data', unit='batch', leave=True, total=len(loader)
+                    loader, desc="Encoding data", unit="batch", leave=True, total=len(loader)
                 ):
                     input_tensor = extract_features_from_batch(batch)
 
@@ -263,7 +263,7 @@ class BaseEncodingMixin(ABC):
                             encoding_window=encoding_window,
                         )
 
-                        if encoding_window == 'full_series':
+                        if encoding_window == "full_series":
                             representations = representations.squeeze(1)
 
                     all_outputs.append(representations.cpu())
@@ -287,13 +287,13 @@ class PoolingEncodingMixin(BaseEncodingMixin):
         return slice(sliding_padding, sliding_padding + sliding_length)
 
     @override
-    def _get_eval_method(self) -> 'Callable[..., torch.Tensor]':
+    def _get_eval_method(self) -> "Callable[..., torch.Tensor]":
         return self._evaluate_with_pooling
 
     def _evaluate_with_pooling(
         self,
         input_tensor: torch.Tensor,
-        mask: 'MaskMode | None' = None,
+        mask: "MaskMode | None" = None,
         slicing: slice | None = None,
         encoding_window: str | int | None = None,
     ) -> torch.Tensor:
@@ -312,9 +312,9 @@ class PoolingEncodingMixin(BaseEncodingMixin):
             x=input_tensor.to(self.device, non_blocking=True), mask_mode=mask
         )
 
-        if encoding_window == 'full_series':
+        if encoding_window == "full_series":
             output_tensor = full_series_pooling(tensor=output_tensor, slicing=slicing)
-        elif encoding_window == 'multiscale':
+        elif encoding_window == "multiscale":
             output_tensor = multiscale_pooling(tensor=output_tensor, slicing=slicing)
         elif isinstance(encoding_window, int):
             output_tensor = integer_pooling(
@@ -341,13 +341,13 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         return self.query_encoder
 
     @override
-    def _get_eval_method(self) -> 'Callable[..., torch.Tensor]':
+    def _get_eval_method(self) -> "Callable[..., torch.Tensor]":
         return self._evaluate_with_feature_concatenation
 
     def _evaluate_with_feature_concatenation(
         self,
         input_tensor: torch.Tensor,
-        mask: 'MaskMode | None' = None,  # noqa: ARG002
+        mask: "MaskMode | None" = None,  # noqa: ARG002
         slicing: slice | None = None,  # noqa: ARG002
         encoding_window: str | int | None = None,
     ) -> torch.Tensor:
@@ -365,7 +365,7 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         Raises:
             ValueError: If ``encoding_window`` is not ``None`` or ``'full_series'``.
         """
-        if encoding_window not in (None, 'full_series'):
+        if encoding_window not in (None, "full_series"):
             msg = (
                 f"Decomposition encoding does not support encoding_window='{encoding_window}'; "
                 "use None or 'full_series'"

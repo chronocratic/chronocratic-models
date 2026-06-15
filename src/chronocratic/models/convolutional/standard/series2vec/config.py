@@ -5,12 +5,12 @@ time/frequency Series2Vec encoder, soft-DTW target computation, and
 optimizer choice.
 """
 
-__all__ = ['Series2VecModelParameters']
+__all__ = ["Series2VecModelParameters"]
 
 from dataclasses import dataclass
 from typing import Literal
 
-OptimizerName = Literal['Adam', 'RAdam', 'AdamW']
+OptimizerName = Literal["Adam", "RAdam", "AdamW"]
 
 
 @dataclass(kw_only=True)
@@ -50,5 +50,5 @@ class Series2VecModelParameters:
     learning_rate: float = 1e-3
     soft_dtw_gamma: float = 0.1
     sync_dist: bool = False
-    optimizer_name: OptimizerName = 'RAdam'
+    optimizer_name: OptimizerName = "RAdam"
     weight_decay: float = 0.0

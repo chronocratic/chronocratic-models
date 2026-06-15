@@ -9,7 +9,6 @@ Also tests primitive parameter dataclasses (JitterParameters, ScalingParameters,
 PermutationParameters) from augmentation/primitives.py.
 """
 
-
 from chronocratic.models.augmentation import (
     JitterParameters,
     PermutationParameters,
@@ -41,6 +40,7 @@ class TestCropShiftAugmentationParameters:
         params = CropShiftAugmentationParameters(temporal_unit=2)
         assert params.temporal_unit == 2
 
+
 # --------------------------------------------------------------------------- #
 # CosTRandomFunctionAugmentationParameters
 # --------------------------------------------------------------------------- #
@@ -66,6 +66,7 @@ class TestCosTRandomFunctionAugmentationParameters:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
         assert params.p == 0.5
 
+
 # --------------------------------------------------------------------------- #
 # AutoTCLNeuralNetworkAugmentationParameters
 # --------------------------------------------------------------------------- #
@@ -80,9 +81,9 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
 
     def test_encoder_kwargs_not_none(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={'kernel_sizes': [3, 5]}
+            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
-        assert params.encoder_kwargs == {'kernel_sizes': [3, 5]}
+        assert params.encoder_kwargs == {"kernel_sizes": [3, 5]}
 
     def test_input_dims_is_int(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
@@ -90,13 +91,14 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
 
     def test_encoder_kwargs_is_dict(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={'kernel_sizes': [3, 5]}
+            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
         assert isinstance(params.encoder_kwargs, dict)
 
     def test_encoder_kwargs_none_by_default(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
         assert params.encoder_kwargs is None
+
 
 # --------------------------------------------------------------------------- #
 # JitterParameters
@@ -114,6 +116,7 @@ class TestJitterParameters:
         params = JitterParameters(sigma=0.1)
         assert params.sigma == 0.1
 
+
 # --------------------------------------------------------------------------- #
 # ScalingParameters
 # --------------------------------------------------------------------------- #
@@ -129,6 +132,7 @@ class TestScalingParameters:
     def test_custom_sigma(self) -> None:
         params = ScalingParameters(sigma=0.1)
         assert params.sigma == 0.1
+
 
 # --------------------------------------------------------------------------- #
 # PermutationParameters
@@ -153,6 +157,7 @@ class TestPermutationParameters:
     def test_custom_time_dim(self) -> None:
         params = PermutationParameters(max_segments=3, time_dim=1)
         assert params.time_dim == 1
+
 
 # --------------------------------------------------------------------------- #
 # Barrel exports

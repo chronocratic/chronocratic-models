@@ -5,7 +5,7 @@ DWT kernel sizes for multi-scale feature extraction, mask mode,
 learning rate, training length cap, and distributed-sync flag.
 """
 
-__all__ = ['AutoTCLModelParameters']
+__all__ = ["AutoTCLModelParameters"]
 
 from dataclasses import dataclass, field
 

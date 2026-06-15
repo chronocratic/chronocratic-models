@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['TST']
+__all__ = ["TST"]
 
 from typing import TYPE_CHECKING
 
@@ -53,9 +53,9 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         num_layers: int = 3,
         dim_feedforward: int = 256,
         dropout: float = 0.1,
-        pos_encoding: str = 'fixed',
-        activation: str = 'gelu',
-        norm: str = 'BatchNorm',
+        pos_encoding: str = "fixed",
+        activation: str = "gelu",
+        norm: str = "BatchNorm",
         *,
         freeze: bool = False,
         learning_rate: float = 1e-3,
@@ -88,11 +88,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             norm=norm,
             freeze=freeze,
         )
-        self._loss_fn: nn.Module = MaskedMSELoss(reduction='none')
+        self._loss_fn: nn.Module = MaskedMSELoss(reduction="none")
 
         if freeze:
             for name, param in self._encoder.named_parameters():
-                param.requires_grad = name.startswith('output_layer')
+                param.requires_grad = name.startswith("output_layer")
 
     # ------------------------------------------------------------------
     # Forward / representation extraction
@@ -129,7 +129,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         # output-layer-only L2 (global L2 is handled via weight_decay in the optimizer)
         if self.training and self._l2_reg and not self._global_reg:
             for name, param in self._encoder.named_parameters():
-                if name == 'output_layer.weight':
+                if name == "output_layer.weight":
                     mean_loss = mean_loss + self._l2_reg * torch.sum(torch.square(param))
 
         return mean_loss
@@ -142,7 +142,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Compute and log the masked-reconstruction training loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
-            'train_loss',
+            "train_loss",
             loss,
             on_step=True,
             on_epoch=True,
@@ -155,7 +155,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Compute and log the masked-reconstruction validation loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
-            'val_loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )
         return loss
 
@@ -189,8 +189,8 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             optimizer, milestones=self._lr_step, gamma=self._lr_factor
         )
         return {
-            'optimizer': optimizer,
-            'lr_scheduler': {'scheduler': scheduler, 'interval': 'epoch'},
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"},
         }
 
     # ------------------------------------------------------------------

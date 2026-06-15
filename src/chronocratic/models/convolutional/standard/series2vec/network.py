@@ -1,4 +1,4 @@
-__all__ = ['Series2VecNetwork']
+__all__ = ["Series2VecNetwork"]
 
 import torch
 from torch import nn
@@ -64,7 +64,7 @@ class Series2VecNetwork(nn.Module):
     def _to_channels_first(x: torch.Tensor) -> torch.Tensor:
         expected_ndim = 3
         if x.ndim != expected_ndim:
-            msg = 'Series2Vec input must have shape (batch, time, channels).'
+            msg = "Series2Vec input must have shape (batch, time, channels)."
             raise ValueError(msg)
         return x.transpose(1, 2)
 

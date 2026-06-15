@@ -21,12 +21,7 @@ import lightning.pytorch as pl
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from chronocratic.models.augmentation import (
-    AlignedPair,
-    AugmentationProducer,
-    SingleView,
-    ViewPair,
-)
+from chronocratic.models.augmentation import AlignedPair, AugmentationProducer, SingleView, ViewPair
 from chronocratic.models.augmentation.producers import IndependentPair
 from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
@@ -41,21 +36,13 @@ from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentationParameters,
 )
 from chronocratic.models.convolutional.dilated.cost.model import CoST
-from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
-    CropShiftProducer,
-)
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
-from chronocratic.models.convolutional.standard.tstcc.augmentations import (
-    _default_tstcc_pair,
-)
+from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
 
 
 def _train_steps(
-    model: pl.LightningModule,
-    batch_size: int,
-    seq_length: int,
-    input_dims: int,
-    num_steps: int,
+    model: pl.LightningModule, batch_size: int, seq_length: int, input_dims: int, num_steps: int
 ) -> list[torch.Tensor]:
     """Run ``num_steps`` training steps via a minimal Lightning Trainer.
 
@@ -93,7 +80,7 @@ def _train_steps(
     model.training_step = _wrapped_training_step  # type: ignore[method-assign]
 
     trainer = pl.Trainer(
-        accelerator='cpu',
+        accelerator="cpu",
         max_steps=num_steps,
         enable_checkpointing=False,
         enable_progress_bar=False,
@@ -113,25 +100,16 @@ class TestModelTrainingSmoke:
 
     def test_ts2vec_trains_5_steps(self) -> None:
         """TS2Vec with CropShiftProducer trains 5 steps with finite loss (VER-01)."""
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=CropShiftProducer(),
-        )
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
 
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=5,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
         assert len(losses) == 5
         for step_idx, loss in enumerate(losses):
             assert loss is not None
-            assert loss.ndim == 0, 'Loss must be a scalar tensor'
+            assert loss.ndim == 0, "Loss must be a scalar tensor"
             assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
+                f"Loss at step {step_idx} is not finite: {loss.item()}"
             )
 
     def test_ts2vec_checkpoint_preserves_encoder_weights(self) -> None:
@@ -141,14 +119,11 @@ class TestModelTrainingSmoke:
         weights_only=True, and verify that encoder state_dict keys and values
         match the originals exactly.
         """
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=CropShiftProducer(),
-        )
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
 
         original = {k: v.clone() for k, v in model.encoder.state_dict().items()}
 
-        with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
             tmp_path = tmp_file.name
 
         try:
@@ -157,9 +132,9 @@ class TestModelTrainingSmoke:
             model.load_state_dict(loaded_state)
 
             for key in original:
-                assert torch.equal(
-                    original[key], model.encoder.state_dict()[key]
-                ), f'Encoder weight mismatch after checkpoint reload for key: {key}'
+                assert torch.equal(original[key], model.encoder.state_dict()[key]), (
+                    f"Encoder weight mismatch after checkpoint reload for key: {key}"
+                )
         finally:
             os.unlink(tmp_path)
 
@@ -176,51 +151,36 @@ class TestModelTrainingSmoke:
             ),
         )
 
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=5,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
         assert len(losses) == 5
         for step_idx, loss in enumerate(losses):
             assert loss is not None
             assert loss.ndim == 0
             assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
+                f"Loss at step {step_idx} is not finite: {loss.item()}"
             )
 
     def test_autotcl_trains_5_steps(self) -> None:
         """AutoTCL with neural network augmentation trains 5 steps (VER-03)."""
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1,
-            output_dims=320,
-            kernel_sizes=[3],
+            input_dims=1, output_dims=320, kernel_sizes=[3]
         )
         model = AutoTCL(
             input_dims=1,
             kernel_sizes=[3],
             augmentation=AutoTCLNeuralNetworkAugmentation(
-                params=aug_params,
-                training_strategy=RIPTrainingStrategy(),
+                params=aug_params, training_strategy=RIPTrainingStrategy()
             ),
         )
 
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=5,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
-        assert len(losses) >= 1, 'AutoTCL may skip steps during phase-1 aug training'
+        assert len(losses) >= 1, "AutoTCL may skip steps during phase-1 aug training"
         for step_idx, loss in enumerate(losses):
             assert loss.ndim == 0
             assert math.isfinite(loss.item()), (
-                f'Loss at step {step_idx} is not finite: {loss.item()}'
+                f"Loss at step {step_idx} is not finite: {loss.item()}"
             )
 
 
@@ -240,24 +200,11 @@ class TestAugmentationExtensibility:
 
             def produce(self, x: torch.Tensor) -> AlignedPair:
                 seq_len = x.size(1)
-                return AlignedPair(
-                    first=x,
-                    second=x,
-                    overlap_length=seq_len,
-                )
+                return AlignedPair(first=x, second=x, overlap_length=seq_len)
 
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=IdentityProducer(),
-        )
+        model = TS2Vec(input_dims=1, augmentation=IdentityProducer())
 
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=1,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
 
         assert len(losses) == 1
         loss = losses[0]
@@ -274,19 +221,9 @@ class TestAugmentationExtensibility:
             def produce(self, x: torch.Tensor) -> SingleView:
                 return SingleView(view=x + torch.randn_like(x) * 0.1)
 
-        model = AutoTCL(
-            input_dims=1,
-            kernel_sizes=[3],
-            augmentation=NoiseProducer(),
-        )
+        model = AutoTCL(input_dims=1, kernel_sizes=[3], augmentation=NoiseProducer())
 
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=1,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
 
         assert len(losses) >= 1
         for loss in losses:

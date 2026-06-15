@@ -20,16 +20,16 @@ from .standard import (
 )
 
 __all__ = [
-    'FCN',
-    'TSTCC',
-    'AutoTCL',
-    'AutoTCLModelParameters',
-    'CoST',
-    'CoSTModelParameters',
-    'MCLModelParameters',
-    'Series2Vec',
-    'Series2VecModelParameters',
-    'TS2Vec',
-    'TS2VecModelParameters',
-    'TSTCCModelParameters',
+    "FCN",
+    "TSTCC",
+    "AutoTCL",
+    "AutoTCLModelParameters",
+    "CoST",
+    "CoSTModelParameters",
+    "MCLModelParameters",
+    "Series2Vec",
+    "Series2VecModelParameters",
+    "TS2Vec",
+    "TS2VecModelParameters",
+    "TSTCCModelParameters",
 ]

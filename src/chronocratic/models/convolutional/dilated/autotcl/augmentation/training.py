@@ -7,7 +7,7 @@ Imports ``AugmentationTrainingStrategy`` directly from ``augmentation/base.py``
 (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = ['AdversarialTrainingStrategy', 'RIPTrainingStrategy']
+__all__ = ["AdversarialTrainingStrategy", "RIPTrainingStrategy"]
 
 import torch
 from torch.nn import functional as F  # noqa: N812

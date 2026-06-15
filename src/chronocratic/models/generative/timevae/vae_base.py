@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-__all__ = ['BaseVariationalAutoencoder', 'Sampling']
+__all__ = ["BaseVariationalAutoencoder", "Sampling"]
 
 import lightning.pytorch as pl
 import numpy as np
@@ -59,17 +59,17 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute, log, and return the training loss for one batch."""
         loss, recon_loss, kl_loss = self._step(batch)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('train_recon_loss', recon_loss, on_epoch=True)
-        self.log('train_kl_loss', kl_loss, on_epoch=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train_recon_loss", recon_loss, on_epoch=True)
+        self.log("train_kl_loss", kl_loss, on_epoch=True)
         return loss
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute, log, and return the validation loss for one batch."""
         loss, recon_loss, kl_loss = self._step(batch)
-        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('val_recon_loss', recon_loss, on_epoch=True)
-        self.log('val_kl_loss', kl_loss, on_epoch=True)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("val_recon_loss", recon_loss, on_epoch=True)
+        self.log("val_kl_loss", kl_loss, on_epoch=True)
         return loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:

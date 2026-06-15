@@ -1,4 +1,4 @@
-__all__ = ['Conv1dDilatedEncoder']
+__all__ = ["Conv1dDilatedEncoder"]
 
 from collections.abc import Callable
 

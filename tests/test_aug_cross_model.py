@@ -48,13 +48,7 @@ class TestCrossModelReuse:
         """FullOverlapPair(Jitter) injected into TS2Vec trains 1 step with finite loss."""
         aug = FullOverlapPair(aug=Jitter(JitterParameters(sigma=0.1)))
         model = TS2Vec(input_dims=1, augmentation=aug)
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=1,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 
@@ -89,28 +83,17 @@ class TestCrossModelReuse:
     def test_compose_augmentation_cross_model(self) -> None:
         """ComposeAugmentation with primitives works in FullOverlapPair for TS2Vec."""
         composed = ComposeAugmentation(
-            [
-                Jitter(JitterParameters(sigma=0.05)),
-                Scaling(ScalingParameters(sigma=0.05)),
-            ]
+            [Jitter(JitterParameters(sigma=0.05)), Scaling(ScalingParameters(sigma=0.05))]
         )
         aug = FullOverlapPair(aug=composed)
         model = TS2Vec(input_dims=1, augmentation=aug)
-        losses = _train_steps(
-            model=model,
-            batch_size=4,
-            seq_length=100,
-            input_dims=1,
-            num_steps=1,
-        )
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 
     def test_permutation_in_full_overlap_pair(self) -> None:
         """Permutation primitive works inside FullOverlapPair producer."""
-        aug = FullOverlapPair(
-            aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1))
-        )
+        aug = FullOverlapPair(aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1)))
         data = torch.randn(2, 50, 3)
         pair = aug.produce(data)
         assert isinstance(pair, AlignedPair)
@@ -129,9 +112,7 @@ class TestCovariance:
         AlignedPair is-a ViewPair, and V is covariant in AugmentationProducer[V].
         Therefore CropShiftProducer fits any AugmentationProducer[ViewPair] slot.
         """
-        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         def accepts_viewpair(p: AugmentationProducer[ViewPair]) -> ViewPair:
             return p.produce(torch.randn(2, 100, 3))
@@ -184,10 +165,7 @@ class TestSeededDecorator:
 
         Verifies the isinstance guard from decorators.py.
         """
-        from chronocratic.models.augmentation.base import (
-            AugmentationTrainingStrategy,
-            SingleView,
-        )
+        from chronocratic.models.augmentation.base import AugmentationTrainingStrategy, SingleView
 
         class _DummyStrategy(AugmentationTrainingStrategy):
             """Minimal training strategy for test purposes."""
@@ -207,10 +185,7 @@ class TestSeededDecorator:
                 return SingleView(view=x)
 
             def train_step(
-                self,
-                x: torch.Tensor,
-                encoder: torch.nn.Module,
-                batch_idx: int,
+                self, x: torch.Tensor, encoder: torch.nn.Module, batch_idx: int
             ) -> torch.Tensor | None:
                 return None
 
@@ -227,7 +202,7 @@ class TestImportHygiene:
         import chronocratic.models.augmentation.primitives as primitives
 
         source = pathlib.Path(primitives.__file__).read_text()
-        assert 'convolutional' not in source, (
+        assert "convolutional" not in source, (
             "primitives.py must not import from convolutional/ "
             "(SPEC criterion 9, shared modules must be model-agnostic)"
         )
@@ -237,7 +212,7 @@ class TestImportHygiene:
         import chronocratic.models.augmentation.producers as producers
 
         source = pathlib.Path(producers.__file__).read_text()
-        assert 'convolutional' not in source, (
+        assert "convolutional" not in source, (
             "producers.py must not import from convolutional/ "
             "(SPEC criterion 9, shared modules must be model-agnostic)"
         )
@@ -247,7 +222,7 @@ class TestImportHygiene:
         import chronocratic.models.augmentation.decorators as decorators
 
         source = pathlib.Path(decorators.__file__).read_text()
-        assert 'convolutional' not in source, (
+        assert "convolutional" not in source, (
             "decorators.py must not import from convolutional/ "
             "(shared modules must be model-agnostic)"
         )

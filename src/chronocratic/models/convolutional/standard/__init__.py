@@ -7,10 +7,10 @@ from .series2vec import Series2Vec, Series2VecModelParameters
 from .tstcc import TSTCC, TSTCCModelParameters
 
 __all__ = [
-    'FCN',
-    'TSTCC',
-    'MCLModelParameters',
-    'Series2Vec',
-    'Series2VecModelParameters',
-    'TSTCCModelParameters',
+    "FCN",
+    "TSTCC",
+    "MCLModelParameters",
+    "Series2Vec",
+    "Series2VecModelParameters",
+    "TSTCCModelParameters",
 ]

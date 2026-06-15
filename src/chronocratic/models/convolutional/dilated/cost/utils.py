@@ -1,4 +1,4 @@
-__all__ = ['compute_amplitude_and_phase']
+__all__ = ["compute_amplitude_and_phase"]
 
 import torch
 

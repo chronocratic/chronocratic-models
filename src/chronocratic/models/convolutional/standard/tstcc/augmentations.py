@@ -11,14 +11,14 @@ defaults in this module use ``channel_dim=1`` and ``time_dim=-1``.
 from __future__ import annotations
 
 __all__ = [
-    'ComposeAugmentation',
-    'Jitter',
-    'JitterParameters',
-    'Permutation',
-    'PermutationParameters',
-    'Scaling',
-    'ScalingParameters',
-    '_default_tstcc_pair',
+    "ComposeAugmentation",
+    "Jitter",
+    "JitterParameters",
+    "Permutation",
+    "PermutationParameters",
+    "Scaling",
+    "ScalingParameters",
+    "_default_tstcc_pair",
 ]
 
 # Re-export shared primitives.
@@ -51,9 +51,7 @@ def _default_tstcc_pair() -> AugmentationProducer[ViewPair]:
         :meth:`~AugmentationProducer.produce` is called.
     """
     return RolePair(
-        first=Scaling(
-            ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)
-        ),
+        first=Scaling(ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)),
         second=ComposeAugmentation(
             [
                 Permutation(PermutationParameters(max_segments=5, time_dim=-1)),

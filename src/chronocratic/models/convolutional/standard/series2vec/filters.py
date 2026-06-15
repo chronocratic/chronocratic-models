@@ -2,12 +2,12 @@ from scipy.signal import butter, lfilter
 import torch
 
 __all__ = [
-    'LOWPASS_PROBABILITY',
-    'SAMPLING_RATE',
-    'apply_fft',
-    'filter_frequencies',
-    'highpass_filter',
-    'lowpass_filter',
+    "LOWPASS_PROBABILITY",
+    "SAMPLING_RATE",
+    "apply_fft",
+    "filter_frequencies",
+    "highpass_filter",
+    "lowpass_filter",
 ]
 
 LOWPASS_PROBABILITY = 0.5
@@ -47,7 +47,7 @@ def lowpass_filter(data: torch.Tensor, cutoff_frequency: float, sampling_rate: i
     """Apply a Butterworth low-pass filter to ``data``."""
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist
-    b, a = butter(N=6, Wn=normal_cutoff, btype='low', analog=False)
+    b, a = butter(N=6, Wn=normal_cutoff, btype="low", analog=False)
     filtered_data = lfilter(b, a, data)
     return torch.tensor(filtered_data, dtype=torch.float32)
 
@@ -58,6 +58,6 @@ def highpass_filter(
     """Apply a Butterworth high-pass filter to ``data``."""
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist
-    b, a = butter(N=6, Wn=normal_cutoff, btype='high', analog=False)
+    b, a = butter(N=6, Wn=normal_cutoff, btype="high", analog=False)
     filtered_data = lfilter(b, a, data)
     return torch.tensor(filtered_data, dtype=torch.float32)

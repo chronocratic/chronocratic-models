@@ -17,7 +17,7 @@ from torch import nn
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__all__ = ['BatchAdapter', 'FlattenLinearHead', 'RepresentationBackbone', 'SupervisedModule']
+__all__ = ["BatchAdapter", "FlattenLinearHead", "RepresentationBackbone", "SupervisedModule"]
 
 
 @runtime_checkable
@@ -126,7 +126,7 @@ class SupervisedModule(pl.LightningModule):
     ) -> None:
         super().__init__()
         self.save_hyperparameters(
-            ignore=['backbone', 'head', 'representation_fn', 'batch_adapter', 'loss_fn']
+            ignore=["backbone", "head", "representation_fn", "batch_adapter", "loss_fn"]
         )
         self._backbone = backbone
         self._head = head
@@ -170,7 +170,7 @@ class SupervisedModule(pl.LightningModule):
         predictions = self(*encoder_inputs)
         loss = self._loss_fn(predictions, targets)
         self.log(
-            f'{stage}_loss',
+            f"{stage}_loss",
             loss,
             on_step=True,
             on_epoch=True,
@@ -189,7 +189,7 @@ class SupervisedModule(pl.LightningModule):
         Returns:
             Scalar training loss.
         """
-        return self._shared_step(batch, stage='train')
+        return self._shared_step(batch, stage="train")
 
     def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation loss for one batch.
@@ -201,7 +201,7 @@ class SupervisedModule(pl.LightningModule):
         Returns:
             Scalar validation loss.
         """
-        return self._shared_step(batch, stage='val')
+        return self._shared_step(batch, stage="val")
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Return Adam over the trainable parameters of this module.

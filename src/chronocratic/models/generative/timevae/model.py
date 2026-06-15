@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-__all__ = ['TimeVAE', 'TimeVAEDecoder', 'TimeVAEEncoder']
+__all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
@@ -94,7 +94,7 @@ class TimeVAEDecoder(nn.Module):
 
         if use_residual_conn:
             if encoder_last_dense_dim is None:
-                msg = 'encoder_last_dense_dim is required when use_residual_conn is True.'
+                msg = "encoder_last_dense_dim is required when use_residual_conn is True."
                 raise ValueError(msg)
             self.residual_conn = ResidualConnection(
                 seq_len, feat_dim, hidden_layer_sizes, latent_dim, encoder_last_dense_dim
@@ -124,7 +124,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     repo https://github.com/abudesai/timeVAE under MIT License.
     """
 
-    model_name = 'TimeVAE'
+    model_name = "TimeVAE"
     encoder: TimeVAEEncoder
     decoder: TimeVAEDecoder
 
@@ -174,9 +174,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
         return self.encoder
 
-    def _postprocess(
-        self, output: tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-    ) -> torch.Tensor:
+    def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor:
         """Return the latent mean ``z_mean`` from the ``(z_mean, z_log_var, z)`` tuple."""
         return output[0]
 

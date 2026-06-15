@@ -1,7 +1,7 @@
 __all__ = [
-    'hierarchical_contrastive_loss',
-    'instance_contrastive_loss',
-    'temporal_contrastive_loss',
+    "hierarchical_contrastive_loss",
+    "instance_contrastive_loss",
+    "temporal_contrastive_loss",
 ]
 
 import numpy as np

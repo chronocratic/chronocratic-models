@@ -1,4 +1,4 @@
-__all__ = ['TS2Vec']
+__all__ = ["TS2Vec"]
 
 
 from typing import cast
@@ -40,7 +40,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     ) -> None:
         super().__init__()
 
-        self.save_hyperparameters(ignore=['augmentation'])
+        self.save_hyperparameters(ignore=["augmentation"])
 
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
@@ -74,7 +74,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     @property
     def encoder(self) -> TS2VecTimeSeriesEncoder:
         """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return cast('TS2VecTimeSeriesEncoder', self._encoder)
+        return cast("TS2VecTimeSeriesEncoder", self._encoder)
 
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""
@@ -115,7 +115,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
 
-        optimizer = cast('torch.optim.Optimizer', self.optimizers())
+        optimizer = cast("torch.optim.Optimizer", self.optimizers())
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
@@ -124,7 +124,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         train_loss = self._calculate_encoder_loss(embeddings_1, embeddings_2)
 
         self.log(
-            'train_loss',
+            "train_loss",
             train_loss,
             on_step=True,
             on_epoch=True,
@@ -152,7 +152,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         val_loss = self._calculate_encoder_loss(embeddings_1, embeddings_2)
 
         self.log(
-            'val_loss',
+            "val_loss",
             val_loss,
             on_step=True,
             on_epoch=True,

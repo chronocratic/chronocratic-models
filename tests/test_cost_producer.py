@@ -9,10 +9,7 @@ from collections.abc import Callable
 
 import torch
 
-from chronocratic.models.augmentation.base import (
-    Augmentation,
-    ViewPair,
-)
+from chronocratic.models.augmentation.base import Augmentation, ViewPair
 from chronocratic.models.augmentation.producers import IndependentPair
 from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
@@ -60,11 +57,7 @@ class TestCoSTProducerIntegration:
     def test_cost_accepts_independent_pair(self) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPair(aug=aug)
-        model = CoST(
-            input_dims=1,
-            sequence_length=100,
-            augmentation=producer,
-        )
+        model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
         assert isinstance(model, CoST)
 
     def test_cost_default_is_independent_pair(self) -> None:
@@ -79,32 +72,24 @@ class TestCoSTProducerIntegration:
         model = CoST(input_dims=1, sequence_length=100)
         x = torch.randn(2, 100, 1)
         pair = model._augmentation.produce(x)  # noqa: SLF001
-        assert hasattr(pair, 'first')
-        assert hasattr(pair, 'second')
+        assert hasattr(pair, "first")
+        assert hasattr(pair, "second")
 
 
 class TestCoSTTrainingWithProducer:
     """CoST trains 5 steps with finite loss using producer contract."""
 
     def test_cost_trains_5_steps_with_producer(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPair(aug=aug)
-        model = CoST(
-            input_dims=1,
-            sequence_length=100,
-            augmentation=producer,
-        )
+        model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
     def test_cost_trains_5_steps_with_default_augmentation(
-        self,
-        train_steps: Callable[..., list[torch.Tensor]],
-        finite_losses: Callable[..., None],
+        self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         model = CoST(input_dims=1, sequence_length=100)
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)

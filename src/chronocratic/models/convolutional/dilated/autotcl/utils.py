@@ -1,14 +1,12 @@
-__all__ = ['calculate_mutual_information', 'calculate_regular_consistency']
+__all__ = ["calculate_mutual_information", "calculate_regular_consistency"]
 
 import torch
 
-from chronocratic.models.augmentation.base import (
-    AugmentationProducer,
-    SingleView,
-)
+from chronocratic.models.augmentation.base import AugmentationProducer, SingleView
 from chronocratic.models.convolutional.dilated.autotcl.losses import l1_out_loss
 
 _MIN_TIME_STEPS = 3
+
 
 def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
     """Calculate regular consistency for weights.
@@ -29,8 +27,8 @@ def calculate_regular_consistency(weights: torch.Tensor) -> torch.Tensor:
 
     if time_steps <= _MIN_TIME_STEPS:
         msg = (
-            f'calculate_regular_consistency requires time_steps > {_MIN_TIME_STEPS}, '
-            f'got {time_steps}'
+            f"calculate_regular_consistency requires time_steps > {_MIN_TIME_STEPS}, "
+            f"got {time_steps}"
         )
         raise ValueError(msg)
 

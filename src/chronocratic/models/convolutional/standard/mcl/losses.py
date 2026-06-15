@@ -1,4 +1,4 @@
-__all__ = ['MixUpLoss']
+__all__ = ["MixUpLoss"]
 
 import torch
 from torch import nn

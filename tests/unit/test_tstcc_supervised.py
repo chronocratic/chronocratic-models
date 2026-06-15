@@ -40,7 +40,7 @@ class TestTSTCCModelCleaned:
     def test_model_no_training_mode_param(self) -> None:
         """TSTCC.__init__ no longer accepts training_mode."""
         sig = inspect.signature(TSTCC.__init__)
-        assert 'training_mode' not in sig.parameters
+        assert "training_mode" not in sig.parameters
 
     def test_only_selfsupervised_contrastive(self) -> None:
         """TSTCC._compute_loss produces contrastive loss (no supervised branch)."""
@@ -63,8 +63,8 @@ class TestTSTCCModelCleaned:
         _logits, features = model(test_x)
         actual_flat = features.shape[1] * features.shape[2]
         assert actual_flat == model._encoder.logits.in_features, (  # noqa: SLF001
-            f'features flattened ({actual_flat}) != logits in_features '
-            f'({model._encoder.logits.in_features})'  # noqa: SLF001
+            f"features flattened ({actual_flat}) != logits in_features "
+            f"({model._encoder.logits.in_features})"  # noqa: SLF001
         )
         # Now run the contrastive loss
         x = torch.randn(4, 2, seq_len)
@@ -80,7 +80,7 @@ class TestTSTCCConfigCleaned:
 
     def test_config_no_training_mode_field(self) -> None:
         """TSTCCModelParameters dataclass no longer has training_mode."""
-        assert 'training_mode' not in TSTCCModelParameters.__dataclass_fields__
+        assert "training_mode" not in TSTCCModelParameters.__dataclass_fields__
 
 
 class TestTSTCCSupervisedModule:
@@ -97,7 +97,7 @@ class TestTSTCCSupervisedModule:
             num_classes=3,
         )
         module = make_tstcc_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # Verify module construction (head uses backbone.representation_dim)
         assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
@@ -114,7 +114,7 @@ class TestTSTCCSupervisedModule:
             num_classes=3,
         )
         module = make_tstcc_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(4, 2, 256)
         targets = torch.randint(0, 5, (4,))
@@ -139,11 +139,11 @@ class TestTSTCCSupervisedModule:
             num_classes=3,
         )
         module = make_tstcc_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         batch = (torch.randn(4, 2, 256), torch.randint(0, 5, (4,)))
         loss = module.training_step(batch, 0)
         loss.backward()
         backbone_grads = [p.grad for p in backbone.parameters() if p.requires_grad]
-        assert backbone_grads, 'backbone should have trainable params when freeze_backbone=False'
+        assert backbone_grads, "backbone should have trainable params when freeze_backbone=False"
         assert any(g is not None for g in backbone_grads)

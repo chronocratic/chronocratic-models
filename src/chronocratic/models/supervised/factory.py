@@ -27,9 +27,9 @@ if TYPE_CHECKING:
     from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
     from chronocratic.models.transformer.tst.model import TST
 
-__all__ = ['make_series2vec_supervised', 'make_tst_supervised', 'make_tstcc_supervised']
+__all__ = ["make_series2vec_supervised", "make_tst_supervised", "make_tstcc_supervised"]
 
-_VALID_TASKS = ('classification', 'regression')
+_VALID_TASKS = ("classification", "regression")
 
 
 def _validate_task(task: str) -> None:
@@ -43,7 +43,7 @@ def make_tst_supervised(
     backbone: TST,
     *,
     num_outputs: int,
-    task: str = 'classification',
+    task: str = "classification",
     freeze_backbone: bool = True,
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
@@ -76,7 +76,7 @@ def make_tst_supervised(
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
-    loss_fn = classification_loss if task == 'classification' else regression_loss
+    loss_fn = classification_loss if task == "classification" else regression_loss
     return SupervisedModule(
         backbone=backbone,
         head=head,
@@ -94,7 +94,7 @@ def make_series2vec_supervised(
     backbone: Series2Vec,
     *,
     num_outputs: int,
-    task: str = 'classification',
+    task: str = "classification",
     freeze_backbone: bool = True,
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
@@ -123,7 +123,7 @@ def make_series2vec_supervised(
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
-    loss_fn = classification_loss if task == 'classification' else regression_loss
+    loss_fn = classification_loss if task == "classification" else regression_loss
     return SupervisedModule(
         backbone=backbone,
         head=head,
@@ -141,7 +141,7 @@ def make_tstcc_supervised(
     backbone: TSTCC,
     *,
     num_outputs: int,
-    task: str = 'classification',
+    task: str = "classification",
     freeze_backbone: bool = True,
     learning_rate: float = 1e-3,
     weight_decay: float = 0.0,
@@ -174,7 +174,7 @@ def make_tstcc_supervised(
     """
     _validate_task(task)
     head = FlattenLinearHead(in_features=backbone.representation_dim, num_outputs=num_outputs)
-    loss_fn = classification_loss if task == 'classification' else regression_loss
+    loss_fn = classification_loss if task == "classification" else regression_loss
     return SupervisedModule(
         backbone=backbone,
         head=head,

@@ -8,7 +8,7 @@ Imports ``AugmentationProducer`` and ``AlignedPair`` directly from
 ``augmentation/base.py`` (NOT the barrel) to avoid circular dependencies.
 """
 
-__all__ = ['CropShiftAugmentationParameters', 'CropShiftProducer']
+__all__ = ["CropShiftAugmentationParameters", "CropShiftProducer"]
 
 from dataclasses import dataclass
 
@@ -91,9 +91,9 @@ class CropShiftProducer:
 
         if min_crop_length >= total_length:
             msg = (
-                f'Crop minimum length ({min_crop_length}) exceeds input '
-                f'time dimension ({total_length}). Reduce temporal_unit '
-                f'or provide longer sequences.'
+                f"Crop minimum length ({min_crop_length}) exceeds input "
+                f"time dimension ({total_length}). Reduce temporal_unit "
+                f"or provide longer sequences."
             )
             raise ValueError(msg)
         crop_length = self._rng.integers(min_crop_length, total_length + 1)

@@ -3,12 +3,12 @@ import math
 from typing import cast
 
 __all__ = [
-    'FixedPositionalEncoding',
-    'LearnablePositionalEncoding',
-    'TSTransformerEncoder',
-    'TransformerBatchNormEncoderLayer',
-    '_get_activation_fn',
-    'get_pos_encoder',
+    "FixedPositionalEncoding",
+    "LearnablePositionalEncoding",
+    "TSTransformerEncoder",
+    "TransformerBatchNormEncoderLayer",
+    "_get_activation_fn",
+    "get_pos_encoder",
 ]
 
 import torch
@@ -26,11 +26,11 @@ ActivationFn = Callable[[Tensor], Tensor]
 
 
 def _get_activation_fn(activation: str) -> ActivationFn:
-    if activation == 'relu':
+    if activation == "relu":
         return functional.relu
-    if activation == 'gelu':
+    if activation == "gelu":
         return functional.gelu
-    msg = f'activation should be relu/gelu, not {activation}'
+    msg = f"activation should be relu/gelu, not {activation}"
     raise ValueError(msg)
 
 
@@ -65,7 +65,7 @@ class FixedPositionalEncoding(nn.Module):
         pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
         self.pe: torch.Tensor
         self.register_buffer(
-            'pe', pe
+            "pe", pe
         )  # this stores the variable in the state_dict (used for non-trainable variables)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -108,9 +108,9 @@ type PositionalEncoder = type[FixedPositionalEncoding | LearnablePositionalEncod
 
 def get_pos_encoder(pos_encoding: str) -> PositionalEncoder:
     """Return the positional encoding class for ``pos_encoding``."""
-    if pos_encoding == 'learnable':
+    if pos_encoding == "learnable":
         return LearnablePositionalEncoding
-    if pos_encoding == 'fixed':
+    if pos_encoding == "fixed":
         return FixedPositionalEncoding
 
     msg = f"pos_encoding should be 'learnable'/'fixed', not '{pos_encoding}'"
@@ -136,7 +136,7 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
         nhead: int,
         dim_feedforward: int = 2048,
         dropout: float = 0.1,
-        activation: str = 'relu',
+        activation: str = "relu",
     ) -> None:
         super().__init__()
         self.self_attn = MultiheadAttention(d_model, nhead, dropout=dropout)
@@ -156,8 +156,8 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 
     def __setstate__(self, state: dict[str, object]) -> None:
         """Restore pickled state with a default activation for older checkpoints."""
-        if 'activation' not in state:
-            state['activation'] = functional.relu
+        if "activation" not in state:
+            state["activation"] = functional.relu
         super().__setstate__(state)
 
     def forward(
@@ -205,9 +205,9 @@ class TSTransformerEncoder(nn.Module):
         num_layers: int,
         dim_feedforward: int,
         dropout: float = 0.1,
-        pos_encoding: str = 'fixed',
-        activation: str = 'gelu',
-        norm: str = 'BatchNorm',
+        pos_encoding: str = "fixed",
+        activation: str = "gelu",
+        norm: str = "BatchNorm",
         *,
         freeze: bool = False,
     ) -> None:
@@ -222,7 +222,7 @@ class TSTransformerEncoder(nn.Module):
             d_model, dropout=dropout * (1.0 - freeze), max_len=max_len
         )
 
-        if norm == 'LayerNorm':
+        if norm == "LayerNorm":
             encoder_layer = TransformerEncoderLayer(
                 d_model,
                 self.n_heads,
@@ -240,7 +240,7 @@ class TSTransformerEncoder(nn.Module):
             )
 
         self.transformer_encoder = nn.TransformerEncoder(
-            cast('TransformerEncoderLayer', encoder_layer), num_layers
+            cast("TransformerEncoderLayer", encoder_layer), num_layers
         )
 
         self.output_layer = nn.Linear(d_model, feat_dim)
@@ -264,9 +264,7 @@ class TSTransformerEncoder(nn.Module):
         """
         # PyTorch transformers use [seq_length, batch_size, feat_dim].
         inp = x.permute(1, 0, 2)
-        inp = self.project_inp(inp) * math.sqrt(
-            self.d_model
-        )
+        inp = self.project_inp(inp) * math.sqrt(self.d_model)
         inp = self.pos_enc(inp)  # add positional encoding
         # Padding-mask logic is reversed for MultiHeadAttention / TransformerEncoderLayer.
         output = self.transformer_encoder(

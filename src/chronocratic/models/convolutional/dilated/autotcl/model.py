@@ -1,4 +1,4 @@
-__all__ = ['AutoTCL']
+__all__ = ["AutoTCL"]
 
 
 from typing import cast
@@ -53,7 +53,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     ) -> None:
         super().__init__()
 
-        self.save_hyperparameters(ignore=['augmentation'])
+        self.save_hyperparameters(ignore=["augmentation"])
 
         if kernel_sizes is None:
             kernel_sizes = [3, 5, 7]
@@ -71,11 +71,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
                 RIPTrainingStrategy,
             )
 
-            self._augmentation: AugmentationProducer[SingleView] = (
-                AutoTCLNeuralNetworkAugmentation(
-                    params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
-                    training_strategy=RIPTrainingStrategy(),
-                )
+            self._augmentation: AugmentationProducer[SingleView] = AutoTCLNeuralNetworkAugmentation(
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
+                training_strategy=RIPTrainingStrategy(),
             )
         else:
             self._augmentation = augmentation
@@ -103,7 +101,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             self._augmentation, lr=self._meta_learning_rate
         )
         if aug_opt is not None:
-            return [main_optimizer, cast('AdamW', aug_opt)]
+            return [main_optimizer, cast("AdamW", aug_opt)]
         return main_optimizer
 
     def _calculate_encoder_loss(
@@ -134,16 +132,18 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         # Phase 1: Aug network self-training (centralized gate, not isinstance in model)
         aug_loss = maybe_train_augmentation(
             self._augmentation,
-            x=x, encoder=self._encoder,
-            epoch=self.current_epoch, batch_idx=batch_idx,
+            x=x,
+            encoder=self._encoder,
+            epoch=self.current_epoch,
+            batch_idx=batch_idx,
         )
         if aug_loss is not None:
-            main_opt, meta_opt = cast('list[AdamW]', opts)
+            main_opt, meta_opt = cast("list[AdamW]", opts)
             meta_opt.zero_grad()
             self.manual_backward(aug_loss)
             meta_opt.step()
             self.log(
-                'aug_train_loss',
+                "aug_train_loss",
                 aug_loss,
                 on_step=True,
                 on_epoch=True,
@@ -167,7 +167,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         encoder_loss = self._calculate_encoder_loss(x_embeddings, aug_x_embeddings)
 
         main_opt = opts[0] if isinstance(opts, list) else opts
-        main_opt = cast('AdamW', main_opt)
+        main_opt = cast("AdamW", main_opt)
         main_opt.zero_grad()
         self.manual_backward(encoder_loss)
         main_opt.step()
@@ -175,7 +175,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self._averaged_encoder.update_parameters(self._encoder)  # type: ignore  # noqa: PGH003
 
         self.log(
-            'train_loss',
+            "train_loss",
             encoder_loss,
             on_step=True,
             on_epoch=True,
@@ -236,7 +236,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         encoder_loss = self._calculate_encoder_loss(x_embeddings, aug_x_embeddings)
 
         self.log(
-            'val_loss',
+            "val_loss",
             encoder_loss,
             on_step=True,
             on_epoch=True,

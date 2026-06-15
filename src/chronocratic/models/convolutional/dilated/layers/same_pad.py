@@ -1,4 +1,4 @@
-__all__ = ['Conv1dSamePad', 'Conv1dSamePadMultiBlock']
+__all__ = ["Conv1dSamePad", "Conv1dSamePadMultiBlock"]
 
 from collections.abc import Callable
 
@@ -106,12 +106,7 @@ class Conv1dSamePadMultiBlock(nn.Module):
             )
 
     def __initiate_projector(
-        self,
-        in_channels: int,
-        out_channels: int,
-        stride: int,
-        *,
-        is_final: bool,
+        self, in_channels: int, out_channels: int, stride: int, *, is_final: bool
     ) -> None:
 
         if stride == 1:

@@ -16,14 +16,14 @@ Exported symbols:
 from __future__ import annotations
 
 __all__ = [
-    'AlignedPair',
-    'Augmentation',
-    'AugmentationProducer',
-    'AugmentationTrainingStrategy',
-    'Reseedable',
-    'SingleView',
-    'TrainableAugmentationProducer',
-    'ViewPair',
+    "AlignedPair",
+    "Augmentation",
+    "AugmentationProducer",
+    "AugmentationTrainingStrategy",
+    "Reseedable",
+    "SingleView",
+    "TrainableAugmentationProducer",
+    "ViewPair",
 ]
 
 from abc import ABC, abstractmethod

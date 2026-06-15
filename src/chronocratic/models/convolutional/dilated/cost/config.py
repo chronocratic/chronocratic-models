@@ -5,7 +5,7 @@ seasonal-trend decomposition encoder parameters and contrastive
 learning configuration.
 """
 
-__all__ = ['CoSTModelParameters']
+__all__ = ["CoSTModelParameters"]
 
 from dataclasses import dataclass, field
 

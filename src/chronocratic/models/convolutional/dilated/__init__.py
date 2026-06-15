@@ -7,10 +7,10 @@ from .cost import CoST, CoSTModelParameters
 from .ts2vec import TS2Vec, TS2VecModelParameters
 
 __all__ = [
-    'AutoTCL',
-    'AutoTCLModelParameters',
-    'CoST',
-    'CoSTModelParameters',
-    'TS2Vec',
-    'TS2VecModelParameters',
+    "AutoTCL",
+    "AutoTCLModelParameters",
+    "CoST",
+    "CoSTModelParameters",
+    "TS2Vec",
+    "TS2VecModelParameters",
 ]

@@ -4,7 +4,7 @@ Provides MCLModelParameters with MCL-specific settings for the FCN
 encoder and MixUp contrastive criterion.
 """
 
-__all__ = ['MCLModelParameters']
+__all__ = ["MCLModelParameters"]
 
 from dataclasses import dataclass
 

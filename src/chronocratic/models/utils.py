@@ -1,12 +1,12 @@
 __all__ = [
-    'apply_slicing',
-    'concat_last_step_features',
-    'extract_features_from_batch',
-    'full_series_pooling',
-    'integer_pooling',
-    'multiscale_pooling',
-    'process_sample_length',
-    'process_sliding_window',
+    "apply_slicing",
+    "concat_last_step_features",
+    "extract_features_from_batch",
+    "full_series_pooling",
+    "integer_pooling",
+    "multiscale_pooling",
+    "process_sample_length",
+    "process_sliding_window",
 ]
 
 
@@ -35,7 +35,7 @@ def extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Ten
         return batch
     if isinstance(batch, tuple | list):
         return batch[0]
-    msg = f'Unsupported batch format; {type(batch)}'
+    msg = f"Unsupported batch format; {type(batch)}"
     raise ValueError(msg)
 
 
@@ -184,7 +184,7 @@ def concat_last_step_features(
     )  # Shape: (batch_size, total_feature_dim)
 
     # Rearrange to add an extra dimension
-    concatenated_features = rearrange(concatenated_features, 'b d -> b () d')
+    concatenated_features = rearrange(concatenated_features, "b d -> b () d")
 
     return concatenated_features
 

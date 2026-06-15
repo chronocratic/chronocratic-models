@@ -26,7 +26,7 @@ class TestSeries2VecFinetuningModule:
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(3, 20, 2)
         out = module(x)
@@ -43,7 +43,7 @@ class TestSeries2VecFinetuningModule:
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
-            backbone, num_outputs=2, task='regression', freeze_backbone=False
+            backbone, num_outputs=2, task="regression", freeze_backbone=False
         )
         x = torch.randn(3, 20, 2)
         out = module(x)
@@ -60,7 +60,7 @@ class TestSeries2VecFinetuningModule:
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(4, 20, 2)
         targets = torch.randint(0, 5, (4,))
@@ -80,7 +80,7 @@ class TestSeries2VecFinetuningModule:
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=True
+            backbone, num_outputs=5, task="classification", freeze_backbone=True
         )
         x = torch.randn(2, 20, 2)
         targets = torch.randint(0, 5, (2,))

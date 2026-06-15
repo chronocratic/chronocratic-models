@@ -1,4 +1,4 @@
-__all__ = ['CoST']
+__all__ = ["CoST"]
 
 import itertools
 from typing import cast
@@ -10,11 +10,7 @@ from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
-from chronocratic.models.augmentation.base import (
-    Augmentation,
-    AugmentationProducer,
-    ViewPair,
-)
+from chronocratic.models.augmentation.base import Augmentation, AugmentationProducer, ViewPair
 from chronocratic.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
 from chronocratic.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from chronocratic.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
@@ -51,7 +47,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     ) -> None:
         super().__init__()
 
-        self.save_hyperparameters(ignore=['augmentation'])
+        self.save_hyperparameters(ignore=["augmentation"])
 
         if kernel_sizes is None:
             kernel_sizes = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -77,9 +73,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
                 IndependentPair,
             )
 
-            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(
-                aug=augmentation
-            )
+            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(aug=augmentation)
         else:
             self._augmentation = augmentation
 
@@ -143,8 +137,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self.queue: torch.Tensor
         self.queue_insert_index: torch.Tensor
 
-        self.register_buffer('queue', F.normalize(torch.randn(component_dims, queue_size), dim=0))
-        self.register_buffer('queue_insert_index', torch.zeros(1, dtype=torch.long))
+        self.register_buffer("queue", F.normalize(torch.randn(component_dims, queue_size), dim=0))
+        self.register_buffer("queue_insert_index", torch.zeros(1, dtype=torch.long))
 
         self.queue_size = queue_size
         self.momentum = momentum
@@ -157,7 +151,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
     def _ensure_rng(self) -> None:
         """Lazily create the numpy RNG if it has not been initialized yet."""
-        if not hasattr(self, '_rng'):
+        if not hasattr(self, "_rng"):
             self._rng = np.random.default_rng(seed=int(torch.random.initial_seed()))
 
     def configure_optimizers(self) -> SGD:
@@ -178,9 +172,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         negative_key_embeddings: torch.Tensor,
     ) -> torch.Tensor:
         # positive logits: Nx1
-        positive_logits = torch.einsum('nc,nc->n', [query_embeddings, key_embeddings]).unsqueeze(-1)
+        positive_logits = torch.einsum("nc,nc->n", [query_embeddings, key_embeddings]).unsqueeze(-1)
         # negative logits: NxK
-        negative_logits = torch.einsum('nc,ck->nk', [query_embeddings, negative_key_embeddings])
+        negative_logits = torch.einsum("nc,ck->nk", [query_embeddings, negative_key_embeddings])
 
         # logits: Nx(1+K) ## noqa: ERA001
         logits = torch.cat([positive_logits, negative_logits], dim=1)
@@ -219,7 +213,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         batch_size = keys.shape[0]
 
         if self.queue_size % batch_size != 0:
-            msg = f'queue_size ({self.queue_size}) must be divisible by batch_size ({batch_size})'
+            msg = f"queue_size ({self.queue_size}) must be divisible by batch_size ({batch_size})"
             raise ValueError(msg)
 
         ptr = int(self.queue_insert_index.item())
@@ -291,7 +285,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Augment the batch twice, compute the contrastive loss, perform a manual update step."""
         x = extract_features_from_batch(batch)
 
-        optimizer = cast('torch.optim.Optimizer', self.optimizers())
+        optimizer = cast("torch.optim.Optimizer", self.optimizers())
 
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
@@ -301,7 +295,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         train_loss = self._compute_total_loss(query, key, update_key_encoder=True)
 
         self.log(
-            'train_loss',
+            "train_loss",
             train_loss,
             on_step=True,
             on_epoch=True,
@@ -330,7 +324,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             val_loss = self._compute_total_loss(query, key, update_key_encoder=False)
 
         self.log(
-            'val_loss',
+            "val_loss",
             val_loss,
             on_step=True,
             on_epoch=True,

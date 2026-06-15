@@ -1,7 +1,4 @@
-__all__ = [
-    'CoST',
-    'CoSTModelParameters',
-]
+__all__ = ["CoST", "CoSTModelParameters"]
 
 from .config import CoSTModelParameters
 from .model import CoST

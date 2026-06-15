@@ -14,12 +14,7 @@ Exported symbols:
 
 from __future__ import annotations
 
-__all__ = [
-    'FullOverlapPair',
-    'IndependentPair',
-    'RolePair',
-    'SingleViewProducer',
-]
+__all__ = ["FullOverlapPair", "IndependentPair", "RolePair", "SingleViewProducer"]
 
 from typing import TYPE_CHECKING
 
@@ -165,7 +160,5 @@ class FullOverlapPair:
             AlignedPair with overlap_length equal to the time dimension of x.
         """
         return AlignedPair(
-            first=self._aug(x),
-            second=self._aug(x),
-            overlap_length=x.size(self._time_dim),
+            first=self._aug(x), second=self._aug(x), overlap_length=x.size(self._time_dim)
         )

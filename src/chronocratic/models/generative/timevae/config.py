@@ -5,7 +5,7 @@ variational autoencoder, including the optional trend, seasonal,
 and residual decoder branches.
 """
 
-__all__ = ['TimeVAEModelParameters']
+__all__ = ["TimeVAEModelParameters"]
 
 from dataclasses import dataclass, field
 

@@ -1,13 +1,13 @@
 import torch
 from torch import nn
 
-__all__ = ['MaskedMSELoss']
+__all__ = ["MaskedMSELoss"]
 
 
 class MaskedMSELoss(nn.Module):
     """Masked MSE Loss."""
 
-    def __init__(self, reduction: str = 'mean') -> None:
+    def __init__(self, reduction: str = "mean") -> None:
 
         super().__init__()
 

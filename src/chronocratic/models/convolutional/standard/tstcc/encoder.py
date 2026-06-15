@@ -1,4 +1,4 @@
-__all__ = ['TCCEncoder']
+__all__ = ["TCCEncoder"]
 
 import torch
 from torch import nn

@@ -9,19 +9,14 @@ Implements the :class:`~chronocratic.models.augmentation.base.Augmentation`
 Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators.
 """
 
-__all__ = [
-    'CosTRandomFunctionAugmentation',
-    'CosTRandomFunctionAugmentationParameters',
-]
+__all__ = ["CosTRandomFunctionAugmentation", "CosTRandomFunctionAugmentationParameters"]
 
 from dataclasses import dataclass
 from typing import Any
 
 import torch
 
-from chronocratic.models.augmentation.base import (
-    Augmentation,
-)
+from chronocratic.models.augmentation.base import Augmentation
 
 
 @dataclass
@@ -74,22 +69,22 @@ class CosTRandomFunctionAugmentation(Augmentation):
             msg = "Cannot specify both 'params' and 'sigma'. Use one or the other."
             raise ValueError(msg)
         if params is None and sigma is not None:
-            params = {'sigma': sigma}
+            params = {"sigma": sigma}
         if params is None:
             self._params = CosTRandomFunctionAugmentationParameters()
         elif isinstance(params, CosTRandomFunctionAugmentationParameters):
             self._params = params
         else:
             # Backward-compat shim for dict-based params (factories)
-            if 'sigma' not in params:
+            if "sigma" not in params:
                 msg = (
                     "CosTRandomFunctionAugmentation requires 'sigma' in params. "
-                    'Pass CosTRandomFunctionAugmentationParameters or a dict '
+                    "Pass CosTRandomFunctionAugmentationParameters or a dict "
                     "with 'sigma' (required) and 'p' (optional)."
                 )
                 raise ValueError(msg)
             self._params = CosTRandomFunctionAugmentationParameters(
-                sigma=params['sigma'], p=params.get('p', 0.5)
+                sigma=params["sigma"], p=params.get("p", 0.5)
             )
         self._sigma = self._params.sigma
         self._p = self._params.p

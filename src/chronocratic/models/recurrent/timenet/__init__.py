@@ -1,7 +1,4 @@
-__all__ = [
-    'TimeNet',
-    'TimeNetModelParameters',
-]
+__all__ = ["TimeNet", "TimeNetModelParameters"]
 
 from .config import TimeNetModelParameters
 from .model import TimeNet

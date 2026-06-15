@@ -9,13 +9,13 @@ class DisjoinEncoder(nn.Module):
     ) -> None:
         super().__init__()
         self.temporal_CNN = nn.Sequential(
-            nn.Conv2d(1, embedding_dims, kernel_size=(1, kernel_size), padding='valid'),
+            nn.Conv2d(1, embedding_dims, kernel_size=(1, kernel_size), padding="valid"),
             nn.BatchNorm2d(embedding_dims),
             nn.GELU(),
         )
 
         self.spatial_CNN = nn.Sequential(
-            nn.Conv2d(embedding_dims, embedding_dims, kernel_size=(input_dims, 1), padding='valid'),
+            nn.Conv2d(embedding_dims, embedding_dims, kernel_size=(input_dims, 1), padding="valid"),
             nn.BatchNorm2d(embedding_dims),
             nn.GELU(),
         )
@@ -39,6 +39,6 @@ class DisjoinEncoder(nn.Module):
         """Initialize convolution weights with Xavier uniform initialization."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('relu'))
+                init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain("relu"))
                 if m.bias is not None:
                     init.constant_(m.bias, 0)

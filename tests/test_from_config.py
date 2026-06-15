@@ -21,9 +21,7 @@ from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParam
 from chronocratic.models.convolutional.dilated.cost.model import CoST
 from chronocratic.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
-from chronocratic.models.convolutional.standard.tstcc.augmentations import (
-    _default_tstcc_pair,
-)
+from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
@@ -37,10 +35,7 @@ class TestModelInstantiation:
 
     def test_cost_instantiation_returns_instance(self) -> None:
         config = CoSTModelParameters(input_dims=1, sequence_length=100)
-        model = CoST(
-            **vars(config),
-            augmentation=IndependentPair(aug=None),
-        )
+        model = CoST(**vars(config), augmentation=IndependentPair(aug=None))
         assert isinstance(model, CoST)
 
     def test_autotcl_instantiation_returns_instance(self) -> None:
@@ -120,10 +115,7 @@ class TestAugmentationConfigPropagation:
         )
 
         config = CropShiftAugmentationParameters(temporal_unit=2)
-        model = TS2Vec(
-            input_dims=1,
-            augmentation=CropShiftProducer(params=config),
-        )
+        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer(params=config))
         assert model._augmentation._params.temporal_unit == 2
 
     def test_cost_augmentation_config_propagates(self) -> None:
@@ -149,10 +141,7 @@ class TestAugmentationConfigPropagation:
         )
 
         config = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
-        model = AutoTCL(
-            input_dims=1,
-            augmentation=AutoTCLNeuralNetworkAugmentation(params=config),
-        )
+        model = AutoTCL(input_dims=1, augmentation=AutoTCLNeuralNetworkAugmentation(params=config))
         assert model._augmentation.params.input_dims == 1
 
 
@@ -161,9 +150,7 @@ class TestAugmentationPassThrough:
 
     def test_ts2vec_augmentation_pass_through(self) -> None:
         from chronocratic.models.augmentation.base import ViewPair
-        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
@@ -224,9 +211,7 @@ class TestBackwardCompatModelConstruction:
 
     def test_ts2vec_with_crop_shift_producer(self) -> None:
         """CropShiftProducer still works with TS2Vec."""
-        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
-            CropShiftProducer,
-        )
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
         model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None

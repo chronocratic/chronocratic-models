@@ -135,11 +135,7 @@ class TestAlignedPair:
 
     def test_frozen(self) -> None:
         """AlignedPair is immutable (frozen)."""
-        ap = AlignedPair(
-            first=torch.randn(1, 5, 2),
-            second=torch.randn(1, 5, 2),
-            overlap_length=5,
-        )
+        ap = AlignedPair(first=torch.randn(1, 5, 2), second=torch.randn(1, 5, 2), overlap_length=5)
         with pytest.raises(FrozenInstanceError):
             ap.overlap_length = 10  # type: ignore[misc]
 
@@ -164,7 +160,7 @@ class TestAugmentationProducer:
                 return SingleView(view=x)
 
         # AugmentationProducer is not @runtime_checkable; verify structural conformance
-        assert hasattr(_TestProducer, 'produce')
+        assert hasattr(_TestProducer, "produce")
         producer = _TestProducer()
         x = torch.randn(2, 10, 4)
         result = producer.produce(x)
@@ -187,11 +183,11 @@ class TestTrainableAugmentationProducer:
 
     def test_has_abstract_produce(self) -> None:
         """TrainableAugmentationProducer declares produce() as abstract."""
-        assert 'produce' in TrainableAugmentationProducer.__abstractmethods__
+        assert "produce" in TrainableAugmentationProducer.__abstractmethods__
 
     def test_has_abstract_train_step(self) -> None:
         """TrainableAugmentationProducer declares train_step() as abstract."""
-        assert 'train_step' in TrainableAugmentationProducer.__abstractmethods__
+        assert "train_step" in TrainableAugmentationProducer.__abstractmethods__
 
     def test_configure_optimizer_returns_adamw(self) -> None:
         """configure_optimizer() returns an AdamW optimizer."""
@@ -251,11 +247,11 @@ class TestAugmentationTrainingStrategyRetained:
 
     def test_has_compute_loss_abstract(self) -> None:
         """AugmentationTrainingStrategy still has abstract compute_loss."""
-        assert 'compute_loss' in AugmentationTrainingStrategy.__abstractmethods__
+        assert "compute_loss" in AugmentationTrainingStrategy.__abstractmethods__
 
     def test_has_should_train(self) -> None:
         """AugmentationTrainingStrategy still has should_train method."""
-        assert hasattr(AugmentationTrainingStrategy, 'should_train')
+        assert hasattr(AugmentationTrainingStrategy, "should_train")
 
 
 # --------------------------------------------------------------------------- #

@@ -5,7 +5,7 @@ temporal contrast head, and NT-Xent contextual loss for self-supervised
 pretraining.
 """
 
-__all__ = ['TSTCCModelParameters']
+__all__ = ["TSTCCModelParameters"]
 
 from dataclasses import dataclass
 

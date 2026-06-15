@@ -1,4 +1,4 @@
-__all__ = ['MaskMode', 'generate_mask', 'generate_not_nan_mask']
+__all__ = ["MaskMode", "generate_mask", "generate_not_nan_mask"]
 
 from collections.abc import Callable
 from enum import Enum
@@ -20,11 +20,11 @@ class MaskMode(Enum):
         MASK_LAST: All time steps are kept except the final one.
     """
 
-    BINOMIAL = 'binomial'
-    CONTINUOUS = 'continuous'
-    ALL_TRUE = 'all_true'
-    ALL_FALSE = 'all_false'
-    MASK_LAST = 'mask_last'
+    BINOMIAL = "binomial"
+    CONTINUOUS = "continuous"
+    ALL_TRUE = "all_true"
+    ALL_FALSE = "all_false"
+    MASK_LAST = "mask_last"
 
 
 def generate_continuous_mask(
@@ -146,7 +146,7 @@ def get_mask_function(mask_mode: MaskMode | str) -> Callable[..., torch.Tensor]:
         try:
             mask_mode = MaskMode(mask_mode)
         except ValueError:
-            msg = f'Unknown mask type string: {mask_mode}'
+            msg = f"Unknown mask type string: {mask_mode}"
             raise ValueError(msg)  # noqa: B904
 
     mask_functions = {
@@ -158,7 +158,7 @@ def get_mask_function(mask_mode: MaskMode | str) -> Callable[..., torch.Tensor]:
     }
 
     if mask_mode not in mask_functions:
-        msg = f'Mask mode functionality not defined: {mask_mode}'
+        msg = f"Mask mode functionality not defined: {mask_mode}"
         raise ValueError(msg)
 
     return mask_functions[mask_mode]

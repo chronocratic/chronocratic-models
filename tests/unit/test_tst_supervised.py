@@ -19,7 +19,7 @@ class TestTSTFinetuningModule:
         """make_tst_supervised classification produces (B, num_outputs) output."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(3, 10, 2)
         padding_masks = torch.ones(3, 10, dtype=torch.bool)
@@ -30,7 +30,7 @@ class TestTSTFinetuningModule:
         """make_tst_supervised regression produces (B, num_outputs) output."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=2, task='regression', freeze_backbone=False
+            backbone, num_outputs=2, task="regression", freeze_backbone=False
         )
         x = torch.randn(3, 10, 2)
         padding_masks = torch.ones(3, 10, dtype=torch.bool)
@@ -41,7 +41,7 @@ class TestTSTFinetuningModule:
         """training_step returns a finite scalar loss."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(4, 10, 2)
         targets = torch.randint(0, 5, (4,))
@@ -56,7 +56,7 @@ class TestTSTFinetuningModule:
         """freeze_backbone=True: backbone params don't receive gradients."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=True
+            backbone, num_outputs=5, task="classification", freeze_backbone=True
         )
         x = torch.randn(2, 10, 2)
         targets = torch.randint(0, 5, (2,))
@@ -72,7 +72,7 @@ class TestTSTFinetuningModule:
         """freeze_backbone=False: backbone params receive gradients."""
         backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
         module = make_tst_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         x = torch.randn(2, 10, 2)
         targets = torch.randint(0, 5, (2,))

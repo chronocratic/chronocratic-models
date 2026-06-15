@@ -9,16 +9,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from chronocratic.models.augmentation.base import (
-    AlignedPair,
-    SingleView,
-    ViewPair,
-)
-from chronocratic.models.augmentation.primitives import (
-    Jitter,
-    JitterParameters,
-    Scaling,
-)
+from chronocratic.models.augmentation.base import AlignedPair, SingleView, ViewPair
+from chronocratic.models.augmentation.primitives import Jitter, JitterParameters, Scaling
 
 # --------------------------------------------------------------------------- #
 # Import producers under test
@@ -36,7 +28,6 @@ from chronocratic.models.augmentation.producers import (
 
 
 class TestSingleViewProducer:
-
     def test_produces_single_view_with_tensor(self) -> None:
         """SingleViewProducer produces SingleView with .view tensor (VER-01)."""
         aug = Jitter()
@@ -64,7 +55,6 @@ class TestSingleViewProducer:
 
 
 class TestIndependentPair:
-
     def test_produces_view_pair(self) -> None:
         """IndependentPair produces ViewPair (VER-02)."""
         aug = Jitter()
@@ -94,7 +84,6 @@ class TestIndependentPair:
 
 
 class TestRolePair:
-
     def test_produces_view_pair(self) -> None:
         """RolePair produces ViewPair (VER-03)."""
         first_aug = Jitter()
@@ -133,7 +122,6 @@ class TestRolePair:
 
 
 class TestFullOverlapPair:
-
     def test_produces_aligned_pair(self) -> None:
         """FullOverlapPair produces AlignedPair with overlap_length == T (VER-04)."""
         aug = Jitter()
@@ -154,7 +142,6 @@ class TestFullOverlapPair:
 
 
 class TestProtocolCompliance:
-
     def test_single_view_producer_has_produce_method(self) -> None:
         """SingleViewProducer satisfies AugmentationProducer structurally."""
         producer = SingleViewProducer(aug=Jitter())
@@ -182,7 +169,6 @@ class TestProtocolCompliance:
 
 
 class TestKeywordOnlyConstructors:
-
     def test_single_view_producer_requires_kwonly(self) -> None:
         """Producers have keyword-only constructors (VER-07)."""
         with pytest.raises(TypeError):

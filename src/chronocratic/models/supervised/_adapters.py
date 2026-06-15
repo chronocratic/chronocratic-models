@@ -17,11 +17,11 @@ if TYPE_CHECKING:
     from chronocratic.models.transformer.tst.model import TST
 
 __all__ = [
-    'series2vec_representations',
-    'supervised_batch_adapter',
-    'tst_batch_adapter',
-    'tst_representations',
-    'tstcc_representations',
+    "series2vec_representations",
+    "supervised_batch_adapter",
+    "tst_batch_adapter",
+    "tst_representations",
+    "tstcc_representations",
 ]
 
 

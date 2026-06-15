@@ -10,9 +10,7 @@ Exported symbols:
 
 from __future__ import annotations
 
-__all__ = [
-    'Seeded',
-]
+__all__ = ["Seeded"]
 
 import numpy as np
 import torch

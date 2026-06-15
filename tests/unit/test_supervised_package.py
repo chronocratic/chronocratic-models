@@ -170,7 +170,7 @@ class TestSupervisedModule:
             freeze_backbone=True,
         )
         opt = module.configure_optimizers()
-        trainable_params = list(opt.param_groups[0]['params'])
+        trainable_params = list(opt.param_groups[0]["params"])
         head_params = list(head.parameters())
         # All trainable params should belong to the head
         assert len(trainable_params) == len(head_params)
@@ -412,7 +412,7 @@ class TestFactoryFunctions:
         """make_tst_supervised with classification task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tst_supervised(
-            backbone, num_outputs=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
@@ -420,7 +420,7 @@ class TestFactoryFunctions:
         """make_tst_supervised with regression task returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tst_supervised(
-            backbone, num_outputs=2, task='regression', freeze_backbone=False
+            backbone, num_outputs=2, task="regression", freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
@@ -428,7 +428,7 @@ class TestFactoryFunctions:
         """make_series2vec_supervised with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_series2vec_supervised(
-            backbone, num_outputs=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
@@ -436,7 +436,7 @@ class TestFactoryFunctions:
         """make_tstcc_supervised with classification returns SupervisedModule."""
         backbone = _DummyBackbone(rep_dim=4)
         module = make_tstcc_supervised(
-            backbone, num_outputs=3, task='classification', freeze_backbone=False
+            backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         assert isinstance(module, SupervisedModule)
 
@@ -444,7 +444,7 @@ class TestFactoryFunctions:
         """Factory head size matches backbone.representation_dim * num_outputs."""
         backbone = _DummyBackbone(rep_dim=8)
         module = make_tst_supervised(
-            backbone, num_outputs=5, task='classification', freeze_backbone=False
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # The head should be a FlattenLinearHead with correct in_features
         head = module._head  # noqa: SLF001

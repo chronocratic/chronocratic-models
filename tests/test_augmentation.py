@@ -78,9 +78,7 @@ class TestRIPTrainingStrategy:
         aug_factor = torch.rand(2, 10, 3)
 
         loss = strategy.compute_loss(
-            x_embeddings=x_emb,
-            aug_x_embeddings=aug_x_emb,
-            augmentation_factor=aug_factor,
+            x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
         )
         assert loss.ndim == 0  # scalar
         assert loss.requires_grad
@@ -121,13 +119,11 @@ class TestRIPTrainingStrategy:
             regularization_threshold=regularization_threshold,
         )
         with patch(
-            'chronocratic.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency',
+            "chronocratic.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency",
             return_value=fixed_consistency,
         ):
             new_loss = strategy.compute_loss(
-                x_embeddings=x_emb,
-                aug_x_embeddings=aug_x_emb,
-                augmentation_factor=aug_factor,
+                x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
             )
 
         assert torch.allclose(original_loss, new_loss, atol=1e-6)
@@ -148,9 +144,7 @@ class TestAdversarialTrainingStrategy:
         aug_factor = torch.rand(2, 10, 3)
 
         loss = strategy.compute_loss(
-            x_embeddings=x_emb,
-            aug_x_embeddings=aug_x_emb,
-            augmentation_factor=aug_factor,
+            x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
         )
         assert loss.ndim == 0  # scalar
         assert loss.requires_grad
@@ -168,9 +162,7 @@ class TestAdversarialTrainingStrategy:
 
         strategy = AdversarialTrainingStrategy()
         new_loss = strategy.compute_loss(
-            x_embeddings=x_emb,
-            aug_x_embeddings=aug_x_emb,
-            augmentation_factor=aug_factor,
+            x_embeddings=x_emb, aug_x_embeddings=aug_x_emb, augmentation_factor=aug_factor
         )
 
         assert torch.allclose(original_loss, new_loss, atol=1e-6)
@@ -194,17 +186,13 @@ class TestCropShiftProducer:
         assert isinstance(result.overlap_length, int)
 
     def test_produce_with_params(self) -> None:
-        aug = CropShiftProducer(
-            params=CropShiftAugmentationParameters(temporal_unit=1)
-        )
+        aug = CropShiftProducer(params=CropShiftAugmentationParameters(temporal_unit=1))
         data = torch.randn(2, 100, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
 
     def test_produce_with_temporal_unit_kwarg(self) -> None:
-        aug = CropShiftProducer(
-            params=CropShiftAugmentationParameters(temporal_unit=5)
-        )
+        aug = CropShiftProducer(params=CropShiftAugmentationParameters(temporal_unit=5))
         data = torch.randn(2, 1000, 3)
         result = aug.produce(data)
         assert isinstance(result, AlignedPair)
@@ -228,17 +216,13 @@ class TestAutoTCLNeuralNetworkAugmentation:
     def test_constructor_accepts_dataclass(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
         strategy = RIPTrainingStrategy()
-        aug = AutoTCLNeuralNetworkAugmentation(
-            params=params, training_strategy=strategy
-        )
+        aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
     def test_has_trainable_params(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
         strategy = RIPTrainingStrategy()
-        aug = AutoTCLNeuralNetworkAugmentation(
-            params=params, training_strategy=strategy
-        )
+        aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
         param_count = len(list(aug.parameters()))
         assert param_count > 0
 
@@ -247,9 +231,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
             input_dims=1, output_dims=320, kernel_sizes=[3]
         )
         strategy = RIPTrainingStrategy()
-        aug = AutoTCLNeuralNetworkAugmentation(
-            params=params, training_strategy=strategy
-        )
+        aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
         aug.eval()
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
@@ -301,9 +283,7 @@ class TestViewSetTypes:
 
     def test_aligned_pair_is_frozen(self) -> None:
         ap = AlignedPair(
-            first=torch.randn(2, 10, 4),
-            second=torch.randn(2, 10, 4),
-            overlap_length=5,
+            first=torch.randn(2, 10, 4), second=torch.randn(2, 10, 4), overlap_length=5
         )
         with pytest.raises(Exception):
             ap.overlap_length = 10  # type: ignore[attr-defined]

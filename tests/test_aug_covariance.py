@@ -9,16 +9,8 @@ from __future__ import annotations
 
 import torch
 
-from chronocratic.models.augmentation import (
-    AlignedPair,
-    AugmentationProducer,
-    SingleView,
-    ViewPair,
-)
-from chronocratic.models.augmentation.primitives import (
-    Jitter,
-    JitterParameters,
-)
+from chronocratic.models.augmentation import AlignedPair, AugmentationProducer, SingleView, ViewPair
+from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 from chronocratic.models.augmentation.producers import (
     FullOverlapPair,
     IndependentPair,
@@ -37,9 +29,7 @@ class TestViewSetHierarchy:
     def test_aligned_pair_has_viewpair_fields(self) -> None:
         """AlignedPair instances have first and second fields like ViewPair."""
         pair = AlignedPair(
-            first=torch.randn(2, 10, 3),
-            second=torch.randn(2, 10, 3),
-            overlap_length=10,
+            first=torch.randn(2, 10, 3), second=torch.randn(2, 10, 3), overlap_length=10
         )
         assert isinstance(pair, ViewPair)
         assert pair.first.shape == (2, 10, 3)
@@ -80,8 +70,7 @@ class TestProducerCovariance:
             return p.produce(torch.randn(2, 50, 3))
 
         producer = RolePair(
-            first=Jitter(JitterParameters(sigma=0.05)),
-            second=Jitter(JitterParameters(sigma=0.1)),
+            first=Jitter(JitterParameters(sigma=0.05)), second=Jitter(JitterParameters(sigma=0.1))
         )
         result = consumer(producer)
         assert isinstance(result, ViewPair)

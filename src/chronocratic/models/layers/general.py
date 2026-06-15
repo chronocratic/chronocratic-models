@@ -5,13 +5,7 @@ import torch
 from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 
-__all__ = [
-    'BandedFourierLayer',
-    'LevelModel',
-    'ResidualConnection',
-    'SeasonalLayer',
-    'TrendLayer',
-]
+__all__ = ["BandedFourierLayer", "LevelModel", "ResidualConnection", "SeasonalLayer", "TrendLayer"]
 
 Seasonality = tuple[int, int]
 
@@ -85,7 +79,7 @@ class BandedFourierLayer(nn.Module):
         Returns:
             Transformed output tensor in the Fourier domain.
         """
-        output = torch.einsum('bti,tio->bto', input_tensor[:, self.start : self.end], self.weight)
+        output = torch.einsum("bti,tio->bto", input_tensor[:, self.start : self.end], self.weight)
         return output + self.bias
 
     def reset_parameters(self) -> None:
@@ -138,9 +132,7 @@ class SeasonalLayer(nn.Module):
             ]
         )
 
-    def _get_season_indexes_over_seq(
-        self, num_seasons: int, len_per_season: int
-    ) -> torch.Tensor:
+    def _get_season_indexes_over_seq(self, num_seasons: int, len_per_season: int) -> torch.Tensor:
         season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(
             (num_seasons, len_per_season), dtype=torch.int32
         )

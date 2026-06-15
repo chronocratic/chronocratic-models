@@ -1,8 +1,8 @@
 __all__ = [
-    'AutoTCLAugmentationTimeSeriesEncoder',
-    'AutoTCLTimeSeriesEncoder',
-    'CoSTTimeSeriesEncoder',
-    'TS2VecTimeSeriesEncoder',
+    "AutoTCLAugmentationTimeSeriesEncoder",
+    "AutoTCLTimeSeriesEncoder",
+    "CoSTTimeSeriesEncoder",
+    "TS2VecTimeSeriesEncoder",
 ]
 
 from abc import ABC, abstractmethod
@@ -173,10 +173,10 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         trend = reduce(
             rearrange(
-                trend, 'list BatchSize TimeSteps Channels -> list BatchSize TimeSteps Channels'
+                trend, "list BatchSize TimeSteps Channels -> list BatchSize TimeSteps Channels"
             ),
-            'list BatchSize TimeSteps Channels -> BatchSize TimeSteps Channels',
-            'mean',
+            "list BatchSize TimeSteps Channels -> BatchSize TimeSteps Channels",
+            "mean",
         )
         return trend
 
@@ -349,7 +349,7 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         )
 
         if return_tcn_output:
-            return {'embeddings': trend}
+            return {"embeddings": trend}
 
         augmentation_factor = self.factor_augmentation_network(trend)
 
@@ -367,10 +367,10 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         augmented_x = projection_factor * augmentation_mask * x
 
         return {
-            'embeddings': trend,
-            'augmented_data': augmented_x,
-            'augmentation_factor': augmentation_factor,
-            'projection_factor': projection_factor,
+            "embeddings": trend,
+            "augmented_data": augmented_x,
+            "augmentation_factor": augmentation_factor,
+            "projection_factor": projection_factor,
         }
 
     def augment(self, data: torch.Tensor) -> torch.Tensor:
@@ -384,7 +384,7 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         """
         model_output = self.forward(data)
 
-        augmented_x = model_output['augmented_data']
+        augmented_x = model_output["augmented_data"]
 
         return augmented_x
 
@@ -450,7 +450,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         num_bands: int = 1,
     ) -> None:
         if output_dims % 2 != 0:
-            msg = f'output_dims must be even for CoST, got {output_dims}'
+            msg = f"output_dims must be even for CoST, got {output_dims}"
             raise ValueError(msg)
 
         super().__init__(
@@ -508,10 +508,10 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         trend = reduce(
             rearrange(
-                trend, 'list BatchSize TimeSteps Channels -> list BatchSize TimeSteps Channels'
+                trend, "list BatchSize TimeSteps Channels -> list BatchSize TimeSteps Channels"
             ),
-            'list BatchSize TimeSteps Channels -> BatchSize TimeSteps Channels',
-            'mean',
+            "list BatchSize TimeSteps Channels -> BatchSize TimeSteps Channels",
+            "mean",
         )
         return trend
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['TimeNet']
+__all__ = ["TimeNet"]
 
 from typing import TYPE_CHECKING
 
@@ -97,7 +97,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = batch
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         return loss
 
@@ -106,7 +106,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = batch
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         return loss
 

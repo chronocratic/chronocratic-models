@@ -5,7 +5,7 @@ settings: mask mode, learning rate, training length cap, temporal
 unit, and distributed-sync flag.
 """
 
-__all__ = ['TS2VecModelParameters']
+__all__ = ["TS2VecModelParameters"]
 
 from dataclasses import dataclass
 
