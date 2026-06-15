@@ -12,7 +12,7 @@ removed — their tests have been deleted.
 import pytest
 import torch
 
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     AlignedPair,
     Augmentation,
     AugmentationTrainingStrategy,
@@ -20,19 +20,19 @@ from tscollection.models.augmentation import (
     SingleViewProducer,
     ViewPair,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
     AdversarialTrainingStrategy,
     RIPTrainingStrategy,
 )
-from tscollection.models.convolutional.dilated.cost.augmentation import (
+from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentationParameters,
     CropShiftProducer,
 )
@@ -91,7 +91,7 @@ class TestRIPTrainingStrategy:
 
         from torch.nn import functional as F
 
-        from tscollection.models.convolutional.dilated.autotcl.losses import (
+        from chronocratic.models.convolutional.dilated.autotcl.losses import (
             maximum_mean_discrepancy_with_gaussian_kernel_loss,
         )
 
@@ -121,7 +121,7 @@ class TestRIPTrainingStrategy:
             regularization_threshold=regularization_threshold,
         )
         with patch(
-            'tscollection.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency',
+            'chronocratic.models.convolutional.dilated.autotcl.utils.calculate_regular_consistency',
             return_value=fixed_consistency,
         ):
             new_loss = strategy.compute_loss(
@@ -157,7 +157,7 @@ class TestAdversarialTrainingStrategy:
 
     def test_loss_equivalence_to_original_auto_tcl(self) -> None:
         """AdversarialTrainingStrategy must match original AutoTCL loss."""
-        from tscollection.models.convolutional.dilated.autotcl.losses import info_nce_loss
+        from chronocratic.models.convolutional.dilated.autotcl.losses import info_nce_loss
 
         torch.manual_seed(42)
         x_emb = torch.randn(2, 10, 32)
@@ -318,7 +318,7 @@ class TestAugmentationProtocol:
     """Augmentation Protocol structural checks."""
 
     def test_primitive_jitter_satisfies_protocol(self) -> None:
-        from tscollection.models.augmentation import Jitter
+        from chronocratic.models.augmentation import Jitter
 
         aug = Jitter()
         data = torch.randn(2, 10, 4)
@@ -327,7 +327,7 @@ class TestAugmentationProtocol:
         assert result.shape == data.shape
 
     def test_augmentation_protocol_is_runtime_checkable(self) -> None:
-        from tscollection.models.augmentation import Jitter
+        from chronocratic.models.augmentation import Jitter
 
         aug = Jitter()
         assert isinstance(aug, Augmentation)
@@ -342,7 +342,7 @@ class TestSingleViewProducer:
     """SingleViewProducer wraps one Augmentation, returns SingleView."""
 
     def test_produce_returns_single_view(self) -> None:
-        from tscollection.models.augmentation import Jitter
+        from chronocratic.models.augmentation import Jitter
 
         producer = SingleViewProducer(aug=Jitter())
         data = torch.randn(2, 10, 4)

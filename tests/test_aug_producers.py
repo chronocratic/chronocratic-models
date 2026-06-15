@@ -9,12 +9,12 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AlignedPair,
     SingleView,
     ViewPair,
 )
-from tscollection.models.augmentation.primitives import (
+from chronocratic.models.augmentation.primitives import (
     Jitter,
     JitterParameters,
     Scaling,
@@ -23,7 +23,7 @@ from tscollection.models.augmentation.primitives import (
 # --------------------------------------------------------------------------- #
 # Import producers under test
 # --------------------------------------------------------------------------- #
-from tscollection.models.augmentation.producers import (
+from chronocratic.models.augmentation.producers import (
     FullOverlapPair,
     IndependentPair,
     RolePair,

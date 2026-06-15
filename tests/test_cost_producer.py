@@ -9,16 +9,16 @@ from collections.abc import Callable
 
 import torch
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     Augmentation,
     ViewPair,
 )
-from tscollection.models.augmentation.producers import IndependentPair
-from tscollection.models.convolutional.dilated.cost.augmentation import (
+from chronocratic.models.augmentation.producers import IndependentPair
+from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.cost.model import CoST
+from chronocratic.models.convolutional.dilated.cost.model import CoST
 
 
 class TestCosTRandomFunctionAugmentationProtocol:

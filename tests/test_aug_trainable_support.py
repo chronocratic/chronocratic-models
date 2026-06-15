@@ -16,15 +16,15 @@ import torch
 from torch import nn
 from torch.optim import AdamW
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AugmentationProducer,
     AugmentationTrainingStrategy,
     SingleView,
     TrainableAugmentationProducer,
 )
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import SingleViewProducer
-from tscollection.models.augmentation.trainable_support import (
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import SingleViewProducer
+from chronocratic.models.augmentation.trainable_support import (
     maybe_configure_augmentation_optimizer,
     maybe_train_augmentation,
 )

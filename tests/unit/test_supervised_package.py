@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import torch
 from torch import nn
 
-from tscollection.models.supervised import (
+from chronocratic.models.supervised import (
     BackboneUnfreeze,
     classification_loss,
     FlattenLinearHead,

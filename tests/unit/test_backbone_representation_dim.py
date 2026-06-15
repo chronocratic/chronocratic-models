@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models.supervised import (
+from chronocratic.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
     RepresentationBackbone,
 )
-from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-from tscollection.models.transformer.tst.model import TST
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.transformer.tst.model import TST
 
 
 class TestTSTRepresentationDim:

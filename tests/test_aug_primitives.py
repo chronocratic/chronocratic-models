@@ -11,7 +11,7 @@ from dataclasses import is_dataclass
 
 import torch
 
-from tscollection.models.augmentation.primitives import (
+from chronocratic.models.augmentation.primitives import (
     ComposeAugmentation,
     Jitter,
     JitterParameters,

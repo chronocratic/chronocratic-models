@@ -10,18 +10,18 @@ PermutationParameters) from augmentation/primitives.py.
 """
 
 
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     JitterParameters,
     PermutationParameters,
     ScalingParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.cost.augmentation import (
+from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftAugmentationParameters,
 )
 
@@ -163,7 +163,7 @@ class TestBarrelExports:
     """Verify that parameter dataclasses are importable from the barrel."""
 
     def test_primitive_params_importable_from_barrel(self) -> None:
-        from tscollection.models.augmentation import (
+        from chronocratic.models.augmentation import (
             JitterParameters,
             PermutationParameters,
             ScalingParameters,
@@ -174,13 +174,13 @@ class TestBarrelExports:
         assert ScalingParameters is not None
 
     def test_per_model_params_importable_from_source(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
-        from tscollection.models.convolutional.dilated.cost.augmentation import (
+        from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentationParameters,
         )
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftAugmentationParameters,
         )
 
@@ -189,7 +189,7 @@ class TestBarrelExports:
         assert CropShiftAugmentationParameters is not None
 
     def test_auto_tcl_params_defaults(self) -> None:
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 

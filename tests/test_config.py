@@ -8,10 +8,10 @@ from dataclasses import fields, is_dataclass
 
 import pytest
 
-from tscollection.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
-from tscollection.models.convolutional.dilated.cost.config import CoSTModelParameters
-from tscollection.models.convolutional.dilated.encoders.masking import MaskMode
-from tscollection.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
+from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
+from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
+from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.convolutional.dilated.ts2vec.config import TS2VecModelParameters
 
 
 class TestTS2VecModelParameters:
@@ -258,4 +258,4 @@ class TestNoModelParameters:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from tscollection.models.config import ModelParameters  # noqa: F401, PLC0415
+            from chronocratic.models.config import ModelParameters  # noqa: F401, PLC0415

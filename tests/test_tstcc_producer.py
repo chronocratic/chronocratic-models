@@ -9,14 +9,14 @@ from collections.abc import Callable
 import pytest
 import torch
 
-from tscollection.models.augmentation import primitives
-from tscollection.models.augmentation.base import ViewPair
-from tscollection.models.augmentation.producers import RolePair
-from tscollection.models.convolutional.standard.tstcc import augmentations
-from tscollection.models.convolutional.standard.tstcc.augmentations import (
+from chronocratic.models.augmentation import primitives
+from chronocratic.models.augmentation.base import ViewPair
+from chronocratic.models.augmentation.producers import RolePair
+from chronocratic.models.convolutional.standard.tstcc import augmentations
+from chronocratic.models.convolutional.standard.tstcc.augmentations import (
     _default_tstcc_pair,
 )
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
 class TestDefaultTSTCCPair:

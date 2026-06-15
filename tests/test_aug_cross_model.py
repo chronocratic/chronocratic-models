@@ -13,14 +13,14 @@ import pathlib
 import pytest
 import torch
 
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     AlignedPair,
     AugmentationProducer,
     TrainableAugmentationProducer,
     ViewPair,
 )
-from tscollection.models.augmentation.decorators import Seeded
-from tscollection.models.augmentation.primitives import (
+from chronocratic.models.augmentation.decorators import Seeded
+from chronocratic.models.augmentation.primitives import (
     ComposeAugmentation,
     Jitter,
     JitterParameters,
@@ -29,13 +29,13 @@ from tscollection.models.augmentation.primitives import (
     Scaling,
     ScalingParameters,
 )
-from tscollection.models.augmentation.producers import (
+from chronocratic.models.augmentation.producers import (
     FullOverlapPair,
     IndependentPair,
     RolePair,
     SingleViewProducer,
 )
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # Import _train_steps from test_smoke.py to avoid duplication
 from tests.test_smoke import _train_steps
@@ -129,7 +129,7 @@ class TestCovariance:
         AlignedPair is-a ViewPair, and V is covariant in AugmentationProducer[V].
         Therefore CropShiftProducer fits any AugmentationProducer[ViewPair] slot.
         """
-        from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+        from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
             CropShiftProducer,
         )
 
@@ -184,7 +184,7 @@ class TestSeededDecorator:
 
         Verifies the isinstance guard from decorators.py.
         """
-        from tscollection.models.augmentation.base import (
+        from chronocratic.models.augmentation.base import (
             AugmentationTrainingStrategy,
             SingleView,
         )
@@ -224,7 +224,7 @@ class TestImportHygiene:
 
     def test_primitives_no_model_imports(self) -> None:
         """primitives.py must not import from convolutional/."""
-        import tscollection.models.augmentation.primitives as primitives
+        import chronocratic.models.augmentation.primitives as primitives
 
         source = pathlib.Path(primitives.__file__).read_text()
         assert 'convolutional' not in source, (
@@ -234,7 +234,7 @@ class TestImportHygiene:
 
     def test_producers_no_model_imports(self) -> None:
         """producers.py must not import from convolutional/."""
-        import tscollection.models.augmentation.producers as producers
+        import chronocratic.models.augmentation.producers as producers
 
         source = pathlib.Path(producers.__file__).read_text()
         assert 'convolutional' not in source, (
@@ -244,7 +244,7 @@ class TestImportHygiene:
 
     def test_decorators_no_model_imports(self) -> None:
         """decorators.py must not import from convolutional/."""
-        import tscollection.models.augmentation.decorators as decorators
+        import chronocratic.models.augmentation.decorators as decorators
 
         source = pathlib.Path(decorators.__file__).read_text()
         assert 'convolutional' not in source, (

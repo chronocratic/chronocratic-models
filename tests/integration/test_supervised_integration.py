@@ -9,19 +9,19 @@ from lightning.pytorch.trainer import Trainer
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from tscollection.models import supervised
-from tscollection.models.supervised import (
+from chronocratic.models import supervised
+from chronocratic.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
     RepresentationBackbone,
     SupervisedModule,
 )
-from tscollection.models.convolutional.standard import series2vec, tstcc
-from tscollection.models.convolutional.standard.series2vec.model import Series2Vec
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
-from tscollection.models.transformer import tst
-from tscollection.models.transformer.tst.model import TST
+from chronocratic.models.convolutional.standard import series2vec, tstcc
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.transformer import tst
+from chronocratic.models.transformer.tst.model import TST
 
 # ---------------------------------------------------------------------------
 # Tiny synthetic dataset for end-to-end training
@@ -294,7 +294,7 @@ class TestBarrelExportsClean:
     """Verify barrel exports are clean — no leaked head classes."""
 
     def test_supervised_exports_match_all(self) -> None:
-        """tscollection.models.supervised exports match __all__."""
+        """chronocratic.models.supervised exports match __all__."""
         exported = set(supervised.__all__)
         actual = {
             name

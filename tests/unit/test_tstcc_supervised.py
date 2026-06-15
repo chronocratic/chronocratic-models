@@ -11,9 +11,9 @@ import inspect
 import pytest
 import torch
 
-from tscollection.models.supervised import make_tstcc_supervised
-from tscollection.models.convolutional.standard.tstcc.config import TSTCCModelParameters
-from tscollection.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.supervised import make_tstcc_supervised
+from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
 class TestTSTCCEnumRemoved:
@@ -22,14 +22,14 @@ class TestTSTCCEnumRemoved:
     def test_enum_import_removed(self) -> None:
         """TSTCCTrainingMode is no longer importable from tstcc.enums."""
         with pytest.raises(ImportError):
-            from tscollection.models.convolutional.standard.tstcc.enums import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.standard.tstcc.enums import (  # noqa: F401, PLC0415
                 TSTCCTrainingMode,
             )
 
     def test_enum_not_in_barrel(self) -> None:
         """TSTCCTrainingMode is no longer in the tstcc package barrel."""
         with pytest.raises(ImportError):
-            from tscollection.models.convolutional.standard.tstcc import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.standard.tstcc import (  # noqa: F401, PLC0415
                 TSTCCTrainingMode,
             )
 

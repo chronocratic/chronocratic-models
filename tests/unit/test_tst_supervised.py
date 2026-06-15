@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models.supervised import make_tst_supervised
-from tscollection.models.transformer.tst.model import TST
+from chronocratic.models.supervised import make_tst_supervised
+from chronocratic.models.transformer.tst.model import TST
 
 
 class TestTSTFinetuningModule:

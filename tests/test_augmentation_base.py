@@ -12,7 +12,7 @@ import pytest
 import torch
 from torch import nn
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AlignedPair,
     Augmentation,
     AugmentationTrainingStrategy,
@@ -127,7 +127,7 @@ class TestTrainableAugmentationProducerBase:
 
     def test_is_abc(self) -> None:
         """TrainableAugmentationProducer cannot be instantiated directly."""
-        from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+        from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
             RIPTrainingStrategy,
         )
 
