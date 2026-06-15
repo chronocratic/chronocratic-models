@@ -92,7 +92,7 @@ class BasicEncodingMixin(ABC):
         """
         return (batch_x,)
 
-    def _postprocess(self, output: Any) -> torch.Tensor:  # noqa: ANN401
+    def _postprocess[T](self, output: T) -> T:
         """Return the final representation tensor from the encoder output.
 
         Default: identity (the encoder is assumed to return a tensor).
@@ -128,10 +128,10 @@ class BasicEncodingMixin(ABC):
             CPU tensor of shape ``(N, ...)`` — concatenation of per-batch
             representations along dim 0.
         """
-        encoder = self._get_encoder()
         encoder_module = self._get_encoder_module()
         was_training = encoder_module.training
         encoder_module.eval()
+        data_device = data.device
         try:
             loader = DataLoader(
                 TensorDataset(data), batch_size=batch_size, num_workers=num_workers, pin_memory=True
@@ -140,8 +140,8 @@ class BasicEncodingMixin(ABC):
             for (batch_x,) in loader:
                 batch_on_device = batch_x.to(self.device)
                 args = self._prepare_inputs(batch_on_device)
-                output = encoder(*args)
-                outputs.append(self._postprocess(output).cpu())
+                output = encoder_module(*args)
+                outputs.append(self._postprocess(output).to(data_device))
             return torch.cat(outputs, dim=0)
         finally:
             encoder_module.train(was_training)
