@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.0.0.dev0"  # ponytail: placeholder until setuptools_scm generates _version.py
+
 from .convolutional import (
     AutoTCL,
     AutoTCLModelParameters,
@@ -21,6 +26,7 @@ from .recurrent import TimeNet, TimeNetModelParameters
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
+    "__version__",
     'FCN',
     'TST',
     'TSTCC',
