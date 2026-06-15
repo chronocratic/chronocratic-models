@@ -1,6 +1,6 @@
 # chronocratic-models
 
-Self-supervised time-series representation learning models built with PyTorch and Lightning.
+Ready-to-use time series models implemented in PyTorch and Lightning.
 
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
@@ -21,15 +21,17 @@ pip install chronocratic-models
 
 The library provides ten pre-trained encoders organized by architecture family:
 
-**Convolutional (Dilated):** TS2Vec, CoST, AutoTCL
+**Convolutional (Dilated):** [](api/conv_dilated) — TS2Vec, CoST, AutoTCL
 
-**Convolutional (Standard):** Series2Vec, TSTCC, FCN
+**Convolutional (Standard):** [](api/conv_standard) — Series2Vec, TSTCC, FCN
 
-**Transformer:** TST
+**Transformer:** [](api/transformer) — TST
 
-**Recurrent:** TimeNet
+**Recurrent:** [](api/recurrent) — TimeNet
 
-**Generative:** TimeVAE
+**Generative:** [](api/generative) — TimeVAE
+
+**Supervised:** [](api/supervised) — SupervisedModule with factory functions
 
 ## Features
 
@@ -38,3 +40,13 @@ The library provides ten pre-trained encoders organized by architecture family:
 - **Self-supervised representation learning** — pre-trained encoders ready for downstream tasks without labeled data.
 - **Pre-configured model parameters** — each model ships with tested default configuration dataclasses.
 - **NumPy and PyTorch tensor support** — flexible input handling for both frameworks.
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+
+quickstart
+changelog
+contributing
+api/index
+```

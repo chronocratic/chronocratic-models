@@ -49,4 +49,4 @@ from chronocratic.models import (
 )
 ```
 
-Each model accepts a configuration dataclass that defines architecture hyperparameters. See the [](api/models) for full parameter documentation.
+Each model accepts a configuration dataclass that defines architecture hyperparameters. See the [](api/index) for full API documentation per model family.
