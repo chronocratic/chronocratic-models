@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "chronocratic-models"
 dynamic = ["version"]
-description = "Self-supervised time-series representation learning models"
+description = "Ready-to-use time series models implemented in PyTorch and Lightning."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-3-Clause"
@@ -22,7 +22,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
