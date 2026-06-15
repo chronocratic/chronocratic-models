@@ -13,7 +13,7 @@ import torch
 from torch import nn
 from torch.optim import AdamW
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     AlignedPair,
     Augmentation,
     AugmentationProducer,

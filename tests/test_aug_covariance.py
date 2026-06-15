@@ -9,17 +9,17 @@ from __future__ import annotations
 
 import torch
 
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     AlignedPair,
     AugmentationProducer,
     SingleView,
     ViewPair,
 )
-from tscollection.models.augmentation.primitives import (
+from chronocratic.models.augmentation.primitives import (
     Jitter,
     JitterParameters,
 )
-from tscollection.models.augmentation.producers import (
+from chronocratic.models.augmentation.producers import (
     FullOverlapPair,
     IndependentPair,
     RolePair,

@@ -21,31 +21,31 @@ import lightning.pytorch as pl
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.models.augmentation import (
+from chronocratic.models.augmentation import (
     AlignedPair,
     AugmentationProducer,
     SingleView,
     ViewPair,
 )
-from tscollection.models.augmentation.producers import IndependentPair
-from tscollection.models.convolutional.dilated.autotcl.augmentation import (
+from chronocratic.models.augmentation.producers import IndependentPair
+from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
     RIPTrainingStrategy,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
-from tscollection.models.convolutional.dilated.cost.augmentation import (
+from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
+from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.cost.model import CoST
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+from chronocratic.models.convolutional.dilated.cost.model import CoST
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftProducer,
 )
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
-from tscollection.models.convolutional.standard.tstcc.augmentations import (
+from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
+from chronocratic.models.convolutional.standard.tstcc.augmentations import (
     _default_tstcc_pair,
 )
 

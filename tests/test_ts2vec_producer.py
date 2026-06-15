@@ -9,14 +9,14 @@ from copy import deepcopy
 
 import torch
 
-from tscollection.models.augmentation.base import AlignedPair
-from tscollection.models.augmentation.decorators import Seeded
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import FullOverlapPair
-from tscollection.models.convolutional.dilated.ts2vec.augmentation import (
+from chronocratic.models.augmentation.base import AlignedPair
+from chronocratic.models.augmentation.decorators import Seeded
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import FullOverlapPair
+from chronocratic.models.convolutional.dilated.ts2vec.augmentation import (
     CropShiftProducer,
 )
-from tscollection.models.convolutional.dilated.ts2vec.model import TS2Vec
+from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # --------------------------------------------------------------------------- #
 # CropShiftProducer unit tests

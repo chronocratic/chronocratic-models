@@ -10,20 +10,20 @@ from collections.abc import Callable
 
 import torch
 
-from tscollection.models.augmentation.base import (
+from chronocratic.models.augmentation.base import (
     SingleView,
     TrainableAugmentationProducer,
 )
-from tscollection.models.augmentation.primitives import Jitter
-from tscollection.models.augmentation.producers import SingleViewProducer
-from tscollection.models.convolutional.dilated.autotcl.augmentation.methods import (
+from chronocratic.models.augmentation.primitives import Jitter
+from chronocratic.models.augmentation.producers import SingleViewProducer
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
     AutoTCLNeuralNetworkAugmentation,
     AutoTCLNeuralNetworkAugmentationParameters,
 )
-from tscollection.models.convolutional.dilated.autotcl.augmentation.training import (
+from chronocratic.models.convolutional.dilated.autotcl.augmentation.training import (
     RIPTrainingStrategy,
 )
-from tscollection.models.convolutional.dilated.autotcl.model import AutoTCL
+from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
 
 
 class TestAutoTCLNeuralNetworkAugmentationIsTrainableProducer:
