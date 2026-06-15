@@ -33,19 +33,24 @@ with torch.no_grad():
 
 ## Model Catalog
 
-Ten models are available across five architecture families. All models take keyword arguments matching their `*ModelParameters` dataclass:
+Ten models are available across five architecture families. Models take keyword arguments directly. Each family ships with a `*ModelParameters` dataclass you can configure and unpack with `vars()`.
 
 ```python
-from chronocratic.models import TS2Vec, TST, TimeVAE, Series2Vec, TSTCC, FCN, TimeNet, CoST, AutoTCL
+from chronocratic.models import (
+    TS2Vec, TS2VecModelParameters,
+    TST, TSTModelParameters,
+)
 
-# Most models accept keyword-only args
-model = TS2Vec(input_dims=1)
-model = Series2Vec(input_dims=1, sequence_length=100)
-model = TimeNet(input_dims=1, seq_len=100)
+# Direct keyword arguments
+model = TS2Vec(input_dims=1, depth=5)
 
-# Some use different param names — see each model's config dataclass
-model = TST(feat_dim=1, max_seq_len=100)
-model = TimeVAE(input_dims=1, seq_len=100)
+# Or configure via dataclass, then unpack
+params = TS2VecModelParameters(input_dims=1, depth=5)
+model = TS2Vec(**vars(params))
+
+# Transformer models use different parameter names
+tst_params = TSTModelParameters(feat_dim=1, max_seq_len=100)
+model = TST(**vars(tst_params))
 ```
 
 See the [](api/index) for full API documentation per model family.
