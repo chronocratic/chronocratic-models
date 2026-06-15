@@ -14,6 +14,7 @@ __all__ = [
     'Seeded',
 ]
 
+import numpy as np
 import torch
 
 from chronocratic.models.augmentation.base import (
@@ -60,4 +61,5 @@ class Seeded[V]:
         """
         with torch.random.fork_rng():
             torch.manual_seed(self._seed)
+            np.random.seed(self._seed)
             return self._inner.produce(x)

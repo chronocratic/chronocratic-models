@@ -91,20 +91,19 @@ class CropShiftProducer:
                 f'or provide longer sequences.'
             )
             raise ValueError(msg)
-        rng = np.random.default_rng()
-
+        # Use legacy np.random (seeded by Seeded decorator for determinism)
         # Randomly determine the length of the crop
-        crop_length = rng.integers(low=min_crop_length, high=total_length + 1)
+        crop_length = np.random.randint(min_crop_length, total_length + 1)
 
         # Randomly determine the starting and ending points for the crops
-        crop_start = rng.integers(total_length - crop_length + 1)
+        crop_start = np.random.randint(0, total_length - crop_length + 1)
         crop_end = crop_start + crop_length
-        crop_extension_start = rng.integers(crop_start + 1)
-        crop_extension_end = rng.integers(low=crop_end, high=total_length + 1)
+        crop_extension_start = np.random.randint(0, crop_start + 1)
+        crop_extension_end = np.random.randint(crop_end, total_length + 1)
 
         # Random offset for each sample in the batch
-        crop_offsets = rng.integers(
-            low=-crop_extension_start, high=total_length - crop_extension_end + 1, size=x.size(0)
+        crop_offsets = np.random.randint(
+            -crop_extension_start, total_length - crop_extension_end + 1, size=x.size(0)
         )
 
         # Generate augmented subsequences 1 by cropping and shifting
@@ -122,5 +121,5 @@ class CropShiftProducer:
         return AlignedPair(
             first=augmented_subsequences_1,
             second=augmented_subsequences_2,
-            overlap_length=crop_length,
+            overlap_length=int(crop_length),
         )

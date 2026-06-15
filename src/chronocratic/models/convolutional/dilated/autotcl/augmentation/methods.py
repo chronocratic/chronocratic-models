@@ -13,6 +13,21 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import torch
+
+
+def _build_encoder_kwargs(
+    params: "AutoTCLNeuralNetworkAugmentationParameters",
+) -> dict[str, Any]:
+    """Build encoder kwargs from params, filtering out encoder_kwargs itself.
+
+    The ``encoder_kwargs`` field is an override mechanism; it merges into
+    the dataclass defaults but must not be passed through as a literal
+    parameter name to the encoder constructor.
+    """
+    kw: dict[str, Any] = vars(params).copy()
+    encoder_overrides = kw.pop("encoder_kwargs") or {}
+    kw.update(encoder_overrides)
+    return kw
 from torch import nn
 
 from chronocratic.models.augmentation.base import (
@@ -52,6 +67,8 @@ class AutoTCLNeuralNetworkAugmentationParameters:
         zeta: Scaling factor for the Gumbel temperature.
         gamma_zeta: Weight for the zeta regularization term.
         hard_mask: Whether to use a hard (binary) mask at inference time.
+        encoder_kwargs: Optional dict of encoder constructor overrides.
+            Merges into dataclass defaults before building the encoder.
     """
 
     input_dims: int
@@ -67,6 +84,7 @@ class AutoTCLNeuralNetworkAugmentationParameters:
     zeta: float = 1.0
     gamma_zeta: float = 0.05
     hard_mask: bool = True
+    encoder_kwargs: dict[str, Any] | None = None
 
 
 class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
@@ -103,7 +121,9 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
 
     def _build_model(self) -> None:
         """Instantiate the underlying encoder model."""
-        self.model = AutoTCLAugmentationTimeSeriesEncoder(**vars(self.params))
+        self.model = AutoTCLAugmentationTimeSeriesEncoder(
+            **_build_encoder_kwargs(self.params)
+        )
 
     def forward(self, data: torch.Tensor) -> dict[str, torch.Tensor]:
         """Run the encoder forward pass.

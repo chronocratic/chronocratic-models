@@ -108,7 +108,7 @@ class TestJitterParameters:
 
     def test_default_sigma(self) -> None:
         params = JitterParameters()
-        assert params.sigma == 0.2
+        assert params.sigma == 0.1
 
     def test_custom_sigma(self) -> None:
         params = JitterParameters(sigma=0.1)
@@ -124,7 +124,7 @@ class TestScalingParameters:
 
     def test_default_sigma(self) -> None:
         params = ScalingParameters()
-        assert params.sigma == 0.5
+        assert params.sigma == 0.1
 
     def test_custom_sigma(self) -> None:
         params = ScalingParameters(sigma=0.1)

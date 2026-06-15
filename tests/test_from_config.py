@@ -14,6 +14,7 @@ from chronocratic.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
+from chronocratic.models._mixin.encoding import BasicEncodingMixin
 from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
 from chronocratic.models.convolutional.dilated.autotcl.model import AutoTCL
 from chronocratic.models.convolutional.dilated.cost.config import CoSTModelParameters
@@ -81,7 +82,7 @@ class TestMixinInheritance:
 
     def test_cost_is_pooling_encoding_mixin(self) -> None:
         model = CoST(input_dims=1, sequence_length=100)
-        assert isinstance(model, PoolingEncodingMixin)
+        assert isinstance(model, DecompositionEncodingMixin)
 
     def test_autotcl_is_pooling_encoding_mixin(self) -> None:
         from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
@@ -97,7 +98,7 @@ class TestMixinInheritance:
         )
         assert isinstance(model, PoolingEncodingMixin)
 
-    def test_tstcc_is_decomposition_encoding_mixin(self) -> None:
+    def test_tstcc_is_basic_encoding_mixin(self) -> None:
         model = TSTCC(
             input_channels=1,
             kernel_size=5,
@@ -106,7 +107,7 @@ class TestMixinInheritance:
             features_len=12,
             num_classes=10,
         )
-        assert isinstance(model, DecompositionEncodingMixin)
+        assert isinstance(model, BasicEncodingMixin)
 
 
 class TestAugmentationConfigPropagation:
@@ -137,8 +138,9 @@ class TestAugmentationConfigPropagation:
             sequence_length=100,
             augmentation=CosTRandomFunctionAugmentation(params=config),
         )
-        assert model._augmentation._params.sigma == 0.2
-        assert model._augmentation._params.p == 0.8
+        # CoST wraps plain Augmentation in IndependentPair
+        assert model._augmentation._aug._params.sigma == 0.2
+        assert model._augmentation._aug._params.p == 0.8
 
     def test_autotcl_augmentation_config_propagates(self) -> None:
         from chronocratic.models.convolutional.dilated.autotcl.augmentation.methods import (
@@ -151,7 +153,7 @@ class TestAugmentationConfigPropagation:
             input_dims=1,
             augmentation=AutoTCLNeuralNetworkAugmentation(params=config),
         )
-        assert model._augmentation._params.input_dims == 1
+        assert model._augmentation.params.input_dims == 1
 
 
 class TestAugmentationPassThrough:
