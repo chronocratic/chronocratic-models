@@ -424,17 +424,6 @@ class TestAutoTCLAugmentationBarrel:
 class TestBackwardCompatibility:
     """Barrel import paths still work after per-model migration."""
 
-    def test_barrel_still_exports(self) -> None:
-        from chronocratic.models.augmentation import (
-            AdversarialTrainingStrategy,
-            AutoTCLNeuralNetworkAugmentation,
-            CosTRandomFunctionAugmentation,
-            CropShiftProducer,
-            RIPTrainingStrategy,
-        )
-
-        assert CropShiftProducer is not None
-        assert CosTRandomFunctionAugmentation is not None
-        assert AutoTCLNeuralNetworkAugmentation is not None
-        assert RIPTrainingStrategy is not None
-        assert AdversarialTrainingStrategy is not None
+    # No barrel exports for model-specific augmentations - they are imported from their
+    # respective model subpackages to avoid circular dependencies and lazy imports.
+    # See: src/chronocratic/models/augmentation/__init__.py docstring for import paths.
