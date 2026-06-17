@@ -7,6 +7,7 @@ try:
 except ImportError:
     __version__ = "0.0.0.dev0"  # fallback for editable installs before _version.py is generated
 
+from .contracts import HasDecoder, HasEncoder
 from .convolutional import (
     AutoTCL,
     AutoTCLModelParameters,
@@ -21,17 +22,18 @@ from .convolutional import (
     TSTCC,
     TSTCCModelParameters,
 )
-from .contracts import HasDecoder, HasEncoder
 from .generative import TimeVAE, TimeVAEModelParameters
 from .recurrent import TimeNet, TimeNetModelParameters
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
+    "FCN",
+    "TST",
+    "TSTCC",
     "AutoTCL",
     "AutoTCLModelParameters",
     "CoST",
     "CoSTModelParameters",
-    "FCN",
     "HasDecoder",
     "HasEncoder",
     "MCLModelParameters",
@@ -39,8 +41,6 @@ __all__ = [
     "Series2VecModelParameters",
     "TS2Vec",
     "TS2VecModelParameters",
-    "TST",
-    "TSTCC",
     "TSTCCModelParameters",
     "TSTModelParameters",
     "TimeNet",
