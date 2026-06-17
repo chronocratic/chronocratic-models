@@ -5,7 +5,7 @@ from __future__ import annotations
 __all__ = ["RecurrentAutoEncoder"]
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal
+from typing import Literal, TYPE_CHECKING
 
 from lightning.pytorch import LightningModule
 import torch
@@ -30,10 +30,7 @@ _RNN_CLASSES: dict[RecurrentCellType, type[nn.Module]] = {
     RecurrentCellType.RNN: nn.RNN,
 }
 
-_LOSS_FNS: dict[str, type[nn.Module]] = {
-    "mse": nn.MSELoss,
-    "mae": nn.L1Loss,
-}
+_LOSS_FNS: dict[str, type[nn.Module]] = {"mse": nn.MSELoss, "mae": nn.L1Loss}
 
 
 class _RNNLayer(nn.Module):
@@ -49,10 +46,7 @@ class _RNNLayer(nn.Module):
 
 
 def _build_encoder(
-    rnn_cls: type,
-    n_features: int,
-    layers: tuple[int],
-    dropout: list[float],
+    rnn_cls: type, n_features: int, layers: tuple[int], dropout: list[float]
 ) -> nn.Sequential:
     encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(n_features, layers[0], batch_first=True))]
     for i in range(1, len(layers)):
@@ -63,10 +57,7 @@ def _build_encoder(
 
 
 def _build_decoder(
-    rnn_cls: type,
-    n_features: int,
-    layers: tuple[int],
-    dropout: list[float],
+    rnn_cls: type, n_features: int, layers: tuple[int], dropout: list[float]
 ) -> nn.Sequential:
     decoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(layers[0], layers[0], batch_first=True))]
     for i in range(1, len(layers)):
@@ -144,13 +135,17 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         x = batch
         loss = self.loss_fn(self(x), x)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist)
+        self.log(
+            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
+        )
         return loss
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         x = batch
         loss = self.loss_fn(self(x), x)
-        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist)
+        self.log(
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
+        )
         return loss
 
     def configure_optimizers(self) -> OptimizerLRScheduler:

@@ -113,7 +113,7 @@ class TestAutoTCLAcceptsProducer:
         model = AutoTCL(input_dims=1)
         assert isinstance(
             model._augmentation,
-            TrainableAugmentationProducer,  # noqa: SLF001
+            TrainableAugmentationProducer,
         )
 
 

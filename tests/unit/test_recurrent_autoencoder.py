@@ -192,7 +192,6 @@ class TestOptimizerSelection:
 
     @pytest.mark.parametrize("optimizer", ["adamw", "radam"])
     def test_non_default_optimizer_trains(self, optimizer: str) -> None:
-        import lightning.pytorch as pl
         model = RecurrentAutoEncoder(n_features=3, layers=[8], optimizer=optimizer)
         data = torch.randn(12, 20, 3)
         loader = DataLoader(_RawTensorDataset(data), batch_size=4)

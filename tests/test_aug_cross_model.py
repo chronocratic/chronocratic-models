@@ -29,12 +29,7 @@ from chronocratic.models.augmentation.primitives import (
     Scaling,
     ScalingParameters,
 )
-from chronocratic.models.augmentation.producers import (
-    FullOverlapPair,
-    IndependentPair,
-    RolePair,
-    SingleViewProducer,
-)
+from chronocratic.models.augmentation.producers import FullOverlapPair, RolePair, SingleViewProducer
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # Import _train_steps from test_smoke.py to avoid duplication
@@ -199,7 +194,7 @@ class TestImportHygiene:
 
     def test_primitives_no_model_imports(self) -> None:
         """primitives.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.primitives as primitives
+        from chronocratic.models.augmentation import primitives
 
         source = pathlib.Path(primitives.__file__).read_text()
         assert "convolutional" not in source, (
@@ -209,7 +204,7 @@ class TestImportHygiene:
 
     def test_producers_no_model_imports(self) -> None:
         """producers.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.producers as producers
+        from chronocratic.models.augmentation import producers
 
         source = pathlib.Path(producers.__file__).read_text()
         assert "convolutional" not in source, (
@@ -219,7 +214,7 @@ class TestImportHygiene:
 
     def test_decorators_no_model_imports(self) -> None:
         """decorators.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.decorators as decorators
+        from chronocratic.models.augmentation import decorators
 
         source = pathlib.Path(decorators.__file__).read_text()
         assert "convolutional" not in source, (

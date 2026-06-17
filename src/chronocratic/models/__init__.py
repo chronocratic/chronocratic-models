@@ -22,7 +22,12 @@ from .convolutional import (
     TSTCCModelParameters,
 )
 from .generative import TimeVAE, TimeVAEModelParameters
-from .recurrent import RecurrentAutoEncoder, RecurrentAutoEncoderModelParameters, TimeNet, TimeNetModelParameters
+from .recurrent import (
+    RecurrentAutoEncoder,
+    RecurrentAutoEncoderModelParameters,
+    TimeNet,
+    TimeNetModelParameters,
+)
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
@@ -34,14 +39,14 @@ __all__ = [
     "CoST",
     "CoSTModelParameters",
     "MCLModelParameters",
+    "RecurrentAutoEncoder",
+    "RecurrentAutoEncoderModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
     "TS2Vec",
     "TS2VecModelParameters",
     "TSTCCModelParameters",
     "TSTModelParameters",
-    "RecurrentAutoEncoder",
-    "RecurrentAutoEncoderModelParameters",
     "TimeNet",
     "TimeNetModelParameters",
     "TimeVAE",
