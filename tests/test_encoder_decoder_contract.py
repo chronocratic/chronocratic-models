@@ -18,8 +18,6 @@ from chronocratic.models import (
     AutoTCL,
     CoST,
     FCN,
-    HasDecoder,
-    HasEncoder,
     Series2Vec,
     TimeNet,
     TimeVAE,
@@ -27,6 +25,7 @@ from chronocratic.models import (
     TST,
     TSTCC,
 )
+from chronocratic.models.protocols import HasDecoder, HasEncoder
 
 
 class TestHasEncoderConformance:

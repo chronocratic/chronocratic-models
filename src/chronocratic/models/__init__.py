@@ -7,7 +7,6 @@ try:
 except ImportError:
     __version__ = "0.0.0.dev0"  # fallback for editable installs before _version.py is generated
 
-from .contracts import HasDecoder, HasEncoder
 from .convolutional import (
     AutoTCL,
     AutoTCLModelParameters,
@@ -34,8 +33,6 @@ __all__ = [
     "AutoTCLModelParameters",
     "CoST",
     "CoSTModelParameters",
-    "HasDecoder",
-    "HasEncoder",
     "MCLModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
