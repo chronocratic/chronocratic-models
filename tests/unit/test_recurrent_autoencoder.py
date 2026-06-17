@@ -30,32 +30,36 @@ def rnn_type(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture
 def model(rnn_type: str) -> RecurrentAutoEncoder:
-    return RecurrentAutoEncoder(n_features=3, latent_dim=8, recurrent_cell_type=rnn_type)
+    return RecurrentAutoEncoder(n_features=3, layers=[8], recurrent_cell_type=rnn_type)
 
 
 class TestRecurrentAutoEncoderInstantiation:
     def test_instantiates_lstm(self) -> None:
-        m = RecurrentAutoEncoder(n_features=5, latent_dim=16)
+        m = RecurrentAutoEncoder(n_features=5, layers=[16])
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_gru(self) -> None:
-        m = RecurrentAutoEncoder(n_features=5, latent_dim=16, recurrent_cell_type="GRU")
+        m = RecurrentAutoEncoder(n_features=5, layers=[16], recurrent_cell_type="GRU")
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_rnn(self) -> None:
-        m = RecurrentAutoEncoder(n_features=5, latent_dim=16, recurrent_cell_type="RNN")
+        m = RecurrentAutoEncoder(n_features=5, layers=[16], recurrent_cell_type="RNN")
+        assert isinstance(m, RecurrentAutoEncoder)
+
+    def test_instantiates_multilayer(self) -> None:
+        m = RecurrentAutoEncoder(n_features=5, layers=[64, 32, 16])
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_encoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(n_features=3, latent_dim=8)
+        m = RecurrentAutoEncoder(n_features=3, layers=[8])
         assert isinstance(m.encoder, nn.Module)
 
     def test_decoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(n_features=3, latent_dim=8)
+        m = RecurrentAutoEncoder(n_features=3, layers=[8])
         assert isinstance(m.decoder, nn.Module)
 
 
@@ -84,6 +88,13 @@ class TestEncoderOutputShape:
             out = model.encoder(x)
         assert out.shape[2] == 8
 
+    def test_multilayer_encoder_output_dim(self) -> None:
+        m = RecurrentAutoEncoder(n_features=5, layers=[64, 32])
+        x = torch.randn(2, 10, 5)
+        with torch.no_grad():
+            out = m.encoder(x)
+        assert out.shape == (2, 10, 32)
+
 
 class TestDecoderOutputShape:
     def test_decoder_reconstructs_input_shape(self, model: RecurrentAutoEncoder) -> None:
@@ -104,14 +115,14 @@ class TestTSRCCompatibility:
     """Verify the student interface contract: encoder returns (B, T, D)."""
 
     def test_encoder_output_is_3d(self) -> None:
-        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, layers=[16])
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
         assert r2.dim() == 3
 
     def test_last_timestep_indexing_works(self) -> None:
-        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, layers=[16])
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -119,7 +130,7 @@ class TestTSRCCompatibility:
         assert repr_vec.shape == (2, 16)
 
     def test_flip_then_decode_matches_input_shape(self) -> None:
-        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, layers=[16])
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -154,22 +165,20 @@ class TestLightningTraining:
         return losses
 
     def test_training_produces_finite_losses(self) -> None:
-        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
+        model = RecurrentAutoEncoder(n_features=3, layers=[8])
         losses = self._train(model)
         assert len(losses) == 3
         for loss in losses:
             assert math.isfinite(loss), f"Non-finite loss: {loss}"
 
     def test_training_loss_is_scalar(self) -> None:
-        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
-        data = torch.randn(8, 20, 3)
-        batch = data[:4]
-        model_local = RecurrentAutoEncoder(n_features=3, latent_dim=8)
+        model_local = RecurrentAutoEncoder(n_features=3, layers=[8])
+        batch = torch.randn(4, 20, 3)
         loss = model_local.training_step(batch, 0)
         assert loss.ndim == 0
 
     def test_mae_loss_trains(self) -> None:
-        model = RecurrentAutoEncoder(n_features=3, latent_dim=8, loss="MAE")
+        model = RecurrentAutoEncoder(n_features=3, layers=[8], loss="mae")
         losses = self._train(model)
         for loss in losses:
             assert math.isfinite(loss)
@@ -177,7 +186,7 @@ class TestLightningTraining:
 
 class TestPostprocess:
     def test_postprocess_returns_last_timestep(self) -> None:
-        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
+        model = RecurrentAutoEncoder(n_features=3, layers=[8])
         fake_output = torch.randn(2, 10, 8)
         result = model._postprocess(fake_output)
         assert result.shape == (2, 8)
