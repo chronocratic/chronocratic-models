@@ -3,6 +3,7 @@
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE)
 [![PyPI version](https://img.shields.io/pypi/v/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
 [![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/chronocratic-models?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/chronocratic-models)
 [![Build Status](https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/chronocratic-models/actions)
 [![Documentation Status](https://readthedocs.org/projects/chronocratic-models/badge/?version=latest)](https://chronocratic-models.readthedocs.io/en/latest/?badge=latest)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
