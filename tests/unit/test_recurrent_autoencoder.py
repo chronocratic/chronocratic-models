@@ -1,4 +1,4 @@
-"""Smoke and unit tests for the LSTMAutoEncoder recurrent autoencoder."""
+"""Smoke and unit tests for the RecurrentAutoEncoder recurrent autoencoder."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from tscollection.models.recurrent.lstmae.model import LSTMAutoEncoder
+from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 
 
 class _RawTensorDataset(Dataset):
@@ -23,62 +23,62 @@ class _RawTensorDataset(Dataset):
         return self.data[idx]
 
 
-@pytest.fixture(params=['LSTM', 'GRU', 'RNN'])
+@pytest.fixture(params=["LSTM", "GRU", "RNN"])
 def rnn_type(request: pytest.FixtureRequest) -> str:
     return request.param  # type: ignore[return-value]
 
 
 @pytest.fixture
-def model(rnn_type: str) -> LSTMAutoEncoder:
-    return LSTMAutoEncoder(n_features=3, latent_dim=8, rnn_type=rnn_type)
+def model(rnn_type: str) -> RecurrentAutoEncoder:
+    return RecurrentAutoEncoder(n_features=3, latent_dim=8, recurrent_cell_type=rnn_type)
 
 
-class TestLSTMAutoEncoderInstantiation:
+class TestRecurrentAutoEncoderInstantiation:
     def test_instantiates_lstm(self) -> None:
-        m = LSTMAutoEncoder(n_features=5, latent_dim=16)
-        assert isinstance(m, LSTMAutoEncoder)
+        m = RecurrentAutoEncoder(n_features=5, latent_dim=16)
+        assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_gru(self) -> None:
-        m = LSTMAutoEncoder(n_features=5, latent_dim=16, rnn_type='GRU')
-        assert isinstance(m, LSTMAutoEncoder)
+        m = RecurrentAutoEncoder(n_features=5, latent_dim=16, recurrent_cell_type="GRU")
+        assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_rnn(self) -> None:
-        m = LSTMAutoEncoder(n_features=5, latent_dim=16, rnn_type='RNN')
-        assert isinstance(m, LSTMAutoEncoder)
+        m = RecurrentAutoEncoder(n_features=5, latent_dim=16, recurrent_cell_type="RNN")
+        assert isinstance(m, RecurrentAutoEncoder)
 
     def test_encoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        m = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         assert isinstance(m.encoder, nn.Module)
 
     def test_decoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        m = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         assert isinstance(m.decoder, nn.Module)
 
 
 class TestEncoderOutputShape:
-    def test_encoder_returns_full_sequence(self, model: LSTMAutoEncoder) -> None:
+    def test_encoder_returns_full_sequence(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(4, 20, 3)
         with torch.no_grad():
             out = model.encoder(x)
-        assert out.shape == (4, 20, 8), f'Got {out.shape}'
+        assert out.shape == (4, 20, 8), f"Got {out.shape}"
 
-    def test_encoder_output_batch_dim(self, model: LSTMAutoEncoder) -> None:
+    def test_encoder_output_batch_dim(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(7, 15, 3)
         with torch.no_grad():
             out = model.encoder(x)
         assert out.shape[0] == 7
 
-    def test_encoder_output_seq_dim(self, model: LSTMAutoEncoder) -> None:
+    def test_encoder_output_seq_dim(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(2, 30, 3)
         with torch.no_grad():
             out = model.encoder(x)
         assert out.shape[1] == 30
 
-    def test_encoder_output_latent_dim(self, model: LSTMAutoEncoder) -> None:
+    def test_encoder_output_latent_dim(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(2, 10, 3)
         with torch.no_grad():
             out = model.encoder(x)
@@ -86,14 +86,14 @@ class TestEncoderOutputShape:
 
 
 class TestDecoderOutputShape:
-    def test_decoder_reconstructs_input_shape(self, model: LSTMAutoEncoder) -> None:
+    def test_decoder_reconstructs_input_shape(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(4, 20, 3)
         with torch.no_grad():
             encoded = model.encoder(x)
             decoded = model.decoder(torch.flip(encoded, dims=[1]))
         assert decoded.shape == x.shape
 
-    def test_forward_output_shape_matches_input(self, model: LSTMAutoEncoder) -> None:
+    def test_forward_output_shape_matches_input(self, model: RecurrentAutoEncoder) -> None:
         x = torch.randn(3, 12, 3)
         with torch.no_grad():
             out = model(x)
@@ -104,14 +104,14 @@ class TestTSRCCompatibility:
     """Verify the student interface contract: encoder returns (B, T, D)."""
 
     def test_encoder_output_is_3d(self) -> None:
-        model = LSTMAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
         assert r2.dim() == 3
 
     def test_last_timestep_indexing_works(self) -> None:
-        model = LSTMAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -119,7 +119,7 @@ class TestTSRCCompatibility:
         assert repr_vec.shape == (2, 16)
 
     def test_flip_then_decode_matches_input_shape(self) -> None:
-        model = LSTMAutoEncoder(n_features=5, latent_dim=16)
+        model = RecurrentAutoEncoder(n_features=5, latent_dim=16)
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -128,7 +128,7 @@ class TestTSRCCompatibility:
 
 
 class TestLightningTraining:
-    def _train(self, model: LSTMAutoEncoder, n_steps: int = 3) -> list[float]:
+    def _train(self, model: RecurrentAutoEncoder, n_steps: int = 3) -> list[float]:
         data = torch.randn(n_steps * 4, 20, model.n_features)
         loader = DataLoader(_RawTensorDataset(data), batch_size=4)
 
@@ -144,7 +144,7 @@ class TestLightningTraining:
         model.training_step = _capture  # type: ignore[method-assign]
 
         trainer = pl.Trainer(
-            accelerator='cpu',
+            accelerator="cpu",
             max_steps=n_steps,
             enable_checkpointing=False,
             enable_progress_bar=False,
@@ -154,22 +154,22 @@ class TestLightningTraining:
         return losses
 
     def test_training_produces_finite_losses(self) -> None:
-        model = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         losses = self._train(model)
         assert len(losses) == 3
         for loss in losses:
-            assert math.isfinite(loss), f'Non-finite loss: {loss}'
+            assert math.isfinite(loss), f"Non-finite loss: {loss}"
 
     def test_training_loss_is_scalar(self) -> None:
-        model = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         data = torch.randn(8, 20, 3)
         batch = data[:4]
-        model_local = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        model_local = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         loss = model_local.training_step(batch, 0)
         assert loss.ndim == 0
 
     def test_mae_loss_trains(self) -> None:
-        model = LSTMAutoEncoder(n_features=3, latent_dim=8, loss_type='MAE')
+        model = RecurrentAutoEncoder(n_features=3, latent_dim=8, loss="MAE")
         losses = self._train(model)
         for loss in losses:
             assert math.isfinite(loss)
@@ -177,7 +177,7 @@ class TestLightningTraining:
 
 class TestPostprocess:
     def test_postprocess_returns_last_timestep(self) -> None:
-        model = LSTMAutoEncoder(n_features=3, latent_dim=8)
+        model = RecurrentAutoEncoder(n_features=3, latent_dim=8)
         fake_output = torch.randn(2, 10, 8)
         result = model._postprocess(fake_output)
         assert result.shape == (2, 8)

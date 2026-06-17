@@ -1,8 +1,13 @@
-"""Barrel for recurrent models (LSTMAutoEncoder, TimeNet)."""
+"""Barrel for recurrent models (RecurrentAutoEncoder, TimeNet)."""
 
 from __future__ import annotations
 
-from .lstmae import LSTMAutoEncoder, LSTMAutoEncoderModelParameters
+from .recurrentae import RecurrentAutoEncoder, RecurrentAutoEncoderModelParameters
 from .timenet import TimeNet, TimeNetModelParameters
 
-__all__ = ["LSTMAutoEncoder", "LSTMAutoEncoderModelParameters", "TimeNet", "TimeNetModelParameters"]
+__all__ = [
+    "RecurrentAutoEncoder",
+    "RecurrentAutoEncoderModelParameters",
+    "TimeNet",
+    "TimeNetModelParameters",
+]
