@@ -14,17 +14,7 @@ from __future__ import annotations
 import pytest
 from torch import nn
 
-from chronocratic.models import (
-    AutoTCL,
-    CoST,
-    FCN,
-    Series2Vec,
-    TimeNet,
-    TimeVAE,
-    TS2Vec,
-    TST,
-    TSTCC,
-)
+from chronocratic.models import AutoTCL, CoST, FCN, Series2Vec, TimeNet, TimeVAE, TS2Vec, TST, TSTCC
 from chronocratic.models.protocols import HasDecoder, HasEncoder
 
 
