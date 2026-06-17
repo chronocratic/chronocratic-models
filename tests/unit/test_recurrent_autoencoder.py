@@ -184,6 +184,28 @@ class TestLightningTraining:
             assert math.isfinite(loss)
 
 
+class TestOptimizerSelection:
+    @pytest.mark.parametrize("optimizer", ["adam", "adamw", "radam"])
+    def test_instantiates_with_optimizer(self, optimizer: str) -> None:
+        m = RecurrentAutoEncoder(n_features=3, layers=[8], optimizer=optimizer)
+        assert isinstance(m, RecurrentAutoEncoder)
+
+    @pytest.mark.parametrize("optimizer", ["adamw", "radam"])
+    def test_non_default_optimizer_trains(self, optimizer: str) -> None:
+        import lightning.pytorch as pl
+        model = RecurrentAutoEncoder(n_features=3, layers=[8], optimizer=optimizer)
+        data = torch.randn(12, 20, 3)
+        loader = DataLoader(_RawTensorDataset(data), batch_size=4)
+        trainer = pl.Trainer(
+            accelerator="cpu",
+            max_steps=3,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+            logger=False,
+        )
+        trainer.fit(model, train_dataloaders=loader)
+
+
 class TestPostprocess:
     def test_postprocess_returns_last_timestep(self) -> None:
         model = RecurrentAutoEncoder(n_features=3, layers=[8])
