@@ -28,6 +28,7 @@ class HasEncoder(Protocol):
 
     @property
     def encoder(self) -> nn.Module:
+        """Return the encoder submodule."""
         ...
 
 
@@ -41,4 +42,5 @@ class HasDecoder(Protocol):
 
     @property
     def decoder(self) -> nn.Module:
+        """Return the decoder submodule."""
         ...
