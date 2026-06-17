@@ -15,9 +15,6 @@ Usage::
 
     backbone = TST(feat_dim=1, max_seq_len=100, d_model=32, n_heads=4, num_layers=2)
     module = make_tst_supervised(backbone, num_outputs=5, task='classification')
-
-See the design spec at
-``.planning/todos/heads-design_structure.md`` for architecture details.
 """
 
 from __future__ import annotations

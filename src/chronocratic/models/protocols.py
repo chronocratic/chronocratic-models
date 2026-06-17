@@ -8,9 +8,6 @@ that returns an ``nn.Module``. Similarly, ``HasDecoder`` requires a
 ``.decoder`` property. Both use ``@runtime_checkable`` so they work with
 ``isinstance()`` checks — unlike plain class attributes, which fail
 ``isinstance`` verification due to ``nn.Module.__getattr__`` overriding.
-
-See ``.planning/quick/20260617-enc-dec-contract/CONTEXT.md`` for the design
-decisions behind this approach.
 """
 
 from typing import Protocol, runtime_checkable
