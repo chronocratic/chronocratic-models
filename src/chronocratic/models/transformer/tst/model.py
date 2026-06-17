@@ -213,6 +213,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         return (batch_x, padding_masks)
 
     @property
+    def encoder(self) -> nn.Module:
+        """Return the transformer encoder for inspection and checkpointing."""
+        return self._encoder
+
+    @property
     def representation_dim(self) -> int:
         """Flattened representation size handed to a downstream head.
 
