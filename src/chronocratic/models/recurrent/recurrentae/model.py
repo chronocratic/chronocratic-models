@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __all__ = ["RecurrentAutoEncoder"]
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 from lightning.pytorch import LightningModule
@@ -15,6 +16,13 @@ from chronocratic.models.recurrent.enums import RecurrentCellType
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
+
+
+_OPTIMIZERS: dict[str, Callable[..., torch.optim.Optimizer]] = {
+    "adam": torch.optim.Adam,
+    "adamw": torch.optim.AdamW,
+    "radam": torch.optim.RAdam,
+}
 
 
 class _RNNLayer(nn.Module):
@@ -75,7 +83,8 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         dropout: Dropout probability applied between successive layers. A single
             float applies uniformly; a list must match ``len(layers)``.
         loss: Reconstruction objective — ``'mse'`` or ``'mae'``.
-        learning_rate: Base learning rate for the Adam optimizer.
+        optimizer: Optimizer — ``'adam'``, ``'adamw'``, or ``'radam'``.
+        learning_rate: Base learning rate for the optimizer.
         sync_dist: Whether to sync logged metrics across devices.
     """
 
@@ -86,12 +95,14 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM,
         dropout: float | list[float] = 0.2,
         loss: Literal["mse", "mae"] = "mse",
+        optimizer: Literal["adam", "adamw", "radam"] = "adam",
         learning_rate: float = 1e-3,
         sync_dist: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.n_features = n_features
+        self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.sync_dist = sync_dist
 
@@ -132,4 +143,4 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         return loss
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        return _OPTIMIZERS[self.optimizer](self.parameters(), lr=self.learning_rate)

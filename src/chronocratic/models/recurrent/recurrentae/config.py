@@ -22,7 +22,8 @@ class RecurrentAutoEncoderModelParameters:
         dropout: Dropout probability applied between successive layers. A single
             float applies uniformly; a list must match ``len(layers)``.
         loss: Reconstruction objective — ``'mse'`` or ``'mae'``.
-        learning_rate: Base learning rate for the Adam optimizer.
+        optimizer: Optimizer — ``'adam'``, ``'adamw'``, or ``'radam'``.
+        learning_rate: Base learning rate for the optimizer.
         sync_dist: Whether to sync logged metrics across devices.
     """
 
@@ -31,5 +32,6 @@ class RecurrentAutoEncoderModelParameters:
     recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM
     dropout: float | list[float] = 0.2
     loss: Literal["mse", "mae"] = "mse"
+    optimizer: Literal["adam", "adamw", "radam"] = "adam"
     learning_rate: float = 1e-3
     sync_dist: bool = False
