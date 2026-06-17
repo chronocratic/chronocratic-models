@@ -24,6 +24,17 @@ _OPTIMIZERS: dict[str, Callable[..., torch.optim.Optimizer]] = {
     "radam": torch.optim.RAdam,
 }
 
+_RNN_CLASSES: dict[RecurrentCellType, type[nn.Module]] = {
+    RecurrentCellType.LSTM: nn.LSTM,
+    RecurrentCellType.GRU: nn.GRU,
+    RecurrentCellType.RNN: nn.RNN,
+}
+
+_LOSS_FNS: dict[str, type[nn.Module]] = {
+    "mse": nn.MSELoss,
+    "mae": nn.L1Loss,
+}
+
 
 class _RNNLayer(nn.Module):
     """Wraps an RNN cell and discards the hidden state, enabling nn.Sequential chaining."""
@@ -114,10 +125,10 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         inverse_layers = layers[::-1]
         inverse_dropout = dropout_list[::-1]
 
-        rnn_cls = getattr(nn, str(recurrent_cell_type).upper())
+        rnn_cls = _RNN_CLASSES[recurrent_cell_type]
         self.encoder = _build_encoder(rnn_cls, n_features, layers, dropout_list)
         self.decoder = _build_decoder(rnn_cls, n_features, inverse_layers, inverse_dropout)
-        self.loss_fn: nn.Module = nn.MSELoss() if loss == "mse" else nn.L1Loss()
+        self.loss_fn: nn.Module = _LOSS_FNS[loss]()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Encode ``x``, reverse the latent sequence, and reconstruct."""
