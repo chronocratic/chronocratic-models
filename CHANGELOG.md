@@ -11,6 +11,21 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a2 (2026-06-17)
+
+### Added
+
+- Standardize encoder/decoder access with HasEncoder/HasDecoder. ([#25](https://github.com/chronocratic/chronocratic-models/issues/25))
+
+### Changed
+
+- Phase 06: prepare chronocratic-models for PyPI publication. ([#21](https://github.com/chronocratic/chronocratic-models/issues/21))
+
+### Fixed
+
+- Correct Quick Start example and pin build badge to main. ([#26](https://github.com/chronocratic/chronocratic-models/issues/26))
+
+
 ## v0.1.0a1 (2026-06-15) — First Alpha Release
 
 The first pre-release of chronocratic-models.
