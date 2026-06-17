@@ -4,7 +4,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
 [![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/chronocratic-models?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/chronocratic-models)
-[![Build Status](https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/chronocratic-models/actions)
+[![Build Status](https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/chronocratic/chronocratic-models/actions)
 [![Documentation Status](https://readthedocs.org/projects/chronocratic-models/badge/?version=latest)](https://chronocratic-models.readthedocs.io/en/latest/?badge=latest)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![GitHub stars](https://img.shields.io/github/stars/chronocratic/chronocratic-models)](https://github.com/chronocratic/chronocratic-models/stargazers)
@@ -25,17 +25,21 @@ pip install chronocratic-models
 import torch
 from chronocratic.models import TS2Vec, TS2VecModelParameters
 
-# Create model with default parameters
-model = TS2Vec(TS2VecModelParameters(input_dim=1))
-model.eval()
+# Create model using parameters dataclass
+params = TS2VecModelParameters(input_dims=1)
+model = TS2Vec(**vars(params))
 
-# Encode a synthetic time series (batch, channels, seq_len)
-synthetic_data = torch.randn(1, 1, 100)
+# Prepare synthetic time series (n_instance, n_timestamps, n_features)
+synthetic_data = torch.randn(2, 100, 1)
 
 # Get multi-scale representations
-with torch.no_grad():
-    representations = model.encode(synthetic_data)
-    print(representations.shape)  # (1, channels, hidden_dim)
+representations = model.encode(
+    synthetic_data,
+    batch_size=2,
+    num_workers=0,
+    encoding_window="multiscale",
+)
+print(representations.shape)
 ```
 
 ## Models
