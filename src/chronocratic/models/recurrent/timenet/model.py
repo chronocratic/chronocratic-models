@@ -49,10 +49,20 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         self._hidden_dims: int = hidden_dims
         self._num_layers: int = num_layers
         self._dropout: float = dropout
-        self.encoder: Sequential = self._build_encoder()
-        self.decoder: Sequential = self._build_decoder()
+        self._encoder: Sequential = self._build_encoder()
+        self._decoder: Sequential = self._build_decoder()
         self._learning_rate = learning_rate
         self.loss_fn = nn.MSELoss()
+
+    @property
+    def encoder(self) -> Sequential:
+        """Return the GRU encoder."""
+        return self._encoder
+
+    @property
+    def decoder(self) -> Sequential:
+        """Return the GRU decoder."""
+        return self._decoder
 
     def _build_encoder(self) -> nn.Sequential:
         encoder_layers: list[nn.Module] = [
@@ -81,12 +91,12 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruct ``x`` from the reversed encoder sequence."""
-        encode = self.encoder(x)
-        return self.decoder(torch.flip(encode, dims=[1]))  # reconstruction target
+        encode = self._encoder(x)
+        return self._decoder(torch.flip(encode, dims=[1]))  # reconstruction target
 
     def _get_encoder(self) -> nn.Module:
         """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
-        return self.encoder
+        return self._encoder
 
     def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
         """Select the final timestep as the pooled representation."""

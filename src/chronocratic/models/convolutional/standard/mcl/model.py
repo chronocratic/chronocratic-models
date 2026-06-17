@@ -26,18 +26,23 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
         self.criterion = MixUpLoss()
 
-        self.encoder = FCNEncoder(input_channels=n_in, output_dims=output_dims)
+        self._encoder = FCNEncoder(input_channels=n_in, output_dims=output_dims)
         self.proj_head = nn.Sequential(
             nn.Linear(output_dims, 128), nn.BatchNorm1d(128), nn.ReLU(), nn.Linear(128, 128)
         )
 
+    @property
+    def encoder(self) -> nn.Module:
+        """Return the FCN encoder."""
+        return self._encoder
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return projected MCL representations for ``x``."""
-        return self.proj_head(self.encoder(x))
+        return self.proj_head(self._encoder(x))
 
     def _get_encoder(self) -> nn.Module:
         """Expose the FCN encoder (before the MixUp projection head)."""
-        return self.encoder
+        return self._encoder
 
     def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
         """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
