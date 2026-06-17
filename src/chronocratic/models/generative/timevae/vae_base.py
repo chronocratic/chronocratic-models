@@ -21,8 +21,18 @@ class Sampling(nn.Module):
 
 
 class BaseVariationalAutoencoder(pl.LightningModule, ABC):
-    encoder: nn.Module
-    decoder: nn.Module
+    _encoder: nn.Module
+    _decoder: nn.Module
+
+    @property
+    def encoder(self) -> nn.Module:
+        """Return the encoder submodule."""
+        return self._encoder
+
+    @property
+    def decoder(self) -> nn.Module:
+        """Return the decoder submodule."""
+        return self._decoder
 
     def __init__(
         self,
@@ -42,17 +52,17 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruct an input batch using the latent mean."""
-        z_mean, _z_log_var, _z = self.encoder(x)
-        return self.decoder(z_mean)
+        z_mean, _z_log_var, _z = self._encoder(x)
+        return self._decoder(z_mean)
 
     def _step(
         self, batch: torch.Tensor | tuple[torch.Tensor, ...] | list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = batch[0] if isinstance(batch, (tuple, list)) else batch
-        z_mean, z_log_var, z = self.encoder(x)
+        z_mean, z_log_var, z = self._encoder(x)
         # Use sampled z during training, z_mean during validation for deterministic metrics.
         latent = z if self.training else z_mean
-        reconstruction = self.decoder(latent)
+        reconstruction = self._decoder(latent)
         loss, recon_loss, kl_loss = self.loss_function(x, reconstruction, z_mean, z_log_var)
         return loss, recon_loss, kl_loss
 
@@ -82,8 +92,8 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.eval()
         with torch.inference_mode():
             x_t = torch.FloatTensor(x).to(next(self.parameters()).device)
-            z_mean, _z_log_var, _z = self.encoder(x_t)
-            x_decoded = self.decoder(z_mean)
+            z_mean, _z_log_var, _z = self._encoder(x_t)
+            x_decoded = self._decoder(z_mean)
         self.train(was_training)
         return x_decoded.cpu().detach().numpy()
 
@@ -96,13 +106,13 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         device = next(self.parameters()).device
         with torch.inference_mode():
             z = torch.randn(num_samples, self.latent_dim).to(device)
-            samples = self.decoder(z)
+            samples = self._decoder(z)
         return samples.cpu().detach().numpy()
 
     def get_prior_samples_given_z(self, z: np.ndarray) -> np.ndarray:
         """Decode the provided latent vectors."""
         z_t = torch.FloatTensor(z).to(next(self.parameters()).device)
-        samples = self.decoder(z_t)
+        samples = self._decoder(z_t)
         return samples.cpu().detach().numpy()
 
     @abstractmethod

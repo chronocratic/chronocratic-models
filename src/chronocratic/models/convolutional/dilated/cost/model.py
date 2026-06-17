@@ -145,6 +145,11 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         """Initialize the numpy RNG after the trainer has set the PyTorch seed."""
         self._ensure_rng()
 
+    @property
+    def encoder(self) -> nn.Module:
+        """Return the query encoder for inspection and checkpointing."""
+        return self.query_encoder
+
     def _ensure_rng(self) -> None:
         """Lazily create the numpy RNG if it has not been initialized yet."""
         if not hasattr(self, "_rng"):

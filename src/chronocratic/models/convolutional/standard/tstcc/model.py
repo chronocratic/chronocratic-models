@@ -186,6 +186,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Expose the conv encoder to ``BasicEncodingMixin.encode``."""
         return self._encoder
 
+    @property
+    def encoder(self) -> nn.Module:
+        """Return the TCC encoder for inspection and checkpointing."""
+        return self._encoder
+
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
         """Cast to float — the TCC encoder expects float inputs."""
         return (batch_x.float(),)

@@ -230,3 +230,6 @@ graphify-out/
 
 # setuptools_scm generated version file
 src/chronocratic/models/_version.py
+
+# claude
+.claude/

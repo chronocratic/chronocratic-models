@@ -83,6 +83,11 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Return Series2Vec representations for ``x``."""
         return self.network(x)
 
+    @property
+    def encoder(self) -> nn.Module:
+        """Return the Series2Vec network for inspection and checkpointing."""
+        return self.network
+
     def _get_encoder(self) -> Callable[..., torch.Tensor]:
         """Expose ``Series2VecNetwork.encode`` to ``BasicEncodingMixin.encode``.
 
