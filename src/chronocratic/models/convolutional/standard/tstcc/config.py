@@ -21,6 +21,10 @@ class TSTCCModelParameters:
         stride: Convolutional stride used in the TCC encoder.
         output_dims: Number of channels produced by the final encoder
             block (also used as the temporal-contrast input dim).
+        encoder_channels: Tuple of channel counts for the first two
+            encoder convolution blocks.
+        encoder_inner_kernels: Tuple of kernel sizes for the inner
+            convolution blocks (block 2 and block 3).
         features_len: Length of the encoder feature map fed into the
             logits head.
         num_classes: Number of output classes for the encoder logits head.
@@ -46,6 +50,8 @@ class TSTCCModelParameters:
     conv_kernel_size: int
     stride: int
     output_dims: int = 128
+    encoder_channels: tuple[int, ...] = (32, 64)
+    encoder_inner_kernels: tuple[int, ...] = (8, 8)
     features_len: int
     num_classes: int
     dropout_rate: float = 0.35

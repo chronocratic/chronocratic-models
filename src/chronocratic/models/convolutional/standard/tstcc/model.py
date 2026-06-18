@@ -49,6 +49,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         features_len: int,
         num_classes: int,
         output_dims: int = 128,
+        encoder_channels: tuple[int, ...] = (32, 64),
+        encoder_inner_kernels: tuple[int, ...] = (8, 8),
         dropout_rate: float = 0.35,
         temporal_contrast_hidden_dim: int = 100,
         temporal_contrast_timesteps: int = 6,
@@ -86,6 +88,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             features_len=features_len,
             num_classes=num_classes,
             output_dims=output_dims,
+            encoder_channels=encoder_channels,
+            encoder_inner_kernels=encoder_inner_kernels,
             dropout_rate=dropout_rate,
         )
         self._tc_model = TemporalContrast(

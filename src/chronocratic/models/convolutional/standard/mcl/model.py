@@ -37,7 +37,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         self.criterion = MixUpLoss()
 
         self._encoder = FCNEncoder(
-            input_channels=input_dims,
+            input_dims=input_dims,
             output_dims=output_dims,
             encoder_channels=encoder_channels,
             encoder_kernels=encoder_kernels,

@@ -12,7 +12,7 @@ class FCNEncoder(nn.Module):
     ``output_dims``.
 
     Args:
-        input_channels: Number of input feature channels.
+        input_dims: Number of input feature channels.
         output_dims: Dimension of the flat encoder output.
         encoder_channels: Tuple of channel counts for each Conv1d block.
         encoder_kernels: Tuple of kernel sizes for each Conv1d block.
@@ -21,7 +21,7 @@ class FCNEncoder(nn.Module):
 
     def __init__(
         self,
-        input_channels: int,
+        input_dims: int,
         output_dims: int = 320,
         encoder_channels: tuple[int, ...] = (128, 256, 128),
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
@@ -33,7 +33,7 @@ class FCNEncoder(nn.Module):
         self.encoder_dilations = encoder_dilations
 
         layers: list[nn.Module] = []
-        in_ch = input_channels
+        in_ch = input_dims
         for ch, k, d in zip(encoder_channels, encoder_kernels, encoder_dilations, strict=True):
             layers.append(nn.Conv1d(in_ch, ch, kernel_size=k, padding=k // 2 * d, dilation=d))
             layers.append(nn.BatchNorm1d(ch))
