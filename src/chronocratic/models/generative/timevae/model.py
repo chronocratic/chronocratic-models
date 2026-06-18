@@ -18,16 +18,20 @@ from chronocratic.models.layers.general import (
 
 class TimeVAEEncoder(nn.Module):
     def __init__(
-        self, seq_len: int, feat_dim: int, hidden_layer_sizes: list[int], latent_dim: int
+        self,
+        sequence_length: int,
+        input_dims: int,
+        hidden_layer_sizes: list[int],
+        latent_dim: int,
     ) -> None:
         super().__init__()
-        self.seq_len = seq_len
-        self.feat_dim = feat_dim
+        self.sequence_length = sequence_length
+        self.input_dims = input_dims
         self.latent_dim = latent_dim
         self.hidden_layer_sizes = hidden_layer_sizes
         self.layers: nn.ModuleList = nn.ModuleList()
         self.layers.append(
-            nn.Conv1d(feat_dim, hidden_layer_sizes[0], kernel_size=3, stride=2, padding=1)
+            nn.Conv1d(input_dims, hidden_layer_sizes[0], kernel_size=3, stride=2, padding=1)
         )
         self.layers.append(nn.ReLU())
 
@@ -39,7 +43,7 @@ class TimeVAEEncoder(nn.Module):
 
         self.layers.append(nn.Flatten())
 
-        self.encoder_last_dense_dim = self._get_last_dense_dim(seq_len, feat_dim)
+        self.encoder_last_dense_dim = self._get_last_dense_dim(sequence_length, input_dims)
 
         self.encoder = nn.Sequential(*self.layers)
         del self.layers
@@ -56,9 +60,9 @@ class TimeVAEEncoder(nn.Module):
         z = self.sampling((z_mean, z_log_var))
         return z_mean, z_log_var, z
 
-    def _get_last_dense_dim(self, seq_len: int, feat_dim: int) -> int:
+    def _get_last_dense_dim(self, sequence_length: int, input_dims: int) -> int:
         with torch.no_grad():
-            x = torch.randn(1, feat_dim, seq_len)
+            x = torch.randn(1, input_dims, sequence_length)
             for conv in self.layers:
                 x = conv(x)
             return x.numel()
@@ -67,8 +71,8 @@ class TimeVAEEncoder(nn.Module):
 class TimeVAEDecoder(nn.Module):
     def __init__(
         self,
-        seq_len: int,
-        feat_dim: int,
+        sequence_length: int,
+        input_dims: int,
         hidden_layer_sizes: list[int],
         latent_dim: int,
         trend_poly: int = 0,
@@ -78,28 +82,34 @@ class TimeVAEDecoder(nn.Module):
         encoder_last_dense_dim: int | None = None,
     ) -> None:
         super().__init__()
-        self.seq_len = seq_len
-        self.feat_dim = feat_dim
+        self.sequence_length = sequence_length
+        self.input_dims = input_dims
         self.hidden_layer_sizes = hidden_layer_sizes
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
         self.custom_seas = custom_seas
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
-                self.seq_len, self.feat_dim, self.latent_dim, self.trend_poly
+                self.sequence_length, self.input_dims, self.latent_dim, self.trend_poly
             )
         if self.custom_seas is not None and len(self.custom_seas) > 0:
-            self.seasonal_layer = SeasonalLayer(seq_len, feat_dim, latent_dim, self.custom_seas)
+            self.seasonal_layer = SeasonalLayer(
+                self.sequence_length, self.input_dims, self.latent_dim, self.custom_seas
+            )
         self.use_residual_conn = use_residual_conn
         self.encoder_last_dense_dim = encoder_last_dense_dim
-        self.level_model = LevelModel(self.latent_dim, self.feat_dim, self.seq_len)
+        self.level_model = LevelModel(self.latent_dim, self.input_dims, self.sequence_length)
 
         if use_residual_conn:
             if encoder_last_dense_dim is None:
                 msg = "encoder_last_dense_dim is required when use_residual_conn is True."
                 raise ValueError(msg)
             self.residual_conn = ResidualConnection(
-                seq_len, feat_dim, hidden_layer_sizes, latent_dim, encoder_last_dense_dim
+                self.sequence_length,
+                self.input_dims,
+                hidden_layer_sizes,
+                latent_dim,
+                encoder_last_dense_dim,
             )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
@@ -181,7 +191,10 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     def _build_encoder(self) -> TimeVAEEncoder:
         return TimeVAEEncoder(
-            self.sequence_length, self.input_dims, list(self.hidden_layer_sizes), self.latent_dim
+            sequence_length=self.sequence_length,
+            input_dims=self.input_dims,
+            hidden_layer_sizes=list(self.hidden_layer_sizes),
+            latent_dim=self.latent_dim,
         )
 
     def _get_encoder(self) -> nn.Module:
@@ -194,8 +207,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
-            seq_len=self.sequence_length,
-            feat_dim=self.input_dims,
+            sequence_length=self.sequence_length,
+            input_dims=self.input_dims,
             hidden_layer_sizes=list(self.hidden_layer_sizes),
             latent_dim=self.latent_dim,
             trend_poly=self.trend_poly,
