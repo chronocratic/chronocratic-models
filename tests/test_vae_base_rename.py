@@ -55,7 +55,7 @@ class TestFullModelInstantiation:
 
         model = TimeVAE(sequence_length=96, input_dims=2, latent_dim=8)
         model.eval()
-        x = torch.randn(4, 2, 96)
+        x = torch.randn(4, 96, 2)  # (batch, sequence_length, input_dims)
         with torch.no_grad():
             output = model(x)
         assert output.shape == (4, 96, 2)

@@ -53,12 +53,9 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruct an input batch using the latent mean.
 
-        Expects ``x`` of shape ``(batch, seq_len, channels)`` or ``(batch, channels, seq_len)``.
-        The encoder transposes to ``(batch, channels, seq_len)`` internally.
+        Expects ``x`` of shape ``(batch, sequence_length, input_dims)``.
+        The encoder transposes to ``(batch, input_dims, sequence_length)`` internally.
         """
-        # If shape is (batch, channels, seq_len), transpose to (batch, seq_len, channels)
-        if x.ndim == 3 and x.shape[1] != self.sequence_length:
-            x = x.transpose(1, 2)
         z_mean, _z_log_var, _z = self._encoder(x)
         return self._decoder(z_mean)
 
