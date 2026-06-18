@@ -86,13 +86,6 @@ class TestCoSTConfigDefaults:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         assert params.max_train_length == 201
 
-    def test_kernel_sizes_isolated(self) -> None:
-        """Mutable default (list) must not be shared across instances."""
-        p1 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p2 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p1.kernel_sizes.append(256)
-        assert 256 not in p2.kernel_sizes
-
     def test_other_defaults(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         assert params.hidden_dims == 64
@@ -113,18 +106,11 @@ class TestAutoTCLConfigDefaults:
 
     def test_own_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == [3, 5, 7]
+        assert params.kernel_sizes == (3, 5, 7)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
         assert params.max_train_length is None
         assert params.sync_dist is False
-
-    def test_kernel_sizes_isolated(self) -> None:
-        """Mutable default (list) must not be shared across instances."""
-        p1 = AutoTCLModelParameters(input_dims=1)
-        p2 = AutoTCLModelParameters(input_dims=1)
-        p1.kernel_sizes.append(9)
-        assert 9 not in p2.kernel_sizes
 
     def test_encoder_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)

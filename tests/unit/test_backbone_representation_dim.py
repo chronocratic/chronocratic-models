@@ -25,7 +25,7 @@ class TestTSTRepresentationDim:
     def test_representation_dim_matches_forward(self) -> None:
         """Flattened output size equals model.representation_dim."""
         model = TST(
-            feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1, dim_feedforward=16
+            input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1, feedforward_dims=16
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)
@@ -36,13 +36,13 @@ class TestTSTRepresentationDim:
         assert flat.shape[1] == model.representation_dim
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = d_model * max_len."""
-        model = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        """representation_dim = hidden_dims * sequence_length."""
+        model = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         assert model.representation_dim == 8 * 10
 
     def test_satisfies_protocol(self) -> None:
         """TST is an instance of RepresentationBackbone."""
-        model = TST(feat_dim=2, max_seq_len=5, d_model=4, n_heads=1, num_layers=1)
+        model = TST(input_dims=2, sequence_length=5, hidden_dims=4, num_heads=1, depth=1)
         assert isinstance(model, RepresentationBackbone)
 
 
@@ -82,10 +82,10 @@ class TestTSTCCRepresentationDim:
     def test_representation_dim_equals_logits_in_features(self) -> None:
         """representation_dim returns the encoder's logits layer in_features."""
         model = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=4,
             num_classes=3,
         )
@@ -93,12 +93,12 @@ class TestTSTCCRepresentationDim:
         assert model.representation_dim == model._encoder.logits.in_features  # noqa: SLF001
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = final_out_channels * features_len."""
+        """representation_dim = output_dims * features_len."""
         model = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=4,
             num_classes=3,
         )
@@ -110,7 +110,7 @@ class TestFactoriesWithRealBackbones:
 
     def test_tst_factory_works(self) -> None:
         """make_tst_supervised with a real TST backbone."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
@@ -139,10 +139,10 @@ class TestFactoriesWithRealBackbones:
     def test_tstcc_factory_works(self) -> None:
         """make_tstcc_supervised with a real TSTCC backbone."""
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=4,
             num_classes=3,
         )

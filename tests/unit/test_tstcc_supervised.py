@@ -51,10 +51,10 @@ class TestTSTCCModelCleaned:
         # features_len=10 → logits in_features = 16*10 = 160
         seq_len = 256
         model = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -89,10 +89,10 @@ class TestTSTCCSupervisedModule:
     def test_finetuner_classification_shape(self) -> None:
         """make_tstcc_supervised produces (B, num_classes) output."""
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -106,10 +106,10 @@ class TestTSTCCSupervisedModule:
     def test_finetuner_training_step(self) -> None:
         """training_step returns scalar loss."""
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -131,10 +131,10 @@ class TestTSTCCSupervisedModule:
         end-to-end on labels.
         """
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )

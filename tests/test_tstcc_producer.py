@@ -48,10 +48,10 @@ class TestTSTCCConstructor:
     def test_accepts_default_tstcc_pair(self) -> None:
         producer = _default_tstcc_pair()
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
             augmentation=producer,
@@ -60,10 +60,10 @@ class TestTSTCCConstructor:
 
     def test_default_producer_is_role_pair(self) -> None:
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
         )
@@ -75,10 +75,10 @@ class TestTSTCCTraining:
 
     def test_compute_loss_uses_produce_first_second(self) -> None:
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
         )
@@ -95,10 +95,10 @@ class TestTSTCCTraining:
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
         )
@@ -141,10 +141,10 @@ class TestDeterminism:
         for _run in range(2):
             torch.manual_seed(12345)
             model = TSTCC(
-                input_channels=1,
-                kernel_size=5,
+                input_dims=1,
+                conv_kernel_size=5,
                 stride=1,
-                final_out_channels=16,
+                output_dims=16,
                 features_len=15,
                 num_classes=10,
             )

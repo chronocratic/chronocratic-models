@@ -43,21 +43,21 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_channels: int,
-        kernel_size: int,
+        input_dims: int,
+        conv_kernel_size: int,
         stride: int,
-        final_out_channels: int,
         features_len: int,
         num_classes: int,
-        dropout: float = 0.35,
-        tc_hidden_dim: int = 100,
-        tc_timesteps: int = 6,
+        output_dims: int = 128,
+        dropout_rate: float = 0.35,
+        temporal_contrast_hidden_dim: int = 100,
+        temporal_contrast_timesteps: int = 6,
         temperature: float = 0.2,
         *,
         use_cosine_similarity: bool = True,
         learning_rate: float = 3e-4,
-        lambda1: float = 1.0,
-        lambda2: float = 0.7,
+        temporal_loss_weight: float = 1.0,
+        contextual_loss_weight: float = 0.7,
         sync_dist: bool = False,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
     ) -> None:
@@ -66,8 +66,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self.automatic_optimization = False
 
         self._learning_rate = learning_rate
-        self._lambda1 = lambda1
-        self._lambda2 = lambda2
+        self._temporal_loss_weight = temporal_loss_weight
+        self._contextual_loss_weight = contextual_loss_weight
         self._sync_dist = sync_dist
 
         if augmentation is None:
@@ -80,16 +80,18 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             self._augmentation = augmentation
 
         self._encoder = TCCEncoder(
-            input_channels=input_channels,
-            kernel_size=kernel_size,
+            input_dims=input_dims,
+            conv_kernel_size=conv_kernel_size,
             stride=stride,
-            final_out_channels=final_out_channels,
             features_len=features_len,
             num_classes=num_classes,
-            dropout=dropout,
+            output_dims=output_dims,
+            dropout_rate=dropout_rate,
         )
         self._tc_model = TemporalContrast(
-            num_channels=final_out_channels, hidden_dim=tc_hidden_dim, timesteps=tc_timesteps
+            num_channels=output_dims,
+            hidden_dim=temporal_contrast_hidden_dim,
+            timesteps=temporal_contrast_timesteps,
         )
         self._nt_xent_loss = NTXentLoss(
             temperature=temperature, use_cosine_similarity=use_cosine_similarity
@@ -127,7 +129,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         temporal_loss = temp_loss1 + temp_loss2
         contextual_loss = self._nt_xent_loss(proj1, proj2)
-        return self._lambda1 * temporal_loss + self._lambda2 * contextual_loss
+        return self._temporal_loss_weight * temporal_loss + self._contextual_loss_weight * contextual_loss
 
     # ------------------------------------------------------------------
     # Training & validation steps
@@ -205,6 +207,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         Returns:
             The input dimension of the encoder's logits ``nn.Linear`` layer,
-            which equals ``final_out_channels * features_len``.
+            which equals ``output_dims * features_len``.
         """
         return self._encoder.logits.in_features

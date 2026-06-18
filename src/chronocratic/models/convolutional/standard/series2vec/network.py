@@ -21,11 +21,11 @@ class Series2VecNetwork(nn.Module):
     def __init__(
         self,
         input_dims: int,
-        embedding_dims: int,
-        num_heads: int,
-        feedforward_dims: int,
-        representation_dims: int,
-        dropout_rate: float,
+        embedding_dims: int = 16,
+        num_heads: int = 8,
+        feedforward_dims: int = 256,
+        representation_dims: int = 320,
+        dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
     ) -> None:
         super().__init__()

@@ -38,17 +38,17 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     def __init__(
         self,
         hidden_dims: int,
-        num_layers: int,
-        feat_dim: int = 1,
-        dropout: float = 0.1,
+        depth: int,
+        input_dims: int = 1,
+        dropout_rate: float = 0.1,
         learning_rate: float = 1e-3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        self._feat_dim: int = feat_dim
+        self._input_dims: int = input_dims
         self._hidden_dims: int = hidden_dims
-        self._num_layers: int = num_layers
-        self._dropout: float = dropout
+        self._depth: int = depth
+        self._dropout_rate: float = dropout_rate
         self._encoder: Sequential = self._build_encoder()
         self._decoder: Sequential = self._build_decoder()
         self._learning_rate = learning_rate
@@ -66,11 +66,11 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def _build_encoder(self) -> nn.Sequential:
         encoder_layers: list[nn.Module] = [
-            GRUWrapper(self._feat_dim, self._hidden_dims, batch_first=True)
+            GRUWrapper(self._input_dims, self._hidden_dims, batch_first=True)
         ]
-        for _ in range(1, self._num_layers):
-            if self._dropout > 0:
-                encoder_layers.append(nn.Dropout(self._dropout))
+        for _ in range(1, self._depth):
+            if self._dropout_rate > 0:
+                encoder_layers.append(nn.Dropout(self._dropout_rate))
             encoder_layers.append(
                 GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
             )
@@ -80,13 +80,13 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         decoder_layers: list[nn.Module] = [
             GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
         ]
-        for i in range(1, self._num_layers):
-            if i > 1 and self._dropout > 0:
-                decoder_layers.append(nn.Dropout(self._dropout))
+        for i in range(1, self._depth):
+            if i > 1 and self._dropout_rate > 0:
+                decoder_layers.append(nn.Dropout(self._dropout_rate))
             decoder_layers.append(
                 GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
             )
-        decoder_layers.append(nn.Linear(self._hidden_dims, self._feat_dim))
+        decoder_layers.append(nn.Linear(self._hidden_dims, self._input_dims))
         return nn.Sequential(*decoder_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

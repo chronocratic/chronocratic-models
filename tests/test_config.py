@@ -95,13 +95,7 @@ class TestCoSTModelParameters:
 
     def test_default_kernel_sizes(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.kernel_sizes == [1, 2, 4, 8, 16, 32, 64, 128]
-
-    def test_default_kernel_sizes_isolation(self) -> None:
-        p1 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p2 = CoSTModelParameters(input_dims=1, sequence_length=100)
-        p1.kernel_sizes.append(256)
-        assert 256 not in p2.kernel_sizes
+        assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
 
     def test_default_max_train_length(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -189,13 +183,7 @@ class TestAutoTCLModelParameters:
 
     def test_default_kernel_sizes(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == [3, 5, 7]
-
-    def test_default_kernel_sizes_isolation(self) -> None:
-        p1 = AutoTCLModelParameters(input_dims=1)
-        p2 = AutoTCLModelParameters(input_dims=1)
-        p1.kernel_sizes.append(9)
-        assert 9 not in p2.kernel_sizes
+        assert params.kernel_sizes == (3, 5, 7)
 
     def test_default_mask_mode(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)

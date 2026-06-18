@@ -20,14 +20,15 @@ class Series2VecModelParameters:
     Args:
         input_dims: Number of input features (channels) in the time
             series.
-        embedding_dims: Token embedding dimensionality.
+        embedding_dims: Token embedding dimensionality. Defaults to 16.
         num_heads: Number of attention heads in the transformer encoder.
+            Defaults to 8.
         feedforward_dims: Hidden dimensionality of the transformer
-            feed-forward block.
+            feed-forward block. Defaults to 256.
         representation_dims: Output dimensionality of the projection
-            head used for pretraining.
+            head used for pretraining. Defaults to 320.
         dropout_rate: Dropout probability applied throughout the
-            network.
+            network. Defaults to 0.01.
         encoder_kernel_size: Kernel size of the convolutional tokenizer.
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
@@ -41,11 +42,11 @@ class Series2VecModelParameters:
     """
 
     input_dims: int
-    embedding_dims: int
-    num_heads: int
-    feedforward_dims: int
-    representation_dims: int
-    dropout_rate: float
+    embedding_dims: int = 16
+    num_heads: int = 8
+    feedforward_dims: int = 256
+    representation_dims: int = 320
+    dropout_rate: float = 0.01
     encoder_kernel_size: int = 8
     learning_rate: float = 1e-3
     soft_dtw_gamma: float = 0.1

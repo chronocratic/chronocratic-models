@@ -17,7 +17,7 @@ class TestTSTFinetuningModule:
 
     def test_classification_output_shape(self) -> None:
         """make_tst_supervised classification produces (B, num_outputs) output."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -28,7 +28,7 @@ class TestTSTFinetuningModule:
 
     def test_regression_output_shape(self) -> None:
         """make_tst_supervised regression produces (B, num_outputs) output."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=2, task="regression", freeze_backbone=False
         )
@@ -39,7 +39,7 @@ class TestTSTFinetuningModule:
 
     def test_training_step_returns_scalar(self) -> None:
         """training_step returns a finite scalar loss."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -54,7 +54,7 @@ class TestTSTFinetuningModule:
 
     def test_freeze_backbone_prevents_grads(self) -> None:
         """freeze_backbone=True: backbone params don't receive gradients."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=True
         )
@@ -70,7 +70,7 @@ class TestTSTFinetuningModule:
 
     def test_unfrozen_backbone_receives_grads(self) -> None:
         """freeze_backbone=False: backbone params receive gradients."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )

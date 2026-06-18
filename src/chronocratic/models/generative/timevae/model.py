@@ -140,28 +140,28 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     def __init__(
         self,
-        seq_len: int,
-        feat_dim: int,
+        sequence_length: int,
+        input_dims: int,
         latent_dim: int,
-        reconstruction_wt: float = 3.0,
+        reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
-        hidden_layer_sizes: list[int] | None = None,
+        hidden_layer_sizes: tuple[int, ...] | None = None,
         trend_poly: int = 0,
-        custom_seas: list[Seasonality] | None = None,
+        custom_seas: tuple[tuple[int, int], ...] | None = None,
         *,
         use_residual_conn: bool = True,
     ) -> None:
         super().__init__(
-            seq_len=seq_len,
-            feat_dim=feat_dim,
+            sequence_length=sequence_length,
+            input_dims=input_dims,
             latent_dim=latent_dim,
-            reconstruction_wt=reconstruction_wt,
+            reconstruction_weight=reconstruction_weight,
             learning_rate=learning_rate,
         )
         self.save_hyperparameters()
 
         if hidden_layer_sizes is None:
-            hidden_layer_sizes = [50, 100, 200]
+            hidden_layer_sizes = (50, 100, 200)
 
         self.hidden_layer_sizes = hidden_layer_sizes
         self.trend_poly = trend_poly
@@ -178,7 +178,9 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
                     nn.init.zeros_(layer.bias)
 
     def _build_encoder(self) -> TimeVAEEncoder:
-        return TimeVAEEncoder(self.seq_len, self.feat_dim, self.hidden_layer_sizes, self.latent_dim)
+        return TimeVAEEncoder(
+            self.sequence_length, self.input_dims, list(self.hidden_layer_sizes), self.latent_dim
+        )
 
     def _get_encoder(self) -> nn.Module:
         """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
@@ -190,9 +192,9 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
-            seq_len=self.seq_len,
-            feat_dim=self.feat_dim,
-            hidden_layer_sizes=self.hidden_layer_sizes,
+            seq_len=self.sequence_length,
+            feat_dim=self.input_dims,
+            hidden_layer_sizes=list(self.hidden_layer_sizes),
             latent_dim=self.latent_dim,
             trend_poly=self.trend_poly,
             custom_seas=self.custom_seas,
