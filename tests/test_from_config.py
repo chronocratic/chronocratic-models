@@ -53,6 +53,14 @@ class TestModelInstantiation:
         )
         assert isinstance(model, AutoTCL)
 
+    def test_tst_instantiation_from_config(self) -> None:
+        from chronocratic.models.transformer.tst.config import TSTModelParameters
+        from chronocratic.models.transformer.tst.model import TST
+
+        config = TSTModelParameters(input_dims=1, sequence_length=100)
+        model = TST(**vars(config))
+        assert isinstance(model, TST)
+
     def test_tstcc_instantiation_returns_instance(self) -> None:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
