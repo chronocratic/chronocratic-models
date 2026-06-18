@@ -16,9 +16,7 @@ class TestTimeNetConfigRename:
 
     def test_config_uses_canonical_names(self) -> None:
         """Config should accept input_dims, depth, dropout_rate."""
-        config = TimeNetModelParameters(
-            hidden_dims=64, depth=1, input_dims=1, dropout_rate=0.1
-        )
+        config = TimeNetModelParameters(hidden_dims=64, depth=1, input_dims=1, dropout_rate=0.1)
         assert config.input_dims == 1
         assert config.depth == 1
         assert config.dropout_rate == 0.1

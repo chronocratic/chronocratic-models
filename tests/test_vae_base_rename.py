@@ -25,9 +25,7 @@ class TestBaseVAECanonicalNames:
 
     def test_timevae_has_reconstruction_weight(self) -> None:
         """Instance has self.reconstruction_weight after rename."""
-        model = TimeVAE(
-            sequence_length=100, input_dims=1, latent_dim=10, reconstruction_weight=2.5
-        )
+        model = TimeVAE(sequence_length=100, input_dims=1, latent_dim=10, reconstruction_weight=2.5)
         assert model.reconstruction_weight == 2.5
 
     def test_no_seq_len_attribute(self) -> None:

@@ -7,9 +7,7 @@ defaults taken from the reference repository.
 
 import pytest
 
-from chronocratic.models.convolutional.standard.series2vec.config import (
-    Series2VecModelParameters,
-)
+from chronocratic.models.convolutional.standard.series2vec.config import Series2VecModelParameters
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 
 
