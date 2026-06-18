@@ -248,7 +248,7 @@ class TSTransformerEncoder(nn.Module):
             )
 
         self.transformer_encoder = nn.TransformerEncoder(
-            cast("TransformerEncoderLayer", encoder_layer), depth
+            cast("TransformerEncoderLayer", encoder_layer), depth, enable_nested_tensor=False
         )
 
         self.output_layer = nn.Linear(hidden_dims, input_dims)

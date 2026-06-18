@@ -70,7 +70,7 @@ class Series2VecNetwork(nn.Module):
 
     @staticmethod
     def _real_fft(x: torch.Tensor) -> torch.Tensor:
-        return torch.fft.fft(x).real
+        return torch.fft.fft(x, norm="backward").real
 
     def _temporal_representation(self, x: torch.Tensor) -> torch.Tensor:
         x = self._to_channels_first(x)
