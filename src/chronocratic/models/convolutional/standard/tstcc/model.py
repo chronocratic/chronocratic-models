@@ -133,7 +133,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         temporal_loss = temp_loss1 + temp_loss2
         contextual_loss = self._nt_xent_loss(proj1, proj2)
-        return self._temporal_loss_weight * temporal_loss + self._contextual_loss_weight * contextual_loss
+        return (
+            self._temporal_loss_weight * temporal_loss
+            + self._contextual_loss_weight * contextual_loss
+        )
 
     # ------------------------------------------------------------------
     # Training & validation steps

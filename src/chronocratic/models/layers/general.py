@@ -92,11 +92,7 @@ class BandedFourierLayer(nn.Module):
 
 class TrendLayer(nn.Module):
     def __init__(
-        self,
-        sequence_length: int,
-        input_dims: int,
-        latent_dim: int,
-        trend_poly: int,
+        self, sequence_length: int, input_dims: int, latent_dim: int, trend_poly: int
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -114,7 +110,9 @@ class TrendLayer(nn.Module):
         trend_params = self.trend_dense2(trend_params)
         trend_params = trend_params.view(-1, self.input_dims, self.trend_poly)
 
-        lin_space = torch.arange(0, float(self.sequence_length), 1, device=z.device) / self.sequence_length
+        lin_space = (
+            torch.arange(0, float(self.sequence_length), 1, device=z.device) / self.sequence_length
+        )
         poly_space = torch.stack([lin_space ** float(p + 1) for p in range(self.trend_poly)], dim=0)
 
         trend_vals = torch.matmul(trend_params, poly_space)
@@ -147,7 +145,9 @@ class SeasonalLayer(nn.Module):
             (num_seasons, len_per_season), dtype=torch.int32
         )
         season_indexes = season_indexes.view(-1)
-        season_indexes = season_indexes.repeat(self.sequence_length // len_per_season + 1)[: self.sequence_length]
+        season_indexes = season_indexes.repeat(self.sequence_length // len_per_season + 1)[
+            : self.sequence_length
+        ]
         return season_indexes
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:

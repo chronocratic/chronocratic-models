@@ -63,7 +63,9 @@ class FixedPositionalEncoding(nn.Module):
 
         pe = torch.zeros(sequence_length, hidden_dims)  # positional encoding
         position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims))
+        div_term = torch.exp(
+            torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
@@ -86,10 +88,7 @@ class FixedPositionalEncoding(nn.Module):
 
 class LearnablePositionalEncoding(nn.Module):
     def __init__(
-        self,
-        hidden_dims: int,
-        dropout_rate: float = 0.1,
-        sequence_length: int = 1024,
+        self, hidden_dims: int, dropout_rate: float = 0.1, sequence_length: int = 1024
     ) -> None:
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_rate)
