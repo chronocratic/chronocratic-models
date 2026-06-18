@@ -41,25 +41,29 @@ class FixedPositionalEncoding(nn.Module):
         the embeddings, so that the two can be summed. Here, we use sine and cosine
         functions of different frequencies.
     .. math::
-        \text{PosEncoder}(pos, 2i) = sin(pos/10000^(2i/d_model))
-        \text{PosEncoder}(pos, 2i+1) = cos(pos/10000^(2i/d_model))
+        \text{PosEncoder}(pos, 2i) = sin(pos/10000^(2i/hidden_dims))
+        \text{PosEncoder}(pos, 2i+1) = cos(pos/10000^(2i/hidden_dims))
         \text{where pos is the word position and i is the embed idx).
 
     Args:
-        d_model: the embed dim (required).
-        dropout: the dropout value (default=0.1).
-        max_len: the max. length of the incoming sequence (default=1024).
+        hidden_dims: the embed dim (required).
+        dropout_rate: the dropout value (default=0.1).
+        sequence_length: the max. length of the incoming sequence (default=1024).
     """  # noqa: D205
 
     def __init__(
-        self, d_model: int, dropout: float = 0.1, max_len: int = 1024, scale_factor: float = 1.0
+        self,
+        hidden_dims: int,
+        dropout_rate: float = 0.1,
+        sequence_length: int = 1024,
+        scale_factor: float = 1.0,
     ) -> None:
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(p=dropout_rate)
 
-        pe = torch.zeros(max_len, d_model)  # positional encoding
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(sequence_length, hidden_dims)  # positional encoding
+        position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims))
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
@@ -81,13 +85,18 @@ class FixedPositionalEncoding(nn.Module):
 
 
 class LearnablePositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 1024) -> None:
+    def __init__(
+        self,
+        hidden_dims: int,
+        dropout_rate: float = 0.1,
+        sequence_length: int = 1024,
+    ) -> None:
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(p=dropout_rate)
         # Each position gets its own embedding
-        # Since indices are always 0 ... max_len, we don't have to do a look-up
+        # Since indices are always 0 ... sequence_length, we don't have to do a look-up
         self.pe = nn.Parameter(
-            torch.empty(max_len, 1, d_model)
+            torch.empty(sequence_length, 1, hidden_dims)
         )  # requires_grad automatically set to True
         nn.init.uniform_(self.pe, -0.02, 0.02)
 
@@ -123,34 +132,34 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
     replaces LayerNorm with BatchNorm.
 
     Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
-        dropout: the dropout value (default=0.1).
+        hidden_dims: the number of expected features in the input (required).
+        num_heads: the number of heads in the multiheadattention models (required).
+        feedforward_dims: the dimension of the feedforward network model (default=2048).
+        dropout_rate: the dropout value (default=0.1).
         activation: the activation function of intermediate layer, relu or gelu (default=relu).
     """  # noqa: D205
 
     def __init__(
         self,
-        d_model: int,
-        nhead: int,
-        dim_feedforward: int = 2048,
-        dropout: float = 0.1,
+        hidden_dims: int,
+        num_heads: int,
+        feedforward_dims: int = 2048,
+        dropout_rate: float = 0.1,
         activation: str = "relu",
     ) -> None:
         super().__init__()
-        self.self_attn = MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = MultiheadAttention(hidden_dims, num_heads, dropout=dropout_rate)
         # Implementation of Feedforward model
-        self.linear1 = Linear(d_model, dim_feedforward)
-        self.dropout = Dropout(dropout)
-        self.linear2 = Linear(dim_feedforward, d_model)
+        self.linear1 = Linear(hidden_dims, feedforward_dims)
+        self.dropout = Dropout(dropout_rate)
+        self.linear2 = Linear(feedforward_dims, hidden_dims)
 
         self.norm1 = BatchNorm1d(
-            d_model, eps=1e-5
+            hidden_dims, eps=1e-5
         )  # normalizes each feature across batch samples and time steps
-        self.norm2 = BatchNorm1d(d_model, eps=1e-5)
-        self.dropout1 = Dropout(dropout)
-        self.dropout2 = Dropout(dropout)
+        self.norm2 = BatchNorm1d(hidden_dims, eps=1e-5)
+        self.dropout1 = Dropout(dropout_rate)
+        self.dropout2 = Dropout(dropout_rate)
 
         self.activation = _get_activation_fn(activation)
 
@@ -219,7 +228,7 @@ class TSTransformerEncoder(nn.Module):
 
         self.project_inp = nn.Linear(input_dims, hidden_dims)
         self.pos_enc = get_pos_encoder(pos_encoding)(
-            hidden_dims, dropout=dropout_rate * (1.0 - freeze), max_len=sequence_length
+            hidden_dims, dropout_rate=dropout_rate * (1.0 - freeze), sequence_length=sequence_length
         )
 
         if norm == "LayerNorm":
