@@ -14,8 +14,9 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.recurrent.enums import RecurrentCellType
 
 if TYPE_CHECKING:
-    from lightning.pytorch.utilities.types import OptimizerLRScheduler
     from collections.abc import Callable
+
+    from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
 
 _OPTIMIZERS: dict[str, Callable[..., torch.optim.Optimizer]] = {
