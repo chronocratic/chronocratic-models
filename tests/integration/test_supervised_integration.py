@@ -101,7 +101,7 @@ class TestAllBackbonesSatisfyProtocol:
     """Verify isinstance(backbone, RepresentationBackbone) for all three models."""
 
     def test_tst_satisfies_protocol(self) -> None:
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         assert isinstance(backbone, RepresentationBackbone)
 
     def test_series2vec_satisfies_protocol(self) -> None:
@@ -117,10 +117,10 @@ class TestAllBackbonesSatisfyProtocol:
 
     def test_tstcc_satisfies_protocol(self) -> None:
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -136,7 +136,7 @@ class TestAllFactoriesProduceSupervisedModule:
     """Verify each factory returns a SupervisedModule instance."""
 
     def test_tst_factory_type(self) -> None:
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(backbone, num_outputs=3, task="classification")
         assert isinstance(module, SupervisedModule)
 
@@ -154,10 +154,10 @@ class TestAllFactoriesProduceSupervisedModule:
 
     def test_tstcc_factory_type(self) -> None:
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -175,7 +175,7 @@ class TestEndToEndTraining:
 
     def test_tst_trains_end_to_end(self) -> None:
         """TST finetuner trains for 3 steps with finite loss."""
-        backbone = TST(feat_dim=2, max_seq_len=10, d_model=8, n_heads=2, num_layers=1)
+        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
@@ -221,10 +221,10 @@ class TestEndToEndTraining:
     def test_tstcc_trains_end_to_end(self) -> None:
         """TSTCC finetuner trains for 3 steps with finite loss."""
         backbone = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )
@@ -246,10 +246,10 @@ class TestEndToEndTraining:
     def test_tstcc_pretraining_still_works(self) -> None:
         """TSTCC pretraining (contrastive) still works after enum removal."""
         model = TSTCC(
-            input_channels=2,
-            kernel_size=8,
+            input_dims=2,
+            conv_kernel_size=8,
             stride=4,
-            final_out_channels=16,
+            output_dims=16,
             features_len=10,
             num_classes=3,
         )

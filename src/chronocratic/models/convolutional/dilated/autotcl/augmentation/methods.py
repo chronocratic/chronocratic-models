@@ -9,7 +9,7 @@ with a ``produce() -> SingleView`` contract.
 
 __all__ = ["AutoTCLNeuralNetworkAugmentation", "AutoTCLNeuralNetworkAugmentationParameters"]
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -71,7 +71,7 @@ class AutoTCLNeuralNetworkAugmentationParameters:
 
     input_dims: int
     output_dims: int = 16
-    kernel_sizes: list[int] = field(default_factory=lambda: [3, 5, 7])
+    kernel_sizes: tuple[int, ...] = (3, 5, 7)
     hidden_dims: int = 64
     feature_extractor_depth: int = 10
     dropout_rate: float = 0.1

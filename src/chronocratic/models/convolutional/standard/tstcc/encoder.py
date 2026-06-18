@@ -13,53 +13,69 @@ class TCCEncoder(nn.Module):
 
     def __init__(
         self,
-        input_channels: int,
-        kernel_size: int,
+        input_dims: int,
+        conv_kernel_size: int,
         stride: int,
-        final_out_channels: int,
         features_len: int,
         num_classes: int,
-        dropout: float = 0.35,
+        output_dims: int = 128,
+        dropout_rate: float = 0.35,
+        encoder_channels: tuple[int, ...] = (32, 64),
+        encoder_inner_kernels: tuple[int, ...] = (8, 8),
     ) -> None:
         super().__init__()
 
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
-                input_channels,
-                32,
-                kernel_size=kernel_size,
+                input_dims,
+                encoder_channels[0],
+                kernel_size=conv_kernel_size,
                 stride=stride,
                 bias=False,
-                padding=kernel_size // 2,
+                padding=conv_kernel_size // 2,
             ),
-            nn.BatchNorm1d(32),
+            nn.BatchNorm1d(encoder_channels[0]),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(dropout),
+            nn.Dropout(dropout_rate),
         )
         self.conv_block2 = nn.Sequential(
-            nn.Conv1d(32, 64, kernel_size=8, stride=1, bias=False, padding=4),
-            nn.BatchNorm1d(64),
+            nn.Conv1d(
+                encoder_channels[0],
+                encoder_channels[1],
+                kernel_size=encoder_inner_kernels[0],
+                stride=1,
+                bias=False,
+                padding=encoder_inner_kernels[0] // 2,
+            ),
+            nn.BatchNorm1d(encoder_channels[1]),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
         )
         self.conv_block3 = nn.Sequential(
-            nn.Conv1d(64, final_out_channels, kernel_size=8, stride=1, bias=False, padding=4),
-            nn.BatchNorm1d(final_out_channels),
+            nn.Conv1d(
+                encoder_channels[1],
+                output_dims,
+                kernel_size=encoder_inner_kernels[1],
+                stride=1,
+                bias=False,
+                padding=encoder_inner_kernels[1] // 2,
+            ),
+            nn.BatchNorm1d(output_dims),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
         )
-        self.logits = nn.Linear(features_len * final_out_channels, num_classes)
+        self.logits = nn.Linear(features_len * output_dims, num_classes)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Encode a batch and return logits plus convolutional features.
 
         Args:
-            x: ``(batch, input_channels, seq_len)``
+            x: ``(batch, input_dims, seq_len)``
 
         Returns:
             logits:   ``(batch, num_classes)``
-            features: ``(batch, final_out_channels, reduced_seq_len)``
+            features: ``(batch, output_dims, reduced_seq_len)``
         """
         x = self.conv_block1(x)
         x = self.conv_block2(x)

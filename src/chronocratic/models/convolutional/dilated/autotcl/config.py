@@ -7,7 +7,7 @@ learning rate, training length cap, and distributed-sync flag.
 
 __all__ = ["AutoTCLModelParameters"]
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
@@ -37,7 +37,7 @@ class AutoTCLModelParameters:
     """
 
     input_dims: int
-    kernel_sizes: list[int] = field(default_factory=lambda: [3, 5, 7])
+    kernel_sizes: tuple[int, ...] = (3, 5, 7)
     hidden_dims: int = 64
     output_dims: int = 320
     depth: int = 10

@@ -36,22 +36,26 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
 
     def __init__(
         self,
-        seq_len: int,
-        feat_dim: int,
+        sequence_length: int,
+        input_dims: int,
         latent_dim: int,
-        reconstruction_wt: float = 3.0,
+        reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
     ) -> None:
         super().__init__()
-        self.seq_len = seq_len
-        self.feat_dim = feat_dim
+        self.sequence_length = sequence_length
+        self.input_dims = input_dims
         self.latent_dim = latent_dim
-        self.reconstruction_wt = reconstruction_wt
+        self.reconstruction_weight = reconstruction_weight
         self.learning_rate = learning_rate
         self.sampling = Sampling()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Reconstruct an input batch using the latent mean."""
+        """Reconstruct an input batch using the latent mean.
+
+        Expects ``x`` of shape ``(batch, sequence_length, input_dims)``.
+        The encoder transposes to ``(batch, input_dims, sequence_length)`` internally.
+        """
         z_mean, _z_log_var, _z = self._encoder(x)
         return self._decoder(z_mean)
 
@@ -143,5 +147,5 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         """Return total, reconstruction, and KL losses for a batch."""
         reconstruction_loss = self._get_reconstruction_loss(x, x_recons)
         kl_loss = -0.5 * torch.sum(1 + z_log_var - z_mean.pow(2) - z_log_var.exp())
-        total_loss = self.reconstruction_wt * reconstruction_loss + kl_loss
+        total_loss = self.reconstruction_weight * reconstruction_loss + kl_loss
         return total_loss, reconstruction_loss, kl_loss

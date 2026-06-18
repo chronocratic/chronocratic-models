@@ -41,25 +41,31 @@ class FixedPositionalEncoding(nn.Module):
         the embeddings, so that the two can be summed. Here, we use sine and cosine
         functions of different frequencies.
     .. math::
-        \text{PosEncoder}(pos, 2i) = sin(pos/10000^(2i/d_model))
-        \text{PosEncoder}(pos, 2i+1) = cos(pos/10000^(2i/d_model))
+        \text{PosEncoder}(pos, 2i) = sin(pos/10000^(2i/hidden_dims))
+        \text{PosEncoder}(pos, 2i+1) = cos(pos/10000^(2i/hidden_dims))
         \text{where pos is the word position and i is the embed idx).
 
     Args:
-        d_model: the embed dim (required).
-        dropout: the dropout value (default=0.1).
-        max_len: the max. length of the incoming sequence (default=1024).
+        hidden_dims: the embed dim (required).
+        dropout_rate: the dropout value (default=0.1).
+        sequence_length: the max. length of the incoming sequence (default=1024).
     """  # noqa: D205
 
     def __init__(
-        self, d_model: int, dropout: float = 0.1, max_len: int = 1024, scale_factor: float = 1.0
+        self,
+        hidden_dims: int,
+        dropout_rate: float = 0.1,
+        sequence_length: int = 1024,
+        scale_factor: float = 1.0,
     ) -> None:
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(p=dropout_rate)
 
-        pe = torch.zeros(max_len, d_model)  # positional encoding
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(sequence_length, hidden_dims)  # positional encoding
+        position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
@@ -81,13 +87,15 @@ class FixedPositionalEncoding(nn.Module):
 
 
 class LearnablePositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 1024) -> None:
+    def __init__(
+        self, hidden_dims: int, dropout_rate: float = 0.1, sequence_length: int = 1024
+    ) -> None:
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(p=dropout_rate)
         # Each position gets its own embedding
-        # Since indices are always 0 ... max_len, we don't have to do a look-up
+        # Since indices are always 0 ... sequence_length, we don't have to do a look-up
         self.pe = nn.Parameter(
-            torch.empty(max_len, 1, d_model)
+            torch.empty(sequence_length, 1, hidden_dims)
         )  # requires_grad automatically set to True
         nn.init.uniform_(self.pe, -0.02, 0.02)
 
@@ -123,34 +131,34 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
     replaces LayerNorm with BatchNorm.
 
     Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
-        dropout: the dropout value (default=0.1).
+        hidden_dims: the number of expected features in the input (required).
+        num_heads: the number of heads in the multiheadattention models (required).
+        feedforward_dims: the dimension of the feedforward network model (default=2048).
+        dropout_rate: the dropout value (default=0.1).
         activation: the activation function of intermediate layer, relu or gelu (default=relu).
     """  # noqa: D205
 
     def __init__(
         self,
-        d_model: int,
-        nhead: int,
-        dim_feedforward: int = 2048,
-        dropout: float = 0.1,
+        hidden_dims: int,
+        num_heads: int,
+        feedforward_dims: int = 2048,
+        dropout_rate: float = 0.1,
         activation: str = "relu",
     ) -> None:
         super().__init__()
-        self.self_attn = MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = MultiheadAttention(hidden_dims, num_heads, dropout=dropout_rate)
         # Implementation of Feedforward model
-        self.linear1 = Linear(d_model, dim_feedforward)
-        self.dropout = Dropout(dropout)
-        self.linear2 = Linear(dim_feedforward, d_model)
+        self.linear1 = Linear(hidden_dims, feedforward_dims)
+        self.dropout = Dropout(dropout_rate)
+        self.linear2 = Linear(feedforward_dims, hidden_dims)
 
         self.norm1 = BatchNorm1d(
-            d_model, eps=1e-5
+            hidden_dims, eps=1e-5
         )  # normalizes each feature across batch samples and time steps
-        self.norm2 = BatchNorm1d(d_model, eps=1e-5)
-        self.dropout1 = Dropout(dropout)
-        self.dropout2 = Dropout(dropout)
+        self.norm2 = BatchNorm1d(hidden_dims, eps=1e-5)
+        self.dropout1 = Dropout(dropout_rate)
+        self.dropout2 = Dropout(dropout_rate)
 
         self.activation = _get_activation_fn(activation)
 
@@ -198,13 +206,13 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 class TSTransformerEncoder(nn.Module):
     def __init__(
         self,
-        feat_dim: int,
-        max_len: int,
-        d_model: int,
-        n_heads: int,
-        num_layers: int,
-        dim_feedforward: int,
-        dropout: float = 0.1,
+        input_dims: int,
+        sequence_length: int,
+        hidden_dims: int,
+        num_heads: int,
+        depth: int,
+        feedforward_dims: int,
+        dropout_rate: float = 0.1,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
         norm: str = "BatchNorm",
@@ -213,69 +221,69 @@ class TSTransformerEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.max_len = max_len
-        self.d_model = d_model
-        self.n_heads = n_heads
+        self.sequence_length = sequence_length
+        self.hidden_dims = hidden_dims
+        self.num_heads = num_heads
 
-        self.project_inp = nn.Linear(feat_dim, d_model)
+        self.project_inp = nn.Linear(input_dims, hidden_dims)
         self.pos_enc = get_pos_encoder(pos_encoding)(
-            d_model, dropout=dropout * (1.0 - freeze), max_len=max_len
+            hidden_dims, dropout_rate=dropout_rate * (1.0 - freeze), sequence_length=sequence_length
         )
 
         if norm == "LayerNorm":
             encoder_layer = TransformerEncoderLayer(
-                d_model,
-                self.n_heads,
-                dim_feedforward,
-                dropout * (1.0 - freeze),
+                hidden_dims,
+                self.num_heads,
+                feedforward_dims,
+                dropout_rate * (1.0 - freeze),
                 activation=activation,
             )
         else:
             encoder_layer = TransformerBatchNormEncoderLayer(
-                d_model,
-                self.n_heads,
-                dim_feedforward,
-                dropout * (1.0 - freeze),
+                hidden_dims,
+                self.num_heads,
+                feedforward_dims,
+                dropout_rate * (1.0 - freeze),
                 activation=activation,
             )
 
         self.transformer_encoder = nn.TransformerEncoder(
-            cast("TransformerEncoderLayer", encoder_layer), num_layers
+            cast("TransformerEncoderLayer", encoder_layer), depth, enable_nested_tensor=False
         )
 
-        self.output_layer = nn.Linear(d_model, feat_dim)
+        self.output_layer = nn.Linear(hidden_dims, input_dims)
 
         self.act = _get_activation_fn(activation)
 
-        self.dropout1 = nn.Dropout(dropout)
+        self.dropout1 = nn.Dropout(dropout_rate)
 
-        self.feat_dim = feat_dim
+        self.input_dims = input_dims
 
     def forward(self, x: Tensor, padding_masks: Tensor) -> Tensor:
         """Encode and reconstruct a padded batch.
 
         Args:
-            x: ``(batch_size, seq_length, feat_dim)`` tensor of masked features.
+            x: ``(batch_size, seq_length, input_dims)`` tensor of masked features.
             padding_masks: ``(batch_size, seq_length)`` boolean tensor. ``1`` means
                 keep the vector at this position; ``0`` means padding.
 
         Returns:
-            ``(batch_size, seq_length, feat_dim)`` reconstruction tensor.
+            ``(batch_size, seq_length, input_dims)`` reconstruction tensor.
         """
-        # PyTorch transformers use [seq_length, batch_size, feat_dim].
+        # PyTorch transformers use [seq_length, batch_size, input_dims].
         inp = x.permute(1, 0, 2)
-        inp = self.project_inp(inp) * math.sqrt(self.d_model)
+        inp = self.project_inp(inp) * math.sqrt(self.hidden_dims)
         inp = self.pos_enc(inp)  # add positional encoding
         # Padding-mask logic is reversed for MultiHeadAttention / TransformerEncoderLayer.
         output = self.transformer_encoder(
             inp, src_key_padding_mask=~padding_masks
-        )  # (seq_length, batch_size, d_model)
+        )  # (seq_length, batch_size, hidden_dims)
         output = self.act(
             output
         )  # the output transformer encoder/decoder embeddings don't include non-linearity
-        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
+        output = output.permute(1, 0, 2)  # (batch_size, seq_length, hidden_dims)
         output = self.dropout1(output)
-        output = self.output_layer(output)  # (batch_size, seq_length, feat_dim)
+        output = self.output_layer(output)  # (batch_size, seq_length, input_dims)
 
         return output
 
@@ -283,21 +291,21 @@ class TSTransformerEncoder(nn.Module):
         """Return transformer representations before output_layer.
 
         Args:
-            x: ``(batch_size, seq_length, feat_dim)`` tensor of masked features.
+            x: ``(batch_size, seq_length, input_dims)`` tensor of masked features.
             padding_masks: ``(batch_size, seq_length)`` boolean tensor. ``1`` means
                 keep the vector at this position; ``0`` means padding.
 
         Returns:
-            ``(batch_size, seq_length, d_model)`` representation tensor.
+            ``(batch_size, seq_length, hidden_dims)`` representation tensor.
         """
-        # PyTorch transformers use [seq_length, batch_size, feat_dim].
+        # PyTorch transformers use [seq_length, batch_size, input_dims].
         inp = x.permute(1, 0, 2)
-        inp = self.project_inp(inp) * math.sqrt(self.d_model)
+        inp = self.project_inp(inp) * math.sqrt(self.hidden_dims)
         inp = self.pos_enc(inp)  # add positional encoding
         # Padding-mask logic is reversed for MultiHeadAttention / TransformerEncoderLayer.
         output = self.transformer_encoder(
             inp, src_key_padding_mask=~padding_masks
-        )  # (seq_length, batch_size, d_model)
+        )  # (seq_length, batch_size, hidden_dims)
         output = self.act(output)
-        output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
+        output = output.permute(1, 0, 2)  # (batch_size, seq_length, hidden_dims)
         return self.dropout1(output)

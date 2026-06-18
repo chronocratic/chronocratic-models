@@ -53,14 +53,22 @@ class TestModelInstantiation:
         )
         assert isinstance(model, AutoTCL)
 
+    def test_tst_instantiation_from_config(self) -> None:
+        from chronocratic.models.transformer.tst.config import TSTModelParameters
+        from chronocratic.models.transformer.tst.model import TST
+
+        config = TSTModelParameters(input_dims=1, sequence_length=100)
+        model = TST(**vars(config))
+        assert isinstance(model, TST)
+
     def test_tstcc_instantiation_returns_instance(self) -> None:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
         config = TSTCCModelParameters(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=12,
             num_classes=10,
         )
@@ -95,10 +103,10 @@ class TestMixinInheritance:
 
     def test_tstcc_is_basic_encoding_mixin(self) -> None:
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=12,
             num_classes=10,
         )
@@ -193,10 +201,10 @@ class TestAugmentationPassThrough:
         from chronocratic.models.augmentation.base import ViewPair
 
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
         )
@@ -247,10 +255,10 @@ class TestBackwardCompatModelConstruction:
     def test_tstcc_with_default_pair(self) -> None:
         """TSTCC still accepts default augmentation pair."""
         model = TSTCC(
-            input_channels=1,
-            kernel_size=5,
+            input_dims=1,
+            conv_kernel_size=5,
             stride=1,
-            final_out_channels=16,
+            output_dims=16,
             features_len=15,
             num_classes=10,
             augmentation=_default_tstcc_pair(),

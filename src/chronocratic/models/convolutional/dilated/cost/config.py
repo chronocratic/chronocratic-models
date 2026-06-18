@@ -7,7 +7,7 @@ learning configuration.
 
 __all__ = ["CoSTModelParameters"]
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
@@ -37,7 +37,7 @@ class CoSTModelParameters:
 
     input_dims: int
     sequence_length: int
-    kernel_sizes: list[int] = field(default_factory=lambda: [1, 2, 4, 8, 16, 32, 64, 128])
+    kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     max_train_length: int = 201
     hidden_dims: int = 64
     output_dims: int = 320

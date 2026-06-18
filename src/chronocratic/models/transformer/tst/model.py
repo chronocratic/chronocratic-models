@@ -33,7 +33,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     scored, and ``padding_masks`` marks valid (non-padded) timesteps.
 
     ``forward(x, padding_masks)`` returns transformer representations
-    of shape ``(batch, seq_len, d_model)``, not the masked-reconstruction
+    of shape ``(batch, seq_len, hidden_dims)``, not the masked-reconstruction
     output. The reconstruction head is internal and used only during
     pretraining.
 
@@ -46,43 +46,46 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        feat_dim: int,
-        max_seq_len: int,
-        d_model: int = 64,
-        n_heads: int = 8,
-        num_layers: int = 3,
-        dim_feedforward: int = 256,
-        dropout: float = 0.1,
+        input_dims: int,
+        sequence_length: int,
+        hidden_dims: int = 64,
+        num_heads: int = 8,
+        depth: int = 3,
+        feedforward_dims: int = 256,
+        dropout_rate: float = 0.1,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
         norm: str = "BatchNorm",
         *,
         freeze: bool = False,
         learning_rate: float = 1e-3,
-        lr_step: list[int] | None = None,
+        lr_step: tuple[int, ...] | None = None,
         lr_factor: float = 0.1,
-        l2_reg: float = 0.0,
+        weight_decay: float = 0.0,
         global_reg: bool = False,
         sync_dist: bool = False,
+        augmentation: Callable | None = None,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["augmentation"])
 
-        self._l2_reg = l2_reg
+        self._weight_decay = weight_decay
         self._global_reg = global_reg
         self._learning_rate = learning_rate
-        self._lr_step = lr_step or [1_000_000]
+        self._lr_step = list(lr_step) if lr_step is not None else [1_000_000]
         self._lr_factor = lr_factor
         self._sync_dist = sync_dist
 
+        self._augmentation = augmentation
+
         self._encoder = TSTransformerEncoder(
-            feat_dim=feat_dim,
-            max_len=max_seq_len,
-            d_model=d_model,
-            n_heads=n_heads,
-            num_layers=num_layers,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
+            input_dims=input_dims,
+            sequence_length=sequence_length,
+            hidden_dims=hidden_dims,
+            num_heads=num_heads,
+            depth=depth,
+            feedforward_dims=feedforward_dims,
+            dropout_rate=dropout_rate,
             pos_encoding=pos_encoding,
             activation=activation,
             norm=norm,
@@ -99,7 +102,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
-        """Return transformer representations of shape ``(batch, seq_len, d_model)``."""
+        """Return transformer representations of shape ``(batch, seq_len, hidden_dims)``."""
         return self.get_representations(x, padding_masks)
 
     def get_representations(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
@@ -127,10 +130,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         mean_loss = torch.sum(per_element_loss) / len(per_element_loss)
 
         # output-layer-only L2 (global L2 is handled via weight_decay in the optimizer)
-        if self.training and self._l2_reg and not self._global_reg:
+        if self.training and self._weight_decay and not self._global_reg:
             for name, param in self._encoder.named_parameters():
                 if name == "output_layer.weight":
-                    mean_loss = mean_loss + self._l2_reg * torch.sum(torch.square(param))
+                    mean_loss = mean_loss + self._weight_decay * torch.sum(torch.square(param))
 
         return mean_loss
 
@@ -181,7 +184,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Return Adam optimizer with MultiStepLR scheduler."""
-        weight_decay = self._l2_reg if self._global_reg else 0.0
+        weight_decay = self._weight_decay if self._global_reg else 0.0
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self._learning_rate, weight_decay=weight_decay
         )
@@ -222,7 +225,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Flattened representation size handed to a downstream head.
 
         Returns:
-            ``d_model * max_len`` — the number of features after flattening
-            the ``(batch, seq_len, d_model)`` representation.
+            ``hidden_dims * sequence_length`` — the number of features after
+            flattening the ``(batch, seq_len, hidden_dims)`` representation.
         """
-        return self._encoder.d_model * self._encoder.max_len
+        return self._encoder.hidden_dims * self._encoder.sequence_length

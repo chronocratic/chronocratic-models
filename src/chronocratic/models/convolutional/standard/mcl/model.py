@@ -17,18 +17,37 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
     """
 
     def __init__(
-        self, n_in: int, output_dims: int = 320, alpha: float = 1.0, learning_rate: float = 1e-3
+        self,
+        input_dims: int,
+        output_dims: int = 320,
+        alpha: float = 1.0,
+        learning_rate: float = 1e-3,
+        encoder_channels: tuple[int, ...] = (128, 256, 128),
+        encoder_kernels: tuple[int, ...] = (7, 5, 3),
+        encoder_dilations: tuple[int, ...] = (2, 4, 8),
+        projection_dims: int = 128,
+        sync_dist: bool = False,  # noqa: FBT001,FBT002
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self._alpha = alpha
         self._learning_rate = learning_rate
+        self._sync_dist = sync_dist
 
         self.criterion = MixUpLoss()
 
-        self._encoder = FCNEncoder(input_channels=n_in, output_dims=output_dims)
+        self._encoder = FCNEncoder(
+            input_dims=input_dims,
+            output_dims=output_dims,
+            encoder_channels=encoder_channels,
+            encoder_kernels=encoder_kernels,
+            encoder_dilations=encoder_dilations,
+        )
         self.proj_head = nn.Sequential(
-            nn.Linear(output_dims, 128), nn.BatchNorm1d(128), nn.ReLU(), nn.Linear(128, 128)
+            nn.Linear(output_dims, projection_dims),
+            nn.BatchNorm1d(projection_dims),
+            nn.ReLU(),
+            nn.Linear(projection_dims, projection_dims),
         )
 
     @property
@@ -71,7 +90,14 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         """Compute and log the training loss for one batch."""
         loss = self._step(batch)
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log(
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=self._sync_dist,
+        )
 
         return loss
 
@@ -80,7 +106,9 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         with torch.no_grad():
             loss = self._step(batch)
 
-        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log(
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+        )
 
         return loss
 

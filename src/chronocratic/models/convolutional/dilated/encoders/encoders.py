@@ -111,7 +111,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
     ----------
     input_dims: Number of input dimensions.
     output_dims: Number of output dimensions.
-    kernel_sizes: List of kernel sizes for the convolutions.
+    kernel_sizes: Tuple of kernel sizes for the convolutions.
     hidden_dims: Number of hidden dimensions.
     feature_extractor_depth: the depth of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
@@ -123,7 +123,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
         self,
         input_dims: int,
         output_dims: int,
-        kernel_sizes: list[int],
+        kernel_sizes: tuple[int, ...],
         hidden_dims: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
@@ -221,7 +221,7 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         self,
         input_dims: int,
         output_dims: int,
-        kernel_sizes: list[int],
+        kernel_sizes: tuple[int, ...],
         hidden_dims: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
@@ -418,7 +418,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         Number of input dimensions.
     output_dims : int
         Number of output dimensions.
-    kernel_sizes : list[int]
+    kernel_sizes : tuple[int, ...]
         List of kernel sizes for the convolutions.
     length : int
         Length of the input sequence.
@@ -440,7 +440,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         self,
         input_dims: int,
         output_dims: int,
-        kernel_sizes: list[int],
+        kernel_sizes: tuple[int, ...],
         length: int,
         hidden_dims: int = 64,
         feature_extractor_depth: int = 10,

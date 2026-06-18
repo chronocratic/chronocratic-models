@@ -24,22 +24,22 @@ class TestHasEncoderConformance:
     @pytest.mark.parametrize(
         ("model_cls", "kwargs"),
         [
-            (FCN, {"n_in": 1}),
-            (TST, {"feat_dim": 1, "max_seq_len": 100}),
+            (FCN, {"input_dims": 1}),
+            (TST, {"input_dims": 1, "sequence_length": 100}),
             (
                 TSTCC,
                 {
-                    "input_channels": 1,
-                    "kernel_size": 5,
+                    "input_dims": 1,
+                    "conv_kernel_size": 5,
                     "stride": 1,
-                    "final_out_channels": 16,
+                    "output_dims": 16,
                     "features_len": 12,
                     "num_classes": 10,
                 },
             ),
             (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": [3]}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": [3]}),
+            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
+            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
             (
                 Series2Vec,
                 {
@@ -51,8 +51,8 @@ class TestHasEncoderConformance:
                     "dropout_rate": 0.1,
                 },
             ),
-            (TimeVAE, {"seq_len": 100, "feat_dim": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "num_layers": 1, "feat_dim": 1}),
+            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
+            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
         ],
         ids=[
             "FCN",
@@ -76,22 +76,22 @@ class TestHasEncoderConformance:
     @pytest.mark.parametrize(
         ("model_cls", "kwargs"),
         [
-            (FCN, {"n_in": 1}),
-            (TST, {"feat_dim": 1, "max_seq_len": 100}),
+            (FCN, {"input_dims": 1}),
+            (TST, {"input_dims": 1, "sequence_length": 100}),
             (
                 TSTCC,
                 {
-                    "input_channels": 1,
-                    "kernel_size": 5,
+                    "input_dims": 1,
+                    "conv_kernel_size": 5,
                     "stride": 1,
-                    "final_out_channels": 16,
+                    "output_dims": 16,
                     "features_len": 12,
                     "num_classes": 10,
                 },
             ),
             (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": [3]}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": [3]}),
+            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
+            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
             (
                 Series2Vec,
                 {
@@ -103,8 +103,8 @@ class TestHasEncoderConformance:
                     "dropout_rate": 0.1,
                 },
             ),
-            (TimeVAE, {"seq_len": 100, "feat_dim": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "num_layers": 1, "feat_dim": 1}),
+            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
+            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
         ],
         ids=[
             "FCN",
@@ -133,8 +133,8 @@ class TestHasDecoderConformance:
     @pytest.mark.parametrize(
         ("model_cls", "kwargs"),
         [
-            (TimeVAE, {"seq_len": 100, "feat_dim": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "num_layers": 1, "feat_dim": 1}),
+            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
+            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
         ],
         ids=["TimeVAE", "TimeNet"],
     )
@@ -148,8 +148,8 @@ class TestHasDecoderConformance:
     @pytest.mark.parametrize(
         ("model_cls", "kwargs"),
         [
-            (TimeVAE, {"seq_len": 100, "feat_dim": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "num_layers": 1, "feat_dim": 1}),
+            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
+            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
         ],
         ids=["TimeVAE", "TimeNet"],
     )
@@ -168,22 +168,22 @@ class TestEncoderOnlyModelsNoDecoder:
     @pytest.mark.parametrize(
         ("model_cls", "kwargs"),
         [
-            (FCN, {"n_in": 1}),
-            (TST, {"feat_dim": 1, "max_seq_len": 100}),
+            (FCN, {"input_dims": 1}),
+            (TST, {"input_dims": 1, "sequence_length": 100}),
             (
                 TSTCC,
                 {
-                    "input_channels": 1,
-                    "kernel_size": 5,
+                    "input_dims": 1,
+                    "conv_kernel_size": 5,
                     "stride": 1,
-                    "final_out_channels": 16,
+                    "output_dims": 16,
                     "features_len": 12,
                     "num_classes": 10,
                 },
             ),
             (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": [3]}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": [3]}),
+            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
+            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
             (
                 Series2Vec,
                 {
