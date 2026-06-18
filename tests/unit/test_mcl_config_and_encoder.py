@@ -127,19 +127,19 @@ class TestFCNEncoder:
     """FCNEncoder builds conv blocks from tuple parameters."""
 
     def test_default_architecture_layer_count(self) -> None:
-        encoder = FCNEncoder(input_channels=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=320)
         # 3 conv blocks * 3 layers each (Conv, BN, ReLU) + AdaptiveAvgPool + Flatten + Linear = 12
         assert len(encoder.layers) == 12
 
     def test_default_output_shape(self) -> None:
-        encoder = FCNEncoder(input_channels=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=320)
         x = torch.randn(2, 1, 50)
         out = encoder(x)
         assert out.shape == (2, 320)
 
     def test_custom_channels(self) -> None:
         encoder = FCNEncoder(
-            input_channels=1,
+            input_dims=1,
             output_dims=256,
             encoder_channels=(64, 128, 64),
             encoder_kernels=(5, 3, 3),
@@ -151,7 +151,7 @@ class TestFCNEncoder:
 
     def test_two_block_encoder(self) -> None:
         encoder = FCNEncoder(
-            input_channels=3,
+            input_dims=3,
             output_dims=128,
             encoder_channels=(64, 128),
             encoder_kernels=(5, 3),
@@ -170,7 +170,7 @@ class TestFCNEncoder:
         Original: Conv1d(128, 256, k=5, padding=8, d=4) -> k//2*d = 5//2*4 = 8
         Original: Conv1d(256, 128, k=3, padding=8, d=8) -> k//2*d = 3//2*8 = 8
         """
-        encoder = FCNEncoder(input_channels=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=320)
         conv_layers = [m for m in encoder.layers if isinstance(m, nn.Conv1d)]
         assert len(conv_layers) == 3
         assert conv_layers[0].padding == (6,)
