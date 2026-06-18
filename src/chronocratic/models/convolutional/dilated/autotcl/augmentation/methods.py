@@ -9,7 +9,7 @@ with a ``produce() -> SingleView`` contract.
 
 __all__ = ["AutoTCLNeuralNetworkAugmentation", "AutoTCLNeuralNetworkAugmentationParameters"]
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import torch
