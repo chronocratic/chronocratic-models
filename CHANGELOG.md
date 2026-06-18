@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a3 (2026-06-18)
+
+### Changed
+
+- Standardize hyperparameter naming and defaults across all models. ([#31](https://github.com/chronocratic/chronocratic-models/issues/31))
+
+
 ## v0.1.0a2 (2026-06-17)
 
 ### Added
