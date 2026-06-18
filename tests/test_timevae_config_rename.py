@@ -38,15 +38,15 @@ class TestConfigCanonicalNames:
         assert config.hidden_layer_sizes == (50, 100, 200)
         assert isinstance(config.hidden_layer_sizes, tuple)
 
-    def test_custom_seas_uses_tuple_type(self) -> None:
-        """custom_seas accepts tuple of tuples."""
+    def test_custom_seasonality_uses_tuple_type(self) -> None:
+        """custom_seasonality accepts tuple of tuples."""
         config = TimeVAEModelParameters(
             sequence_length=100,
             input_dims=1,
             latent_dim=10,
-            custom_seas=((4, 7), (2, 14)),
+            custom_seasonality=((4, 7), (2, 14)),
         )
-        assert config.custom_seas == ((4, 7), (2, 14))
+        assert config.custom_seasonality == ((4, 7), (2, 14))
 
 
 class TestConfigSplatToModel:
@@ -70,7 +70,7 @@ class TestConfigSplatToModel:
             learning_rate=5e-4,
             hidden_layer_sizes=(32, 64, 128),
             trend_poly=2,
-            custom_seas=((4, 7),),
+            custom_seasonality=((4, 7),),
             use_residual_conn=True,
         )
         model = TimeVAE(**vars(config))

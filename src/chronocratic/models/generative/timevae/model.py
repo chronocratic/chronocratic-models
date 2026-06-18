@@ -21,7 +21,7 @@ class TimeVAEEncoder(nn.Module):
         self,
         sequence_length: int,
         input_dims: int,
-        hidden_layer_sizes: list[int],
+        hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
     ) -> None:
         super().__init__()
@@ -73,10 +73,10 @@ class TimeVAEDecoder(nn.Module):
         self,
         sequence_length: int,
         input_dims: int,
-        hidden_layer_sizes: list[int],
+        hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
         trend_poly: int = 0,
-        custom_seas: Sequence[Seasonality] | None = None,
+        custom_seasonality: tuple[Seasonality, ...] | None = None,
         *,
         use_residual_conn: bool = True,
         encoder_last_dense_dim: int | None = None,
@@ -87,14 +87,14 @@ class TimeVAEDecoder(nn.Module):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
-        self.custom_seas = custom_seas
+        self.custom_seasonality = custom_seasonality
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
                 self.sequence_length, self.input_dims, self.latent_dim, self.trend_poly
             )
-        if self.custom_seas is not None and len(self.custom_seas) > 0:
+        if self.custom_seasonality is not None and len(self.custom_seasonality) > 0:
             self.seasonal_layer = SeasonalLayer(
-                self.sequence_length, self.input_dims, self.latent_dim, self.custom_seas
+                self.sequence_length, self.input_dims, self.latent_dim, self.custom_seasonality
             )
         self.use_residual_conn = use_residual_conn
         self.encoder_last_dense_dim = encoder_last_dense_dim
@@ -119,7 +119,7 @@ class TimeVAEDecoder(nn.Module):
             outputs += self.trend_layer(z)
 
         # custom seasons
-        if self.custom_seas is not None and len(self.custom_seas) > 0:
+        if self.custom_seasonality is not None and len(self.custom_seasonality) > 0:
             outputs += self.seasonal_layer(z)
 
         if self.use_residual_conn:
@@ -159,7 +159,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         learning_rate: float = 1e-3,
         hidden_layer_sizes: tuple[int, ...] | None = None,
         trend_poly: int = 0,
-        custom_seas: tuple[tuple[int, int], ...] | None = None,
+        custom_seasonality: tuple[tuple[int, int], ...] | None = None,
         *,
         use_residual_conn: bool = True,
     ) -> None:
@@ -177,7 +177,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
         self.hidden_layer_sizes = hidden_layer_sizes
         self.trend_poly = trend_poly
-        self.custom_seas = custom_seas
+        self.custom_seasonality = custom_seasonality
         self.use_residual_conn = use_residual_conn
 
         self._encoder = self._build_encoder()
@@ -193,7 +193,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         return TimeVAEEncoder(
             sequence_length=self.sequence_length,
             input_dims=self.input_dims,
-            hidden_layer_sizes=list(self.hidden_layer_sizes),
+            hidden_layer_sizes=self.hidden_layer_sizes,
             latent_dim=self.latent_dim,
         )
 
@@ -209,10 +209,10 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         return TimeVAEDecoder(
             sequence_length=self.sequence_length,
             input_dims=self.input_dims,
-            hidden_layer_sizes=list(self.hidden_layer_sizes),
+            hidden_layer_sizes=self.hidden_layer_sizes,
             latent_dim=self.latent_dim,
             trend_poly=self.trend_poly,
-            custom_seas=self.custom_seas,
+            custom_seasonality=self.custom_seasonality,
             use_residual_conn=self.use_residual_conn,
             encoder_last_dense_dim=self._encoder.encoder_last_dense_dim,
         )

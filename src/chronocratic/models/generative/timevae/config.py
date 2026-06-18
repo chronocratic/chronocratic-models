@@ -26,7 +26,7 @@ class TimeVAEModelParameters:
             residual decoder.
         trend_poly: Degree of the polynomial trend basis used by the
             trend decoder branch. ``0`` disables the trend branch.
-        custom_seas: Optional tuple of ``(num_seasons, len_per_season)``
+        custom_seasonality: Optional tuple of ``(num_seasons, len_per_season)``
             tuples describing additive seasonal components. ``None``
             disables the seasonal branch.
         use_residual_conn: Whether to include the residual ConvTranspose
@@ -40,5 +40,5 @@ class TimeVAEModelParameters:
     learning_rate: float = 1e-3
     hidden_layer_sizes: tuple[int, ...] = (50, 100, 200)
     trend_poly: int = 0
-    custom_seas: tuple[tuple[int, int], ...] | None = None
+    custom_seasonality: tuple[tuple[int, int], ...] | None = None
     use_residual_conn: bool = True

@@ -128,17 +128,17 @@ class SeasonalLayer(nn.Module):
         sequence_length: int,
         input_dims: int,
         latent_dim: int,
-        custom_seas: Sequence[Seasonality],
+        custom_seasonality: tuple[Seasonality, ...],
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
         self.input_dims = input_dims
-        self.custom_seas = custom_seas
+        self.custom_seasonality = custom_seasonality
 
         self.dense_layers = nn.ModuleList(
             [
                 nn.Linear(latent_dim, input_dims * num_seasons)
-                for num_seasons, len_per_season in custom_seas
+                for num_seasons, len_per_season in custom_seasonality
             ]
         )
 
@@ -158,7 +158,7 @@ class SeasonalLayer(nn.Module):
         )
 
         seasonal_components: list[torch.Tensor] = []
-        for i, (num_seasons, len_per_season) in enumerate(self.custom_seas):
+        for i, (num_seasons, len_per_season) in enumerate(self.custom_seasonality):
             season_params = self.dense_layers[i](z)
             season_params = season_params.view(-1, self.input_dims, num_seasons)
 
