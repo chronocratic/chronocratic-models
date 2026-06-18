@@ -21,6 +21,8 @@ ignore = [
     "D101", # Allow missing docstring in public classes
     "RET504", # Allow unnecessary assignment of variables in return statements. It is useful for readability in AI code.
     "PLR0913", # Allow too many arguments in functions. It is useful for readability in AI code.
+    "FBT001", # Allow Boolean-typed positional argument in function definition
+    "FBT002", # Allow Boolean default positional argument in function definition
 ]
 
 [lint.pydocstyle]

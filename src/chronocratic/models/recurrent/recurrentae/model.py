@@ -4,7 +4,6 @@ from __future__ import annotations
 
 __all__ = ["RecurrentAutoEncoder"]
 
-from collections.abc import Callable
 from typing import Literal, TYPE_CHECKING
 
 from lightning.pytorch import LightningModule
@@ -16,6 +15,7 @@ from chronocratic.models.recurrent.enums import RecurrentCellType
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
+    from collections.abc import Callable
 
 
 _OPTIMIZERS: dict[str, Callable[..., torch.optim.Optimizer]] = {
@@ -103,16 +103,14 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
+        recurrent_cell_type = RecurrentCellType(str(recurrent_cell_type).lower())
         self.n_features = n_features
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.sync_dist = sync_dist
 
         dropout_list: list[float]
-        if isinstance(dropout, list):
-            dropout_list = dropout
-        else:
-            dropout_list = [dropout] * len(layers)
+        dropout_list = dropout if isinstance(dropout, list) else [dropout] * len(layers)
         inverse_layers = layers[::-1]
         inverse_dropout = dropout_list[::-1]
 
@@ -133,6 +131,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         return output[:, -1, :]
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log reconstruction loss for a training batch."""
         x = batch
         loss = self.loss_fn(self(x), x)
         self.log(
@@ -141,6 +140,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         return loss
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
+        """Compute and log reconstruction loss for a validation batch."""
         x = batch
         loss = self.loss_fn(self(x), x)
         self.log(
@@ -149,4 +149,5 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         return loss
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
+        """Return the optimizer configured with the model's learning rate."""
         return _OPTIMIZERS[self.optimizer](self.parameters(), lr=self.learning_rate)
