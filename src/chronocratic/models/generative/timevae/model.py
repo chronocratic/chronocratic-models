@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import torch
 from torch import nn
 
@@ -70,7 +72,7 @@ class TimeVAEDecoder(nn.Module):
         hidden_layer_sizes: list[int],
         latent_dim: int,
         trend_poly: int = 0,
-        custom_seas: list[Seasonality] | None = None,
+        custom_seas: Sequence[Seasonality] | None = None,
         *,
         use_residual_conn: bool = True,
         encoder_last_dense_dim: int | None = None,
