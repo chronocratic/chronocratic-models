@@ -4,14 +4,14 @@ from __future__ import annotations
 
 __all__ = ["RecurrentAutoEncoder"]
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from lightning.pytorch import LightningModule
 import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
-from chronocratic.models.recurrent.enums import RecurrentCellType
+from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,10 +19,10 @@ if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
 
-_OPTIMIZERS: dict[str, Callable[..., torch.optim.Optimizer]] = {
-    "adam": torch.optim.Adam,
-    "adamw": torch.optim.AdamW,
-    "radam": torch.optim.RAdam,
+_OPTIMIZERS: dict[OptimizerName, Callable[..., torch.optim.Optimizer]] = {
+    OptimizerName.ADAM: torch.optim.Adam,
+    OptimizerName.ADAMW: torch.optim.AdamW,
+    OptimizerName.RADAM: torch.optim.RAdam,
 }
 
 _RNN_CLASSES: dict[RecurrentCellType, type[nn.Module]] = {
@@ -31,7 +31,10 @@ _RNN_CLASSES: dict[RecurrentCellType, type[nn.Module]] = {
     RecurrentCellType.RNN: nn.RNN,
 }
 
-_LOSS_FNS: dict[str, type[nn.Module]] = {"mse": nn.MSELoss, "mae": nn.L1Loss}
+_LOSS_FNS: dict[ReconstructionLoss, type[nn.Module]] = {
+    ReconstructionLoss.MSE: nn.MSELoss,
+    ReconstructionLoss.MAE: nn.L1Loss,
+}
 
 
 class _RNNLayer(nn.Module):
@@ -47,9 +50,9 @@ class _RNNLayer(nn.Module):
 
 
 def _build_encoder(
-    rnn_cls: type, n_features: int, layers: tuple[int], dropout: list[float]
+    rnn_cls: type, input_dims: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
-    encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(n_features, layers[0], batch_first=True))]
+    encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(input_dims, layers[0], batch_first=True))]
     for i in range(1, len(layers)):
         encoder_layers.append(_RNNLayer(rnn_cls(layers[i - 1], layers[i], batch_first=True)))
         if dropout[i] > 0:
@@ -58,14 +61,14 @@ def _build_encoder(
 
 
 def _build_decoder(
-    rnn_cls: type, n_features: int, layers: tuple[int], dropout: list[float]
+    rnn_cls: type, input_dims: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
     decoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(layers[0], layers[0], batch_first=True))]
     for i in range(1, len(layers)):
         if i > 1 and dropout[i] > 0:
             decoder_layers.append(nn.Dropout(dropout[i]))
         decoder_layers.append(_RNNLayer(rnn_cls(layers[i - 1], layers[i], batch_first=True)))
-    decoder_layers.append(nn.Linear(layers[-1], n_features))
+    decoder_layers.append(nn.Linear(layers[-1], input_dims))
     return nn.Sequential(*decoder_layers)
 
 
@@ -79,12 +82,12 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     latent sequence using a mirrored RNN stack followed by a linear projection.
 
     Args:
-        n_features: Number of input features (channels) per timestep.
-        layers: Hidden sizes for each encoder RNN layer, e.g. ``[64, 32]``.
+        input_dims: Number of input features (channels) per timestep.
+        layers: Hidden sizes for each encoder RNN layer, e.g. ``(64, 32)``.
             The decoder uses the reversed order.
         recurrent_cell_type: RNN variant — LSTM, GRU, or RNN.
         dropout: Dropout probability applied between successive layers. A single
-            float applies uniformly; a list must match ``len(layers)``.
+            float applies uniformly; a tuple must match ``len(layers)``.
         loss: Reconstruction objective — ``'mse'`` or ``'mae'``.
         optimizer: Optimizer — ``'adam'``, ``'adamw'``, or ``'radam'``.
         learning_rate: Base learning rate for the optimizer.
@@ -93,31 +96,31 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        n_features: int,
-        layers: tuple[int],
+        input_dims: int,
+        layers: tuple[int, ...],
         recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM,
-        dropout: float | list[float] = 0.2,
-        loss: Literal["mse", "mae"] = "mse",
-        optimizer: Literal["adam", "adamw", "radam"] = "adam",
+        dropout: float | tuple[float, ...] = 0.2,
+        loss: ReconstructionLoss = ReconstructionLoss.MSE,
+        optimizer: OptimizerName = OptimizerName.ADAM,
         learning_rate: float = 1e-3,
         sync_dist: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         recurrent_cell_type = RecurrentCellType(str(recurrent_cell_type).lower())
-        self.n_features = n_features
+        self.input_dims = input_dims
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.sync_dist = sync_dist
 
-        dropout_list: list[float]
-        dropout_list = dropout if isinstance(dropout, list) else [dropout] * len(layers)
+        dropout_tuple: tuple[float, ...]
+        dropout_tuple = (dropout,) * len(layers) if isinstance(dropout, float) else tuple(dropout)
         inverse_layers = layers[::-1]
-        inverse_dropout = dropout_list[::-1]
+        inverse_dropout = dropout_tuple[::-1]
 
         rnn_cls = _RNN_CLASSES[recurrent_cell_type]
-        self.encoder = _build_encoder(rnn_cls, n_features, layers, dropout_list)
-        self.decoder = _build_decoder(rnn_cls, n_features, inverse_layers, inverse_dropout)
+        self.encoder = _build_encoder(rnn_cls, input_dims, layers, dropout_tuple)
+        self.decoder = _build_decoder(rnn_cls, input_dims, inverse_layers, inverse_dropout)
         self.loss_fn: nn.Module = _LOSS_FNS[loss]()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
