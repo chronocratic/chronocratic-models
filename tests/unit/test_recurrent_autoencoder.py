@@ -10,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
+from chronocratic.models.recurrent.recurrentae.layers import _prepare_dropout
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 
 
@@ -210,6 +211,50 @@ class TestOptimizerSelection:
             logger=False,
         )
         trainer.fit(model, train_dataloaders=loader)
+
+
+class TestPrepareDropout:
+    def test_scalar_expands_to_n_layers(self) -> None:
+        assert _prepare_dropout(0.2, 3) == (0.2, 0.2, 0.2)
+
+    def test_int_scalar_is_coerced_to_float(self) -> None:
+        result = _prepare_dropout(0, 2)
+        assert result == (0.0, 0.0)
+        assert all(isinstance(v, float) for v in result)
+
+    def test_matching_tuple_passes_through(self) -> None:
+        assert _prepare_dropout((0.1, 0.2), 2) == (0.1, 0.2)
+
+    def test_too_short_tuple_raises(self) -> None:
+        with pytest.raises(ValueError, match="Expected 3 dropout values, got 1"):
+            _prepare_dropout((0.1,), 3)
+
+    def test_too_long_tuple_raises(self) -> None:
+        with pytest.raises(ValueError, match="Expected 2 dropout values, got 3"):
+            _prepare_dropout((0.1, 0.2, 0.3), 2)
+
+
+class TestDropoutLayers:
+    def test_dropout_modules_inserted_between_layers(self) -> None:
+        from torch import nn
+
+        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=0.5)
+        assert any(isinstance(layer, nn.Dropout) for layer in m.encoder)
+
+    def test_zero_dropout_inserts_no_dropout_modules(self) -> None:
+        from torch import nn
+
+        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=0.0)
+        assert not any(isinstance(layer, nn.Dropout) for layer in m.encoder)
+        assert not any(isinstance(layer, nn.Dropout) for layer in m.decoder)
+
+    def test_mismatched_dropout_tuple_raises_at_construction(self) -> None:
+        with pytest.raises(ValueError, match="Expected 2 dropout values"):
+            RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=(0.1,))
+
+    def test_per_layer_dropout_tuple_accepted(self) -> None:
+        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=(0.0, 0.3))
+        assert isinstance(m, RecurrentAutoEncoder)
 
 
 class TestPostprocess:
