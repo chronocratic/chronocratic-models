@@ -15,13 +15,12 @@ from __future__ import annotations
 import math
 import os
 import tempfile
-from typing import Any
 
 import lightning.pytorch as pl
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from chronocratic.models.augmentation import AlignedPair, AugmentationProducer, SingleView, ViewPair
+from chronocratic.models.augmentation import AlignedPair, SingleView, ViewPair
 from chronocratic.models.augmentation.producers import IndependentPair
 from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,

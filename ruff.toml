@@ -21,6 +21,8 @@ ignore = [
     "D101", # Allow missing docstring in public classes
     "RET504", # Allow unnecessary assignment of variables in return statements. It is useful for readability in AI code.
     "PLR0913", # Allow too many arguments in functions. It is useful for readability in AI code.
+    "FBT001", # Allow Boolean-typed positional argument in function definition
+    "FBT002", # Allow Boolean default positional argument in function definition
 ]
 
 [lint.pydocstyle]
@@ -30,7 +32,7 @@ convention = "google"
 [lint.per-file-ignores]
 "__init__.py" = ["D104", "F401", "F403", "F405"]
 "notebooks/**/*.ipynb" = ["D", "E402", "T201"]
-"tests/**/*.py" = ["D", "PLR2004", "S101"]
+"tests/**/*.py" = ["D", "PLC0415", "PLR2004", "S101", "SLF001"]
 
 [lint.isort]
 # Combine "as" imports into a single line
