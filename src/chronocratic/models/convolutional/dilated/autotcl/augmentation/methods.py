@@ -102,16 +102,10 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
         """Initialize the neural-network augmentation.
 
         Args:
-            params: Configuration for the underlying encoder. Accepts either
-                an ``AutoTCLNeuralNetworkAugmentationParameters`` dataclass or
-                a dict with encoder kwargs for backward compatibility.
+            params: Configuration for the underlying encoder.
             training_strategy: Strategy for computing the augmentation loss.
-                When ``None``, defaults to ``RIPTrainingStrategy()`` for
-                backward compatibility with factory-based instantiation.
+                When ``None``, defaults to ``RIPTrainingStrategy()``.
         """
-        if isinstance(params, dict):
-            # Backward-compat shim for dict-based params (factories)
-            params = AutoTCLNeuralNetworkAugmentationParameters(**params)  # type: ignore  # noqa: PGH003
         strategy = training_strategy if training_strategy is not None else RIPTrainingStrategy()
         super().__init__(training_strategy=strategy)
         self.params = params
@@ -142,22 +136,6 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
             A single augmented view wrapped in :class:`SingleView`.
         """
         return SingleView(view=self.model.augment(x))
-
-    def augment(
-        self,
-        data: torch.Tensor,
-        **kwargs: Any,  # noqa: ANN401, ARG002
-    ) -> SingleView:
-        """Backward-compat alias for :meth:`produce`.
-
-        Args:
-            data: Input time-series tensor.
-            **kwargs: Unused; present for interface compatibility.
-
-        Returns:
-            A single augmented view wrapped in :class:`SingleView`.
-        """
-        return self.produce(data)
 
     def get_model(self) -> AutoTCLAugmentationTimeSeriesEncoder:
         """Return the underlying ``AutoTCLAugmentationTimeSeriesEncoder``."""

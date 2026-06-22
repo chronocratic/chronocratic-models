@@ -79,14 +79,24 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         inverse_dropout = dropout_tuple[::-1]
 
         rnn_cls = _RNN_CLASSES[recurrent_cell_type]
-        self.encoder = _build_encoder(rnn_cls, input_dims, layers, dropout_tuple)
-        self.decoder = _build_decoder(rnn_cls, input_dims, inverse_layers, inverse_dropout)
+        self._encoder = _build_encoder(rnn_cls, input_dims, layers, dropout_tuple)
+        self._decoder = _build_decoder(rnn_cls, input_dims, inverse_layers, inverse_dropout)
         self.loss_fn: nn.Module = _LOSS_FNS[loss]()
+
+    @property
+    def encoder(self) -> nn.Module:
+        """The encoder ``nn.Module``."""
+        return self._encoder
+
+    @property
+    def decoder(self) -> nn.Module:
+        """The decoder ``nn.Module``."""
+        return self._decoder
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Encode ``x``, reverse the latent sequence, and reconstruct."""
-        encoded = self.encoder(x)
-        return self.decoder(torch.flip(encoded, dims=[1]))
+        encoded = self._encoder(x)
+        return self._decoder(torch.flip(encoded, dims=[1]))
 
     def _get_encoder(self) -> nn.Module:
         return self.encoder

@@ -117,20 +117,6 @@ class TestCoSTAugmentationModule:
 
         assert CosTRandomFunctionAugmentationParameters is not None
 
-    def test_cost_aug_is_augmentation_method(self) -> None:
-        """CoST aug still has .augment() for backward compat, but inherits from Augmentation Protocol."""
-        from chronocratic.models.augmentation.base import Augmentation
-        from chronocratic.models.convolutional.dilated.cost.augmentation import (
-            CosTRandomFunctionAugmentation,
-            CosTRandomFunctionAugmentationParameters,
-        )
-
-        # CosTRandomFunctionAugmentation implements the Augmentation Protocol
-        # (structural typing) and provides augment() for backward compatibility
-        params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
-        aug = CosTRandomFunctionAugmentation(params=params)
-        assert isinstance(aug, Augmentation)
-
     def test_cost_aug_satisfies_augmentation_protocol(self) -> None:
         from chronocratic.models.augmentation.base import Augmentation
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
@@ -142,7 +128,7 @@ class TestCoSTAugmentationModule:
         aug = CosTRandomFunctionAugmentation(params=params)
         assert isinstance(aug, Augmentation)
 
-    def test_cost_augment_returns_tensor(self) -> None:
+    def test_cost_call_returns_tensor(self) -> None:
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -151,7 +137,7 @@ class TestCoSTAugmentationModule:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.1)
         aug = CosTRandomFunctionAugmentation(params=params)
         data = torch.randn(2, 50, 3)
-        result = aug.augment(data)
+        result = aug(data)
         assert isinstance(result, torch.Tensor)
         assert result.shape == data.shape
 
@@ -163,16 +149,6 @@ class TestCoSTAugmentationModule:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.2)
         assert params.sigma == 0.2
         assert params.p == 0.5
-
-    def test_cost_dict_params_compat(self) -> None:
-        from chronocratic.models.convolutional.dilated.cost.augmentation import (
-            CosTRandomFunctionAugmentation,
-        )
-
-        aug = CosTRandomFunctionAugmentation(params={"sigma": 0.1, "p": 0.5})
-        data = torch.randn(2, 50, 3)
-        result = aug.augment(data)
-        assert isinstance(result, torch.Tensor)
 
     def test_cost_module_location(self) -> None:
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
@@ -265,7 +241,7 @@ class TestAutoTCLAugmentationMethods:
         aug.eval()
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
-            result = aug.augment(data)
+            result = aug.produce(data)
         assert isinstance(result, SingleView)
 
     def test_module_location(self) -> None:
@@ -402,16 +378,3 @@ class TestAutoTCLAugmentationBarrel:
             "AdversarialTrainingStrategy",
         }
         assert expected.issubset(set(mod.__all__))
-
-
-# --------------------------------------------------------------------------- #
-# Backward compatibility: old imports still work
-# --------------------------------------------------------------------------- #
-
-
-class TestBackwardCompatibility:
-    """Barrel import paths still work after per-model migration."""
-
-    # No barrel exports for model-specific augmentations - they are imported from their
-    # respective model subpackages to avoid circular dependencies and lazy imports.
-    # See: src/chronocratic/models/augmentation/__init__.py docstring for import paths.

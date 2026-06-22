@@ -19,7 +19,7 @@ from chronocratic.models.augmentation.base import (
 )
 from chronocratic.models.augmentation.decorators import Seeded
 from chronocratic.models.augmentation.primitives import Jitter
-from chronocratic.models.augmentation.producers import IndependentPair, SingleViewProducer
+from chronocratic.models.augmentation.producers import IndependentPairProducer, SingleViewProducer
 
 
 class _DummyStrategy(AugmentationTrainingStrategy):
@@ -63,8 +63,8 @@ class TestSeededWrapsProducer:
         assert isinstance(result, SingleView)
 
     def test_seeded_wraps_pair_producer(self) -> None:
-        """Seeded wrapping IndependentPair returns ViewPair."""
-        producer = IndependentPair(aug=Jitter())
+        """Seeded wrapping IndependentPairProducer returns ViewPair."""
+        producer = IndependentPairProducer(aug=Jitter())
         seeded = Seeded(inner=producer, seed=42)
         x = torch.randn(2, 10, 3)
         result = seeded.produce(x)
@@ -133,7 +133,7 @@ class TestSeededGeneric:
 
     def test_seeded_with_pair_producer(self) -> None:
         """Seeded works with producers that return ViewPair (Generic[V])."""
-        producer = IndependentPair(aug=Jitter())
+        producer = IndependentPairProducer(aug=Jitter())
         seeded = Seeded(inner=producer, seed=42)
         x = torch.randn(2, 5, 3)
         result = seeded.produce(x)
