@@ -75,14 +75,6 @@ class CosTRandomFunctionAugmentation(Augmentation):
         elif isinstance(params, CosTRandomFunctionAugmentationParameters):
             self._params = params
         else:
-            # Backward-compat shim for dict-based params (factories)
-            if "sigma" not in params:
-                msg = (
-                    "CosTRandomFunctionAugmentation requires 'sigma' in params. "
-                    "Pass CosTRandomFunctionAugmentationParameters or a dict "
-                    "with 'sigma' (required) and 'p' (optional)."
-                )
-                raise ValueError(msg)
             self._params = CosTRandomFunctionAugmentationParameters(
                 sigma=params["sigma"], p=params.get("p", 0.5)
             )
@@ -129,20 +121,3 @@ class CosTRandomFunctionAugmentation(Augmentation):
         """
         return self._jitter(self._shift(self._scale(x)))
 
-    def augment(
-        self,
-        data: torch.Tensor,
-        **kwargs: Any,  # noqa: ANN401, ARG002
-    ) -> torch.Tensor:
-        """Return ``data`` after stochastically applying scale, shift, and jitter.
-
-        Backward-compatible interface. Returns the augmented tensor directly.
-
-        Args:
-            data: Input time-series tensor.
-            **kwargs: Unused; present for interface compatibility.
-
-        Returns:
-            Augmented tensor with the same shape as ``data``.
-        """
-        return self(data)

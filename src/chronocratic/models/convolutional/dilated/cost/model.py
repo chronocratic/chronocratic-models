@@ -10,7 +10,7 @@ from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 from torch.optim import SGD
 
-from chronocratic.models.augmentation.base import Augmentation, AugmentationProducer, ViewPair
+from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
 from chronocratic.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from chronocratic.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
@@ -62,11 +62,6 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(
                 aug=CosTRandomFunctionAugmentation()
             )
-        elif isinstance(augmentation, Augmentation):
-            # Backward compat: wrap plain Augmentation in IndependentPair
-            from chronocratic.models.augmentation.producers import IndependentPair  # noqa: PLC0415
-
-            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(aug=augmentation)
         else:
             self._augmentation = augmentation
 
