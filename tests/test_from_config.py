@@ -10,7 +10,7 @@ Also verifies the correct mixin inheritance for each model class.
 import torch
 
 from chronocratic.models._mixin.encoding import BasicEncodingMixin
-from chronocratic.models.augmentation import IndependentPair
+from chronocratic.models.augmentation import IndependentPairProducer
 from chronocratic.models.convolutional.dilated._mixin.encoding import (
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
@@ -35,7 +35,7 @@ class TestModelInstantiation:
 
     def test_cost_instantiation_returns_instance(self) -> None:
         config = CoSTModelParameters(input_dims=1, sequence_length=100)
-        model = CoST(**vars(config), augmentation=IndependentPair(aug=None))
+        model = CoST(**vars(config), augmentation=IndependentPairProducer(aug=None))
         assert isinstance(model, CoST)
 
     def test_autotcl_instantiation_returns_instance(self) -> None:
@@ -127,7 +127,7 @@ class TestAugmentationConfigPropagation:
         assert model._augmentation._params.temporal_unit == 2
 
     def test_cost_augmentation_config_propagates(self) -> None:
-        from chronocratic.models.augmentation.producers import IndependentPair
+        from chronocratic.models.augmentation.producers import IndependentPairProducer
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -137,7 +137,7 @@ class TestAugmentationConfigPropagation:
         model = CoST(
             input_dims=1,
             sequence_length=100,
-            augmentation=IndependentPair(aug=CosTRandomFunctionAugmentation(params=config)),
+            augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation(params=config)),
         )
         assert model._augmentation._aug._params.sigma == 0.2
         assert model._augmentation._aug._params.p == 0.8
@@ -174,7 +174,7 @@ class TestAugmentationPassThrough:
         model = CoST(
             input_dims=1,
             sequence_length=100,
-            augmentation=IndependentPair(aug=CosTRandomFunctionAugmentation()),
+            augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation()),
         )
         assert model._augmentation is not None
         result = model._augmentation.produce(torch.randn(4, 100, 1))
@@ -225,7 +225,7 @@ class TestBackwardCompatModelConstruction:
         assert model._augmentation is not None
 
     def test_cost_with_raw_augmentation(self) -> None:
-        """CoST still accepts raw Augmentation (wraps in IndependentPair)."""
+        """CoST still accepts raw Augmentation (wraps in IndependentPairProducer)."""
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
         )
@@ -233,7 +233,7 @@ class TestBackwardCompatModelConstruction:
         model = CoST(
             input_dims=1,
             sequence_length=100,
-            augmentation=IndependentPair(aug=CosTRandomFunctionAugmentation()),
+            augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation()),
         )
         assert model._augmentation is not None
 

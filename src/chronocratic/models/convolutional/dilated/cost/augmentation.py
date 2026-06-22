@@ -41,7 +41,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
     Implements the :class:`~chronocratic.models.augmentation.base.Augmentation`
     Protocol (``__call__: Tensor -> Tensor``) for use with producer combinators
-    like :class:`~chronocratic.models.augmentation.producers.IndependentPair`.
+    like :class:`~chronocratic.models.augmentation.producers.IndependentPairProducer`.
     """
 
     def __init__(

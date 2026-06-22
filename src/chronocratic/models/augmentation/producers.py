@@ -6,15 +6,15 @@ nothing model-specific.
 
 Exported symbols:
     - ``SingleViewProducer``: wraps one Augmentation, returns SingleView.
-    - ``IndependentPair``: applies one Augmentation twice, returns ViewPair.
-    - ``RolePair``: applies two Augmentations, returns ViewPair.
-    - ``FullOverlapPair``: applies one Augmentation twice, returns AlignedPair
+    - ``IndependentPairProducer``: applies one Augmentation twice, returns ViewPair.
+    - ``RolePairProducer``: applies two Augmentations, returns ViewPair.
+    - ``FullOverlapProducer``: applies one Augmentation twice, returns AlignedPair
       with overlap_length == input time dimension.
 """
 
 from __future__ import annotations
 
-__all__ = ["FullOverlapPair", "IndependentPair", "RolePair", "SingleViewProducer"]
+__all__ = ["FullOverlapProducer", "IndependentPairProducer", "RolePairProducer", "SingleViewProducer"]
 
 from typing import TYPE_CHECKING
 
@@ -60,11 +60,11 @@ class SingleViewProducer:
 
 
 # --------------------------------------------------------------------------- #
-# IndependentPair
+# IndependentPairProducer
 # --------------------------------------------------------------------------- #
 
 
-class IndependentPair:
+class IndependentPairProducer:
     """Apply one :class:`Augmentation` twice and return a :class:`ViewPair`.
 
     Each call to ``aug`` produces an independent (stochastic) draw, so the
@@ -92,11 +92,11 @@ class IndependentPair:
 
 
 # --------------------------------------------------------------------------- #
-# RolePair
+# RolePairProducer
 # --------------------------------------------------------------------------- #
 
 
-class RolePair:
+class RolePairProducer:
     """Apply two different :class:`Augmentation`s and return a :class:`ViewPair`.
 
     Useful when each view has a distinct role (e.g. weak/strong in TS-TCC).
@@ -126,11 +126,11 @@ class RolePair:
 
 
 # --------------------------------------------------------------------------- #
-# FullOverlapPair
+# FullOverlapProducer
 # --------------------------------------------------------------------------- #
 
 
-class FullOverlapPair:
+class FullOverlapProducer:
     """Apply one :class:`Augmentation` twice and return an :class:`AlignedPair`.
 
     Sets ``overlap_length`` to the full time dimension of the input, indicating

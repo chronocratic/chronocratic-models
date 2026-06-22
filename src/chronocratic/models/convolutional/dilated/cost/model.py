@@ -54,12 +54,12 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self._sync_dist = sync_dist
 
         if augmentation is None:
-            from chronocratic.models.augmentation.producers import IndependentPair  # noqa: PLC0415
+            from chronocratic.models.augmentation.producers import IndependentPairProducer  # noqa: PLC0415
             from chronocratic.models.convolutional.dilated.cost.augmentation import (  # noqa: PLC0415
                 CosTRandomFunctionAugmentation,
             )
 
-            self._augmentation: AugmentationProducer[ViewPair] = IndependentPair(
+            self._augmentation: AugmentationProducer[ViewPair] = IndependentPairProducer(
                 aug=CosTRandomFunctionAugmentation()
             )
         else:

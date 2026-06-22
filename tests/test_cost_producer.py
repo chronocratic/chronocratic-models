@@ -2,7 +2,7 @@
 
 Verifies CosTRandomFunctionAugmentation satisfies the Augmentation Protocol
 (__call__: Tensor -> Tensor) and CoST accepts AugmentationProducer[ViewPair]
-with IndependentPair as default, replacing the old double-augment pattern.
+with IndependentPairProducer as default, replacing the old double-augment pattern.
 """
 
 from collections.abc import Callable
@@ -10,7 +10,7 @@ from collections.abc import Callable
 import torch
 
 from chronocratic.models.augmentation.base import Augmentation, ViewPair
-from chronocratic.models.augmentation.producers import IndependentPair
+from chronocratic.models.augmentation.producers import IndependentPairProducer
 from chronocratic.models.convolutional.dilated.cost.augmentation import (
     CosTRandomFunctionAugmentation,
     CosTRandomFunctionAugmentationParameters,
@@ -56,7 +56,7 @@ class TestCoSTProducerIntegration:
 
     def test_cost_accepts_independent_pair(self) -> None:
         aug = CosTRandomFunctionAugmentation()
-        producer = IndependentPair(aug=aug)
+        producer = IndependentPairProducer(aug=aug)
         model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
         assert isinstance(model, CoST)
 
@@ -83,7 +83,7 @@ class TestCoSTTrainingWithProducer:
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         aug = CosTRandomFunctionAugmentation()
-        producer = IndependentPair(aug=aug)
+        producer = IndependentPairProducer(aug=aug)
         model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
         finite_losses(losses, expected_min=5)
