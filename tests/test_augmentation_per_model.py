@@ -378,5 +378,3 @@ class TestAutoTCLAugmentationBarrel:
             "AdversarialTrainingStrategy",
         }
         assert expected.issubset(set(mod.__all__))
-
-

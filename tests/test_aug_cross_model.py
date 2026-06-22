@@ -29,7 +29,11 @@ from chronocratic.models.augmentation.primitives import (
     Scaling,
     ScalingParameters,
 )
-from chronocratic.models.augmentation.producers import FullOverlapProducer, RolePairProducer, SingleViewProducer
+from chronocratic.models.augmentation.producers import (
+    FullOverlapProducer,
+    RolePairProducer,
+    SingleViewProducer,
+)
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # Import _train_steps from test_smoke.py to avoid duplication
@@ -88,7 +92,9 @@ class TestCrossModelReuse:
 
     def test_permutation_in_full_overlap_pair(self) -> None:
         """Permutation primitive works inside FullOverlapProducer producer."""
-        aug = FullOverlapProducer(aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1)))
+        aug = FullOverlapProducer(
+            aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1))
+        )
         data = torch.randn(2, 50, 3)
         pair = aug.produce(data)
         assert isinstance(pair, AlignedPair)

@@ -120,4 +120,3 @@ class CosTRandomFunctionAugmentation(Augmentation):
             Augmented tensor with the same shape as ``x``.
         """
         return self._jitter(self._shift(self._scale(x)))
-
