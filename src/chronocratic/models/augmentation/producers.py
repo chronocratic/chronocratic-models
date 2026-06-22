@@ -14,7 +14,12 @@ Exported symbols:
 
 from __future__ import annotations
 
-__all__ = ["FullOverlapProducer", "IndependentPairProducer", "RolePairProducer", "SingleViewProducer"]
+__all__ = [
+    "FullOverlapProducer",
+    "IndependentPairProducer",
+    "RolePairProducer",
+    "SingleViewProducer",
+]
 
 from typing import TYPE_CHECKING
 
