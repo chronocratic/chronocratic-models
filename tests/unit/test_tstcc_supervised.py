@@ -11,9 +11,9 @@ import inspect
 import pytest
 import torch
 
-from chronocratic.models.supervised import make_tstcc_supervised
 from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.supervised import make_tstcc_supervised
 
 
 class TestTSTCCEnumRemoved:

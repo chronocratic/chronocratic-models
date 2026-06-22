@@ -1,7 +1,7 @@
 """Tests for augmentation producer combinators.
 
 VER-01 through VER-07 cover the four shared producer classes:
-SingleViewProducer, IndependentPair, RolePair, FullOverlapPair.
+SingleViewProducer, IndependentPairProducer, RolePairProducer, FullOverlapProducer.
 """
 
 from __future__ import annotations
@@ -16,9 +16,9 @@ from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 # Import producers under test
 # --------------------------------------------------------------------------- #
 from chronocratic.models.augmentation.producers import (
-    FullOverlapPair,
-    IndependentPair,
-    RolePair,
+    FullOverlapProducer,
+    IndependentPairProducer,
+    RolePairProducer,
     SingleViewProducer,
 )
 
@@ -50,15 +50,15 @@ class TestSingleViewProducer:
 
 
 # --------------------------------------------------------------------------- #
-# IndependentPair
+# IndependentPairProducer
 # --------------------------------------------------------------------------- #
 
 
-class TestIndependentPair:
+class TestIndependentPairProducer:
     def test_produces_view_pair(self) -> None:
-        """IndependentPair produces ViewPair (VER-02)."""
+        """IndependentPairProducer produces ViewPair (VER-02)."""
         aug = Jitter()
-        producer = IndependentPair(aug=aug)
+        producer = IndependentPairProducer(aug=aug)
         x = torch.randn(2, 10, 3)
         result = producer.produce(x)
 
@@ -67,10 +67,10 @@ class TestIndependentPair:
         assert result.second.shape == x.shape
 
     def test_independent_draws_produce_different_tensors(self) -> None:
-        """IndependentPair with Jitter produces different tensors for each draw (VER-05)."""
+        """IndependentPairProducer with Jitter produces different tensors for each draw (VER-05)."""
         torch.manual_seed(42)
         aug = Jitter()
-        producer = IndependentPair(aug=aug)
+        producer = IndependentPairProducer(aug=aug)
         x = torch.randn(2, 10, 3)
         result = producer.produce(x)
 
@@ -79,16 +79,16 @@ class TestIndependentPair:
 
 
 # --------------------------------------------------------------------------- #
-# RolePair
+# RolePairProducer
 # --------------------------------------------------------------------------- #
 
 
-class TestRolePair:
+class TestRolePairProducer:
     def test_produces_view_pair(self) -> None:
-        """RolePair produces ViewPair (VER-03)."""
+        """RolePairProducer produces ViewPair (VER-03)."""
         first_aug = Jitter()
         second_aug = Scaling()
-        producer = RolePair(first=first_aug, second=second_aug)
+        producer = RolePairProducer(first=first_aug, second=second_aug)
         x = torch.randn(2, 10, 3)
         result = producer.produce(x)
 
@@ -97,14 +97,14 @@ class TestRolePair:
         assert result.second.shape == x.shape
 
     def test_first_and_second_correspond_to_correct_primitives(self) -> None:
-        """RolePair first/second correspond to correct primitives (VER-06)."""
+        """RolePairProducer first/second correspond to correct primitives (VER-06)."""
         # Use a deterministic input so we can detect which transform was applied
         torch.manual_seed(100)
         x = torch.zeros(1, 5, 2)
 
         # Jitter adds noise, Scaling multiplies
         jitter = Jitter(params=JitterParameters(sigma=0.1))
-        prod = RolePair(first=jitter, second=Jitter())
+        prod = RolePairProducer(first=jitter, second=Jitter())
 
         result = prod.produce(x)
         # Both should have the same shape as input
@@ -117,15 +117,15 @@ class TestRolePair:
 
 
 # --------------------------------------------------------------------------- #
-# FullOverlapPair
+# FullOverlapProducer
 # --------------------------------------------------------------------------- #
 
 
-class TestFullOverlapPair:
+class TestFullOverlapProducer:
     def test_produces_aligned_pair(self) -> None:
-        """FullOverlapPair produces AlignedPair with overlap_length == T (VER-04)."""
+        """FullOverlapProducer produces AlignedPair with overlap_length == T (VER-04)."""
         aug = Jitter()
-        producer = FullOverlapPair(aug=aug)
+        producer = FullOverlapProducer(aug=aug)
         x = torch.randn(2, 10, 3)
         result = producer.produce(x)
 
@@ -148,18 +148,18 @@ class TestProtocolCompliance:
         assert callable(getattr(producer, "produce", None))
 
     def test_independent_pair_has_produce_method(self) -> None:
-        """IndependentPair satisfies AugmentationProducer structurally."""
-        producer = IndependentPair(aug=Jitter())
+        """IndependentPairProducer satisfies AugmentationProducer structurally."""
+        producer = IndependentPairProducer(aug=Jitter())
         assert callable(getattr(producer, "produce", None))
 
     def test_role_pair_has_produce_method(self) -> None:
-        """RolePair satisfies AugmentationProducer structurally."""
-        producer = RolePair(first=Jitter(), second=Scaling())
+        """RolePairProducer satisfies AugmentationProducer structurally."""
+        producer = RolePairProducer(first=Jitter(), second=Scaling())
         assert callable(getattr(producer, "produce", None))
 
     def test_full_overlap_pair_has_produce_method(self) -> None:
-        """FullOverlapPair satisfies AugmentationProducer structurally."""
-        producer = FullOverlapPair(aug=Jitter())
+        """FullOverlapProducer satisfies AugmentationProducer structurally."""
+        producer = FullOverlapProducer(aug=Jitter())
         assert callable(getattr(producer, "produce", None))
 
 
@@ -176,12 +176,12 @@ class TestKeywordOnlyConstructors:
 
     def test_independent_pair_requires_kwonly(self) -> None:
         with pytest.raises(TypeError):
-            IndependentPair(Jitter())  # type: ignore[arg-type]
+            IndependentPairProducer(Jitter())  # type: ignore[arg-type]
 
     def test_role_pair_requires_kwonly(self) -> None:
         with pytest.raises(TypeError):
-            RolePair(Jitter(), Scaling())  # type: ignore[arg-type]
+            RolePairProducer(Jitter(), Scaling())  # type: ignore[arg-type]
 
     def test_full_overlap_pair_requires_kwonly(self) -> None:
         with pytest.raises(TypeError):
-            FullOverlapPair(Jitter())  # type: ignore[arg-type]
+            FullOverlapProducer(Jitter())  # type: ignore[arg-type]

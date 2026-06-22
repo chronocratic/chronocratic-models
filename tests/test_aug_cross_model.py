@@ -30,9 +30,8 @@ from chronocratic.models.augmentation.primitives import (
     ScalingParameters,
 )
 from chronocratic.models.augmentation.producers import (
-    FullOverlapPair,
-    IndependentPair,
-    RolePair,
+    FullOverlapProducer,
+    RolePairProducer,
     SingleViewProducer,
 )
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
@@ -45,35 +44,35 @@ class TestCrossModelReuse:
     """Test that shared augmentations work across different models (SPEC criterion 4)."""
 
     def test_full_overlap_pair_into_ts2vec(self) -> None:
-        """FullOverlapPair(Jitter) injected into TS2Vec trains 1 step with finite loss."""
-        aug = FullOverlapPair(aug=Jitter(JitterParameters(sigma=0.1)))
+        """FullOverlapProducer(Jitter) injected into TS2Vec trains 1 step with finite loss."""
+        aug = FullOverlapProducer(aug=Jitter(JitterParameters(sigma=0.1)))
         model = TS2Vec(input_dims=1, augmentation=aug)
         losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 
     def test_independent_pair_into_ts2vec_via_covariance(self) -> None:
-        """IndependentPair (returns ViewPair) fits TS2Vec's AlignedPair slot? No.
+        """IndependentPairProducer (returns ViewPair) fits TS2Vec's AlignedPair slot? No.
 
-        TS2Vec requires AlignedPair (overlap_length). IndependentPair returns
+        TS2Vec requires AlignedPair (overlap_length). IndependentPairProducer returns
         ViewPair which lacks overlap_length, so this should fail at runtime.
-        FullOverlapPair returns AlignedPair, so it works (tested above).
+        FullOverlapProducer returns AlignedPair, so it works (tested above).
 
         This test verifies that the correct producer types work.
         """
-        # FullOverlapPair returns AlignedPair, which has overlap_length
-        aug = FullOverlapPair(aug=Scaling(ScalingParameters(sigma=0.05)))
+        # FullOverlapProducer returns AlignedPair, which has overlap_length
+        aug = FullOverlapProducer(aug=Scaling(ScalingParameters(sigma=0.05)))
         pair = aug.produce(torch.randn(2, 50, 1))
         assert isinstance(pair, AlignedPair)
         assert pair.overlap_length == 50
 
     def test_role_pair_produces_view_pair(self) -> None:
-        """RolePair with two different primitives produces ViewPair."""
+        """RolePairProducer with two different primitives produces ViewPair."""
         weak = Jitter(JitterParameters(sigma=0.05))
         strong = ComposeAugmentation(
             [Jitter(JitterParameters(sigma=0.1)), Scaling(ScalingParameters(sigma=0.1))]
         )
-        aug = RolePair(first=weak, second=strong)
+        aug = RolePairProducer(first=weak, second=strong)
         data = torch.randn(2, 50, 3)
         pair = aug.produce(data)
         assert isinstance(pair, ViewPair)
@@ -81,19 +80,21 @@ class TestCrossModelReuse:
         assert pair.second.shape == data.shape
 
     def test_compose_augmentation_cross_model(self) -> None:
-        """ComposeAugmentation with primitives works in FullOverlapPair for TS2Vec."""
+        """ComposeAugmentation with primitives works in FullOverlapProducer for TS2Vec."""
         composed = ComposeAugmentation(
             [Jitter(JitterParameters(sigma=0.05)), Scaling(ScalingParameters(sigma=0.05))]
         )
-        aug = FullOverlapPair(aug=composed)
+        aug = FullOverlapProducer(aug=composed)
         model = TS2Vec(input_dims=1, augmentation=aug)
         losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 
     def test_permutation_in_full_overlap_pair(self) -> None:
-        """Permutation primitive works inside FullOverlapPair producer."""
-        aug = FullOverlapPair(aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1)))
+        """Permutation primitive works inside FullOverlapProducer producer."""
+        aug = FullOverlapProducer(
+            aug=Permutation(PermutationParameters(max_segments=3, time_dim=-1))
+        )
         data = torch.randn(2, 50, 3)
         pair = aug.produce(data)
         assert isinstance(pair, AlignedPair)
@@ -124,12 +125,12 @@ class TestCovariance:
         assert isinstance(result, AlignedPair)
 
     def test_full_overlap_pair_is_viewpair_producer(self) -> None:
-        """FullOverlapPair returns AlignedPair, fits ViewPair producer slot."""
+        """FullOverlapProducer returns AlignedPair, fits ViewPair producer slot."""
 
         def accepts_viewpair(p: AugmentationProducer[ViewPair]) -> ViewPair:
             return p.produce(torch.randn(2, 50, 3))
 
-        producer = FullOverlapPair(aug=Jitter(JitterParameters(sigma=0.1)))
+        producer = FullOverlapProducer(aug=Jitter(JitterParameters(sigma=0.1)))
         result = accepts_viewpair(producer)
         assert isinstance(result, AlignedPair)
 
@@ -151,8 +152,8 @@ class TestSeededDecorator:
         assert torch.equal(r1.view, r2.view)
 
     def test_seeded_on_full_overlap_pair(self) -> None:
-        """Seeded works with FullOverlapPair producer."""
-        inner = FullOverlapPair(aug=Jitter(JitterParameters(sigma=0.1)))
+        """Seeded works with FullOverlapProducer producer."""
+        inner = FullOverlapProducer(aug=Jitter(JitterParameters(sigma=0.1)))
         seeded = Seeded(inner=inner, seed=123)
         x = torch.randn(2, 10, 3)
         r1 = seeded.produce(x)
@@ -199,7 +200,7 @@ class TestImportHygiene:
 
     def test_primitives_no_model_imports(self) -> None:
         """primitives.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.primitives as primitives
+        from chronocratic.models.augmentation import primitives
 
         source = pathlib.Path(primitives.__file__).read_text()
         assert "convolutional" not in source, (
@@ -209,7 +210,7 @@ class TestImportHygiene:
 
     def test_producers_no_model_imports(self) -> None:
         """producers.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.producers as producers
+        from chronocratic.models.augmentation import producers
 
         source = pathlib.Path(producers.__file__).read_text()
         assert "convolutional" not in source, (
@@ -219,7 +220,7 @@ class TestImportHygiene:
 
     def test_decorators_no_model_imports(self) -> None:
         """decorators.py must not import from convolutional/."""
-        import chronocratic.models.augmentation.decorators as decorators
+        from chronocratic.models.augmentation import decorators
 
         source = pathlib.Path(decorators.__file__).read_text()
         assert "convolutional" not in source, (

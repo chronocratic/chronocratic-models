@@ -7,12 +7,13 @@ AugmentationProducer[AlignedPair], and training runs with finite loss.
 from collections.abc import Callable
 from copy import deepcopy
 
+import numpy as np
 import torch
 
 from chronocratic.models.augmentation.base import AlignedPair
 from chronocratic.models.augmentation.decorators import Seeded
 from chronocratic.models.augmentation.primitives import Jitter
-from chronocratic.models.augmentation.producers import FullOverlapPair
+from chronocratic.models.augmentation.producers import FullOverlapProducer
 from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
@@ -54,15 +55,14 @@ class TestCropShiftProducer:
         assert pair.second.shape[-1] == channels
 
     def test_per_sample_crop_offsets(self) -> None:
-        """CropShiftProducer preserves per-sample crop offsets (views differ)."""
+        """CropShiftProducer generates independent crop offsets per sample."""
         producer = CropShiftProducer()
-        # Use identical rows so any difference must come from cropping
+        producer.reseed(np.random.default_rng(42))
         row = torch.randn(100, 3)
         data = row.unsqueeze(0).repeat(4, 1, 1)
         pair = producer.produce(data)
 
         # At least two samples should differ (different offsets)
-        # This is probabilistic but very likely with 4 samples
         all_equal = True
         for i in range(1, pair.first.shape[0]):
             if not torch.equal(pair.first[0], pair.first[i]):
@@ -87,9 +87,9 @@ class TestTS2VecConstructor:
         assert model._augmentation is producer  # noqa: SLF001
 
     def test_accepts_full_overlap_pair_jitter(self) -> None:
-        """TS2Vec constructor accepts FullOverlapPair(Jitter(...))."""
+        """TS2Vec constructor accepts FullOverlapProducer(Jitter(...))."""
         jitter = Jitter()
-        producer = FullOverlapPair(aug=jitter)
+        producer = FullOverlapProducer(aug=jitter)
         model = TS2Vec(input_dims=1, augmentation=producer)
 
         assert model._augmentation is producer  # noqa: SLF001
@@ -122,9 +122,9 @@ class TestTS2VecTraining:
     def test_trains_5_steps_with_full_overlap_pair_jitter(
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
-        """TS2Vec trains 5 steps with FullOverlapPair(Jitter(...)) (finite loss)."""
+        """TS2Vec trains 5 steps with FullOverlapProducer(Jitter(...)) (finite loss)."""
         jitter = Jitter()
-        producer = FullOverlapPair(aug=jitter)
+        producer = FullOverlapProducer(aug=jitter)
         model = TS2Vec(input_dims=1, augmentation=producer)
 
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)

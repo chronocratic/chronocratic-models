@@ -15,14 +15,13 @@ from __future__ import annotations
 import math
 import os
 import tempfile
-from typing import Any
 
 import lightning.pytorch as pl
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from chronocratic.models.augmentation import AlignedPair, AugmentationProducer, SingleView, ViewPair
-from chronocratic.models.augmentation.producers import IndependentPair
+from chronocratic.models.augmentation import AlignedPair, SingleView, ViewPair
+from chronocratic.models.augmentation.producers import IndependentPairProducer
 from chronocratic.models.convolutional.dilated.autotcl.augmentation import (
     AutoTCLNeuralNetworkAugmentation,
     RIPTrainingStrategy,
@@ -139,12 +138,12 @@ class TestModelTrainingSmoke:
             os.unlink(tmp_path)
 
     def test_cost_trains_5_steps(self) -> None:
-        """CoST with IndependentPair producer trains 5 steps (VER-02)."""
+        """CoST with IndependentPairProducer trains 5 steps (VER-02)."""
         model = CoST(
             input_dims=1,
             sequence_length=100,
             kernel_sizes=[3],
-            augmentation=IndependentPair(
+            augmentation=IndependentPairProducer(
                 aug=CosTRandomFunctionAugmentation(
                     params=CosTRandomFunctionAugmentationParameters(sigma=0.1)
                 )
