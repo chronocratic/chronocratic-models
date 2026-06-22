@@ -127,6 +127,7 @@ class TestAugmentationConfigPropagation:
         assert model._augmentation._params.temporal_unit == 2
 
     def test_cost_augmentation_config_propagates(self) -> None:
+        from chronocratic.models.augmentation.producers import IndependentPair
         from chronocratic.models.convolutional.dilated.cost.augmentation import (
             CosTRandomFunctionAugmentation,
             CosTRandomFunctionAugmentationParameters,
@@ -136,9 +137,8 @@ class TestAugmentationConfigPropagation:
         model = CoST(
             input_dims=1,
             sequence_length=100,
-            augmentation=CosTRandomFunctionAugmentation(params=config),
+            augmentation=IndependentPair(aug=CosTRandomFunctionAugmentation(params=config)),
         )
-        # CoST wraps plain Augmentation in IndependentPair
         assert model._augmentation._aug._params.sigma == 0.2
         assert model._augmentation._aug._params.p == 0.8
 
