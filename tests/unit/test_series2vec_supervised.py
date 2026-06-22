@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import torch
 
-from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 from chronocratic.models.supervised import make_series2vec_supervised
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 
 
 class TestSeries2VecFinetuningModule:

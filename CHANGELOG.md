@@ -11,17 +11,6 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
-## v0.1.0a4 (2026-06-22)
-
-### Added
-
-- Add RecurrentAutoEncoder. ([#20](https://github.com/chronocratic/chronocratic-models/issues/20))
-
-### Changed
-
-- Remove BC code, standardize *Producer naming, add parameter docs. ([#34](https://github.com/chronocratic/chronocratic-models/issues/34))
-
-
 ## v0.1.0a3 (2026-06-18)
 
 ### Changed

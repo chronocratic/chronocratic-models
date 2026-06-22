@@ -10,9 +10,6 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from chronocratic.models import supervised
-from chronocratic.models.convolutional.standard import series2vec, tstcc
-from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
-from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
@@ -20,6 +17,9 @@ from chronocratic.models.supervised import (
     RepresentationBackbone,
     SupervisedModule,
 )
+from chronocratic.models.convolutional.standard import series2vec, tstcc
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.transformer import tst
 from chronocratic.models.transformer.tst.model import TST
 

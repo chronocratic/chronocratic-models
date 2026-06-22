@@ -12,9 +12,9 @@ import torch
 from chronocratic.models.augmentation import AlignedPair, AugmentationProducer, SingleView, ViewPair
 from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 from chronocratic.models.augmentation.producers import (
-    FullOverlapProducer,
-    IndependentPairProducer,
-    RolePairProducer,
+    FullOverlapPair,
+    IndependentPair,
+    RolePair,
     SingleViewProducer,
 )
 
@@ -44,32 +44,32 @@ class TestProducerCovariance:
     """Test AugmentationProducer[V] covariance at runtime."""
 
     def test_full_overlap_pair_fits_viewpair_slot(self) -> None:
-        """FullOverlapProducer produces AlignedPair, which fits ViewPair consumer."""
+        """FullOverlapPair produces AlignedPair, which fits ViewPair consumer."""
 
         def consumer(p: AugmentationProducer[ViewPair]) -> ViewPair:
             return p.produce(torch.randn(2, 50, 3))
 
-        producer = FullOverlapProducer(aug=Jitter(JitterParameters(sigma=0.1)))
+        producer = FullOverlapPair(aug=Jitter(JitterParameters(sigma=0.1)))
         result = consumer(producer)
         assert isinstance(result, ViewPair)
 
     def test_independent_pair_fits_viewpair_slot(self) -> None:
-        """IndependentPairProducer produces ViewPair directly."""
+        """IndependentPair produces ViewPair directly."""
 
         def consumer(p: AugmentationProducer[ViewPair]) -> ViewPair:
             return p.produce(torch.randn(2, 50, 3))
 
-        producer = IndependentPairProducer(aug=Jitter(JitterParameters(sigma=0.1)))
+        producer = IndependentPair(aug=Jitter(JitterParameters(sigma=0.1)))
         result = consumer(producer)
         assert isinstance(result, ViewPair)
 
     def test_role_pair_fits_viewpair_slot(self) -> None:
-        """RolePairProducer produces ViewPair directly."""
+        """RolePair produces ViewPair directly."""
 
         def consumer(p: AugmentationProducer[ViewPair]) -> ViewPair:
             return p.produce(torch.randn(2, 50, 3))
 
-        producer = RolePairProducer(
+        producer = RolePair(
             first=Jitter(JitterParameters(sigma=0.05)), second=Jitter(JitterParameters(sigma=0.1))
         )
         result = consumer(producer)

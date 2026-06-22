@@ -26,7 +26,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
         projection_dims: int = 128,
-        sync_dist: bool = False,
+        sync_dist: bool = False,  # noqa: FBT001,FBT002
     ) -> None:
         super().__init__()
         self.save_hyperparameters()

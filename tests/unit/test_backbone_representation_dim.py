@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import torch
 
-from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
-from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.supervised import (
     make_series2vec_supervised,
     make_tst_supervised,
     make_tstcc_supervised,
     RepresentationBackbone,
 )
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.transformer.tst.model import TST
 
 

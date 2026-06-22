@@ -226,7 +226,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
         param_count = len(list(aug.parameters()))
         assert param_count > 0
 
-    def test_produce_returns_training_views(self) -> None:
+    def test_augment_returns_training_views(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
             input_dims=1, output_dims=320, kernel_sizes=[3]
         )
@@ -235,7 +235,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
         aug.eval()
         data = torch.randn(2, 100, 1)
         with torch.no_grad():
-            result = aug.produce(data)
+            result = aug.augment(data)
         assert isinstance(result, SingleView)
 
 

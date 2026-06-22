@@ -11,7 +11,7 @@ import torch
 
 from chronocratic.models.augmentation import primitives
 from chronocratic.models.augmentation.base import ViewPair
-from chronocratic.models.augmentation.producers import RolePairProducer
+from chronocratic.models.augmentation.producers import RolePair
 from chronocratic.models.convolutional.standard.tstcc import augmentations
 from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
@@ -22,7 +22,7 @@ class TestDefaultTSTCCPair:
 
     def test_returns_role_pair_type(self) -> None:
         producer = _default_tstcc_pair()
-        assert isinstance(producer, RolePairProducer)
+        assert isinstance(producer, RolePair)
 
     def test_produce_returns_view_pair(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
@@ -67,7 +67,7 @@ class TestTSTCCConstructor:
             features_len=15,
             num_classes=10,
         )
-        assert isinstance(model._augmentation, RolePairProducer)  # noqa: SLF001
+        assert isinstance(model._augmentation, RolePair)  # noqa: SLF001
 
 
 class TestTSTCCTraining:

@@ -111,7 +111,10 @@ class TestAutoTCLAcceptsProducer:
 
     def test_default_augmentation_is_trainable_producer(self) -> None:
         model = AutoTCL(input_dims=1)
-        assert isinstance(model._augmentation, TrainableAugmentationProducer)
+        assert isinstance(
+            model._augmentation,
+            TrainableAugmentationProducer,  # noqa: SLF001
+        )
 
 
 class TestAutoTCLUsesMaybeHelpers:
