@@ -7,6 +7,7 @@ AugmentationProducer[AlignedPair], and training runs with finite loss.
 from collections.abc import Callable
 from copy import deepcopy
 
+import numpy as np
 import torch
 
 from chronocratic.models.augmentation.base import AlignedPair
@@ -54,15 +55,14 @@ class TestCropShiftProducer:
         assert pair.second.shape[-1] == channels
 
     def test_per_sample_crop_offsets(self) -> None:
-        """CropShiftProducer preserves per-sample crop offsets (views differ)."""
+        """CropShiftProducer generates independent crop offsets per sample."""
         producer = CropShiftProducer()
-        # Use identical rows so any difference must come from cropping
+        producer.reseed(np.random.default_rng(42))
         row = torch.randn(100, 3)
         data = row.unsqueeze(0).repeat(4, 1, 1)
         pair = producer.produce(data)
 
         # At least two samples should differ (different offsets)
-        # This is probabilistic but very likely with 4 samples
         all_equal = True
         for i in range(1, pair.first.shape[0]):
             if not torch.equal(pair.first[0], pair.first[i]):
