@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from chronocratic.models.utils import pool_feature_map
+
 if TYPE_CHECKING:
     import torch
 
@@ -85,18 +87,21 @@ def series2vec_representations(backbone: Series2Vec, x: torch.Tensor) -> torch.T
 
 
 def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
-    """Extract pre-logits features from the TCC encoder.
+    """Extract pooled features from the TCC encoder.
 
     Args:
         backbone: A :class:`TSTCC` instance.
         x: Input features of shape ``(B, channels, seq)``.
 
     Returns:
-        Pre-logits feature tensor. The encoder returns ``(logits, features)``;
-        we take ``features``.
+        Pooled feature tensor of shape ``(B, output_dims)``.
 
     Note:
         Casts input to ``.float()`` because the TCC encoder expects float inputs.
+        This duplicates the cast in ``TSTCC._prepare_inputs``, but serves a
+        different path: this runs during supervised fine-tuning while
+        ``_prepare_inputs`` runs during ``encode()`` inference. Both are
+        defensive since SupervisedModule does not know the backbone's dtype.
     """
-    _logits, features = backbone(x.float())
-    return features
+    features = backbone(x.float())
+    return pool_feature_map(features)

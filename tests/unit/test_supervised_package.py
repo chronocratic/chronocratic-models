@@ -286,17 +286,19 @@ class TestRepresentationFunctions:
         assert result.shape == (2, 16)
 
     def test_tstcc_representations(self) -> None:
-        """tstcc_representations calls backbone(x.float()), extracts features."""
+        """tstcc_representations calls backbone(x.float()), pools feature map."""
         backbone = MagicMock()
-        logits = torch.randn(2, 5)
-        features = torch.randn(2, 32)
-        backbone.return_value = (logits, features)
+        # Backbone now returns a 3D feature map (B, output_dims, L')
+        feature_map = torch.randn(2, 16, 10)
+        backbone.return_value = feature_map
         x = torch.randn(2, 10, 3)
         result = tstcc_representations(backbone, x)
         # Verify .float() was called
         call_arg = backbone.call_args[0][0]
         assert call_arg.dtype == torch.float32
-        torch.testing.assert_close(result, features)
+        # Result should be pooled to (B, output_dims)
+        assert result.shape == (2, 16)
+        torch.testing.assert_close(result, feature_map.mean(dim=-1))
 
 
 # ---------------------------------------------------------------------------
@@ -308,12 +310,20 @@ class TestClassificationLoss:
     """Verify classification_loss helper."""
 
     def test_classification_loss_calls_cross_entropy(self) -> None:
-        """classification_loss uses nn.functional.cross_entropy with squeezed targets."""
+        """classification_loss uses nn.functional.cross_entropy with view(-1) targets."""
         predictions = torch.tensor([[0.1, 0.9], [0.8, 0.2]])
         targets = torch.tensor([1.0, 0.0])  # float targets (common in dataloaders)
         loss = classification_loss(predictions, targets)
-        expected = nn.functional.cross_entropy(predictions, targets.long().squeeze())
+        expected = nn.functional.cross_entropy(predictions, targets.long().view(-1))
         torch.testing.assert_close(loss, expected)
+
+    def test_classification_loss_handles_batch_size_one(self) -> None:
+        """view(-1) does not crash at batch_size=1 (squeeze would produce 0-D scalar)."""
+        predictions = torch.tensor([[0.3, 0.7]])
+        targets = torch.tensor([[1.0]])  # (1, 1) shape from DataLoader
+        loss = classification_loss(predictions, targets)
+        assert loss.ndim == 0
+        assert torch.isfinite(loss)
 
     def test_regression_loss_calls_mse(self) -> None:
         """regression_loss uses nn.functional.mse_loss."""

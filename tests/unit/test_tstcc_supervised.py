@@ -44,28 +44,15 @@ class TestTSTCCModelCleaned:
 
     def test_only_selfsupervised_contrastive(self) -> None:
         """TSTCC._compute_loss produces contrastive loss (no supervised branch)."""
-        # First find the actual features_len from the encoder with a given input.
-        # Then configure the model with the matching features_len.
         # Using L=256, stride=4, kernel=8 to get a large enough seq_len.
-        # Conv+pool reduction: 256 → 65 → 33 → 34 → 17 → 18 → 10
-        # features_len=10 → logits in_features = 16*10 = 160
+        # Encoder forward returns feature map (B, output_dims, L').
         seq_len = 256
-        model = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-            features_len=10,
-            num_classes=3,
-        )
-        # Verify actual features shape matches the configured features_len
+        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        # Verify forward returns a single tensor (feature map), not a tuple
         test_x = torch.randn(1, 2, seq_len)
-        _logits, features = model(test_x)
-        actual_flat = features.shape[1] * features.shape[2]
-        assert actual_flat == model._encoder.logits.in_features, (  # noqa: SLF001
-            f"features flattened ({actual_flat}) != logits in_features "
-            f"({model._encoder.logits.in_features})"  # noqa: SLF001
-        )
+        features = model(test_x)
+        assert isinstance(features, torch.Tensor)
+        assert features.shape == (1, 16, features.shape[2])  # (B, output_dims, L')
         # Now run the contrastive loss
         x = torch.randn(4, 2, seq_len)
         labels = torch.randint(0, 3, (4,))
@@ -87,15 +74,8 @@ class TestTSTCCSupervisedModule:
     """Verify TSTCC downstream via SupervisedModule works."""
 
     def test_finetuner_classification_shape(self) -> None:
-        """make_tstcc_supervised produces (B, num_classes) output."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-            features_len=10,
-            num_classes=3,
-        )
+        """make_tstcc_supervised produces (B, num_outputs) classification logits."""
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -105,14 +85,7 @@ class TestTSTCCSupervisedModule:
 
     def test_finetuner_training_step(self) -> None:
         """training_step returns scalar loss."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-            features_len=10,
-            num_classes=3,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -130,14 +103,7 @@ class TestTSTCCSupervisedModule:
         ``TSTCCTrainingMode.SUPERVISED``: an un-pretrained encoder trained
         end-to-end on labels.
         """
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-            features_len=10,
-            num_classes=3,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )

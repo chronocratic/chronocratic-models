@@ -48,25 +48,12 @@ class TestTSTCCConstructor:
     def test_accepts_default_tstcc_pair(self) -> None:
         producer = _default_tstcc_pair()
         model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-            features_len=15,
-            num_classes=10,
-            augmentation=producer,
+            input_dims=1, conv_kernel_size=5, stride=1, output_dims=16, augmentation=producer
         )
         assert model._augmentation is producer  # noqa: SLF001
 
     def test_default_producer_is_role_pair(self) -> None:
-        model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-            features_len=15,
-            num_classes=10,
-        )
+        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
         assert isinstance(model._augmentation, RolePairProducer)  # noqa: SLF001
 
 
@@ -74,14 +61,7 @@ class TestTSTCCTraining:
     """TSTCC training with new producer contract."""
 
     def test_compute_loss_uses_produce_first_second(self) -> None:
-        model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-            features_len=15,
-            num_classes=10,
-        )
+        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
         data = torch.randn(4, 1, 100)
         labels = torch.zeros(4, dtype=torch.long)
         batch = (data, labels)
@@ -94,14 +74,7 @@ class TestTSTCCTraining:
     def test_trains_with_finite_loss(
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
-        model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-            features_len=15,
-            num_classes=10,
-        )
+        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
 
         losses = train_steps(
             model,
@@ -140,14 +113,7 @@ class TestDeterminism:
 
         for _run in range(2):
             torch.manual_seed(12345)
-            model = TSTCC(
-                input_dims=1,
-                conv_kernel_size=5,
-                stride=1,
-                output_dims=16,
-                features_len=15,
-                num_classes=10,
-            )
+            model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
 
             losses = train_steps(
                 model,

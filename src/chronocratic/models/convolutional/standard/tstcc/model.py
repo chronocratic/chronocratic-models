@@ -11,7 +11,7 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, pool_feature_map
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -46,8 +46,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         input_dims: int,
         conv_kernel_size: int,
         stride: int,
-        features_len: int,
-        num_classes: int,
         output_dims: int = 128,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
@@ -85,8 +83,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             input_dims=input_dims,
             conv_kernel_size=conv_kernel_size,
             stride=stride,
-            features_len=features_len,
-            num_classes=num_classes,
             output_dims=output_dims,
             encoder_channels=encoder_channels,
             encoder_inner_kernels=encoder_inner_kernels,
@@ -105,8 +101,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Forward
     # ------------------------------------------------------------------
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Run the encoder. Returns ``(logits, features)``."""
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the encoder. Returns convolutional feature map ``(B, output_dims, L')``."""
         return self._encoder(x)
 
     # ------------------------------------------------------------------
@@ -123,8 +119,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         pair = self._augmentation.produce(data)
         aug1, aug2 = pair.first, pair.second
-        _, features1 = self._encoder(aug1)
-        _, features2 = self._encoder(aug2)
+        features1 = self._encoder(aug1)
+        features2 = self._encoder(aug2)
         features1 = functional.normalize(features1, dim=1)
         features2 = functional.normalize(features2, dim=1)
 
@@ -160,6 +156,9 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
+        if not torch.isfinite(loss):
+            msg = f"Loss is {loss.item()}, skipping optimization step"
+            raise RuntimeError(msg)
         self.manual_backward(loss)
         model_opt.step()
         tc_opt.step()
@@ -201,19 +200,25 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         return self._encoder
 
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
-        """Cast to float — the TCC encoder expects float inputs."""
+        """Cast to float — the TCC encoder expects float inputs.
+
+        Returns a positional tuple because BasicEncodingMixin.encode()
+        unpacks via ``encoder_module(*args)``. This is a framework-level
+        contract that intentionally uses positional unpacking rather than
+        keyword arguments.
+        """
         return (batch_x.float(),)
 
-    def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        """Return the pre-logits features from the ``(logits, features)`` encoder output."""
-        return output[1]
+    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+        """Global-average-pool the encoder feature map over the time dimension."""
+        return pool_feature_map(output)
 
     @property
     def representation_dim(self) -> int:
-        """Flattened pre-logits feature size of the TCC encoder.
+        """Representation dimension after global average pooling.
 
         Returns:
-            The input dimension of the encoder's logits ``nn.Linear`` layer,
-            which equals ``output_dims * features_len``.
+            The encoder's ``output_dims``, matching the pooled feature shape
+            ``(B, output_dims)``.
         """
-        return self._encoder.logits.in_features
+        return self._encoder.output_dims
