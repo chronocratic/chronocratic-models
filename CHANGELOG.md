@@ -11,6 +11,14 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a5 (2026-06-23)
+
+### Changed
+
+- Standardize batch extraction across all models. ([#39](https://github.com/chronocratic/chronocratic-models/issues/39))
+- Strip supervision leakage from TSTCC core model. ([#40](https://github.com/chronocratic/chronocratic-models/issues/40))
+
+
 ## v0.1.0a4 (2026-06-22)
 
 ### Added
