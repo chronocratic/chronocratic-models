@@ -24,6 +24,19 @@ class TCCEncoder(nn.Module):
         super().__init__()
         self.output_dims = output_dims
 
+        if len(encoder_channels) != 2:
+            msg = (
+                f"encoder_channels must have exactly 2 elements, "
+                f"got {len(encoder_channels)}"
+            )
+            raise ValueError(msg)
+        if len(encoder_inner_kernels) != 2:
+            msg = (
+                f"encoder_inner_kernels must have exactly 2 elements, "
+                f"got {len(encoder_inner_kernels)}"
+            )
+            raise ValueError(msg)
+
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
                 input_dims,
