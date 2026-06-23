@@ -197,7 +197,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         return self._encoder
 
     def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
-        """Cast to float — the TCC encoder expects float inputs."""
+        """Cast to float — the TCC encoder expects float inputs.
+
+        Returns a positional tuple because BasicEncodingMixin.encode()
+        unpacks via ``encoder_module(*args)``. This is a framework-level
+        contract that intentionally uses positional unpacking rather than
+        keyword arguments.
+        """
         return (batch_x.float(),)
 
     def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
