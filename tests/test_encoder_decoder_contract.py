@@ -24,16 +24,7 @@ from chronocratic.models.protocols import HasDecoder, HasEncoder
 ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
     (FCN, {"input_dims": 1}, "FCN"),
     (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
-    (
-        TSTCC,
-        {
-            "input_dims": 1,
-            "conv_kernel_size": 5,
-            "stride": 1,
-            "output_dims": 16,
-        },
-        "TSTCC",
-    ),
+    (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
     (TS2Vec, {"input_dims": 1}, "TS2Vec"),
     (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
     (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
@@ -56,16 +47,7 @@ ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
 ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
     (FCN, {"input_dims": 1}, "FCN"),
     (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
-    (
-        TSTCC,
-        {
-            "input_dims": 1,
-            "conv_kernel_size": 5,
-            "stride": 1,
-            "output_dims": 16,
-        },
-        "TSTCC",
-    ),
+    (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
     (TS2Vec, {"input_dims": 1}, "TS2Vec"),
     (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
     (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
@@ -97,7 +79,9 @@ class TestHasEncoderConformance:
         ENCODER_MODEL_SPECS,
         ids=[spec[2] for spec in ENCODER_MODEL_SPECS],
     )
-    def test_model_satisfies_has_encoder(self, model_cls: type, kwargs: dict, model_id: str) -> None:
+    def test_model_satisfies_has_encoder(
+        self, model_cls: type, kwargs: dict, model_id: str
+    ) -> None:
         """Each model instance must satisfy the HasEncoder protocol."""
         model = model_cls(**kwargs)
         assert isinstance(model, HasEncoder), (
@@ -126,7 +110,9 @@ class TestHasDecoderConformance:
         DECODER_MODEL_SPECS,
         ids=[spec[2] for spec in DECODER_MODEL_SPECS],
     )
-    def test_model_satisfies_has_decoder(self, model_cls: type, kwargs: dict, model_id: str) -> None:
+    def test_model_satisfies_has_decoder(
+        self, model_cls: type, kwargs: dict, model_id: str
+    ) -> None:
         """Decoder models must satisfy the HasDecoder protocol."""
         model = model_cls(**kwargs)
         assert isinstance(model, HasDecoder), (

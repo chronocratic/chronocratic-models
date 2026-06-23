@@ -116,12 +116,7 @@ class TestAllBackbonesSatisfyProtocol:
         assert isinstance(backbone, RepresentationBackbone)
 
     def test_tstcc_satisfies_protocol(self) -> None:
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         assert isinstance(backbone, RepresentationBackbone)
 
 
@@ -151,12 +146,7 @@ class TestAllFactoriesProduceSupervisedModule:
         assert isinstance(module, SupervisedModule)
 
     def test_tstcc_factory_type(self) -> None:
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(backbone, num_outputs=5, task="classification")
         assert isinstance(module, SupervisedModule)
 
@@ -218,12 +208,7 @@ class TestEndToEndTraining:
 
     def test_tstcc_trains_end_to_end(self) -> None:
         """TSTCC finetuner trains for 3 steps with finite loss."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
@@ -243,12 +228,7 @@ class TestEndToEndTraining:
 
     def test_tstcc_pretraining_still_works(self) -> None:
         """TSTCC pretraining (contrastive) still works after enum removal."""
-        model = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         dataset = _DummyTSTCCDataset(size=20, seq_len=256, channels=2, num_classes=3)
         dataloader = DataLoader(dataset, batch_size=4)
         trainer = Trainer(

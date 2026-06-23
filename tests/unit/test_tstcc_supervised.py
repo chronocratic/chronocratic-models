@@ -47,12 +47,7 @@ class TestTSTCCModelCleaned:
         # Using L=256, stride=4, kernel=8 to get a large enough seq_len.
         # Encoder forward returns feature map (B, output_dims, L').
         seq_len = 256
-        model = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         # Verify forward returns a single tensor (feature map), not a tuple
         test_x = torch.randn(1, 2, seq_len)
         features = model(test_x)
@@ -80,12 +75,7 @@ class TestTSTCCSupervisedModule:
 
     def test_finetuner_classification_shape(self) -> None:
         """make_tstcc_supervised produces (B, num_outputs) classification logits."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -95,12 +85,7 @@ class TestTSTCCSupervisedModule:
 
     def test_finetuner_training_step(self) -> None:
         """training_step returns scalar loss."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -118,12 +103,7 @@ class TestTSTCCSupervisedModule:
         ``TSTCCTrainingMode.SUPERVISED``: an un-pretrained encoder trained
         end-to-end on labels.
         """
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )

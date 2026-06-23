@@ -86,23 +86,13 @@ class TestTSTCCRepresentationDim:
 
     def test_representation_dim_equals_output_dims(self) -> None:
         """representation_dim returns the encoder's output_dims."""
-        model = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         # Per design spec: representation_dim == output_dims (pooling makes it length-independent)
         assert model.representation_dim == model._encoder.output_dims  # noqa: SLF001
 
     def test_representation_dim_value(self) -> None:
         """representation_dim = output_dims."""
-        model = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         assert model.representation_dim == 16
 
 
@@ -139,12 +129,7 @@ class TestFactoriesWithRealBackbones:
 
     def test_tstcc_factory_works(self) -> None:
         """make_tstcc_supervised with a real TSTCC backbone."""
-        backbone = TSTCC(
-            input_dims=2,
-            conv_kernel_size=8,
-            stride=4,
-            output_dims=16,
-        )
+        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )

@@ -64,12 +64,7 @@ class TestModelInstantiation:
     def test_tstcc_instantiation_returns_instance(self) -> None:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
-        config = TSTCCModelParameters(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-        )
+        config = TSTCCModelParameters(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
         model = TSTCC(**vars(config), augmentation=_default_tstcc_pair())
         assert isinstance(model, TSTCC)
 
@@ -100,12 +95,7 @@ class TestMixinInheritance:
         assert isinstance(model, PoolingEncodingMixin)
 
     def test_tstcc_is_basic_encoding_mixin(self) -> None:
-        model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
         assert isinstance(model, BasicEncodingMixin)
 
 
@@ -196,12 +186,7 @@ class TestAugmentationPassThrough:
     def test_tstcc_augmentation_pass_through(self) -> None:
         from chronocratic.models.augmentation.base import ViewPair
 
-        model = TSTCC(
-            input_dims=1,
-            conv_kernel_size=5,
-            stride=1,
-            output_dims=16,
-        )
+        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
         assert model._augmentation is not None
         data = torch.randn(4, 1, 100)
         result = model._augmentation.produce(data)
