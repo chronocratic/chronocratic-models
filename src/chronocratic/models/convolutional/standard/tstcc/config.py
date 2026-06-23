@@ -58,3 +58,24 @@ class TSTCCModelParameters:
     temporal_loss_weight: float = 1.0
     contextual_loss_weight: float = 0.7
     sync_dist: bool = False
+
+    def __post_init__(self) -> None:
+        """Validate numeric constraints after construction."""
+        if self.input_dims <= 0:
+            msg = f"input_dims must be positive, got {self.input_dims}"
+            raise ValueError(msg)
+        if self.conv_kernel_size <= 0:
+            msg = f"conv_kernel_size must be positive, got {self.conv_kernel_size}"
+            raise ValueError(msg)
+        if self.stride <= 0:
+            msg = f"stride must be positive, got {self.stride}"
+            raise ValueError(msg)
+        if self.output_dims <= 0:
+            msg = f"output_dims must be positive, got {self.output_dims}"
+            raise ValueError(msg)
+        if not 0.0 <= self.dropout_rate < 1.0:
+            msg = f"dropout_rate must be in [0, 1), got {self.dropout_rate}"
+            raise ValueError(msg)
+        if self.temperature <= 0.0:
+            msg = f"temperature must be positive, got {self.temperature}"
+            raise ValueError(msg)
