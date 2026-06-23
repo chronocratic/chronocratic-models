@@ -310,12 +310,20 @@ class TestClassificationLoss:
     """Verify classification_loss helper."""
 
     def test_classification_loss_calls_cross_entropy(self) -> None:
-        """classification_loss uses nn.functional.cross_entropy with squeezed targets."""
+        """classification_loss uses nn.functional.cross_entropy with view(-1) targets."""
         predictions = torch.tensor([[0.1, 0.9], [0.8, 0.2]])
         targets = torch.tensor([1.0, 0.0])  # float targets (common in dataloaders)
         loss = classification_loss(predictions, targets)
-        expected = nn.functional.cross_entropy(predictions, targets.long().squeeze())
+        expected = nn.functional.cross_entropy(predictions, targets.long().view(-1))
         torch.testing.assert_close(loss, expected)
+
+    def test_classification_loss_handles_batch_size_one(self) -> None:
+        """view(-1) does not crash at batch_size=1 (squeeze would produce 0-D scalar)."""
+        predictions = torch.tensor([[0.3, 0.7]])
+        targets = torch.tensor([[1.0]])  # (1, 1) shape from DataLoader
+        loss = classification_loss(predictions, targets)
+        assert loss.ndim == 0
+        assert torch.isfinite(loss)
 
     def test_regression_loss_calls_mse(self) -> None:
         """regression_loss uses nn.functional.mse_loss."""
