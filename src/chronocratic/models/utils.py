@@ -201,7 +201,13 @@ def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
 
     Returns:
         Pooled tensor of shape ``(B, C)``.
+
+    Raises:
+        ValueError: If features is not 3-dimensional.
     """
+    if features.ndim != 3:
+        msg = f"pool_feature_map expects (B, C, L), got {features.ndim}D tensor"
+        raise ValueError(msg)
     return features.mean(dim=-1)
 
 
