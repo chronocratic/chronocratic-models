@@ -85,18 +85,17 @@ def series2vec_representations(backbone: Series2Vec, x: torch.Tensor) -> torch.T
 
 
 def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
-    """Extract pre-logits features from the TCC encoder.
+    """Extract pooled features from the TCC encoder.
 
     Args:
         backbone: A :class:`TSTCC` instance.
         x: Input features of shape ``(B, channels, seq)``.
 
     Returns:
-        Pre-logits feature tensor. The encoder returns ``(logits, features)``;
-        we take ``features``.
+        Pooled feature tensor of shape ``(B, output_dims)``.
 
     Note:
         Casts input to ``.float()`` because the TCC encoder expects float inputs.
     """
-    _logits, features = backbone(x.float())
-    return features
+    features = backbone(x.float())
+    return features.mean(dim=-1)
