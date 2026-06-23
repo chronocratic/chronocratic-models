@@ -11,6 +11,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
 from chronocratic.models.recurrent.recurrentae.layers import (
     _build_decoder,
@@ -106,7 +107,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""
-        x = batch
+        x = extract_features_from_batch(batch)
         loss = self.loss_fn(self(x), x)
         self.log(
             "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
@@ -115,7 +116,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a validation batch."""
-        x = batch
+        x = extract_features_from_batch(batch)
         loss = self.loss_fn(self(x), x)
         self.log(
             "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
