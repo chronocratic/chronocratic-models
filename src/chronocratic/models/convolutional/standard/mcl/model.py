@@ -5,9 +5,9 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
-from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
+from chronocratic.models.utils import extract_features_from_batch
 
 
 class FCN(pl.LightningModule, BasicEncodingMixin):

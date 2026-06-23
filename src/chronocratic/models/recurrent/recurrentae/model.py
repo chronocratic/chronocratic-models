@@ -11,7 +11,6 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
-from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
 from chronocratic.models.recurrent.recurrentae.layers import (
     _build_decoder,
@@ -20,6 +19,7 @@ from chronocratic.models.recurrent.recurrentae.layers import (
     _prepare_dropout,
     _RNN_CLASSES,
 )
+from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
