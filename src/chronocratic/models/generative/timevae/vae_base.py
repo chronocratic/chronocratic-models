@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from chronocratic.models.utils import extract_features_from_batch
+
 
 class Sampling(nn.Module):
     """Reparameterization layer for VAE latent sampling."""
@@ -62,7 +64,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def _step(
         self, batch: torch.Tensor | tuple[torch.Tensor, ...] | list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        x = batch[0] if isinstance(batch, (tuple, list)) else batch
+        x = extract_features_from_batch(batch)
         z_mean, z_log_var, z = self._encoder(x)
         # Use sampled z during training, z_mean during validation for deterministic metrics.
         latent = z if self.training else z_mean

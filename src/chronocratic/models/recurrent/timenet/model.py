@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -104,7 +105,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""
-        x = batch
+        x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
@@ -113,7 +114,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation reconstruction loss."""
-        x = batch
+        x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
         self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)

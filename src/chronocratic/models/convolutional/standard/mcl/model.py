@@ -7,6 +7,7 @@ from torch import nn
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
+from chronocratic.models.utils import extract_features_from_batch
 
 
 class FCN(pl.LightningModule, BasicEncodingMixin):
@@ -68,7 +69,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         return output.unsqueeze(1)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
-        x = batch
+        x = extract_features_from_batch(batch)
 
         x_1 = x
         x_2 = x[torch.randperm(len(x))]
