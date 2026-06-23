@@ -121,8 +121,6 @@ class TestAllBackbonesSatisfyProtocol:
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=10,
-            num_classes=3,
         )
         assert isinstance(backbone, RepresentationBackbone)
 
@@ -158,8 +156,6 @@ class TestAllFactoriesProduceSupervisedModule:
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=10,
-            num_classes=3,
         )
         module = make_tstcc_supervised(backbone, num_outputs=5, task="classification")
         assert isinstance(module, SupervisedModule)
@@ -225,8 +221,6 @@ class TestEndToEndTraining:
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=10,
-            num_classes=3,
         )
         module = make_tstcc_supervised(
             backbone, num_outputs=3, task="classification", freeze_backbone=False
@@ -250,8 +244,6 @@ class TestEndToEndTraining:
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=10,
-            num_classes=3,
         )
         dataset = _DummyTSTCCDataset(size=20, seq_len=256, channels=2, num_classes=3)
         dataloader = DataLoader(dataset, batch_size=4)

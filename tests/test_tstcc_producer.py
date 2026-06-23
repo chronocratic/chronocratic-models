@@ -52,8 +52,6 @@ class TestTSTCCConstructor:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
             augmentation=producer,
         )
         assert model._augmentation is producer  # noqa: SLF001
@@ -64,8 +62,6 @@ class TestTSTCCConstructor:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
         )
         assert isinstance(model._augmentation, RolePairProducer)  # noqa: SLF001
 
@@ -79,8 +75,6 @@ class TestTSTCCTraining:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
         )
         data = torch.randn(4, 1, 100)
         labels = torch.zeros(4, dtype=torch.long)
@@ -99,8 +93,6 @@ class TestTSTCCTraining:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
         )
 
         losses = train_steps(
@@ -145,8 +137,6 @@ class TestDeterminism:
                 conv_kernel_size=5,
                 stride=1,
                 output_dims=16,
-                features_len=15,
-                num_classes=10,
             )
 
             losses = train_steps(

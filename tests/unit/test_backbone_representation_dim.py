@@ -82,32 +82,28 @@ class TestSeries2VecRepresentationDim:
 
 
 class TestTSTCCRepresentationDim:
-    """Verify TSTCC.representation_dim matches the encoder's logits input."""
+    """Verify TSTCC.representation_dim equals output_dims after global average pooling."""
 
-    def test_representation_dim_equals_logits_in_features(self) -> None:
-        """representation_dim returns the encoder's logits layer in_features."""
+    def test_representation_dim_equals_output_dims(self) -> None:
+        """representation_dim returns the encoder's output_dims."""
         model = TSTCC(
             input_dims=2,
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=4,
-            num_classes=3,
         )
-        # Per design spec: use logits.in_features as the source of truth
-        assert model.representation_dim == model._encoder.logits.in_features  # noqa: SLF001
+        # Per design spec: representation_dim == output_dims (pooling makes it length-independent)
+        assert model.representation_dim == model._encoder.output_dims  # noqa: SLF001
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = output_dims * features_len."""
+        """representation_dim = output_dims."""
         model = TSTCC(
             input_dims=2,
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=4,
-            num_classes=3,
         )
-        assert model.representation_dim == 16 * 4
+        assert model.representation_dim == 16
 
 
 class TestFactoriesWithRealBackbones:
@@ -148,8 +144,6 @@ class TestFactoriesWithRealBackbones:
             conv_kernel_size=8,
             stride=4,
             output_dims=16,
-            features_len=4,
-            num_classes=3,
         )
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False

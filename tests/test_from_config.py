@@ -69,8 +69,6 @@ class TestModelInstantiation:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=12,
-            num_classes=10,
         )
         model = TSTCC(**vars(config), augmentation=_default_tstcc_pair())
         assert isinstance(model, TSTCC)
@@ -107,8 +105,6 @@ class TestMixinInheritance:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=12,
-            num_classes=10,
         )
         assert isinstance(model, BasicEncodingMixin)
 
@@ -205,8 +201,6 @@ class TestAugmentationPassThrough:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
         )
         assert model._augmentation is not None
         data = torch.randn(4, 1, 100)
@@ -259,8 +253,6 @@ class TestBackwardCompatModelConstruction:
             conv_kernel_size=5,
             stride=1,
             output_dims=16,
-            features_len=15,
-            num_classes=10,
             augmentation=_default_tstcc_pair(),
         )
         assert model._augmentation is not None

@@ -286,17 +286,19 @@ class TestRepresentationFunctions:
         assert result.shape == (2, 16)
 
     def test_tstcc_representations(self) -> None:
-        """tstcc_representations calls backbone(x.float()), extracts features."""
+        """tstcc_representations calls backbone(x.float()), pools feature map."""
         backbone = MagicMock()
-        logits = torch.randn(2, 5)
-        features = torch.randn(2, 32)
-        backbone.return_value = (logits, features)
+        # Backbone now returns a 3D feature map (B, output_dims, L')
+        feature_map = torch.randn(2, 16, 10)
+        backbone.return_value = feature_map
         x = torch.randn(2, 10, 3)
         result = tstcc_representations(backbone, x)
         # Verify .float() was called
         call_arg = backbone.call_args[0][0]
         assert call_arg.dtype == torch.float32
-        torch.testing.assert_close(result, features)
+        # Result should be pooled to (B, output_dims)
+        assert result.shape == (2, 16)
+        torch.testing.assert_close(result, feature_map.mean(dim=-1))
 
 
 # ---------------------------------------------------------------------------
