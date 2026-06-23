@@ -25,9 +25,6 @@ class TSTCCModelParameters:
             encoder convolution blocks.
         encoder_inner_kernels: Tuple of kernel sizes for the inner
             convolution blocks (block 2 and block 3).
-        features_len: Length of the encoder feature map fed into the
-            logits head.
-        num_classes: Number of output classes for the encoder logits head.
         dropout_rate: Dropout probability applied inside the TCC encoder.
         temporal_contrast_hidden_dim: Hidden dimensionality of the temporal
             contrast module.
@@ -52,8 +49,6 @@ class TSTCCModelParameters:
     output_dims: int = 128
     encoder_channels: tuple[int, ...] = (32, 64)
     encoder_inner_kernels: tuple[int, ...] = (8, 8)
-    features_len: int
-    num_classes: int
     dropout_rate: float = 0.35
     temporal_contrast_hidden_dim: int = 100
     temporal_contrast_timesteps: int = 6

@@ -7,8 +7,8 @@ from torch import nn
 class TCCEncoder(nn.Module):
     """Three-block Conv1D encoder backbone for TS-TCC.
 
-    Returns ``(logits, features)`` where ``features`` is the pre-classification
-    representation used for contrastive learning.
+    Returns the convolutional feature map ``(B, output_dims, L')`` used for
+    contrastive learning and downstream representation extraction.
     """
 
     def __init__(
@@ -16,14 +16,13 @@ class TCCEncoder(nn.Module):
         input_dims: int,
         conv_kernel_size: int,
         stride: int,
-        features_len: int,
-        num_classes: int,
         output_dims: int = 128,
         dropout_rate: float = 0.35,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
     ) -> None:
         super().__init__()
+        self.output_dims = output_dims
 
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
@@ -65,20 +64,16 @@ class TCCEncoder(nn.Module):
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
         )
-        self.logits = nn.Linear(features_len * output_dims, num_classes)
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Encode a batch and return logits plus convolutional features.
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode a batch and return the convolutional feature map.
 
         Args:
             x: ``(batch, input_dims, seq_len)``
 
         Returns:
-            logits:   ``(batch, num_classes)``
             features: ``(batch, output_dims, reduced_seq_len)``
         """
         x = self.conv_block1(x)
         x = self.conv_block2(x)
-        x = self.conv_block3(x)
-        logits = self.logits(x.reshape(x.shape[0], -1))
-        return logits, x
+        return self.conv_block3(x)
