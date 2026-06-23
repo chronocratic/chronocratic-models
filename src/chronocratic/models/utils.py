@@ -205,7 +205,8 @@ def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
     Raises:
         ValueError: If features is not 3-dimensional.
     """
-    if features.ndim != 3:
+    # pool_feature_map is designed for (B, C, L) feature maps
+    if features.ndim != 3:  # noqa: PLR2004
         msg = f"pool_feature_map expects (B, C, L), got {features.ndim}D tensor"
         raise ValueError(msg)
     return features.mean(dim=-1)

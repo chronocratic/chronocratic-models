@@ -3,6 +3,9 @@ __all__ = ["TCCEncoder"]
 import torch
 from torch import nn
 
+# 3-block architecture requires exactly 2 channel/kernel values
+_EXPECTED_CHANNEL_COUNT = 2
+
 
 class TCCEncoder(nn.Module):
     """Three-block Conv1D encoder backbone for TS-TCC.
@@ -24,15 +27,15 @@ class TCCEncoder(nn.Module):
         super().__init__()
         self.output_dims = output_dims
 
-        if len(encoder_channels) != 2:
+        if len(encoder_channels) != _EXPECTED_CHANNEL_COUNT:
             msg = (
-                f"encoder_channels must have exactly 2 elements, "
+                f"encoder_channels must have exactly {_EXPECTED_CHANNEL_COUNT} elements, "
                 f"got {len(encoder_channels)}"
             )
             raise ValueError(msg)
-        if len(encoder_inner_kernels) != 2:
+        if len(encoder_inner_kernels) != _EXPECTED_CHANNEL_COUNT:
             msg = (
-                f"encoder_inner_kernels must have exactly 2 elements, "
+                f"encoder_inner_kernels must have exactly {_EXPECTED_CHANNEL_COUNT} elements, "
                 f"got {len(encoder_inner_kernels)}"
             )
             raise ValueError(msg)
