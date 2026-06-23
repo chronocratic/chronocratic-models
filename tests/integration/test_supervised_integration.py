@@ -213,6 +213,8 @@ class TestEndToEndTraining:
             enable_progress_bar=False,
         )
         trainer.fit(module, train_dataloaders=dataloader)
+        assert "train_loss" in trainer.callback_metrics
+        assert torch.isfinite(trainer.callback_metrics["train_loss"])
 
     def test_tstcc_trains_end_to_end(self) -> None:
         """TSTCC finetuner trains for 3 steps with finite loss."""
@@ -236,6 +238,8 @@ class TestEndToEndTraining:
             enable_progress_bar=False,
         )
         trainer.fit(module, train_dataloaders=dataloader)
+        assert "train_loss" in trainer.callback_metrics
+        assert torch.isfinite(trainer.callback_metrics["train_loss"])
 
     def test_tstcc_pretraining_still_works(self) -> None:
         """TSTCC pretraining (contrastive) still works after enum removal."""
@@ -256,6 +260,8 @@ class TestEndToEndTraining:
             enable_progress_bar=False,
         )
         trainer.fit(model, train_dataloaders=dataloader)
+        assert "train_loss" in trainer.callback_metrics
+        assert torch.isfinite(trainer.callback_metrics["train_loss"])
 
 
 class TestRegressionTask:
