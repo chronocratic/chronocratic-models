@@ -156,6 +156,9 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
+        if not torch.isfinite(loss):
+            msg = f"Loss is {loss.item()}, skipping optimization step"
+            raise RuntimeError(msg)
         self.manual_backward(loss)
         model_opt.step()
         tc_opt.step()
