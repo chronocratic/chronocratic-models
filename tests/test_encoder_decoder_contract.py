@@ -17,54 +17,87 @@ from torch import nn
 from chronocratic.models import AutoTCL, CoST, FCN, Series2Vec, TimeNet, TimeVAE, TS2Vec, TST, TSTCC
 from chronocratic.models.protocols import HasDecoder, HasEncoder
 
+# ---------------------------------------------------------------------------
+# Model construction specs (shared across parametrize calls)
+# ---------------------------------------------------------------------------
+
+ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
+    (FCN, {"input_dims": 1}, "FCN"),
+    (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
+    (
+        TSTCC,
+        {
+            "input_dims": 1,
+            "conv_kernel_size": 5,
+            "stride": 1,
+            "output_dims": 16,
+        },
+        "TSTCC",
+    ),
+    (TS2Vec, {"input_dims": 1}, "TS2Vec"),
+    (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
+    (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
+    (
+        Series2Vec,
+        {
+            "input_dims": 1,
+            "embedding_dims": 64,
+            "num_heads": 2,
+            "feedforward_dims": 128,
+            "representation_dims": 64,
+            "dropout_rate": 0.1,
+        },
+        "Series2Vec",
+    ),
+    (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
+    (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
+]
+
+ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
+    (FCN, {"input_dims": 1}, "FCN"),
+    (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
+    (
+        TSTCC,
+        {
+            "input_dims": 1,
+            "conv_kernel_size": 5,
+            "stride": 1,
+            "output_dims": 16,
+        },
+        "TSTCC",
+    ),
+    (TS2Vec, {"input_dims": 1}, "TS2Vec"),
+    (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
+    (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
+    (
+        Series2Vec,
+        {
+            "input_dims": 1,
+            "embedding_dims": 64,
+            "num_heads": 2,
+            "feedforward_dims": 128,
+            "representation_dims": 64,
+            "dropout_rate": 0.1,
+        },
+        "Series2Vec",
+    ),
+]
+
+DECODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
+    (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
+    (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
+]
+
 
 class TestHasEncoderConformance:
     """All 9 models must satisfy HasEncoder via isinstance."""
 
     @pytest.mark.parametrize(
-        ("model_cls", "kwargs"),
-        [
-            (FCN, {"input_dims": 1}),
-            (TST, {"input_dims": 1, "sequence_length": 100}),
-            (
-                TSTCC,
-                {
-                    "input_dims": 1,
-                    "conv_kernel_size": 5,
-                    "stride": 1,
-                    "output_dims": 16,
-                },
-            ),
-            (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
-            (
-                Series2Vec,
-                {
-                    "input_dims": 1,
-                    "embedding_dims": 64,
-                    "num_heads": 2,
-                    "feedforward_dims": 128,
-                    "representation_dims": 64,
-                    "dropout_rate": 0.1,
-                },
-            ),
-            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
-        ],
-        ids=[
-            "FCN",
-            "TST",
-            "TSTCC",
-            "TS2Vec",
-            "AutoTCL",
-            "CoST",
-            "Series2Vec",
-            "TimeVAE",
-            "TimeNet",
-        ],
+        ("model_cls", "kwargs", "model_id"),
+        ENCODER_MODEL_SPECS,
+        ids=[spec[2] for spec in ENCODER_MODEL_SPECS],
     )
-    def test_model_satisfies_has_encoder(self, model_cls: type, kwargs: dict) -> None:
+    def test_model_satisfies_has_encoder(self, model_cls: type, kwargs: dict, model_id: str) -> None:
         """Each model instance must satisfy the HasEncoder protocol."""
         model = model_cls(**kwargs)
         assert isinstance(model, HasEncoder), (
@@ -72,49 +105,11 @@ class TestHasEncoderConformance:
         )
 
     @pytest.mark.parametrize(
-        ("model_cls", "kwargs"),
-        [
-            (FCN, {"input_dims": 1}),
-            (TST, {"input_dims": 1, "sequence_length": 100}),
-            (
-                TSTCC,
-                {
-                    "input_dims": 1,
-                    "conv_kernel_size": 5,
-                    "stride": 1,
-                    "output_dims": 16,
-                },
-            ),
-            (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
-            (
-                Series2Vec,
-                {
-                    "input_dims": 1,
-                    "embedding_dims": 64,
-                    "num_heads": 2,
-                    "feedforward_dims": 128,
-                    "representation_dims": 64,
-                    "dropout_rate": 0.1,
-                },
-            ),
-            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
-        ],
-        ids=[
-            "FCN",
-            "TST",
-            "TSTCC",
-            "TS2Vec",
-            "AutoTCL",
-            "CoST",
-            "Series2Vec",
-            "TimeVAE",
-            "TimeNet",
-        ],
+        ("model_cls", "kwargs", "model_id"),
+        ENCODER_MODEL_SPECS,
+        ids=[spec[2] for spec in ENCODER_MODEL_SPECS],
     )
-    def test_encoder_returns_nn_module(self, model_cls: type, kwargs: dict) -> None:
+    def test_encoder_returns_nn_module(self, model_cls: type, kwargs: dict, model_id: str) -> None:
         """model.encoder must return an nn.Module instance."""
         model = model_cls(**kwargs)
         encoder = model.encoder
@@ -127,14 +122,11 @@ class TestHasDecoderConformance:
     """Only TimeVAE and TimeNet satisfy HasDecoder."""
 
     @pytest.mark.parametrize(
-        ("model_cls", "kwargs"),
-        [
-            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
-        ],
-        ids=["TimeVAE", "TimeNet"],
+        ("model_cls", "kwargs", "model_id"),
+        DECODER_MODEL_SPECS,
+        ids=[spec[2] for spec in DECODER_MODEL_SPECS],
     )
-    def test_model_satisfies_has_decoder(self, model_cls: type, kwargs: dict) -> None:
+    def test_model_satisfies_has_decoder(self, model_cls: type, kwargs: dict, model_id: str) -> None:
         """Decoder models must satisfy the HasDecoder protocol."""
         model = model_cls(**kwargs)
         assert isinstance(model, HasDecoder), (
@@ -142,14 +134,11 @@ class TestHasDecoderConformance:
         )
 
     @pytest.mark.parametrize(
-        ("model_cls", "kwargs"),
-        [
-            (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}),
-            (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}),
-        ],
-        ids=["TimeVAE", "TimeNet"],
+        ("model_cls", "kwargs", "model_id"),
+        DECODER_MODEL_SPECS,
+        ids=[spec[2] for spec in DECODER_MODEL_SPECS],
     )
-    def test_decoder_returns_nn_module(self, model_cls: type, kwargs: dict) -> None:
+    def test_decoder_returns_nn_module(self, model_cls: type, kwargs: dict, model_id: str) -> None:
         """model.decoder must return an nn.Module instance."""
         model = model_cls(**kwargs)
         decoder = model.decoder
@@ -162,37 +151,13 @@ class TestEncoderOnlyModelsNoDecoder:
     """Encoder-only models must NOT satisfy HasDecoder."""
 
     @pytest.mark.parametrize(
-        ("model_cls", "kwargs"),
-        [
-            (FCN, {"input_dims": 1}),
-            (TST, {"input_dims": 1, "sequence_length": 100}),
-            (
-                TSTCC,
-                {
-                    "input_dims": 1,
-                    "conv_kernel_size": 5,
-                    "stride": 1,
-                    "output_dims": 16,
-                },
-            ),
-            (TS2Vec, {"input_dims": 1}),
-            (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}),
-            (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}),
-            (
-                Series2Vec,
-                {
-                    "input_dims": 1,
-                    "embedding_dims": 64,
-                    "num_heads": 2,
-                    "feedforward_dims": 128,
-                    "representation_dims": 64,
-                    "dropout_rate": 0.1,
-                },
-            ),
-        ],
-        ids=["FCN", "TST", "TSTCC", "TS2Vec", "AutoTCL", "CoST", "Series2Vec"],
+        ("model_cls", "kwargs", "model_id"),
+        ENCODER_ONLY_MODEL_SPECS,
+        ids=[spec[2] for spec in ENCODER_ONLY_MODEL_SPECS],
     )
-    def test_encoder_only_model_not_has_decoder(self, model_cls: type, kwargs: dict) -> None:
+    def test_encoder_only_model_not_has_decoder(
+        self, model_cls: type, kwargs: dict, model_id: str
+    ) -> None:
         """Encoder-only models must NOT satisfy the HasDecoder protocol."""
         model = model_cls(**kwargs)
         assert not isinstance(model, HasDecoder), (
