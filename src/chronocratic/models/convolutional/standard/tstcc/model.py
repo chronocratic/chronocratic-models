@@ -218,4 +218,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             The encoder's ``output_dims``, matching the pooled feature shape
             ``(B, output_dims)``.
         """
+        assert self._encoder is not None, "encoder must be set before accessing representation_dim"
+        assert isinstance(self._encoder.output_dims, int), (
+            f"output_dims should be int, got {type(self._encoder.output_dims).__name__}"
+        )
         return self._encoder.output_dims
