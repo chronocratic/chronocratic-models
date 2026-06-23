@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from chronocratic.models.utils import pool_feature_map
+
 if TYPE_CHECKING:
     import torch
 
@@ -98,4 +100,4 @@ def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
         Casts input to ``.float()`` because the TCC encoder expects float inputs.
     """
     features = backbone(x.float())
-    return features.mean(dim=-1)
+    return pool_feature_map(features)

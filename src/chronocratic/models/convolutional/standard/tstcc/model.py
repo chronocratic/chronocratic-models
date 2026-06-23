@@ -11,7 +11,7 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, pool_feature_map
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -208,7 +208,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
         """Global-average-pool the encoder feature map over the time dimension."""
-        return output.mean(dim=-1)
+        return pool_feature_map(output)
 
     @property
     def representation_dim(self) -> int:
