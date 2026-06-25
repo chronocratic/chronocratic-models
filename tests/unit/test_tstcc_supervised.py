@@ -12,6 +12,7 @@ import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
+from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.supervised import make_tstcc_supervised
 
@@ -49,12 +50,12 @@ class TestTSTCCModelCleaned:
         seq_len = 256
         model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         # Verify forward returns a single tensor (feature map), not a tuple
-        test_x = torch.randn(1, 2, seq_len)
+        test_x = torch.randn(1, seq_len, 2)  # (B, T, C)
         features = model(test_x)
         assert isinstance(features, torch.Tensor)
         assert features.shape == (1, 16, features.shape[2])  # (B, output_dims, L')
         # Now run the contrastive loss
-        x = torch.randn(4, 2, seq_len)
+        x = torch.randn(4, seq_len, 2)  # (B, T, C)
         labels = torch.randint(0, 3, (4,))
         batch = (x, labels)
         loss = model._compute_loss(batch)  # noqa: SLF001
@@ -89,7 +90,7 @@ class TestTSTCCSupervisedModule:
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
-        x = torch.randn(4, 2, 256)
+        x = torch.randn(4, 256, 2)  # (B, T, C)
         targets = torch.randint(0, 5, (4,))
         batch = (x, targets)
         loss = module.training_step(batch, 0)
@@ -107,9 +108,23 @@ class TestTSTCCSupervisedModule:
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
-        batch = (torch.randn(4, 2, 256), torch.randint(0, 5, (4,)))
+        batch = (torch.randn(4, 256, 2), torch.randint(0, 5, (4,)))  # (B, T, C)
         loss = module.training_step(batch, 0)
         loss.backward()
         backbone_grads = [p.grad for p in backbone.parameters() if p.requires_grad]
         assert backbone_grads, "backbone should have trainable params when freeze_backbone=False"
         assert any(g is not None for g in backbone_grads)
+
+
+def test_tcc_encoder_accepts_btc_and_is_transpose_sensitive() -> None:
+    """TCCEncoder must accept (B, T, C) input with T != C and return (B, output_dims, L').
+
+    Regression test: without the transpose(1, 2) inside forward(), Conv1d
+    sees T channels instead of input_dims and raises RuntimeError.
+    """
+    encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=1, output_dims=128)
+    x = torch.randn(4, 50, 3)  # (B, T, C) with T=50 != C=3
+    out = encoder(x)
+    assert out.ndim == 3
+    assert out.shape[0] == 4
+    assert out.shape[1] == 128

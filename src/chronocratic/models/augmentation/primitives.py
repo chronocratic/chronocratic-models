@@ -105,7 +105,9 @@ class ScalingParameters:
             sample in the batch. If ``False``, the factor is shared
             across the batch.
         channel_dim: Dimension index of the channel axis. Defaults to
-            ``1`` for the ``(B, C, T)`` convention used by TS-TCC.
+            ``1``, which matches the ``(B, C, T)`` layout used by some
+            Conv1d-based models. Callers using ``(B, T, C)`` layout should
+            pass ``channel_dim=-1`` explicitly.
     """
 
     sigma: float = 0.1
@@ -161,8 +163,10 @@ class PermutationParameters:
         max_segments: Upper bound on the number of segments to split
             each sample into. The actual number is drawn uniformly from
             ``[1, max_segments)`` per sample.
-        time_dim: Dimension index of the time axis. Defaults to ``-1``
-            for the ``(B, C, T)`` convention used by TS-TCC.
+        time_dim: Dimension index of the time axis. Defaults to ``-1``,
+            which matches the ``(B, C, T)`` layout used by some Conv1d-based
+            models. Callers using ``(B, T, C)`` layout should pass
+            ``time_dim=1`` explicitly.
     """
 
     max_segments: int = 5

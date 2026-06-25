@@ -47,5 +47,13 @@ class FCNEncoder(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode a batch of time series into flat FCN representations."""
+        """Encode a batch of time series into flat FCN representations.
+
+        Args:
+            x: Input batch of shape ``(batch, seq_len, input_dims)``.
+
+        Returns:
+            Flat representations of shape ``(batch, output_dims)``.
+        """
+        x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
         return self.layers(x)
