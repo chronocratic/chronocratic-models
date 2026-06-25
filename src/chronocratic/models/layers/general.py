@@ -41,10 +41,12 @@ class BandedFourierLayer(nn.Module):
         self.end = self.start + self.num_frequencies
 
         self.weight = nn.Parameter(
-            torch.empty((self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat)  # device-ok: Parameter manages device
+            torch.empty((self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat)
+            # device-ok: Parameter manages device
         )
         self.bias = nn.Parameter(
-            torch.empty((self.num_frequencies, out_channels), dtype=torch.cfloat)  # device-ok: Parameter manages device
+            torch.empty((self.num_frequencies, out_channels), dtype=torch.cfloat)
+            # device-ok: Parameter manages device
         )
 
         self.reset_parameters()
@@ -141,7 +143,8 @@ class SeasonalLayer(nn.Module):
         )
 
     def _get_season_indexes_over_seq(self, num_seasons: int, len_per_season: int) -> torch.Tensor:
-        season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(  # device-ok: CPU indexing helper
+        # device-ok: CPU indexing helper
+        season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(
             (num_seasons, len_per_season), dtype=torch.int32
         )
         season_indexes = season_indexes.view(-1)

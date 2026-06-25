@@ -205,8 +205,10 @@ class Permutation:
         for i in range(batch_size):
             num_segments = int(torch.randint(1, max_segments, (1,)).item())  # device-ok: CPU int
             if num_segments > 1:
-                split_points = torch.randperm(seq_len - 2)[: num_segments - 1].sort().values  # device-ok: CPU indexing
-                splits = torch.tensor_split(torch.arange(seq_len), split_points)  # device-ok: CPU indexing
+                split_points = torch.randperm(seq_len - 2)[: num_segments - 1].sort().values
+                # device-ok: CPU indexing
+                splits = torch.tensor_split(torch.arange(seq_len), split_points)
+                # device-ok: CPU indexing
                 permutation = torch.randperm(len(splits))  # device-ok: CPU permutation
                 warp = torch.cat([splits[int(p)] for p in permutation]).to(x.device)
                 # x[i] removes the batch dim, so the time dim shifts by -1 only

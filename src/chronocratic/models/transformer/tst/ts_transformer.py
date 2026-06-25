@@ -61,10 +61,14 @@ class FixedPositionalEncoding(nn.Module):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_rate)
 
-        pe = torch.zeros(sequence_length, hidden_dims)  # positional encoding  # device-ok: __init__ buffer
-        position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)  # device-ok: __init__ buffer
+        # positional encoding
+        # device-ok: __init__ buffer
+        pe = torch.zeros(sequence_length, hidden_dims)
+        # device-ok: __init__ buffer
+        position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
-            torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims)  # device-ok: __init__ buffer
+            # device-ok: __init__ buffer
+            torch.arange(0, hidden_dims, 2).float() * (-math.log(10000.0) / hidden_dims)
         )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)

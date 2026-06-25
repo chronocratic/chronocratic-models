@@ -20,4 +20,5 @@ def extract_subsequences_per_row(
         torch.Tensor: A tensor containing the extracted subsequences.
     """  ## noqa: D205
     all_indices = indices[:, None] + np.arange(num_elements)
-    return array[torch.arange(all_indices.shape[0])[:, None], all_indices]  # device-ok: CPU indexing
+    # device-ok: CPU indexing
+    return array[torch.arange(all_indices.shape[0])[:, None], all_indices]

@@ -60,7 +60,8 @@ class TimeVAEEncoder(nn.Module):
 
     def _get_last_dense_dim(self, sequence_length: int, input_dims: int) -> int:
         with torch.no_grad():
-            x = torch.randn(1, input_dims, sequence_length)  # device-ok: CPU test input for shape probing
+            # device-ok: CPU test input for shape probing
+            x = torch.randn(1, input_dims, sequence_length)
             for conv in self.layers:
                 x = conv(x)
             return x.numel()
