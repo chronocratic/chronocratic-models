@@ -120,7 +120,7 @@ class BasicEncodingMixin(ABC):
                     TensorDataset(data),
                     batch_size=batch_size,
                     num_workers=num_workers,
-                    pin_memory=not gradient_enabled,
+                    pin_memory=True,
                 )
                 outputs = [
                     self._encode_batch(encoder, batch_x.to(self.device)).to(data.device)

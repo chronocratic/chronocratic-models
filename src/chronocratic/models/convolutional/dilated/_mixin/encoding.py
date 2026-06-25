@@ -240,7 +240,7 @@ class BaseEncodingMixin(ABC):
                 batch_size=batch_size,
                 num_workers=num_workers,
                 persistent_workers=num_workers > 0,
-                pin_memory=not gradient_enabled,
+                pin_memory=True,
             )
 
             with grad_ctx:
