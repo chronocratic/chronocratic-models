@@ -106,7 +106,7 @@ class TestFCNConfigContract:
     def test_encoder_shape(self) -> None:
         params = MCLModelParameters(input_dims=1)
         model = FCN(**vars(params))
-        x = torch.randn(4, 1, 100)
+        x = torch.randn(4, 100, 1)
         encoding = model.encoder(x)
         assert encoding.shape == (4, 320)
 
@@ -133,7 +133,7 @@ class TestFCNEncoder:
 
     def test_default_output_shape(self) -> None:
         encoder = FCNEncoder(input_dims=1, output_dims=320)
-        x = torch.randn(2, 1, 50)
+        x = torch.randn(2, 50, 1)  # (B, T, C) with T=50, C=1
         out = encoder(x)
         assert out.shape == (2, 320)
 
@@ -145,7 +145,7 @@ class TestFCNEncoder:
             encoder_kernels=(5, 3, 3),
             encoder_dilations=(1, 2, 4),
         )
-        x = torch.randn(2, 1, 50)
+        x = torch.randn(2, 50, 1)  # (B, T, C) with T=50, C=1
         out = encoder(x)
         assert out.shape == (2, 256)
 
@@ -159,7 +159,7 @@ class TestFCNEncoder:
         )
         # 2 conv blocks * 3 layers + AdaptiveAvgPool + Flatten + Linear = 9
         assert len(encoder.layers) == 9
-        x = torch.randn(2, 3, 100)
+        x = torch.randn(2, 100, 3)  # (B, T, C) with T=100, C=3
         out = encoder(x)
         assert out.shape == (2, 128)
 
