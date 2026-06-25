@@ -18,7 +18,7 @@ class Sampling(nn.Module):
         z_mean, z_log_var = inputs
         batch = z_mean.size(0)
         dim = z_mean.size(1)
-        epsilon = torch.randn(batch, dim).to(z_mean.device)
+        epsilon = torch.randn(batch, dim, device=z_mean.device)
         return z_mean + torch.exp(0.5 * z_log_var) * epsilon
 
 
