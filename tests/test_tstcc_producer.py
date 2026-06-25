@@ -26,7 +26,7 @@ class TestDefaultTSTCCPair:
 
     def test_produce_returns_view_pair(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
-        x = random_data(batch=2, seq_length=50, input_dims=3, layout="NCL")
+        x = random_data(batch=2, seq_length=50, input_dims=3, layout="NTC")
         result = producer.produce(x)
 
         assert isinstance(result, ViewPair)
@@ -37,7 +37,7 @@ class TestDefaultTSTCCPair:
     def test_satisfies_protocol(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
         assert hasattr(producer, "produce")
-        x = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
+        x = random_data(batch=4, seq_length=100, input_dims=1, layout="NTC")
         result = producer.produce(x)
         assert isinstance(result, ViewPair)
 
@@ -82,7 +82,7 @@ class TestTSTCCTraining:
             seq_length=100,
             input_dims=1,
             num_steps=1,
-            layout="NCL",
+            layout="NTC",
             with_labels=True,
         )
         finite_losses(losses, expected_min=1)
@@ -122,7 +122,7 @@ class TestDeterminism:
                 input_dims=1,
                 num_steps=1,
                 seed=12345,
-                layout="NCL",
+                layout="NTC",
             )
             losses_list.append(losses)
 

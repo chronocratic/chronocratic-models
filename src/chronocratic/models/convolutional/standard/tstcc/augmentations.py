@@ -4,8 +4,8 @@ Re-exports shared primitives from :mod:`augmentation/primitives` and provides
 the ``_default_tstcc_pair()`` builder function that assembles a
 :class:`RolePairProducer` producer with the original TS-TCC weak/strong defaults.
 
-TS-TCC operates on tensors of shape ``(batch, channels, time)``, so the
-defaults in this module use ``channel_dim=1`` and ``time_dim=-1``.
+TS-TCC operates on tensors of shape ``(batch, time, channels)``, so the
+defaults in this module use ``channel_dim=-1`` and ``time_dim=1``.
 """
 
 from __future__ import annotations
@@ -51,10 +51,10 @@ def _default_tstcc_pair() -> AugmentationProducer[ViewPair]:
         :meth:`~AugmentationProducer.produce` is called.
     """
     return RolePairProducer(
-        first=Scaling(ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=1)),
+        first=Scaling(ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=-1)),
         second=ComposeAugmentation(
             [
-                Permutation(PermutationParameters(max_segments=5, time_dim=-1)),
+                Permutation(PermutationParameters(max_segments=5, time_dim=1)),
                 Jitter(JitterParameters(sigma=0.8)),
             ]
         ),
