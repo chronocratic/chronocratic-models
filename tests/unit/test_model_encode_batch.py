@@ -39,10 +39,7 @@ class TestModelsUseEncodeBatch:
     @pytest.mark.parametrize("name,model", MODELS.items())
     def test_no_postprocess(self, name: str, model) -> None:
         """Old _postprocess hook is removed from model classes."""
-        assert not hasattr(type(model), "_postprocess") or (
-            # _postprocess may still exist as a legacy override; verify it's gone
-            type(model)._postprocess.__qualname__.split(".")[0] != name
-        )
+        assert "_postprocess" not in type(model).__dict__
 
     @pytest.mark.parametrize("name,model", MODELS.items())
     def test_no_get_encoder_module(self, name: str, model) -> None:
