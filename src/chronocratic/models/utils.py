@@ -193,7 +193,7 @@ def concat_last_step_features(
 def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
     """Global-average-pool an encoder feature map over the time dimension.
 
-    Shared by TSTCC (via ``_postprocess``) and the supervised adapter
+    Shared by TSTCC (via ``_encode_batch``) and the supervised adapter
     (``tstcc_representations``) to avoid duplicating the pooling logic.
 
     Args:
