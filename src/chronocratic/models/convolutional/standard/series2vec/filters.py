@@ -22,7 +22,6 @@ def _filter_on_device(
 __all__ = [
     "LOWPASS_PROBABILITY",
     "SAMPLING_RATE",
-    "_filter_on_device",
     "apply_fft",
     "filter_frequencies",
     "highpass_filter",
