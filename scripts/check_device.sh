@@ -17,7 +17,7 @@ fi
 # Match bare torch constructors (not *_like) without device= on the same line
 HITS=$(grep -rn \
   --include='*.py' \
-  -E 'torch\.(eye|zeros|ones|arange|full|tensor|randn|rand|empty|randsign|randint|randperm)\(' \
+  -E 'torch\.(eye|zeros|ones|arange|full|tensor|randn|rand|empty|randint|randperm)\(' \
   "$SRC_DIR" \
   2>/dev/null \
   | grep -v '_like(' \
