@@ -10,9 +10,7 @@ import inspect
 
 import pytest
 
-from chronocratic.models.convolutional.dilated._mixin.encoding import (
-    BaseEncodingMixin,
-)
+from chronocratic.models.convolutional.dilated._mixin.encoding import BaseEncodingMixin
 
 
 class TestDilatedMixinGradientEnabledSignature:

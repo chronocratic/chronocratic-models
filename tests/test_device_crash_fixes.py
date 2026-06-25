@@ -28,35 +28,27 @@ class TestFilterOnDeviceHelper:
 
     def test_filter_on_device_exists(self) -> None:
         """_filter_on_device helper must exist in filters module."""
-        from chronocratic.models.convolutional.standard.series2vec.filters import (
-            _filter_on_device,
-        )
+        from chronocratic.models.convolutional.standard.series2vec.filters import _filter_on_device
 
         assert callable(_filter_on_device)
 
     def test_lowpass_uses_filter_on_device(self) -> None:
         """lowpass_filter must delegate to _filter_on_device, not call lfilter directly."""
-        from chronocratic.models.convolutional.standard.series2vec.filters import (
-            lowpass_filter,
-        )
+        from chronocratic.models.convolutional.standard.series2vec.filters import lowpass_filter
 
         assert _source_contains(lowpass_filter, "_filter_on_device")
         assert not _source_contains(lowpass_filter, "lfilter(")
 
     def test_highpass_uses_filter_on_device(self) -> None:
         """highpass_filter must delegate to _filter_on_device, not call lfilter directly."""
-        from chronocratic.models.convolutional.standard.series2vec.filters import (
-            highpass_filter,
-        )
+        from chronocratic.models.convolutional.standard.series2vec.filters import highpass_filter
 
         assert _source_contains(highpass_filter, "_filter_on_device")
         assert not _source_contains(highpass_filter, "lfilter(")
 
     def test_filter_on_device_preserves_cpu_tensor_device(self) -> None:
         """_filter_on_device must return tensor on same device as input (CPU test)."""
-        from chronocratic.models.convolutional.standard.series2vec.filters import (
-            _filter_on_device,
-        )
+        from chronocratic.models.convolutional.standard.series2vec.filters import _filter_on_device
 
         data = torch.randn(128)
         result = _filter_on_device([1.0], [1.0], data)
@@ -64,9 +56,7 @@ class TestFilterOnDeviceHelper:
 
     def test_lowpass_preserves_cpu_device(self) -> None:
         """lowpass_filter output must stay on CPU when input is on CPU."""
-        from chronocratic.models.convolutional.standard.series2vec.filters import (
-            lowpass_filter,
-        )
+        from chronocratic.models.convolutional.standard.series2vec.filters import lowpass_filter
 
         data = torch.randn(128)
         result = lowpass_filter(data, cutoff_frequency=40.0, sampling_rate=128)
@@ -78,9 +68,7 @@ class TestAutoTCLLossDeviceAwareness:
 
     def test_local_info_nce_uses_device_kwarg(self) -> None:
         """local_info_nce_loss must use device= in torch.eye/zeros/arange."""
-        from chronocratic.models.convolutional.dilated.autotcl.losses import (
-            local_info_nce_loss,
-        )
+        from chronocratic.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
 
         src = _source_lines(local_info_nce_loss)
         # Must have at least one `device=z1.device` pattern
@@ -90,9 +78,7 @@ class TestAutoTCLLossDeviceAwareness:
 
     def test_local_info_nce_output_on_cpu_device(self) -> None:
         """local_info_nce_loss must return loss on same device as input (CPU test)."""
-        from chronocratic.models.convolutional.dilated.autotcl.losses import (
-            local_info_nce_loss,
-        )
+        from chronocratic.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
 
         z1 = torch.randn(2, 64, 8)
         z2 = torch.randn(2, 64, 8)
@@ -143,9 +129,7 @@ class TestContrastiveLossNoNumpyRoundTrip:
 
     def test_compute_contrastive_logits_accepts_tensor(self) -> None:
         """_compute_contrastive_loss_logits indexing_factor param must be torch.Tensor type."""
-        from chronocratic.models.losses.contrastive import (
-            _compute_contrastive_loss_logits,
-        )
+        from chronocratic.models.losses.contrastive import _compute_contrastive_loss_logits
 
         sig = inspect.signature(_compute_contrastive_loss_logits)
         indexing_factor_annotation = sig.parameters["indexing_factor"].annotation

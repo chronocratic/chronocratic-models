@@ -24,6 +24,7 @@ class TestFilterOnDeviceHelper:
     @pytest.fixture(scope="class")
     def filters_module(self) -> ModuleType:
         from chronocratic.models.convolutional.standard.series2vec import filters
+
         return filters  # noqa: R502
 
     def test_filter_on_device_exists(self, filters_module: ModuleType) -> None:
@@ -56,18 +57,21 @@ class TestAutotclLossesDeviceAware:
     def test_local_info_nce_loss_device_in_source(self) -> None:
         """local_info_nce_loss must use device=z1.device in torch constructors."""
         from chronocratic.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
+
         source = inspect.getsource(local_info_nce_loss)
         assert "device=z1.device" in source
 
     def test_l1_out_loss_device_in_source(self) -> None:
         """l1_out_loss must use device=z1.device in torch constructors."""
         from chronocratic.models.convolutional.dilated.autotcl.losses import l1_out_loss
+
         source = inspect.getsource(l1_out_loss)
         assert "device=z1.device" in source
 
     def test_local_info_nce_no_cpu_eye_pattern(self) -> None:
         """local_info_nce must not build eye on CPU then transfer."""
         from chronocratic.models.convolutional.dilated.autotcl.losses import local_info_nce_loss
+
         source = inspect.getsource(local_info_nce_loss)
         # The old pattern was torch.eye(k-1).to(z1.device)
         assert ".to(z1.device)" not in source or "device=z1.device" in source
@@ -79,6 +83,7 @@ class TestContrastiveNoNumpy:
     def test_indexing_factor_type_hint(self) -> None:
         """_compute_contrastive_loss_logits must type-hint indexing_factor as torch.Tensor."""
         from chronocratic.models.losses import contrastive
+
         sig = inspect.signature(contrastive._compute_contrastive_loss_logits)
         param = sig.parameters["indexing_factor"]
         assert param.annotation is torch.Tensor or "torch.Tensor" in str(param.annotation)
@@ -86,11 +91,13 @@ class TestContrastiveNoNumpy:
     def test_temporal_does_not_use_numpy(self) -> None:
         """temporal_contrastive_loss must not call .cpu().numpy() on indexing_factor."""
         from chronocratic.models.losses import contrastive
+
         source = inspect.getsource(contrastive.temporal_contrastive_loss)
         assert ".cpu().numpy()" not in source
 
     def test_instance_does_not_use_numpy(self) -> None:
         """instance_contrastive_loss must not call .cpu().numpy() on indexing_factor."""
         from chronocratic.models.losses import contrastive
+
         source = inspect.getsource(contrastive.instance_contrastive_loss)
         assert ".cpu().numpy()" not in source
