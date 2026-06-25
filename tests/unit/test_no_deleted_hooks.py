@@ -37,8 +37,8 @@ def test_no_deleted_hooks_in_model(model_file: pathlib.Path) -> None:
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
-            methods = {n.name for n in node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            methods = {
+                n.name for n in node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+            }
             found = methods & DELETED_HOOKS
-            assert not found, (
-                f"{node.name} in {model_file} still defines deleted hooks: {found}"
-            )
+            assert not found, f"{node.name} in {model_file} still defines deleted hooks: {found}"

@@ -9,7 +9,6 @@ from _get_encoder()) now follow the clean 2-hook contract:
 
 from __future__ import annotations
 
-import pytest
 import torch
 from torch import nn
 

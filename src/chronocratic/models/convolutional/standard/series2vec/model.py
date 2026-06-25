@@ -7,7 +7,6 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
-
 from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
 from chronocratic.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
