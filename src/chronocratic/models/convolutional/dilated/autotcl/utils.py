@@ -79,12 +79,12 @@ def calculate_mutual_information(
     """
     with torch.inference_mode():
         x = batch
-        device = x.device
 
         if max_train_length is not None and x.size(1) > max_train_length:
-            window_offset = int(torch.randint(0, x.size(1) - max_train_length + 1, (1,)).item())  # device-ok: CPU int
+            window_offset = int(
+                torch.randint(0, x.size(1) - max_train_length + 1, (1,), device=x.device).item()
+            )
             x = x[:, window_offset : window_offset + max_train_length]
-        x = x.to(device)
 
         view = augmentation_method.produce(x)
         augmented_x = view.view
