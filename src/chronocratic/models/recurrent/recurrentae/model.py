@@ -102,8 +102,8 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def _get_encoder(self) -> nn.Module:
         return self.encoder
 
-    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
-        return output[:, -1, :]
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+        return encoder(batch_x)[:, -1, :]
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""

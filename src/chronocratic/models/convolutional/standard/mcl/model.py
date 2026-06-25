@@ -64,9 +64,9 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         """Expose the FCN encoder (before the MixUp projection head)."""
         return self._encoder
 
-    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
         """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
-        return output.unsqueeze(1)
+        return encoder(batch_x).unsqueeze(1)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = extract_features_from_batch(batch)

@@ -98,9 +98,9 @@ def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
 
     Note:
         Casts input to ``.float()`` because the TCC encoder expects float inputs.
-        This duplicates the cast in ``TSTCC._prepare_inputs``, but serves a
+        This duplicates the cast in ``TSTCC._encode_batch``, but serves a
         different path: this runs during supervised fine-tuning while
-        ``_prepare_inputs`` runs during ``encode()`` inference. Both are
+        ``_encode_batch`` runs during ``encode()`` inference. Both are
         defensive since SupervisedModule does not know the backbone's dtype.
     """
     features = backbone(x.float())
