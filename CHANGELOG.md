@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a6 (2026-06-25)
+
+### Added
+
+- Conv1D encoder fix, mixin refactor, GPU/MPS hardening. ([#43](https://github.com/chronocratic/chronocratic-models/issues/43))
+
+
 ## v0.1.0a5 (2026-06-23)
 
 ### Changed
