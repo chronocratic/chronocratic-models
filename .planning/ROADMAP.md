@@ -237,7 +237,7 @@ Plans:
 
 **Depends on:** Phase 8
 
-**Plans:** 3/3 plans ready
+**Plans:** 4/4 plans complete
 
 **Workstreams (3 independent):**
 
@@ -254,9 +254,11 @@ Plans:
 
 Plans:
 
-- [ ] 09-01-PLAN.md — Conv1D encoder transpose fix + augmentation axes + convention doc (D-01)
-- [ ] 09-02-PLAN.md — Encoding mixin refactor (4-hook → 2-hook) + gradient_enabled (D-02, D-03)
-- [ ] 09-03-PLAN.md — GPU/MPS device hardening + lint guard + smoke tests (D-04)
+- [x] 09-04-PLAN.md
+
+- [x] 09-01-PLAN.md — Conv1D encoder transpose fix + augmentation axes + convention doc (D-01)
+- [x] 09-02-PLAN.md — Encoding mixin refactor (4-hook → 2-hook) + gradient_enabled (D-02, D-03)
+- [x] 09-03-PLAN.md — GPU/MPS device hardening + lint guard + smoke tests (D-04)
 
 ---
 
