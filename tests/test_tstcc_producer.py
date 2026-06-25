@@ -62,7 +62,7 @@ class TestTSTCCTraining:
 
     def test_compute_loss_uses_produce_first_second(self) -> None:
         model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
-        data = torch.randn(4, 1, 100)
+        data = torch.randn(4, 100, 1)  # (B, T, C)
         labels = torch.zeros(4, dtype=torch.long)
         batch = (data, labels)
 
