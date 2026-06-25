@@ -99,9 +99,9 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
         """Select the final timestep as the pooled representation."""
-        return output[:, -1, :]
+        return encoder(batch_x)[:, -1, :]
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""

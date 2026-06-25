@@ -199,9 +199,9 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _postprocess(self, output: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        """Return the latent mean ``z_mean`` from the ``(z_mean, z_log_var, z)`` tuple."""
-        return output[0]
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+        """Return the latent mean ``z_mean`` from the encoder output tuple."""
+        return encoder(batch_x)[0]
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
