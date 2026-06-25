@@ -73,7 +73,7 @@ class _DummySupervisedDataset(Dataset):
 
 
 class _DummyTSTCCDataset(Dataset):
-    """Synthetic TSTCC dataset: (X, targets) with (C, L) format."""
+    """Synthetic TSTCC dataset: (X, targets) with (L, C) format."""
 
     def __init__(
         self, size: int = 20, seq_len: int = 256, channels: int = 2, num_classes: int = 3
@@ -87,7 +87,7 @@ class _DummyTSTCCDataset(Dataset):
         return self.size
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        x = torch.randn(self.channels, self.seq_len)
+        x = torch.randn(self.seq_len, self.channels)
         targets = torch.tensor(idx % self.num_classes, dtype=torch.long)
         return x, targets
 
