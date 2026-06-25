@@ -163,6 +163,17 @@ class TestFCNEncoder:
         out = encoder(x)
         assert out.shape == (2, 128)
 
+    def test_fcn_encoder_accepts_btc_and_is_transpose_sensitive(self) -> None:
+        """FCNEncoder must accept (B, T, C) input with T != C and return (B, output_dims).
+
+        Regression test: without the transpose(1, 2) inside forward(), Conv1d
+        sees T channels instead of input_dims and raises RuntimeError.
+        """
+        encoder = FCNEncoder(input_dims=3, output_dims=320)
+        x = torch.randn(4, 50, 3)  # (B, T, C) with T=50 != C=3
+        out = encoder(x)
+        assert out.shape == (4, 320)
+
     def test_default_padding_matches_original(self) -> None:
         """Default encoder should produce identical padding to the original hardcoded version.
 

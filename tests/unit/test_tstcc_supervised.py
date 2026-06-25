@@ -12,6 +12,7 @@ import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
+from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.supervised import make_tstcc_supervised
 
@@ -113,3 +114,17 @@ class TestTSTCCSupervisedModule:
         backbone_grads = [p.grad for p in backbone.parameters() if p.requires_grad]
         assert backbone_grads, "backbone should have trainable params when freeze_backbone=False"
         assert any(g is not None for g in backbone_grads)
+
+
+def test_tcc_encoder_accepts_btc_and_is_transpose_sensitive() -> None:
+    """TCCEncoder must accept (B, T, C) input with T != C and return (B, output_dims, L').
+
+    Regression test: without the transpose(1, 2) inside forward(), Conv1d
+    sees T channels instead of input_dims and raises RuntimeError.
+    """
+    encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=1, output_dims=128)
+    x = torch.randn(4, 50, 3)  # (B, T, C) with T=50 != C=3
+    out = encoder(x)
+    assert out.ndim == 3
+    assert out.shape[0] == 4
+    assert out.shape[1] == 128
