@@ -240,7 +240,7 @@ class BaseEncodingMixin(ABC):
                 batch_size=batch_size,
                 num_workers=num_workers,
                 persistent_workers=num_workers > 0,
-                pin_memory=True,
+                pin_memory=data.device.type == "cpu",  # pin only CPU source; GPU-resident input can't be pinned
             )
 
             with grad_ctx:
