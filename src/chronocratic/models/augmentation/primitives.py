@@ -42,7 +42,7 @@ def _normalize_dim(data: torch.Tensor, dim: int) -> int:
 
 def _should_apply(p: float) -> bool:
     """Return ``True`` if the transform should be applied based on probability ``p``."""
-    return p >= 1.0 or torch.rand((1,)).item() < p
+    return p >= 1.0 or torch.rand((1,)).item() < p  # device-ok: CPU scalar, .item()
 
 
 # --------------------------------------------------------------------------- #
@@ -203,11 +203,11 @@ class Permutation:
 
         result = torch.empty_like(x)
         for i in range(batch_size):
-            num_segments = int(torch.randint(1, max_segments, (1,)).item())
+            num_segments = int(torch.randint(1, max_segments, (1,)).item())  # device-ok: CPU int
             if num_segments > 1:
-                split_points = torch.randperm(seq_len - 2)[: num_segments - 1].sort().values
-                splits = torch.tensor_split(torch.arange(seq_len), split_points)
-                permutation = torch.randperm(len(splits))
+                split_points = torch.randperm(seq_len - 2)[: num_segments - 1].sort().values  # device-ok: CPU indexing
+                splits = torch.tensor_split(torch.arange(seq_len), split_points)  # device-ok: CPU indexing
+                permutation = torch.randperm(len(splits))  # device-ok: CPU permutation
                 warp = torch.cat([splits[int(p)] for p in permutation]).to(x.device)
                 # x[i] removes the batch dim, so the time dim shifts by -1 only
                 # when t_dim > 0 (i.e., the normalized time_dim was after dim 0).

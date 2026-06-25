@@ -67,11 +67,11 @@ def local_info_nce_loss(
     crop_z1_pooling_T = crop_z1_pooling.transpose(1, 2)  # noqa: N806
     similarity_matrices = torch.bmm(crop_z1_pooling, crop_z1_pooling_T)
 
-    labels = torch.eye(k - 1, dtype=torch.float32)
-    labels = torch.cat([labels, torch.zeros(1, k - 1)], 0)
-    labels = torch.cat([torch.zeros(k, 1), labels], -1)
+    labels = torch.eye(k - 1, dtype=torch.float32, device=z1.device)
+    labels = torch.cat([labels, torch.zeros(1, k - 1, device=z1.device)], 0)
+    labels = torch.cat([torch.zeros(k, 1, device=z1.device), labels], -1)
 
-    pos_labels = labels.clone().to(z1.device)
+    pos_labels = labels.clone()
     pos_labels[k - 1, k - 2] = 1.0
 
     neg_labels = labels.T + labels + torch.eye(k, device=z1.device)
@@ -127,12 +127,12 @@ def l1_out_loss(
     features = torch.cat([z1, z2], dim=0).squeeze(1)
     features = F.normalize(features, dim=1)
 
-    labels = torch.cat([torch.arange(batch_size) for _ in range(2)], dim=0)
+    labels = torch.cat([torch.arange(batch_size, device=z1.device) for _ in range(2)], dim=0)
     labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
 
     similarity_matrix = torch.matmul(features, features.T)
 
-    mask = torch.eye(labels.shape[0], dtype=torch.bool)
+    mask = torch.eye(labels.shape[0], dtype=torch.bool, device=z1.device)
     labels = labels[~mask].view(labels.shape[0], -1)
     similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1)
 

@@ -1,9 +1,28 @@
+import numpy as np
 from scipy.signal import butter, lfilter
 import torch
+
+
+def _filter_on_device(
+    b: np.ndarray, a: np.ndarray, data: torch.Tensor
+) -> torch.Tensor:
+    """Run a SciPy IIR filter host-side, returning on ``data``'s device.
+
+    SciPy's ``lfilter`` only accepts host (numpy) arrays. On MPS tensors,
+    calling ``.numpy()`` without ``.cpu()`` first raises RuntimeError.
+    This helper explicitly round-trips through CPU/numpy then restores device.
+
+    ponytail: dtype=torch.float32 drops any imaginary part from complex FFT
+    input, which is intentional — the filter is applied to complex data but
+    the original Series2Vec pipeline discards phase information downstream.
+    """
+    filtered = lfilter(b, a, data.cpu().numpy())
+    return torch.as_tensor(filtered, dtype=torch.float32, device=data.device)
 
 __all__ = [
     "LOWPASS_PROBABILITY",
     "SAMPLING_RATE",
+    "_filter_on_device",
     "apply_fft",
     "filter_frequencies",
     "highpass_filter",
@@ -23,7 +42,7 @@ def filter_frequencies(
 ) -> torch.Tensor:
     """Randomly apply low-pass or high-pass filtering to FFT-transformed samples."""
     fft_results = torch.stack([apply_fft(sample) for sample in data])
-    if training and torch.rand(()) < LOWPASS_PROBABILITY:
+    if training and torch.rand(()) < LOWPASS_PROBABILITY:  # device-ok: CPU scalar probability
         return torch.stack(
             [
                 lowpass_filter(sample, lowpass_cutoff, sampling_rate=SAMPLING_RATE)
@@ -48,8 +67,7 @@ def lowpass_filter(data: torch.Tensor, cutoff_frequency: float, sampling_rate: i
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist
     b, a = butter(N=6, Wn=normal_cutoff, btype="low", analog=False)
-    filtered_data = lfilter(b, a, data)
-    return torch.tensor(filtered_data, dtype=torch.float32)
+    return _filter_on_device(b, a, data)
 
 
 def highpass_filter(
@@ -59,5 +77,4 @@ def highpass_filter(
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist
     b, a = butter(N=6, Wn=normal_cutoff, btype="high", analog=False)
-    filtered_data = lfilter(b, a, data)
-    return torch.tensor(filtered_data, dtype=torch.float32)
+    return _filter_on_device(b, a, data)
