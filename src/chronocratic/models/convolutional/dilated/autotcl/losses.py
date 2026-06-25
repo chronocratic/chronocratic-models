@@ -116,6 +116,9 @@ def l1_out_loss(
     torch.Tensor
         The computed L1out loss.
     """
+    if z1.shape[0] < _MIN_BATCH_SIZE:
+        return z1.new_tensor(0.0)
+
     if pooling == "max":
         z1 = F.max_pool1d(z1.transpose(1, 2).contiguous(), kernel_size=z1.size(1)).transpose(1, 2)
         z2 = F.max_pool1d(z2.transpose(1, 2).contiguous(), kernel_size=z2.size(1)).transpose(1, 2)
