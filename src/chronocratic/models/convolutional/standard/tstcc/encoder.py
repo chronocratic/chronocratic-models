@@ -85,7 +85,7 @@ class TCCEncoder(nn.Module):
         """Encode a batch and return the convolutional feature map.
 
         Args:
-            x: ``(batch, seq_len, input_dims)``
+            x: ``(batch, seq_len, input_dims)`` — input data in (B,T,C) layout
 
         Returns:
             features: ``(batch, output_dims, reduced_seq_len)``
