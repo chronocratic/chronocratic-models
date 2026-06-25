@@ -235,3 +235,39 @@ Before merging a model change, verify:
 - [ ] Default values are sourced from reference repos, not guessed.
 - [ ] Architecture constants are extracted to config, not hardcoded.
 - [ ] Added/updated tests cover the config splat contract.
+
+## Tensor Shape Convention
+
+All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches PyTorch's `DataLoader` output convention and the `transformers` ecosystem.
+
+### Encoder-Owns-the-Transpose Rule
+
+Conv1d-based encoders must transpose `(B, T, C)` to `(B, C, T)` as the **first line** of their `forward()` method. The model wrapper, training step, and loss functions should never transpose.
+
+**The encoder owns the transpose.**
+
+```python
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    """Encode (B, T, C) input into (B, output_dims) representation."""
+    x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
+    return self.layers(x)
+```
+
+Existing examples in the codebase:
+
+- `TimeVAEEncoder.forward()` — `transpose(1, 2)` at entry
+- `Series2VecNetwork._to_channels_first()` — layout conversion helper
+- Dilated encoders — `transpose(1, 2)` in `_common_forward()`
+- `FCNEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
+- `TCCEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
+
+### Augmentation Axes
+
+Augmentation primitives (Scaling, Permutation) operate on the raw `(B, T, C)` data before encoding. Configure axis parameters accordingly:
+
+- `ScalingParameters(channel_dim=-1)` — scales along the channel axis (dim=2 in 3-D)
+- `PermutationParameters(time_dim=1)` — permutes along the time axis
+
+### Testing
+
+Always use **asymmetric shapes** (`T != C`) in encoder tests to catch transpose regressions. For example, `torch.randn(4, 50, 3)` for `(B, T, C)` with `T=50` and `C=3` will crash if the encoder drops its transpose, because Conv1d would see 50 channels instead of 3.
