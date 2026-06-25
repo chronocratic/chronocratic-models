@@ -111,13 +111,13 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         """Sample from the standard normal prior and decode the samples."""
         device = next(self.parameters()).device
         with torch.inference_mode():
-            z = torch.randn(num_samples, self.latent_dim).to(device)
+            z = torch.randn(num_samples, self.latent_dim, device=device)
             samples = self._decoder(z)
         return samples.cpu().detach().numpy()
 
     def get_prior_samples_given_z(self, z: np.ndarray) -> np.ndarray:
         """Decode the provided latent vectors."""
-        z_t = torch.FloatTensor(z).to(next(self.parameters()).device)
+        z_t = torch.as_tensor(z, dtype=torch.float, device=next(self.parameters()).device)
         samples = self._decoder(z_t)
         return samples.cpu().detach().numpy()
 
