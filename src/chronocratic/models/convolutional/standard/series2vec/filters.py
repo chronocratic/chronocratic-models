@@ -42,7 +42,7 @@ def filter_frequencies(
 ) -> torch.Tensor:
     """Randomly apply low-pass or high-pass filtering to FFT-transformed samples."""
     fft_results = torch.stack([apply_fft(sample) for sample in data])
-    if training and torch.rand(()) < LOWPASS_PROBABILITY:
+    if training and torch.rand(()) < LOWPASS_PROBABILITY:  # device-ok: CPU scalar probability
         return torch.stack(
             [
                 lowpass_filter(sample, lowpass_cutoff, sampling_rate=SAMPLING_RATE)

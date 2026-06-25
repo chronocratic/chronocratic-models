@@ -41,10 +41,10 @@ class BandedFourierLayer(nn.Module):
         self.end = self.start + self.num_frequencies
 
         self.weight = nn.Parameter(
-            torch.empty((self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat)
+            torch.empty((self.num_frequencies, in_channels, out_channels), dtype=torch.cfloat)  # device-ok: Parameter manages device
         )
         self.bias = nn.Parameter(
-            torch.empty((self.num_frequencies, out_channels), dtype=torch.cfloat)
+            torch.empty((self.num_frequencies, out_channels), dtype=torch.cfloat)  # device-ok: Parameter manages device
         )
 
         self.reset_parameters()
@@ -60,7 +60,7 @@ class BandedFourierLayer(nn.Module):
         """
         batch_size, time_steps, _ = input_tensor.shape
         input_fft = fft.rfft(input_tensor, dim=1)
-        output_fft = torch.zeros(
+        output_fft = torch.zeros(  # device-ok: device= in multi-line call
             batch_size,
             time_steps // 2 + 1,
             self.out_channels,
@@ -141,7 +141,7 @@ class SeasonalLayer(nn.Module):
         )
 
     def _get_season_indexes_over_seq(self, num_seasons: int, len_per_season: int) -> torch.Tensor:
-        season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(
+        season_indexes = torch.arange(num_seasons).unsqueeze(1) + torch.zeros(  # device-ok: CPU indexing helper
             (num_seasons, len_per_season), dtype=torch.int32
         )
         season_indexes = season_indexes.view(-1)
@@ -153,7 +153,7 @@ class SeasonalLayer(nn.Module):
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Return additive seasonal values for each latent vector."""
         batch_size = z.shape[0]
-        ones_tensor = torch.ones(
+        ones_tensor = torch.ones(  # device-ok: device= in multi-line call
             (batch_size, self.input_dims, self.sequence_length), dtype=torch.int32, device=z.device
         )
 

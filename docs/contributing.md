@@ -271,3 +271,64 @@ Augmentation primitives (Scaling, Permutation) operate on the raw `(B, T, C)` da
 ### Testing
 
 Always use **asymmetric shapes** (`T != C`) in encoder tests to catch transpose regressions. For example, `torch.randn(4, 50, 3)` for `(B, T, C)` with `T=50` and `C=3` will crash if the encoder drops its transpose, because Conv1d would see 50 channels instead of 3.
+
+## Device Compatibility (CPU / CUDA / MPS)
+
+Code in this library must work correctly on all PyTorch backends. Follow these five rules to ensure cross-device compatibility.
+
+### 1. Create on input's device, don't transfer after
+
+Build auxiliary tensors on the same device as the input, instead of creating on CPU and then calling `.to()`.
+
+**Do:**
+```python
+labels = torch.eye(k - 1, dtype=torch.float32, device=z1.device)
+mask = torch.zeros(batch_size, seq_len, device=x.device)
+```
+
+**Don't:**
+```python
+labels = torch.eye(k - 1, dtype=torch.float32).to(z1.device)  # CPU allocation then transfer
+```
+
+### 2. Loss functions inherit device from first tensor argument
+
+Every loss function must derive its working device from its first tensor argument. Tensors created inside `forward()` or loss computation must use `device=input.device`.
+
+**Gold standard pattern:** `NTXentLoss._correlated_mask()` in `tstcc/losses.py`:
+```python
+mask = ~torch.eye(n, dtype=torch.bool, device=device)
+idx = torch.arange(batch_size, device=device)
+```
+
+### 3. Host-side libraries need explicit round-trip
+
+Libraries like SciPy only accept host (numpy) arrays. On MPS tensors, calling `.numpy()` without `.cpu()` first raises `RuntimeError`. Explicitly round-trip through CPU.
+
+```python
+from scipy.signal import lfilter
+import numpy as np
+
+def _filter_on_device(b: np.ndarray, a: np.ndarray, data: torch.Tensor) -> torch.Tensor:
+    filtered = lfilter(b, a, data.cpu().numpy())
+    return torch.as_tensor(filtered, dtype=torch.float32, device=data.device)
+```
+
+### 4. CUDA-only kernels fall back to CPU on MPS — that is acceptable
+
+If a kernel has no MPS equivalent (e.g., SoftDTW's CUDA kernel), falling back to CPU when `x.is_cuda` is False is the correct behavior. Document the fallback with a comment to prevent future "fixes" that duplicate the logic.
+
+**See:** `Series2Vec._build_soft_dtw()` — MPS tensors have `is_cuda=False`, so they correctly use the CPU path.
+
+### 5. pin_memory=True only when no gradients flow
+
+`pin_memory=True` in DataLoader stages a CPU buffer for non-blocking H2D copies. When gradients are enabled, pinning can warn or error because tensors require grad and pinning allocates pagelocked memory.
+
+**Do:**
+```python
+loader = DataLoader(dataset, pin_memory=not gradient_enabled)
+```
+
+### Lint Guard
+
+Run `bash scripts/check_device.sh` to detect bare tensor constructors (`torch.eye`, `torch.zeros`, `torch.ones`, `torch.arange`, etc.) without `device=` in model source files. Legitimate exceptions are annotated with `# device-ok`.

@@ -83,7 +83,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
     def _jitter(self, x: torch.Tensor) -> torch.Tensor:
         """Add Gaussian noise with std ``sigma`` with probability ``p``."""
-        if torch.rand(1).item() > self._p:
+        if torch.rand(1).item() > self._p:  # device-ok: CPU scalar probability
             return x
         return x + (torch.randn(x.shape, device=x.device) * self._sigma)
 
@@ -92,7 +92,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
         Expects input of shape ``(batch, time, channels)``.
         """
-        if torch.rand(1).item() > self._p:
+        if torch.rand(1).item() > self._p:  # device-ok: CPU scalar probability
             return x
         channels = x.size(-1)
         return x * (torch.randn(channels, device=x.device) * self._sigma + 1)
@@ -102,7 +102,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
         Expects input of shape ``(batch, time, channels)``.
         """
-        if torch.rand(1).item() > self._p:
+        if torch.rand(1).item() > self._p:  # device-ok: CPU scalar probability
             return x
         channels = x.size(-1)
         return x + (torch.randn(channels, device=x.device) * self._sigma)

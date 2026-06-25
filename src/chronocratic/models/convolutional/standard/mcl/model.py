@@ -72,7 +72,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
 
         x_1 = x
-        x_2 = x[torch.randperm(len(x))]
+        x_2 = x[torch.randperm(len(x))]  # device-ok: CPU permutation index
 
         concentration = torch.tensor(self._alpha, device=x.device)
         lam = torch.distributions.Beta(concentration, concentration).sample()

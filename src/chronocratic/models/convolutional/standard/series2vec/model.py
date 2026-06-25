@@ -104,6 +104,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         return output.unsqueeze(1)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
+        # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)
+        # this correctly falls back to the CPU path. Do not add an MPS branch.
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
 
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
