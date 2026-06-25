@@ -257,10 +257,12 @@ class TestDropoutLayers:
         assert isinstance(m, RecurrentAutoEncoder)
 
 
-class TestPostprocess:
-    def test_postprocess_returns_last_timestep(self) -> None:
+class TestEncodeBatch:
+    def test_encode_batch_returns_last_timestep(self) -> None:
         model = RecurrentAutoEncoder(input_dims=3, layers=(8,))
-        fake_output = torch.randn(2, 10, 8)
-        result = model._postprocess(fake_output)
+        encoder = model._encoder
+        batch_x = torch.randn(2, 10, 3)
+        result = model._encode_batch(encoder, batch_x)
+        encoded = encoder(batch_x)
         assert result.shape == (2, 8)
-        assert torch.equal(result, fake_output[:, -1, :])
+        assert torch.equal(result, encoded[:, -1, :])

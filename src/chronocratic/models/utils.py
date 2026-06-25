@@ -193,7 +193,7 @@ def concat_last_step_features(
 def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
     """Global-average-pool an encoder feature map over the time dimension.
 
-    Shared by TSTCC (via ``_postprocess``) and the supervised adapter
+    Shared by TSTCC (via ``_encode_batch``) and the supervised adapter
     (``tstcc_representations``) to avoid duplicating the pooling logic.
 
     Args:
@@ -230,12 +230,14 @@ def pad_tensor_with_nan(
     if left_pad > 0:
         left_padding_shape = list(tensor.shape)
         left_padding_shape[axis] = left_pad
+        # device-ok: CPU padding, concatenated with input tensor
         left_padding = torch.full(left_padding_shape, np.nan)
         tensor = torch.cat((left_padding, tensor), dim=axis)
 
     if right_pad > 0:
         right_padding_shape = list(tensor.shape)
         right_padding_shape[axis] = right_pad
+        # device-ok: CPU padding, concatenated with input tensor
         right_padding = torch.full(right_padding_shape, np.nan)
         tensor = torch.cat((tensor, right_padding), dim=axis)
 

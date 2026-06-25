@@ -200,20 +200,22 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Representation extraction (via BasicEncodingMixin.encode)
     # ------------------------------------------------------------------
 
-    def _get_encoder(self) -> Callable[..., torch.Tensor]:
-        """Expose representation extraction to ``BasicEncodingMixin.encode``."""
-        return self.get_representations
-
-    def _get_encoder_module(self) -> nn.Module:
-        """Underlying module for state management — ``get_representations`` is a bound method."""
+    def _get_encoder(self) -> nn.Module:
+        """Return the transformer encoder module for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Synthesize all-true padding masks; ``encode()`` carries no mask info."""
-        padding_masks = torch.ones(
-            batch_x.shape[0], batch_x.shape[1], dtype=torch.bool, device=self.device
-        )
-        return (batch_x, padding_masks)
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+        """Build padding mask and call ``encoder.encode_representations``.
+
+        Args:
+            encoder: The TSTransformerEncoder module.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+
+        Returns:
+            Representations of shape ``(B, seq_len, hidden_dims)``.
+        """
+        padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
+        return encoder.encode_representations(batch_x, padding_masks)
 
     @property
     def encoder(self) -> nn.Module:

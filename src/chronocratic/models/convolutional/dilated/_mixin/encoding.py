@@ -1,6 +1,7 @@
 __all__ = ["BaseEncodingMixin", "DecompositionEncodingMixin", "PoolingEncodingMixin"]
 
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 import logging
 from typing import override, TYPE_CHECKING
 
@@ -191,6 +192,7 @@ class BaseEncodingMixin(ABC):
         causal: bool = False,
         sliding_length: int | None = None,
         sliding_padding: int = 0,
+        gradient_enabled: bool = False,
     ) -> torch.Tensor:
         """Compute representations using the model.
 
@@ -206,6 +208,9 @@ class BaseEncodingMixin(ABC):
             sliding_length: Sliding window length. If set, sliding inference
                 is applied.
             sliding_padding: Contextual data length for each sliding window.
+            gradient_enabled: When True, keep the autograd graph alive by
+                using ``nullcontext()`` instead of ``inference_mode()``.
+                The encoder remains in ``eval()`` regardless. Default False.
 
         Returns:
             The representations for data.
@@ -220,6 +225,7 @@ class BaseEncodingMixin(ABC):
         num_samples, time_series_length, _ = data.shape  # noqa: RUF059
 
         original_training_state = encoder.training
+        grad_ctx = nullcontext() if gradient_enabled else torch.inference_mode()
         try:
             encoder.eval()
 
@@ -234,10 +240,11 @@ class BaseEncodingMixin(ABC):
                 batch_size=batch_size,
                 num_workers=num_workers,
                 persistent_workers=num_workers > 0,
-                pin_memory=True,
+                # pin only CPU source; GPU-resident input can't be pinned
+                pin_memory=data.device.type == "cpu",
             )
 
-            with torch.inference_mode():
+            with grad_ctx:
                 all_outputs: list[torch.Tensor] = []
                 for batch in tqdm.tqdm(
                     loader, desc="Encoding data", unit="batch", leave=True, total=len(loader)

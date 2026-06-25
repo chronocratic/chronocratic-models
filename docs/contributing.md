@@ -235,3 +235,100 @@ Before merging a model change, verify:
 - [ ] Default values are sourced from reference repos, not guessed.
 - [ ] Architecture constants are extracted to config, not hardcoded.
 - [ ] Added/updated tests cover the config splat contract.
+
+## Tensor Shape Convention
+
+All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches PyTorch's `DataLoader` output convention and the `transformers` ecosystem.
+
+### Encoder-Owns-the-Transpose Rule
+
+Conv1d-based encoders must transpose `(B, T, C)` to `(B, C, T)` as the **first line** of their `forward()` method. The model wrapper, training step, and loss functions should never transpose.
+
+**The encoder owns the transpose.**
+
+```python
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    """Encode (B, T, C) input into (B, output_dims) representation."""
+    x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
+    return self.layers(x)
+```
+
+Existing examples in the codebase:
+
+- `TimeVAEEncoder.forward()` — `transpose(1, 2)` at entry
+- `Series2VecNetwork._to_channels_first()` — layout conversion helper
+- Dilated encoders — `transpose(1, 2)` in `_common_forward()`
+- `FCNEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
+- `TCCEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
+
+### Augmentation Axes
+
+Augmentation primitives (Scaling, Permutation) operate on the raw `(B, T, C)` data before encoding. Configure axis parameters accordingly:
+
+- `ScalingParameters(channel_dim=-1)` — scales along the channel axis (dim=2 in 3-D)
+- `PermutationParameters(time_dim=1)` — permutes along the time axis
+
+### Testing
+
+Always use **asymmetric shapes** (`T != C`) in encoder tests to catch transpose regressions. For example, `torch.randn(4, 50, 3)` for `(B, T, C)` with `T=50` and `C=3` will crash if the encoder drops its transpose, because Conv1d would see 50 channels instead of 3.
+
+## Device Compatibility (CPU / CUDA / MPS)
+
+Code in this library must work correctly on all PyTorch backends. Follow these five rules to ensure cross-device compatibility.
+
+### 1. Create on input's device, don't transfer after
+
+Build auxiliary tensors on the same device as the input, instead of creating on CPU and then calling `.to()`.
+
+**Do:**
+```python
+labels = torch.eye(k - 1, dtype=torch.float32, device=z1.device)
+mask = torch.zeros(batch_size, seq_len, device=x.device)
+```
+
+**Don't:**
+```python
+labels = torch.eye(k - 1, dtype=torch.float32).to(z1.device)  # CPU allocation then transfer
+```
+
+### 2. Loss functions inherit device from first tensor argument
+
+Every loss function must derive its working device from its first tensor argument. Tensors created inside `forward()` or loss computation must use `device=input.device`.
+
+**Gold standard pattern:** `NTXentLoss._correlated_mask()` in `tstcc/losses.py`:
+```python
+mask = ~torch.eye(n, dtype=torch.bool, device=device)
+idx = torch.arange(batch_size, device=device)
+```
+
+### 3. Host-side libraries need explicit round-trip
+
+Libraries like SciPy only accept host (numpy) arrays. On MPS tensors, calling `.numpy()` without `.cpu()` first raises `RuntimeError`. Explicitly round-trip through CPU.
+
+```python
+from scipy.signal import lfilter
+import numpy as np
+
+def _filter_on_device(b: np.ndarray, a: np.ndarray, data: torch.Tensor) -> torch.Tensor:
+    filtered = lfilter(b, a, data.cpu().numpy())
+    return torch.as_tensor(filtered, dtype=torch.float32, device=data.device)
+```
+
+### 4. CUDA-only kernels fall back to CPU on MPS — that is acceptable
+
+If a kernel has no MPS equivalent (e.g., SoftDTW's CUDA kernel), falling back to CPU when `x.is_cuda` is False is the correct behavior. Document the fallback with a comment to prevent future "fixes" that duplicate the logic.
+
+**See:** `Series2Vec._build_soft_dtw()` — MPS tensors have `is_cuda=False`, so they correctly use the CPU path.
+
+### 5. pin_memory=True only when no gradients flow
+
+`pin_memory=True` in DataLoader stages a CPU buffer for non-blocking H2D copies. When gradients are enabled, pinning can warn or error because tensors require grad and pinning allocates pagelocked memory.
+
+**Do:**
+```python
+loader = DataLoader(dataset, pin_memory=not gradient_enabled)
+```
+
+### Lint Guard
+
+Run `bash scripts/check_device.sh` to detect bare tensor constructors (`torch.eye`, `torch.zeros`, `torch.ones`, `torch.arange`, etc.) without `device=` in model source files. Legitimate exceptions are annotated with `# device-ok`.

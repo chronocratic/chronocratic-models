@@ -2,17 +2,11 @@ from __future__ import annotations
 
 __all__ = ["Series2Vec"]
 
-from typing import TYPE_CHECKING
-
 import lightning.pytorch as pl
 import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
 from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
 from chronocratic.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
@@ -88,22 +82,25 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Return the Series2Vec network for inspection and checkpointing."""
         return self.network
 
-    def _get_encoder(self) -> Callable[..., torch.Tensor]:
-        """Expose ``Series2VecNetwork.encode`` to ``BasicEncodingMixin.encode``.
-
-        It concatenates the temporal and frequency-domain representations.
-        """
-        return self.network.encode
-
-    def _get_encoder_module(self) -> nn.Module:
-        """Underlying module for state management — ``network.encode`` is a bound method."""
+    def _get_encoder(self) -> nn.Module:
+        """Return the Series2Vec network for ``BasicEncodingMixin.encode``."""
         return self.network
 
-    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
-        """Add a trailing singleton dim so the shape is ``(batch, 1, 2 * representation_dims)``."""
-        return output.unsqueeze(1)
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+        """Call ``encoder.encode(batch_x).unsqueeze(1)`` for representation extraction.
+
+        Args:
+            encoder: The Series2VecNetwork module.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+
+        Returns:
+            Representations of shape ``(B, 1, 2 * representation_dims)``.
+        """
+        return encoder.encode(batch_x).unsqueeze(1)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
+        # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)
+        # this correctly falls back to the CPU path. Do not add an MPS branch.
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
 
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

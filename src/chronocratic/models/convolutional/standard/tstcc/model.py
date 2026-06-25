@@ -199,19 +199,14 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Return the TCC encoder for inspection and checkpointing."""
         return self._encoder
 
-    def _prepare_inputs(self, batch_x: torch.Tensor) -> tuple[torch.Tensor]:
-        """Cast to float — the TCC encoder expects float inputs.
+    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+        """Cast to float and global-average-pool the encoder feature map.
 
-        Returns a positional tuple because BasicEncodingMixin.encode()
-        unpacks via ``encoder_module(*args)``. This is a framework-level
-        contract that intentionally uses positional unpacking rather than
-        keyword arguments.
+        The TCC encoder expects float inputs, so we cast batch_x to float
+        before encoding. The feature map ``(B, output_dims, L')`` is then
+        pooled to ``(B, output_dims)``.
         """
-        return (batch_x.float(),)
-
-    def _postprocess(self, output: torch.Tensor) -> torch.Tensor:
-        """Global-average-pool the encoder feature map over the time dimension."""
-        return pool_feature_map(output)
+        return pool_feature_map(encoder(batch_x.float()))
 
     @property
     def representation_dim(self) -> int:

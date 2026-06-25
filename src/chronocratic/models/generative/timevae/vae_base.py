@@ -18,7 +18,7 @@ class Sampling(nn.Module):
         z_mean, z_log_var = inputs
         batch = z_mean.size(0)
         dim = z_mean.size(1)
-        epsilon = torch.randn(batch, dim).to(z_mean.device)
+        epsilon = torch.randn(batch, dim, device=z_mean.device)
         return z_mean + torch.exp(0.5 * z_log_var) * epsilon
 
 
@@ -111,13 +111,13 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         """Sample from the standard normal prior and decode the samples."""
         device = next(self.parameters()).device
         with torch.inference_mode():
-            z = torch.randn(num_samples, self.latent_dim).to(device)
+            z = torch.randn(num_samples, self.latent_dim, device=device)
             samples = self._decoder(z)
         return samples.cpu().detach().numpy()
 
     def get_prior_samples_given_z(self, z: np.ndarray) -> np.ndarray:
         """Decode the provided latent vectors."""
-        z_t = torch.FloatTensor(z).to(next(self.parameters()).device)
+        z_t = torch.as_tensor(z, dtype=torch.float, device=next(self.parameters()).device)
         samples = self._decoder(z_t)
         return samples.cpu().detach().numpy()
 
