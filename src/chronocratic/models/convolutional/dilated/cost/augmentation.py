@@ -32,7 +32,7 @@ class CosTRandomFunctionAugmentationParameters:
             (default ``0.5``).
     """
 
-    sigma: float = 0.1
+    sigma: float = 0.5
     p: float = 0.5
 
 
@@ -58,7 +58,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
                 ``CosTRandomFunctionAugmentationParameters`` dataclass or a
                 dict with ``sigma`` (required) and ``p`` (optional, default
                 ``0.5``) keys. When ``None``, uses dataclass defaults
-                (sigma=0.1, p=0.5).
+                (sigma=0.5, p=0.5).
             sigma: Convenience keyword argument to set sigma directly
                 when not using the ``params`` argument.
 

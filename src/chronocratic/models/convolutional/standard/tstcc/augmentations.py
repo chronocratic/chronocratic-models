@@ -54,7 +54,7 @@ def _default_tstcc_pair() -> AugmentationProducer[ViewPair]:
         first=Scaling(ScalingParameters(sigma=1.1, mean=2.0, per_sample=True, channel_dim=-1)),
         second=ComposeAugmentation(
             [
-                Permutation(PermutationParameters(max_segments=5, time_dim=1)),
+                Permutation(PermutationParameters(max_segments=8, time_dim=1)),
                 Jitter(JitterParameters(sigma=0.8)),
             ]
         ),

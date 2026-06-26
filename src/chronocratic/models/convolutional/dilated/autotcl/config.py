@@ -37,7 +37,7 @@ class AutoTCLModelParameters:
     """
 
     input_dims: int
-    kernel_sizes: tuple[int, ...] = (3, 5, 7)
+    kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     hidden_dims: int = 64
     output_dims: int = 320
     depth: int = 10

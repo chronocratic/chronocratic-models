@@ -23,12 +23,13 @@ class TestTimeNetConfigRename:
         assert config.hidden_dims == 64
 
     def test_config_defaults(self) -> None:
-        """input_dims defaults to 1, dropout_rate defaults to 0.1."""
-        config = TimeNetModelParameters(hidden_dims=64, depth=1)
+        """Defaults match source repo: hidden_dims=64, depth=3, input_dims=1, dropout_rate=0.4, learning_rate=5e-3."""
+        config = TimeNetModelParameters()
         assert config.input_dims == 1
-        assert config.dropout_rate == 0.1
+        assert config.dropout_rate == 0.4
         assert config.hidden_dims == 64
-        assert config.depth == 1
+        assert config.depth == 3
+        assert config.learning_rate == 5e-3
 
 
 class TestTimeNetVarsContract:

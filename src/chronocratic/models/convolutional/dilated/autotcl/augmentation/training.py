@@ -33,7 +33,7 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
     def __init__(
         self,
         consistency_weight: float = 0.001,
-        regularization_weight: float = 0.001,
+        regularization_weight: float = 0.003,
         regularization_threshold: float = 0.4,
         training_ratio_step: int = 1,
     ) -> None:
@@ -41,6 +41,8 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
 
         Args:
             consistency_weight: Weight for the regular consistency term.
+                The source repository varies this from 0 to 0.002 across
+                datasets; 0.001 is used as a reasonable default.
             regularization_weight: Weight for the regularization loss.
             regularization_threshold: Threshold for the regularization term.
             training_ratio_step: Train the aug network every N epochs.

@@ -35,7 +35,7 @@ class TimeVAEModelParameters:
 
     sequence_length: int
     input_dims: int
-    latent_dim: int
+    latent_dim: int = 8
     reconstruction_weight: float = 3.0
     learning_rate: float = 1e-3
     hidden_layer_sizes: tuple[int, ...] = (50, 100, 200)

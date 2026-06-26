@@ -24,8 +24,8 @@ class TimeNetModelParameters:
         learning_rate: Base learning rate for the Adam optimizer.
     """
 
-    hidden_dims: int
-    depth: int
+    hidden_dims: int = 64
+    depth: int = 3
     input_dims: int = 1
-    dropout_rate: float = 0.1
-    learning_rate: float = 1e-3
+    dropout_rate: float = 0.4
+    learning_rate: float = 5e-3

@@ -94,8 +94,8 @@ class TestCoSTConfigDefaults:
         assert params.dropout_rate == 0.1
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
-        assert params.seasonal_loss_weight == 0.1
-        assert params.queue_size == 65536
+        assert params.seasonal_loss_weight == 0.0005
+        assert params.queue_size == 256
         assert params.momentum == 0.999
         assert params.temperature == 0.07
         assert params.sync_dist is False
@@ -106,7 +106,7 @@ class TestAutoTCLConfigDefaults:
 
     def test_own_field_defaults(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == (3, 5, 7)
+        assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
         assert params.max_train_length is None

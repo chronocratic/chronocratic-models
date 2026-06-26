@@ -32,7 +32,7 @@ class MCLModelParameters:
     """
 
     input_dims: int
-    output_dims: int = 320
+    output_dims: int = 128
     alpha: float = 1.0
     learning_rate: float = 1e-3
     encoder_channels: tuple[int, ...] = (128, 256, 128)

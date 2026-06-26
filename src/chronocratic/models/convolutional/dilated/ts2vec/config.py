@@ -40,6 +40,6 @@ class TS2VecModelParameters:
     conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
-    max_train_length: int | None = None
+    max_train_length: int | None = None  # Source repo uses 3000; None here for dataset flexibility.
     temporal_unit: int = 0
     sync_dist: bool = False
