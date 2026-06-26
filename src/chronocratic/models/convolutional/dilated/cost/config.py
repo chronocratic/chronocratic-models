@@ -29,6 +29,10 @@ class CoSTModelParameters:
         learning_rate: Base learning rate for the optimizer.
         seasonal_loss_weight: Weight for the seasonal contrastive loss term.
         queue_size: Size of the memory queue for contrastive learning.
+            The source repo's ``CoSTModel`` class defines ``K=65536`` as its
+            constructor default, but the training wrapper always passes
+            ``K=256`` explicitly. We use ``256`` to match the authors' actual
+            usage rather than the unused class default.
         momentum: Momentum coefficient for the key encoder update.
         temperature: Temperature scaling for the contrastive loss.
         sync_dist: Whether to synchronize metrics across distributed
@@ -45,8 +49,8 @@ class CoSTModelParameters:
     dropout_rate: float = 0.1
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
-    seasonal_loss_weight: float = 0.1
-    queue_size: int = 65536
+    seasonal_loss_weight: float = 0.0005
+    queue_size: int = 256
     momentum: float = 0.999
     temperature: float = 0.07
     sync_dist: bool = False
