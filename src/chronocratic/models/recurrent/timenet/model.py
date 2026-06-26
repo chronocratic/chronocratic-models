@@ -38,11 +38,11 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        hidden_dims: int,
-        depth: int,
+        hidden_dims: int = 64,
+        depth: int = 3,
         input_dims: int = 1,
-        dropout_rate: float = 0.1,
-        learning_rate: float = 1e-3,
+        dropout_rate: float = 0.4,
+        learning_rate: float = 5e-3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
