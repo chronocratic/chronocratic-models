@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a7 (2026-06-26)
+
+### Fixed
+
+- Align default parameters with source repositories. ([#46](https://github.com/chronocratic/chronocratic-models/issues/46))
+
+
 ## v0.1.0a6 (2026-06-25)
 
 ### Added
