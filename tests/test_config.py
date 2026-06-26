@@ -127,11 +127,11 @@ class TestCoSTModelParameters:
 
     def test_default_seasonal_loss_weight(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.seasonal_loss_weight == 0.1
+        assert params.seasonal_loss_weight == 0.0005
 
     def test_default_queue_size(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.queue_size == 65536
+        assert params.queue_size == 256
 
     def test_default_momentum(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
@@ -183,7 +183,7 @@ class TestAutoTCLModelParameters:
 
     def test_default_kernel_sizes(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
-        assert params.kernel_sizes == (3, 5, 7)
+        assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
 
     def test_default_mask_mode(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)

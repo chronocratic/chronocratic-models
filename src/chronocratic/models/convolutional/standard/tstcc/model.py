@@ -184,8 +184,12 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     def configure_optimizers(self) -> "OptimizerLRScheduler":
         """Return one Adam optimizer per sub-module (encoder and TC model)."""
         return [
-            torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay),
-            torch.optim.Adam(self._tc_model.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay),
+            torch.optim.Adam(
+                self._encoder.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay
+            ),
+            torch.optim.Adam(
+                self._tc_model.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay
+            ),
         ]
 
     # ------------------------------------------------------------------

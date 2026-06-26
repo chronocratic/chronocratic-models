@@ -51,7 +51,7 @@ class TestCosTRandomFunctionAugmentationParameters:
 
     def test_default_sigma(self) -> None:
         params = CosTRandomFunctionAugmentationParameters()
-        assert params.sigma == 0.1
+        assert params.sigma == 0.5
 
     def test_custom_sigma(self) -> None:
         params = CosTRandomFunctionAugmentationParameters(sigma=0.2)
