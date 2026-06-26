@@ -39,6 +39,7 @@ class TSTCCModelParameters:
             the self-supervised objective.
         contextual_loss_weight: Weight of the contextual NT-Xent loss term
             in the self-supervised objective.
+        weight_decay: Weight decay for the Adam optimizers.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
     """
@@ -57,6 +58,7 @@ class TSTCCModelParameters:
     learning_rate: float = 3e-4
     temporal_loss_weight: float = 1.0
     contextual_loss_weight: float = 0.7
+    weight_decay: float = 0.0003
     sync_dist: bool = False
 
     def __post_init__(self) -> None:

@@ -58,6 +58,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         learning_rate: float = 3e-4,
         temporal_loss_weight: float = 1.0,
         contextual_loss_weight: float = 0.7,
+        weight_decay: float = 0.0003,
         sync_dist: bool = False,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
     ) -> None:
@@ -68,6 +69,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._learning_rate = learning_rate
         self._temporal_loss_weight = temporal_loss_weight
         self._contextual_loss_weight = contextual_loss_weight
+        self._weight_decay = weight_decay
         self._sync_dist = sync_dist
 
         if augmentation is None:
@@ -182,8 +184,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     def configure_optimizers(self) -> "OptimizerLRScheduler":
         """Return one Adam optimizer per sub-module (encoder and TC model)."""
         return [
-            torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate),
-            torch.optim.Adam(self._tc_model.parameters(), lr=self._learning_rate),
+            torch.optim.Adam(self._encoder.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay),
+            torch.optim.Adam(self._tc_model.parameters(), lr=self._learning_rate, weight_decay=self._weight_decay),
         ]
 
     # ------------------------------------------------------------------
