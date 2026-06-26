@@ -71,9 +71,9 @@ class AutoTCLNeuralNetworkAugmentationParameters:
 
     input_dims: int
     output_dims: int = 16
-    kernel_sizes: tuple[int, ...] = (3, 5, 7)
+    kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     hidden_dims: int = 64
-    feature_extractor_depth: int = 10
+    feature_extractor_depth: int = 1
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
