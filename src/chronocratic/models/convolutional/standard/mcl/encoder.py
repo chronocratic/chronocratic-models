@@ -22,7 +22,7 @@ class FCNEncoder(nn.Module):
     def __init__(
         self,
         input_dims: int,
-        output_dims: int = 320,
+        output_dims: int = 128,
         encoder_channels: tuple[int, ...] = (128, 256, 128),
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),

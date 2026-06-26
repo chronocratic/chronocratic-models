@@ -49,7 +49,7 @@ class TestMCLModelParameters:
 
     def test_output_dims_default(self) -> None:
         params = MCLModelParameters(input_dims=1)
-        assert params.output_dims == 320
+        assert params.output_dims == 128
 
     def test_alpha_default(self) -> None:
         params = MCLModelParameters(input_dims=1)
@@ -108,7 +108,7 @@ class TestFCNConfigContract:
         model = FCN(**vars(params))
         x = torch.randn(4, 100, 1)
         encoding = model.encoder(x)
-        assert encoding.shape == (4, 320)
+        assert encoding.shape == (4, 128)
 
 
 class TestFCNSyncDist:
@@ -127,15 +127,15 @@ class TestFCNEncoder:
     """FCNEncoder builds conv blocks from tuple parameters."""
 
     def test_default_architecture_layer_count(self) -> None:
-        encoder = FCNEncoder(input_dims=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=128)
         # 3 conv blocks * 3 layers each (Conv, BN, ReLU) + AdaptiveAvgPool + Flatten + Linear = 12
         assert len(encoder.layers) == 12
 
     def test_default_output_shape(self) -> None:
-        encoder = FCNEncoder(input_dims=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=128)
         x = torch.randn(2, 50, 1)  # (B, T, C) with T=50, C=1
         out = encoder(x)
-        assert out.shape == (2, 320)
+        assert out.shape == (2, 128)
 
     def test_custom_channels(self) -> None:
         encoder = FCNEncoder(
@@ -169,10 +169,10 @@ class TestFCNEncoder:
         Regression test: without the transpose(1, 2) inside forward(), Conv1d
         sees T channels instead of input_dims and raises RuntimeError.
         """
-        encoder = FCNEncoder(input_dims=3, output_dims=320)
+        encoder = FCNEncoder(input_dims=3, output_dims=128)
         x = torch.randn(4, 50, 3)  # (B, T, C) with T=50 != C=3
         out = encoder(x)
-        assert out.shape == (4, 320)
+        assert out.shape == (4, 128)
 
     def test_default_padding_matches_original(self) -> None:
         """Default encoder should produce identical padding to the original hardcoded version.
@@ -181,7 +181,7 @@ class TestFCNEncoder:
         Original: Conv1d(128, 256, k=5, padding=8, d=4) -> k//2*d = 5//2*4 = 8
         Original: Conv1d(256, 128, k=3, padding=8, d=8) -> k//2*d = 3//2*8 = 8
         """
-        encoder = FCNEncoder(input_dims=1, output_dims=320)
+        encoder = FCNEncoder(input_dims=1, output_dims=128)
         conv_layers = [m for m in encoder.layers if isinstance(m, nn.Conv1d)]
         assert len(conv_layers) == 3
         assert conv_layers[0].padding == (6,)
@@ -196,8 +196,8 @@ class TestProjectionHead:
         model = FCN(input_dims=1)
         lin_layers = [m for m in model.proj_head if isinstance(m, nn.Linear)]
         assert len(lin_layers) == 2
-        # output_dims=320 -> projection_dims=128 -> projection_dims=128
-        assert lin_layers[0].in_features == 320
+        # output_dims=128 -> projection_dims=128 -> projection_dims=128
+        assert lin_layers[0].in_features == 128
         assert lin_layers[0].out_features == 128
         assert lin_layers[1].in_features == 128
         assert lin_layers[1].out_features == 128
