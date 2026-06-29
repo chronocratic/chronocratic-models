@@ -139,6 +139,16 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     _encoder: TimeVAEEncoder
     _decoder: TimeVAEDecoder
 
+    @property
+    def encoder(self) -> TimeVAEEncoder:
+        """Return the TimeVAE encoder."""
+        return self._encoder
+
+    @property
+    def decoder(self) -> TimeVAEDecoder:
+        """Return the TimeVAE decoder."""
+        return self._decoder
+
     def __init__(
         self,
         sequence_length: int,
