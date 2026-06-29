@@ -30,18 +30,16 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def encoder(self) -> nn.Module:
         """Return the encoder submodule."""
         if not hasattr(self, "_encoder") or self._encoder is None:
-            raise NotImplementedError(
-                f"{self.__class__.__name__} must initialize self._encoder"
-            )
+            msg = f"{self.__class__.__name__} must initialize self._encoder"
+            raise NotImplementedError(msg)
         return self._encoder
 
     @property
     def decoder(self) -> nn.Module:
         """Return the decoder submodule."""
         if not hasattr(self, "_decoder") or self._decoder is None:
-            raise NotImplementedError(
-                f"{self.__class__.__name__} must initialize self._decoder"
-            )
+            msg = f"{self.__class__.__name__} must initialize self._decoder"
+            raise NotImplementedError(msg)
         return self._decoder
 
     def __init__(
