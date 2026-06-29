@@ -20,7 +20,7 @@ The `chronocratic.models.protocols` module defines Protocols that allow users to
 from chronocratic.models.protocols import HasEncoder, HasDecoder
 from chronocratic.models import TimeVAE
 
-model = TimeVAE(seq_len=100, feat_dim=1, latent_dim=10)
+model = TimeVAE(sequence_length=100, input_dims=1, latent_dim=10)
 
 # Check encoder availability
 if isinstance(model, HasEncoder):

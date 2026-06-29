@@ -200,10 +200,10 @@ class TestEncodeBehavior:
         ), "encode() should not set self._eval_method instance attribute"
 
     def test_encode_uses_polymorphic_dispatch(self, pooling_model: nn.Module) -> None:
-        """encode() calls _get_encoder() and _get_eval_method() each invocation."""
-        source = inspect.getsource(pooling_model.encode)
-        assert "_get_encoder()" in source or "self._get_encoder" in source
-        assert "_get_eval_method()" in source or "self._get_eval_method" in source
+        """encode() delegates to encode_batch() which calls _get_eval_method()."""
+        encode_source = inspect.getsource(pooling_model.encode)
+        assert "_get_encoder()" in encode_source or "self._get_encoder" in encode_source
+        assert "encode_batch(" in encode_source, "encode() should delegate to encode_batch()"
 
 
 # ---------------------------------------------------------------------------

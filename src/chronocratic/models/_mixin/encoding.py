@@ -76,6 +76,22 @@ class BasicEncodingMixin(ABC):
         """
         return encoder(batch_x)
 
+    def encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+        """Encode one on-device batch in a single forward pass.
+
+        Differentiable: gradients flow back to ``batch_x`` when it requires
+        grad. Returns an on-device tensor (no CPU transfer). Does NOT toggle
+        the encoder's train/eval state — the caller owns that. Put the
+        encoder in ``eval()`` before a gradient attack loop.
+
+        Args:
+            batch_x: Batch tensor; moved to ``self.device`` internally.
+
+        Returns:
+            Representation tensor, on ``self.device``.
+        """
+        return self._encode_batch(self._get_encoder(), batch_x.to(self.device))
+
     def encode(
         self,
         data: torch.Tensor,
@@ -122,10 +138,7 @@ class BasicEncodingMixin(ABC):
                     num_workers=num_workers,
                     pin_memory=True,
                 )
-                outputs = [
-                    self._encode_batch(encoder, batch_x.to(self.device)).to(data.device)
-                    for (batch_x,) in loader
-                ]
+                outputs = [self.encode_batch(batch_x).to(data.device) for (batch_x,) in loader]
                 return torch.cat(outputs, dim=0)
         finally:
             encoder.train(was_training)

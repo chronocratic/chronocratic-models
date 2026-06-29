@@ -94,7 +94,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     @property
     def encoder(self) -> AutoTCLTimeSeriesEncoder:
         """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return cast("AutoTCLTimeSeriesEncoder", self._encoder)
+        return self._encoder
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
         """Return encoder optimizer(s); two optimizers when using trainable aug."""

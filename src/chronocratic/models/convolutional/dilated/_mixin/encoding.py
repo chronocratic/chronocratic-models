@@ -181,6 +181,38 @@ class BaseEncodingMixin(ABC):
             )
         return concatenated_representations
 
+    def encode_batch(
+        self,
+        batch_x: torch.Tensor,
+        *,
+        mask: "MaskMode | None" = None,
+        encoding_window: str | int | None = "full_series",
+    ) -> torch.Tensor:
+        """Encode one batch in a single forward pass (no sliding window).
+
+        Differentiable and on-device. Applies the mixin's pooling /
+        feature-concatenation logic via the eval method. Does NOT toggle
+        train/eval state — caller owns it. Put the encoder in ``eval()``
+        before a gradient attack loop.
+
+        Args:
+            batch_x: Batch tensor, shape (batch, seq_len, features). Moved to
+                ``self.device`` inside the eval method.
+            mask: Mask mode for the encoder. Ignored by decomposition models.
+            encoding_window: Pooling strategy ('full_series', 'multiscale', an
+                int kernel size, or None). Decomposition models accept only
+                None / 'full_series'.
+
+        Returns:
+            Representation tensor, on ``self.device``.
+        """
+        reps = self._get_eval_method()(
+            input_tensor=batch_x, mask=mask, slicing=None, encoding_window=encoding_window
+        )
+        if encoding_window == "full_series":
+            reps = reps.squeeze(1)
+        return reps
+
     def encode(
         self,
         data: torch.Tensor,
@@ -216,7 +248,6 @@ class BaseEncodingMixin(ABC):
             The representations for data.
         """
         encoder = self._get_encoder()
-        eval_method = self._get_eval_method()
 
         if data.ndim != _EXPECTED_INPUT_DIMS:
             msg = "Input data must have shape (n_instance, n_timestamps, n_features)."
@@ -263,15 +294,9 @@ class BaseEncodingMixin(ABC):
                             batch_size=batch_size,
                         )
                     else:
-                        representations = eval_method(
-                            input_tensor=input_tensor,
-                            mask=mask,
-                            slicing=None,
-                            encoding_window=encoding_window,
+                        representations = self.encode_batch(
+                            input_tensor, mask=mask, encoding_window=encoding_window
                         )
-
-                        if encoding_window == "full_series":
-                            representations = representations.squeeze(1)
 
                     all_outputs.append(representations.cpu())
 
@@ -330,7 +355,7 @@ class PoolingEncodingMixin(BaseEncodingMixin):
         else:
             output_tensor = apply_slicing(tensor=output_tensor, slicing=slicing)
 
-        return output_tensor.cpu()
+        return output_tensor
 
 
 class DecompositionEncodingMixin(BaseEncodingMixin):
@@ -383,4 +408,4 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
             x=input_tensor.to(self.device, non_blocking=True), mask_mode=None
         )
         output_tensor = concat_last_step_features(output_trend_tensor, output_seasonality_tensor)
-        return output_tensor.cpu()
+        return output_tensor

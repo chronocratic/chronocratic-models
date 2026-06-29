@@ -8,6 +8,9 @@ that returns an ``nn.Module``. Similarly, ``HasDecoder`` requires a
 ``.decoder`` property. Both use ``@runtime_checkable`` so they work with
 ``isinstance()`` checks — unlike plain class attributes, which fail
 ``isinstance`` verification due to ``nn.Module.__getattr__`` overriding.
+
+For models with both encoder and decoder, ``HasEncoderDecoder`` combines the
+two protocols into a single runtime-checkable composite.
 """
 
 from typing import Protocol, runtime_checkable
@@ -41,3 +44,13 @@ class HasDecoder(Protocol):
     def decoder(self) -> nn.Module:
         """Return the decoder submodule."""
         ...
+
+
+@runtime_checkable
+class HasEncoderDecoder(HasEncoder, HasDecoder, Protocol):
+    """Protocol for models with both encoder and decoder modules.
+
+    Combines ``HasEncoder`` and ``HasDecoder`` into a single runtime-checkable
+    protocol for models that support both representation extraction and
+    reconstruction.
+    """

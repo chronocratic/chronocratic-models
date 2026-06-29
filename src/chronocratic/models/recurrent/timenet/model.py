@@ -13,7 +13,6 @@ from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
-    from torch.nn.modules.container import Sequential
 
 
 class GRUWrapper(nn.Module):
@@ -50,18 +49,18 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         self._hidden_dims: int = hidden_dims
         self._depth: int = depth
         self._dropout_rate: float = dropout_rate
-        self._encoder: Sequential = self._build_encoder()
-        self._decoder: Sequential = self._build_decoder()
+        self._encoder: nn.Module = self._build_encoder()
+        self._decoder: nn.Module = self._build_decoder()
         self._learning_rate = learning_rate
         self.loss_fn = nn.MSELoss()
 
     @property
-    def encoder(self) -> Sequential:
+    def encoder(self) -> nn.Module:
         """Return the GRU encoder."""
         return self._encoder
 
     @property
-    def decoder(self) -> Sequential:
+    def decoder(self) -> nn.Module:
         """Return the GRU decoder."""
         return self._decoder
 

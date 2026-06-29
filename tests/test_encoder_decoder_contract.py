@@ -14,7 +14,18 @@ from __future__ import annotations
 import pytest
 from torch import nn
 
-from chronocratic.models import AutoTCL, CoST, FCN, Series2Vec, TimeNet, TimeVAE, TS2Vec, TST, TSTCC
+from chronocratic.models import (
+    AutoTCL,
+    CoST,
+    FCN,
+    RecurrentAutoEncoder,
+    Series2Vec,
+    TimeNet,
+    TimeVAE,
+    TS2Vec,
+    TST,
+    TSTCC,
+)
 from chronocratic.models.protocols import HasDecoder, HasEncoder
 
 # ---------------------------------------------------------------------------
@@ -42,6 +53,7 @@ ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
     ),
     (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
     (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
+    (RecurrentAutoEncoder, {"input_dims": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
 ]
 
 ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
@@ -68,6 +80,7 @@ ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
 DECODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
     (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
     (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
+    (RecurrentAutoEncoder, {"input_dims": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
 ]
 
 
