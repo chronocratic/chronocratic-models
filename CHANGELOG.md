@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a8 (2026-06-29)
+
+### Added
+
+- Add encode_batch() public API for DataLoader-free single-batch encoding. ([#51](https://github.com/chronocratic/chronocratic-models/issues/51))
+
+
 ## v0.1.0a7 (2026-06-26)
 
 ### Fixed
