@@ -138,10 +138,7 @@ class BasicEncodingMixin(ABC):
                     num_workers=num_workers,
                     pin_memory=True,
                 )
-                outputs = [
-                    self.encode_batch(batch_x).to(data.device)
-                    for (batch_x,) in loader
-                ]
+                outputs = [self.encode_batch(batch_x).to(data.device) for (batch_x,) in loader]
                 return torch.cat(outputs, dim=0)
         finally:
             encoder.train(was_training)

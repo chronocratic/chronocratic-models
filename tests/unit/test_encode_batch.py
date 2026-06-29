@@ -83,9 +83,7 @@ class _DecompositionTestModel(nn.Module, DecompositionEncodingMixin):
         self.device = torch.device("cpu")
         self._trend_dim = trend_dim
         self._seas_dim = seas_dim
-        self.query_encoder = _DummyDecompositionEncoder(
-            trend_dim=trend_dim, seas_dim=seas_dim
-        )
+        self.query_encoder = _DummyDecompositionEncoder(trend_dim=trend_dim, seas_dim=seas_dim)
 
 
 class _DummyDecompositionEncoder(nn.Module):
