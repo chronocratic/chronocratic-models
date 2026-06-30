@@ -40,6 +40,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/Navidfoumani/Series2Vec.
     """
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR}
+    )
+
     def __init__(
         self,
         input_dims: int,
