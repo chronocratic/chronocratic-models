@@ -11,6 +11,16 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a9 (2026-06-30)
+
+### Added
+
+- `EncodingOutputShape` enum with `VECTOR` and `SEQUENCE` members for uniform `encode()` output control across all 10 models. The `output` parameter (keyword-only, defaults to `VECTOR`) is now available on both `BasicEncodingMixin` and `BaseEncodingMixin` (`encode()` and `encode_batch()`). Each model declares native capability via `supported_outputs: frozenset[EncodingOutputShape]`.
+
+### Changed
+
+- **BREAKING:** Series2Vec, MCL, and TimeVAE now return `(N, D)` by default from `encode()` instead of `(N, 1, D)`. The phantom length-1 temporal axis has been removed. Use `output=EncodingOutputShape.SEQUENCE` to request the previous `(N, 1, D)` shape (with a once-per-class warning).
+
 ## v0.1.0a8 (2026-06-29)
 
 ### Added
