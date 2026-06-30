@@ -12,6 +12,7 @@ from chronocratic.models.augmentation.base import AlignedPair, AugmentationProdu
 from chronocratic.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from chronocratic.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.losses import hierarchical_contrastive_loss
 from chronocratic.models.utils import extract_features_from_batch, process_sample_length
 
@@ -21,6 +22,10 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     Code source: https://github.com/zhihanyue/ts2vec
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
