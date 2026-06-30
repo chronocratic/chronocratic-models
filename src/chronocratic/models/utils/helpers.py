@@ -11,6 +11,14 @@ import warnings
 _warned_sequence_fallback: set[str] = set()
 
 
+def reset_warning_cache() -> None:
+    """Clear the once-per-class warning cache.
+
+    Useful for test isolation to ensure warnings fire as expected.
+    """
+    _warned_sequence_fallback.clear()
+
+
 def _warn_sequence_fallback(cls: type) -> None:
     """Warn once per class that SEQUENCE output is a length-1 fallback.
 
