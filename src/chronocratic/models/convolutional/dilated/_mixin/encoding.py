@@ -427,9 +427,14 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
             mask: Unused for decomposition models.
             slicing: Unused for decomposition models.
             encoding_window: Must be ``None`` or ``'full_series'``.
+                When ``None``, full-sequence concatenation is performed
+                (SEQUENCE output). When ``'full_series'``, last-step
+                concatenation is performed (VECTOR output).
 
         Returns:
-            Concatenated last-step features from trend and seasonality encoders.
+            For SEQUENCE (encoding_window=None): concatenated full sequences
+            of shape ``(B, L, 2D)``. For VECTOR (encoding_window='full_series'):
+            concatenated last-step features of shape ``(B, 1, 2D)``.
 
         Raises:
             ValueError: If ``encoding_window`` is not ``None`` or ``'full_series'``.
@@ -444,5 +449,15 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         output_trend_tensor, output_seasonality_tensor = self._get_encoder()(
             x=input_tensor.to(self.device, non_blocking=True), mask_mode=None
         )
-        output_tensor = concat_last_step_features(output_trend_tensor, output_seasonality_tensor)
+
+        if encoding_window is None:
+            # SEQUENCE: concatenate full sequences along feature dim -> (B, L, 2D)
+            output_tensor = torch.cat(
+                [output_trend_tensor, output_seasonality_tensor], dim=-1
+            )
+        else:
+            # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
+            output_tensor = concat_last_step_features(
+                output_trend_tensor, output_seasonality_tensor
+            )
         return output_tensor
