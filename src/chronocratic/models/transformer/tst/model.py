@@ -224,15 +224,15 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, hidden_dims)`` for VECTOR
-            or ``(B, seq_len, hidden_dims)`` for SEQUENCE.
+            Representations of shape ``(B, D)`` for VECTOR
+            or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dims).
         """
         padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
-        full_sequence = encoder.encode_representations(batch_x, padding_masks)
+        full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
         if output == EncodingOutputShape.VECTOR:
-            return full_sequence.mean(dim=1)  # (B, hidden_dims)
+            return full_sequence.mean(dim=1)  # (B, D) - mean over T
         elif output == EncodingOutputShape.SEQUENCE:
-            return full_sequence  # (B, seq_len, hidden_dims)
+            return full_sequence  # (B, T, D)
         else:
             raise ValueError(
                 f"TST does not support output={output}; "

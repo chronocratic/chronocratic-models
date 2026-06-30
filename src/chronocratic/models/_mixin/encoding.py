@@ -91,7 +91,8 @@ class BasicEncodingMixin(ABC):
 
         Returns:
             Representation tensor for this batch. Rank must match
-            ``output``: 2-D for VECTOR, 3-D for SEQUENCE.
+            ``output``: 2-D ``(B, D)`` for VECTOR, 3-D ``(B, T, D)``
+            for SEQUENCE (B = batch size, T = sequence length, D = feature dims).
         """
         return encoder(batch_x)
 
@@ -151,7 +152,8 @@ class BasicEncodingMixin(ABC):
             batch_size: Mini-batch size for inference.
             num_workers: Number of DataLoader workers.
             output: Requested output shape. Defaults to VECTOR (2-D).
-                VECTOR returns ``(N, D)``, SEQUENCE returns ``(N, T, D)``.
+                VECTOR returns ``(B, D)``, SEQUENCE returns ``(B, T, D)``.
+                B = batch size, T = sequence length, D = feature dims.
             gradient_enabled: When True, keep the autograd graph alive by
                 using ``nullcontext()`` instead of ``inference_mode()``.
                 The encoder remains in ``eval()`` to ensure deterministic
@@ -159,8 +161,8 @@ class BasicEncodingMixin(ABC):
 
         Returns:
             Tensor on the same device as ``data``, concatenation of
-            per-batch representations along dim 0. Shape is ``(N, D)``
-            for VECTOR or ``(N, T, D)`` for SEQUENCE.
+            per-batch representations along dim 0. Shape is ``(B, D)``
+            for VECTOR or ``(B, T, D)`` for SEQUENCE.
 
         Raises:
             AssertionError: If the concatenated output rank does not match

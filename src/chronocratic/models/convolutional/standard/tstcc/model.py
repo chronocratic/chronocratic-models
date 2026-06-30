@@ -109,7 +109,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Run the encoder. Returns convolutional feature map ``(B, output_dims, L')``."""
+        """Run the encoder. Returns convolutional feature map ``(B, C, L')``."""
         return self._encoder(x)
 
     # ------------------------------------------------------------------
@@ -220,9 +220,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Cast to float and encode the batch.
 
         The TCC encoder expects float inputs, so we cast batch_x to float
-        before encoding. The feature map ``(B, output_dims, L')`` is then
-        pooled to ``(B, output_dims)`` for VECTOR, or transposed to
-        ``(B, L', output_dims)`` for SEQUENCE.
+        before encoding. The feature map ``(B, C, L')`` is then
+        pooled to ``(B, C)`` for VECTOR, or transposed to
+        ``(B, L', C)`` for SEQUENCE, where:
+
+        - ``B``: batch size
+        - ``C``: encoder output channels (``output_dims``)
+        - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:

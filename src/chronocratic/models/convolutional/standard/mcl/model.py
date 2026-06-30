@@ -74,12 +74,12 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
-        flat = encoder(batch_x)  # (B, D)
+        flat = encoder(batch_x)  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
-            return flat  # (B, D) — VECTOR default
+            return flat  # (B, D) — VECTOR
         elif output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE fallback
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
         else:
             raise ValueError(
                 f"MCL does not support output={output}; "

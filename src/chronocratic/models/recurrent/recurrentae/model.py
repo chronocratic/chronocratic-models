@@ -115,11 +115,11 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return last-step vector or full sequence from the encoder."""
-        encoded = encoder(batch_x)  # (B, T, H)
+        encoded = encoder(batch_x)  # (B, T, D) - T=time steps, D=hidden dim
         if output == EncodingOutputShape.VECTOR:
-            return encoded[:, -1, :]  # (B, H)
+            return encoded[:, -1, :]  # (B, D) - last time step
         elif output == EncodingOutputShape.SEQUENCE:
-            return encoded  # (B, T, H)
+            return encoded  # (B, T, D)
         else:
             raise ValueError(
                 f"RecurrentAE does not support output={output}; "

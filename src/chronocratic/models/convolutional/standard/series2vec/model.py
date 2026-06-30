@@ -106,12 +106,12 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             Representations of shape ``(B, 2 * representation_dims)`` for
             VECTOR or ``(B, 1, 2 * representation_dims)`` for SEQUENCE.
         """
-        flat = encoder.encode(batch_x)  # (B, D)
+        flat = encoder.encode(batch_x)  # (B, D) - D=2*representation_dims
         if output == EncodingOutputShape.VECTOR:
-            return flat  # (B, D) — VECTOR default
+            return flat  # (B, D) — VECTOR
         elif output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE fallback
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
         else:
             raise ValueError(
                 f"Series2Vec does not support output={output}; "

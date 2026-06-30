@@ -218,7 +218,8 @@ class BaseEncodingMixin(ABC):
                 explicitly provided.
 
         Returns:
-            Representation tensor, on ``self.device``.
+            Representation tensor, on ``self.device``. Shape is ``(B, D)``
+            for VECTOR (B=batch, D=feature dims) or ``(B, T, D)`` for SEQUENCE.
         """
         # Derive encoding_window from output when not explicitly provided
         if encoding_window is _encoding_window_unset:

@@ -217,15 +217,15 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, latent_dim)`` for VECTOR or
-            ``(B, 1, latent_dim)`` for SEQUENCE.
+            Representations of shape ``(B, D)`` for VECTOR or
+            ``(B, 1, D)`` for SEQUENCE (B=batch, D=latent_dim).
         """
-        z_mean = encoder(batch_x)[0]  # (B, latent_dim)
+        z_mean = encoder(batch_x)[0]  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
-            return z_mean  # (B, D) — VECTOR default
+            return z_mean  # (B, D) — VECTOR
         elif output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
-            return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE fallback
+            return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
         else:
             raise ValueError(
                 f"TimeVAE does not support output={output}; "
