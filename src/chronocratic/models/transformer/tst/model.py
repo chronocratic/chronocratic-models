@@ -45,6 +45,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
     """
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
+
     def __init__(
         self,
         input_dims: int,
