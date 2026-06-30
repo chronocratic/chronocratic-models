@@ -78,8 +78,12 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     @property
     def encoder(self) -> TS2VecTimeSeriesEncoder:
-        """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return cast("TS2VecTimeSeriesEncoder", self._encoder)
+        """Return the averaged encoder used for inference.
+
+        Matches the module returned by ``_get_encoder()`` so that the
+        ``HasEncoder`` protocol is consistent with the encode() path.
+        """
+        return cast("TS2VecTimeSeriesEncoder", self._averaged_encoder)
 
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""
