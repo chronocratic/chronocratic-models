@@ -12,7 +12,7 @@ from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils import extract_features_from_batch, pool_feature_map
+from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -226,7 +226,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
-            return pool_feature_map(features)  # (B, C)
+            return features.mean(dim=-1)  # (B, C)
         elif output == EncodingOutputShape.SEQUENCE:
             return features.transpose(1, 2)  # (B, L', C)
         else:

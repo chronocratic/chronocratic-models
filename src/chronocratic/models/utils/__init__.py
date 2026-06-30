@@ -17,7 +17,6 @@ from chronocratic.models.utils.utils import (
     integer_pooling,
     multiscale_pooling,
     pad_tensor_with_nan,
-    pool_feature_map,
     process_sample_length,
     process_sliding_window,
 )
@@ -30,7 +29,6 @@ __all__ = [
     "integer_pooling",
     "multiscale_pooling",
     "pad_tensor_with_nan",
-    "pool_feature_map",
     "process_sample_length",
     "process_sliding_window",
 ]

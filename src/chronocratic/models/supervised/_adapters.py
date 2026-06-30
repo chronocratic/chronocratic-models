@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from chronocratic.models.utils import pool_feature_map
-
 if TYPE_CHECKING:
     import torch
 
@@ -104,4 +102,4 @@ def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
         defensive since SupervisedModule does not know the backbone's dtype.
     """
     features = backbone(x.float())
-    return pool_feature_map(features)
+    return features.mean(dim=-1)

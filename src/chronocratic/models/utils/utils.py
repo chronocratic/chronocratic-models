@@ -5,7 +5,6 @@ __all__ = [
     "full_series_pooling",
     "integer_pooling",
     "multiscale_pooling",
-    "pool_feature_map",
     "process_sample_length",
     "process_sliding_window",
 ]
@@ -188,28 +187,6 @@ def concat_last_step_features(
     concatenated_features = rearrange(concatenated_features, "b d -> b () d")
 
     return concatenated_features
-
-
-def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
-    """Global-average-pool an encoder feature map over the time dimension.
-
-    Shared by TSTCC (via ``_encode_batch``) and the supervised adapter
-    (``tstcc_representations``) to avoid duplicating the pooling logic.
-
-    Args:
-        features: Feature map of shape ``(B, C, L)``.
-
-    Returns:
-        Pooled tensor of shape ``(B, C)``.
-
-    Raises:
-        ValueError: If features is not 3-dimensional.
-    """
-    # pool_feature_map is designed for (B, C, L) feature maps
-    if features.ndim != 3:  # noqa: PLR2004
-        msg = f"pool_feature_map expects (B, C, L), got {features.ndim}D tensor"
-        raise ValueError(msg)
-    return features.mean(dim=-1)
 
 
 def pad_tensor_with_nan(

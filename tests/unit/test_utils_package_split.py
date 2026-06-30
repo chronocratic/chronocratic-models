@@ -36,9 +36,6 @@ class TestUtilsPackageStructure:
 class TestBarrelReExports:
     """Verify all 10 __all__ symbols + pad_tensor_with_nan are importable via barrel."""
 
-    def test_import_pool_feature_map(self) -> None:
-        from chronocratic.models.utils import pool_feature_map  # noqa: F401
-
     def test_import_extract_features_from_batch(self) -> None:
         from chronocratic.models.utils import extract_features_from_batch  # noqa: F401
 
@@ -77,7 +74,6 @@ class TestBarrelReExports:
             "full_series_pooling",
             "integer_pooling",
             "multiscale_pooling",
-            "pool_feature_map",
             "process_sample_length",
             "process_sliding_window",
             "pad_tensor_with_nan",
