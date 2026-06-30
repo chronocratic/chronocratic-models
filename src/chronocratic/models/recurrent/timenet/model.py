@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
@@ -98,7 +99,13 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Select the final timestep as the pooled representation."""
         return encoder(batch_x)[:, -1, :]
 

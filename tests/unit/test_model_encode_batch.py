@@ -73,11 +73,11 @@ class TestEncodeOutputShapes:
         assert result.shape == (4, 16)
 
     def test_mcl_encode_shape(self) -> None:
-        """MCL.encode() returns (B, 1, output_dims)."""
+        """MCL.encode() returns (B, output_dims) with VECTOR default."""
         model = MCL(input_dims=3, output_dims=128)
         data = torch.randn(4, 50, 3)
         result = model.encode(data, batch_size=2)
-        assert result.shape == (4, 1, 128)
+        assert result.shape == (4, 128)
 
     def test_tstcc_encode_shape(self) -> None:
         """TSTCC.encode() returns (B, output_dims) after pooling."""

@@ -4,6 +4,7 @@ from torch import nn
 __all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from chronocratic.models.layers.general import (
     LevelModel,
@@ -200,7 +201,13 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Return the latent mean ``z_mean`` from the encoder output tuple."""
         return encoder(batch_x)[0]
 

@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
@@ -204,18 +205,29 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Return the transformer encoder module for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Build padding mask and call ``encoder.encode_representations``.
 
         Args:
             encoder: The TSTransformerEncoder module.
             batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, seq_len, hidden_dims)``.
+            Representations of shape ``(B, hidden_dims)`` for VECTOR
+            or ``(B, seq_len, hidden_dims)`` for SEQUENCE.
         """
         padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
-        return encoder.encode_representations(batch_x, padding_masks)
+        full_sequence = encoder.encode_representations(batch_x, padding_masks)
+        if output == EncodingOutputShape.VECTOR:
+            return full_sequence.mean(dim=1)  # (B, hidden_dims)
+        return full_sequence  # (B, seq_len, hidden_dims)
 
     @property
     def encoder(self) -> nn.Module:

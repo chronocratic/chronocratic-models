@@ -11,6 +11,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
 from chronocratic.models.recurrent.recurrentae.layers import (
     _build_decoder,
@@ -102,7 +103,13 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def _get_encoder(self) -> nn.Module:
         return self.encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         return encoder(batch_x)[:, -1, :]
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:

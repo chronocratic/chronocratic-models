@@ -14,8 +14,9 @@ device placement, encoder invocation, and result concatenation.
 The two-hook contract separates concerns cleanly:
 - ``_get_encoder() -> nn.Module`` identifies the module whose train/eval
   state should be toggled during encoding.
-- ``_encode_batch(encoder, batch_x) -> Tensor`` defines how one on-device
-  batch becomes a representation tensor.
+- ``_encode_batch(encoder, batch_x, output=VECTOR) -> Tensor`` defines how
+  one on-device batch becomes a representation tensor. The ``output``
+  parameter controls the output shape: VECTOR (2-D) or SEQUENCE (3-D).
 """
 
 from __future__ import annotations
@@ -28,6 +29,8 @@ from contextlib import nullcontext
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
+
+from chronocratic.models.enums.encoding import EncodingOutputShape
 
 
 class BasicEncodingMixin(ABC):
@@ -52,6 +55,10 @@ class BasicEncodingMixin(ABC):
     # checkers see the contract; not set at the mixin level.
     device: torch.device
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR}
+    )
+
     @abstractmethod
     def _get_encoder(self) -> nn.Module:
         """Return the module whose train/eval state ``encode()`` toggles.
@@ -60,23 +67,40 @@ class BasicEncodingMixin(ABC):
         ``encode()`` invocation.
         """
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Map one on-device batch to its representation tensor.
 
         Default: ``encoder(batch_x)`` (the module's ``forward`` IS the
         representation path). Override when the rep path is not ``forward``
         or needs post-processing (e.g. tuple unpacking, slicing, pooling).
+        Subclasses may branch on ``output`` to return VECTOR (2-D) or
+        SEQUENCE (3-D) representations.
 
         Args:
             encoder: The module returned by :meth:`_get_encoder`.
             batch_x: Batch tensor already moved to ``self.device``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+                Subclasses that support SEQUENCE should return a 3-D
+                tensor when ``output == EncodingOutputShape.SEQUENCE``.
 
         Returns:
-            Representation tensor for this batch.
+            Representation tensor for this batch. Rank must match
+            ``output``: 2-D for VECTOR, 3-D for SEQUENCE.
         """
         return encoder(batch_x)
 
-    def encode_batch(self, batch_x: torch.Tensor) -> torch.Tensor:
+    def encode_batch(
+        self,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Encode one on-device batch in a single forward pass.
 
         Differentiable: gradients flow back to ``batch_x`` when it requires
@@ -86,11 +110,15 @@ class BasicEncodingMixin(ABC):
 
         Args:
             batch_x: Batch tensor; moved to ``self.device`` internally.
+            output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representation tensor, on ``self.device``.
+            Representation tensor, on ``self.device``. Rank matches
+            ``output``: 2-D for VECTOR, 3-D for SEQUENCE.
         """
-        return self._encode_batch(self._get_encoder(), batch_x.to(self.device))
+        return self._encode_batch(
+            self._get_encoder(), batch_x.to(self.device), output=output
+        )
 
     def encode(
         self,
@@ -98,6 +126,7 @@ class BasicEncodingMixin(ABC):
         batch_size: int,
         num_workers: int = 0,
         *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
         gradient_enabled: bool = False,
     ) -> torch.Tensor:
         """Extract representations for ``data`` in mini-batches.
@@ -112,19 +141,30 @@ class BasicEncodingMixin(ABC):
         preserve gradients (e.g. for adversarial attacks or contrastive
         view comparison); the encoder stays in ``eval()`` regardless.
 
+        After concatenation, a producer-side rank assert verifies the
+        output tensor matches the requested shape (2-D for VECTOR,
+        3-D for SEQUENCE).
+
         Args:
             data: Input tensor of shape ``(N, ...)`` — leading dim is the
                 sample dimension, the rest is whatever the model expects.
             batch_size: Mini-batch size for inference.
             num_workers: Number of DataLoader workers.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+                VECTOR returns ``(N, D)``, SEQUENCE returns ``(N, T, D)``.
             gradient_enabled: When True, keep the autograd graph alive by
                 using ``nullcontext()`` instead of ``inference_mode()``.
                 The encoder remains in ``eval()`` to ensure deterministic
                 behavior (no dropout, frozen BN stats). Default False.
 
         Returns:
-            Tensor of shape ``(N, ...)`` on the same device as ``data``,
-            concatenation of per-batch representations along dim 0.
+            Tensor on the same device as ``data``, concatenation of
+            per-batch representations along dim 0. Shape is ``(N, D)``
+            for VECTOR or ``(N, T, D)`` for SEQUENCE.
+
+        Raises:
+            AssertionError: If the concatenated output rank does not match
+                the requested ``output`` shape.
         """
         encoder = self._get_encoder()
         was_training = encoder.training
@@ -138,7 +178,17 @@ class BasicEncodingMixin(ABC):
                     num_workers=num_workers,
                     pin_memory=True,
                 )
-                outputs = [self.encode_batch(batch_x).to(data.device) for (batch_x,) in loader]
-                return torch.cat(outputs, dim=0)
+                outputs = [
+                    self.encode_batch(batch_x, output=output).to(data.device)
+                    for (batch_x,) in loader
+                ]
+                result = torch.cat(outputs, dim=0)
+                expected_ndim = (
+                    2 if output == EncodingOutputShape.VECTOR else 3
+                )
+                assert result.ndim == expected_ndim, (
+                    f"Expected {expected_ndim}D, got {result.ndim}D"
+                )
+                return result
         finally:
             encoder.train(was_training)

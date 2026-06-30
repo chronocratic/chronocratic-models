@@ -8,6 +8,7 @@ from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
     pairwise_soft_dtw_distances,
@@ -86,17 +87,28 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Return the Series2Vec network for ``BasicEncodingMixin.encode``."""
         return self.network
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Call ``encoder.encode(batch_x).unsqueeze(1)`` for representation extraction.
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return flat representation for VECTOR, unsqueeze for SEQUENCE.
 
         Args:
             encoder: The Series2VecNetwork module.
             batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, 1, 2 * representation_dims)``.
+            Representations of shape ``(B, 2 * representation_dims)`` for
+            VECTOR or ``(B, 1, 2 * representation_dims)`` for SEQUENCE.
         """
-        return encoder.encode(batch_x).unsqueeze(1)
+        flat = encoder.encode(batch_x)  # (B, D)
+        if output == EncodingOutputShape.VECTOR:
+            return flat  # (B, D) — VECTOR default
+        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)

@@ -7,6 +7,7 @@ from torch import nn
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
 
 
@@ -64,9 +65,18 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         """Expose the encoder (before the MixUp projection head)."""
         return self.encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
-        return encoder(batch_x).unsqueeze(1)
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
+        flat = encoder(batch_x)  # (B, D)
+        if output == EncodingOutputShape.VECTOR:
+            return flat  # (B, D) — VECTOR default
+        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = extract_features_from_batch(batch)

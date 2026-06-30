@@ -11,6 +11,7 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch, pool_feature_map
 
 if TYPE_CHECKING:
@@ -205,7 +206,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Return the TCC encoder for inspection and checkpointing."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Cast to float and global-average-pool the encoder feature map.
 
         The TCC encoder expects float inputs, so we cast batch_x to float
