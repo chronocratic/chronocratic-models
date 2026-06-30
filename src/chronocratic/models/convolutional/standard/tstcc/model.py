@@ -42,6 +42,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.
     """
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
+
     def __init__(
         self,
         input_dims: int,
@@ -213,13 +217,17 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Cast to float and global-average-pool the encoder feature map.
+        """Cast to float and encode the batch.
 
         The TCC encoder expects float inputs, so we cast batch_x to float
         before encoding. The feature map ``(B, output_dims, L')`` is then
-        pooled to ``(B, output_dims)``.
+        pooled to ``(B, output_dims)`` for VECTOR, or transposed to
+        ``(B, L', output_dims)`` for SEQUENCE.
         """
-        return pool_feature_map(encoder(batch_x.float()))
+        features = encoder(batch_x.float())  # (B, C, L')
+        if output == EncodingOutputShape.VECTOR:
+            return pool_feature_map(features)  # (B, C)
+        return features.transpose(1, 2)  # (B, L', C)
 
     @property
     def representation_dim(self) -> int:
