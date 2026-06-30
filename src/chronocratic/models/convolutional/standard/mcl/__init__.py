@@ -1,4 +1,4 @@
-__all__ = ["FCN", "MCLModelParameters"]
+__all__ = ["MCL", "MCLModelParameters"]
 
 from .config import MCLModelParameters
-from .model import FCN
+from .model import MCL

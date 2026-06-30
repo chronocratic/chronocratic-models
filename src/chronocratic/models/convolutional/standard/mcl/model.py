@@ -1,4 +1,4 @@
-__all__ = ["FCN"]
+__all__ = ["MCL"]
 
 import lightning.pytorch as pl
 import torch
@@ -10,8 +10,8 @@ from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
 from chronocratic.models.utils import extract_features_from_batch
 
 
-class FCN(pl.LightningModule, BasicEncodingMixin):
-    """FCN encoder for Mixup Contrastive Learning (MCL).
+class MCL(pl.LightningModule, BasicEncodingMixin):
+    """FCN-based encoder for Mixup Contrastive Learning (MCL).
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
@@ -53,7 +53,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
     @property
     def encoder(self) -> nn.Module:
-        """Return the FCN encoder."""
+        """Return the encoder."""
         return self._encoder
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -61,7 +61,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         return self.proj_head(self._encoder(x))
 
     def _get_encoder(self) -> nn.Module:
-        """Expose the FCN encoder (before the MixUp projection head)."""
+        """Expose the encoder (before the MixUp projection head)."""
         return self.encoder
 
     def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:

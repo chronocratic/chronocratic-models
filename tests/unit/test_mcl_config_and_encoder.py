@@ -1,7 +1,7 @@
 """Tests for MCL config field renames, FCNEncoder parameterization, and sync_dist fix.
 
 Verifies that MCLModelParameters uses canonical naming (input_dims instead of
-n_in), that the FCN model accepts all config fields via **vars() unpacking,
+n_in), that the MCL model accepts all config fields via **vars() unpacking,
 that FCNEncoder builds conv blocks dynamically from tuple parameters, and
 that training/validation steps use self._sync_dist instead of hardcoded True.
 """
@@ -14,7 +14,7 @@ import pytest
 import torch
 from torch import nn
 
-from chronocratic.models import FCN
+from chronocratic.models import MCL
 from chronocratic.models.convolutional.standard.mcl.config import MCLModelParameters
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 
@@ -84,12 +84,12 @@ class TestMCLModelParameters:
         assert len(fields(MCLModelParameters)) == 9
 
 
-class TestFCNConfigContract:
-    """FCN(**vars(MCLModelParameters(input_dims=1))) works without errors."""
+class TestMCLConfigContract:
+    """MCL(**vars(MCLModelParameters(input_dims=1))) works without errors."""
 
-    def test_vars_unpacking_instantiates_fcn(self) -> None:
+    def test_vars_unpacking_instantiates_mcl(self) -> None:
         params = MCLModelParameters(input_dims=1)
-        model = FCN(**vars(params))
+        model = MCL(**vars(params))
         assert model is not None
 
     def test_custom_encoder_params(self) -> None:
@@ -100,26 +100,26 @@ class TestFCNConfigContract:
             encoder_dilations=(1, 2, 4),
             projection_dims=64,
         )
-        model = FCN(**vars(params))
+        model = MCL(**vars(params))
         assert model is not None
 
     def test_encoder_shape(self) -> None:
         params = MCLModelParameters(input_dims=1)
-        model = FCN(**vars(params))
+        model = MCL(**vars(params))
         x = torch.randn(4, 100, 1)
         encoding = model.encoder(x)
         assert encoding.shape == (4, 128)
 
 
-class TestFCNSyncDist:
+class TestMCLSyncDist:
     """training_step and validation_step use self._sync_dist, not hardcoded True."""
 
     def test_sync_dist_attribute_set(self) -> None:
-        model = FCN(input_dims=1)
+        model = MCL(input_dims=1)
         assert model._sync_dist is False  # noqa: SLF001
 
     def test_sync_dist_true(self) -> None:
-        model = FCN(input_dims=1, sync_dist=True)
+        model = MCL(input_dims=1, sync_dist=True)
         assert model._sync_dist is True  # noqa: SLF001
 
 
@@ -193,7 +193,7 @@ class TestProjectionHead:
     """Projection head uses configurable projection_dims."""
 
     def test_default_projection_dims(self) -> None:
-        model = FCN(input_dims=1)
+        model = MCL(input_dims=1)
         lin_layers = [m for m in model.proj_head if isinstance(m, nn.Linear)]
         assert len(lin_layers) == 2
         # output_dims=128 -> projection_dims=128 -> projection_dims=128
@@ -203,7 +203,7 @@ class TestProjectionHead:
         assert lin_layers[1].out_features == 128
 
     def test_custom_projection_dims(self) -> None:
-        model = FCN(input_dims=1, projection_dims=64)
+        model = MCL(input_dims=1, projection_dims=64)
         lin_layers = [m for m in model.proj_head if isinstance(m, nn.Linear)]
         assert lin_layers[0].out_features == 64
         assert lin_layers[1].in_features == 64
