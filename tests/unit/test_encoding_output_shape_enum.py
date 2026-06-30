@@ -57,7 +57,7 @@ class TestEncodingOutputShapeNoLocalImports:
 
     def test_no_chronocratic_imports(self) -> None:
         """enums/encoding.py must not import from chronocratic."""
-        module_path = Path(__file__).parents[3] / "src" / "chronocratic" / "models" / "enums" / "encoding.py"
+        module_path = Path(__file__).parents[2] / "src" / "chronocratic" / "models" / "enums" / "encoding.py"
         source = module_path.read_text(encoding="utf-8")
         tree = ast.parse(source)
 

@@ -7,6 +7,7 @@ try:
 except ImportError:
     __version__ = "0.0.0.dev0"  # fallback for editable installs before _version.py is generated
 
+from .enums import EncodingOutputShape
 from .convolutional import (
     AutoTCL,
     AutoTCLModelParameters,
@@ -31,6 +32,7 @@ from .recurrent import (
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
+    "EncodingOutputShape",
     "MCL",
     "MCLModelParameters",
     "TST",
