@@ -77,8 +77,14 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         flat = encoder(batch_x)  # (B, D)
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR default
-        _warn_sequence_fallback(type(self))
-        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE
+        elif output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE fallback
+        else:
+            raise ValueError(
+                f"MCL does not support output={output}; "
+                f"supported: {type(self).supported_outputs}"
+            )
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = extract_features_from_batch(batch)

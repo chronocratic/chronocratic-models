@@ -223,8 +223,14 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         z_mean = encoder(batch_x)[0]  # (B, latent_dim)
         if output == EncodingOutputShape.VECTOR:
             return z_mean  # (B, D) — VECTOR default
-        _warn_sequence_fallback(type(self))
-        return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE
+        elif output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE fallback
+        else:
+            raise ValueError(
+                f"TimeVAE does not support output={output}; "
+                f"supported: {type(self).supported_outputs}"
+            )
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(

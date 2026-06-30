@@ -227,7 +227,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
             return pool_feature_map(features)  # (B, C)
-        return features.transpose(1, 2)  # (B, L', C)
+        elif output == EncodingOutputShape.SEQUENCE:
+            return features.transpose(1, 2)  # (B, L', C)
+        else:
+            raise ValueError(
+                f"TSTCC does not support output={output}; "
+                f"supported: {type(self).supported_outputs}"
+            )
 
     @property
     def representation_dim(self) -> int:

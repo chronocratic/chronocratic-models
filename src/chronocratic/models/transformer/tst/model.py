@@ -231,7 +231,13 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         full_sequence = encoder.encode_representations(batch_x, padding_masks)
         if output == EncodingOutputShape.VECTOR:
             return full_sequence.mean(dim=1)  # (B, hidden_dims)
-        return full_sequence  # (B, seq_len, hidden_dims)
+        elif output == EncodingOutputShape.SEQUENCE:
+            return full_sequence  # (B, seq_len, hidden_dims)
+        else:
+            raise ValueError(
+                f"TST does not support output={output}; "
+                f"supported: {type(self).supported_outputs}"
+            )
 
     @property
     def encoder(self) -> nn.Module:
