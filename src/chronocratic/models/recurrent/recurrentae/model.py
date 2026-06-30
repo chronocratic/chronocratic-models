@@ -57,6 +57,10 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         sync_dist: Whether to sync logged metrics across devices.
     """
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
+
     def __init__(
         self,
         input_dims: int,
@@ -110,7 +114,11 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        return encoder(batch_x)[:, -1, :]
+        """Return last-step vector or full sequence from the encoder."""
+        encoded = encoder(batch_x)  # (B, T, H)
+        if output == EncodingOutputShape.VECTOR:
+            return encoded[:, -1, :]  # (B, H)
+        return encoded  # (B, T, H)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""

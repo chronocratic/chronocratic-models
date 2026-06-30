@@ -36,6 +36,10 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     repo https://github.com/paudan/TimeNet under MIT License.
     """
 
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
+
     def __init__(
         self,
         hidden_dims: int = 64,
@@ -106,8 +110,11 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Select the final timestep as the pooled representation."""
-        return encoder(batch_x)[:, -1, :]
+        """Return last-step vector or full sequence from the encoder."""
+        encoded = encoder(batch_x)  # (B, T, H)
+        if output == EncodingOutputShape.VECTOR:
+            return encoded[:, -1, :]  # (B, H)
+        return encoded  # (B, T, H)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""
