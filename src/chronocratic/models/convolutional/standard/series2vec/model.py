@@ -9,6 +9,7 @@ from torch import nn
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 from chronocratic.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
     pairwise_soft_dtw_distances,
@@ -108,6 +109,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         flat = encoder.encode(batch_x)  # (B, D)
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR default
+        _warn_sequence_fallback(type(self))
         return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:

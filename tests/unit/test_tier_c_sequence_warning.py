@@ -18,6 +18,7 @@ from chronocratic.models import EncodingOutputShape
 from chronocratic.models.convolutional.standard.mcl.model import MCL
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 from chronocratic.models.generative.timevae.model import TimeVAE
+from chronocratic.models.utils.helpers import _warned_sequence_fallback
 
 
 @pytest.fixture
@@ -201,6 +202,10 @@ class TestTimeVAESupportedOutputs:
 
 class TestWarningDedup:
     """Warning fires once per class."""
+
+    def setup_method(self) -> None:
+        """Clear the warning tracker so dedup tests are isolated."""
+        _warned_sequence_fallback.clear()
 
     def test_series2vec_warns_once(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()

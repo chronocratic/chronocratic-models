@@ -5,6 +5,7 @@ __all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from chronocratic.models.layers.general import (
     LevelModel,
@@ -208,8 +209,22 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Return the latent mean ``z_mean`` from the encoder output tuple."""
-        return encoder(batch_x)[0]
+        """Return the latent mean ``z_mean`` from the encoder output tuple.
+
+        Args:
+            encoder: The TimeVAEEncoder module.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+
+        Returns:
+            Representations of shape ``(B, latent_dim)`` for VECTOR or
+            ``(B, 1, latent_dim)`` for SEQUENCE.
+        """
+        z_mean = encoder(batch_x)[0]  # (B, latent_dim)
+        if output == EncodingOutputShape.VECTOR:
+            return z_mean  # (B, D) — VECTOR default
+        _warn_sequence_fallback(type(self))
+        return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
