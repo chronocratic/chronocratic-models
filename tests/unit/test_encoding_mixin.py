@@ -243,7 +243,10 @@ class TestEncodeBatchOutputParam:
                 output: EncodingOutputShape = EncodingOutputShape.VECTOR,
             ) -> torch.Tensor:
                 _EncodeTracker.last_output = output
-                return super().encode_batch(batch_x, output=output)
+                base = super().encode_batch(batch_x, output=output)
+                if output == EncodingOutputShape.SEQUENCE and base.ndim == 2:
+                    return base.unsqueeze(1)
+                return base
 
         model = _EncodeTracker()
         data = torch.randn(4, 10)
