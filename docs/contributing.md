@@ -65,7 +65,7 @@ The project uses [towncrier](https://towncrier.readthedocs.io/) for managing cha
 
 ```bash
 # Create a fragment (e.g., for a new feature in PR #42)
-echo "Added new TimeVAE model for generative time-series encoding." > changelog.d/42.added.md
+echo "Added new TimeVAE model for generative time series encoding." > changelog.d/42.added.md
 ```
 
 Fragment types: `added`, `changed`, `deprecated`, `removed`, `fixed`, `security`.

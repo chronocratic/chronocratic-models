@@ -114,7 +114,7 @@ class TimeVAEDecoder(nn.Module):
             )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Decode latent samples into reconstructed time-series batches."""
+        """Decode latent samples into reconstructed time series batches."""
         outputs = self.level_model(z)
         if self.trend_poly > 0:
             outputs += self.trend_layer(z)

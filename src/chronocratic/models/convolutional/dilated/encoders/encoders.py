@@ -105,7 +105,7 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
 class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
     """
-    A class to encode time-series data using a Dilated Convolutional Neural Network based on the implementation of the AutoTCL paper: https://github.com/AslanDing/AutoTCL.
+    A class to encode time series data using a Dilated Convolutional Neural Network based on the implementation of the AutoTCL paper: https://github.com/AslanDing/AutoTCL.
 
     Parameters
     ----------
@@ -411,7 +411,7 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
 
 class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
     """
-    A class to encode time-series data using a Convolutional Sparse Transformer implemented based on the CoST paper: https://github.com/salesforce/CoST.
+    A class to encode time series data using a Convolutional Sparse Transformer implemented based on the CoST paper: https://github.com/salesforce/CoST.
 
     Parameters
     input_dims : int
@@ -566,7 +566,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
 class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
     """
-    A class to encode time-series data using a Convolutional Sparse Transformer based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
+    A class to encode time series data using a Convolutional Sparse Transformer based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
 
     Parameters
     input_dims: Number of input dimensions.

@@ -10,7 +10,7 @@ _rng = np.random.default_rng()
 
 
 class MaskMode(Enum):
-    """Masking strategies applied to time-series encoder inputs.
+    """Masking strategies applied to time series encoder inputs.
 
     Attributes:
         BINOMIAL: Each time step is independently masked with fixed probability.

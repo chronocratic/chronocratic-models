@@ -1,6 +1,6 @@
 # Transformer Models
 
-Attention-based architectures for time-series representation learning.
+Attention-based architectures for time series representation learning.
 
 ## TST
 

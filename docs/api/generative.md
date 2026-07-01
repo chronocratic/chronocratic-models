@@ -1,10 +1,10 @@
 # Generative Models
 
-Generative architectures for time-series representation learning.
+Generative architectures for time series representation learning.
 
 ## TimeVAE
 
-Variational autoencoder for time-series, with KL divergence + reconstruction loss. Uses `BasicEncodingMixin` for inference.
+Variational autoencoder for time series, with KL divergence + reconstruction loss. Uses `BasicEncodingMixin` for inference.
 
 ```{eval-rst}
 .. automodule:: chronocratic.models.generative.timevae.model

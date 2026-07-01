@@ -119,7 +119,7 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
         """Run the encoder forward pass.
 
         Args:
-            data: Input time-series tensor of shape ``(batch, time, channels)``.
+            data: Input time series tensor of shape ``(batch, time, channels)``.
 
         Returns:
             Dict with ``augmented_data`` and ``augmentation_factor`` tensors.
@@ -130,7 +130,7 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
         """Return an augmented view produced by the encoder model.
 
         Args:
-            x: Input time-series tensor of shape ``(batch, time, channels)``.
+            x: Input time series tensor of shape ``(batch, time, channels)``.
 
         Returns:
             A single augmented view wrapped in :class:`SingleView`.
