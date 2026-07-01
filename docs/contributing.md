@@ -296,12 +296,13 @@ Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as
 | AutoTCL | Yes | Yes | Both via pooling |
 | TSTCC | Yes | No | VECTOR only |
 | Series2Vec | Yes | Yes | Both supported |
+| RecurrentAutoEncoder | Yes | Yes | Both supported |
 
 #### Encoding Mixin Architecture
 
 Two mixin families serve different encoder topologies:
 
-1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, MCL, TSTCC, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
+1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, TSTCC, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
 
 2. **`BaseEncodingMixin`** (`convolutional/dilated/_mixin/encoding.py`) — Dilated conv models (TS2Vec, AutoTCL, CoST) with sliding-window inference, multi-scale pooling, and mask-mode handling. Subclasses override `_get_encoder()`, `_get_eval_method()`, and `_get_slice()`. Specialized mixins extend the base: `PoolingEncodingMixin` (TS2Vec, AutoTCL) and `DecompositionEncodingMixin` (CoST).
 

@@ -23,6 +23,7 @@ pip install chronocratic-models
 
 ```python
 import torch
+from lightning.pytorch import Trainer
 from chronocratic.models import TS2Vec, TS2VecModelParameters
 
 # Create model using parameters dataclass
@@ -31,6 +32,10 @@ model = TS2Vec(**vars(params))
 
 # Prepare synthetic time series (n_instance, n_timestamps, n_features)
 synthetic_data = torch.randn(2, 100, 1)
+
+# Train the model first (models do not ship with pre-trained weights)
+trainer = Trainer(max_epochs=1, accelerator="cpu", enable_checkpointing=False)
+trainer.fit(model, train_dataloaders=synthetic_data)
 
 # Get multi-scale representations
 representations = model.encode(
@@ -71,6 +76,7 @@ print(representations.shape)
 | Model | Description |
 |-------|-------------|
 | **TimeNet** | Recurrent encoder-decoder architecture for time-series representation learning. |
+| **RecurrentAutoEncoder** | Recurrent autoencoder for time-series representation learning. Code source: [time-series-foundation-models/time-series-autoencoder](https://github.com/time-series-foundation-models/time-series-autoencoder) |
 
 ### Generative
 
