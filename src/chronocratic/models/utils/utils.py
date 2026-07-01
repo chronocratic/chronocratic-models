@@ -205,10 +205,7 @@ def pad_tensor_with_nan(
         left_padding_shape = list(tensor.shape)
         left_padding_shape[axis] = left_pad
         left_padding = torch.full(
-            left_padding_shape,
-            float("nan"),
-            device=tensor.device,
-            dtype=tensor.dtype,
+            left_padding_shape, float("nan"), device=tensor.device, dtype=tensor.dtype
         )
         tensor = torch.cat((left_padding, tensor), dim=axis)
 
@@ -216,10 +213,7 @@ def pad_tensor_with_nan(
         right_padding_shape = list(tensor.shape)
         right_padding_shape[axis] = right_pad
         right_padding = torch.full(
-            right_padding_shape,
-            float("nan"),
-            device=tensor.device,
-            dtype=tensor.dtype,
+            right_padding_shape, float("nan"), device=tensor.device, dtype=tensor.dtype
         )
         tensor = torch.cat((tensor, right_padding), dim=axis)
 

@@ -101,16 +101,12 @@ class TestMCLVectorOutput:
 
     def test_vector_shape(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()
-        result = mcl_model._encode_batch(
-            encoder, batch_input, output=EncodingOutputShape.VECTOR
-        )
+        result = mcl_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.VECTOR)
         assert result.shape == (2, 64)
 
     def test_vector_is_2d(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()
-        result = mcl_model._encode_batch(
-            encoder, batch_input, output=EncodingOutputShape.VECTOR
-        )
+        result = mcl_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
 
 
@@ -207,7 +203,9 @@ class TestWarningDedup:
         """Clear the warning tracker so dedup tests are isolated."""
         _warned_sequence_fallback.clear()
 
-    def test_series2vec_warns_once(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
+    def test_series2vec_warns_once(
+        self, series2vec_model: Series2Vec, batch_input: torch.Tensor
+    ) -> None:
         encoder = series2vec_model._get_encoder()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -225,22 +223,14 @@ class TestWarningDedup:
         encoder = mcl_model._get_encoder()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            mcl_model._encode_batch(
-                encoder, batch_input, output=EncodingOutputShape.SEQUENCE
-            )
-            mcl_model._encode_batch(
-                encoder, batch_input, output=EncodingOutputShape.SEQUENCE
-            )
+            mcl_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.SEQUENCE)
+            mcl_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.SEQUENCE)
             assert len(w) == 1
 
     def test_timevae_warns_once(self, timevae_model: TimeVAE, batch_input: torch.Tensor) -> None:
         encoder = timevae_model._get_encoder()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            timevae_model._encode_batch(
-                encoder, batch_input, output=EncodingOutputShape.SEQUENCE
-            )
-            timevae_model._encode_batch(
-                encoder, batch_input, output=EncodingOutputShape.SEQUENCE
-            )
+            timevae_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.SEQUENCE)
+            timevae_model._encode_batch(encoder, batch_input, output=EncodingOutputShape.SEQUENCE)
             assert len(w) == 1

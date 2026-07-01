@@ -19,12 +19,7 @@ from chronocratic.models.transformer.tst.model import TST
 def tst_model() -> TST:
     """Create a small TST model for testing."""
     return TST(
-        input_dims=3,
-        sequence_length=16,
-        hidden_dims=8,
-        num_heads=2,
-        depth=1,
-        feedforward_dims=32,
+        input_dims=3, sequence_length=16, hidden_dims=8, num_heads=2, depth=1, feedforward_dims=32
     )
 
 
@@ -35,9 +30,7 @@ class TestTSTEncodeBatchShapes:
         """VECTOR produces (B, hidden_dims) via mean(dim=1)."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(4, 16, 3)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.VECTOR
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
         assert result.shape == (4, 8)  # (B, hidden_dims)
 
@@ -45,9 +38,7 @@ class TestTSTEncodeBatchShapes:
         """SEQUENCE produces (B, seq_len, hidden_dims) natively."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(4, 16, 3)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.SEQUENCE
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3
         assert result.shape == (4, 16, 8)  # (B, seq_len, hidden_dims)
 
@@ -56,9 +47,7 @@ class TestTSTEncodeBatchShapes:
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(4, 16, 3)
         result_default = tst_model._encode_batch(encoder, batch_x)
-        result_vector = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.VECTOR
-        )
+        result_vector = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         assert result_default.shape == result_vector.shape
 
 
@@ -71,12 +60,8 @@ class TestTSTMeanPoolReduction:
         # Eval mode ensures deterministic output (no dropout) for comparison
         encoder.eval()
         batch_x = torch.randn(2, 16, 3)
-        sequence = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.SEQUENCE
-        )
-        vector = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.VECTOR
-        )
+        sequence = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.SEQUENCE)
+        vector = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         expected = sequence.mean(dim=1)
         assert torch.allclose(vector, expected)
 
@@ -88,9 +73,7 @@ class TestTSTGradientFlow:
         """Backprop works through VECTOR path."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(2, 16, 3, requires_grad=True)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.VECTOR
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         loss = result.pow(2).sum()
         loss.backward()
         assert batch_x.grad is not None
@@ -100,9 +83,7 @@ class TestTSTGradientFlow:
         """Backprop works through SEQUENCE path."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(2, 16, 3, requires_grad=True)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.SEQUENCE
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.SEQUENCE)
         loss = result.pow(2).sum()
         loss.backward()
         assert batch_x.grad is not None
@@ -112,18 +93,14 @@ class TestTSTGradientFlow:
         """VECTOR result requires grad when input requires grad."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(2, 16, 3, requires_grad=True)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.VECTOR
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         assert result.requires_grad
 
     def test_no_detach_in_sequence_path(self, tst_model: TST) -> None:
         """SEQUENCE result requires grad when input requires grad."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(2, 16, 3, requires_grad=True)
-        result = tst_model._encode_batch(
-            encoder, batch_x, output=EncodingOutputShape.SEQUENCE
-        )
+        result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.SEQUENCE)
         assert result.requires_grad
 
 
@@ -171,7 +148,5 @@ class TestTSTEncodeBatchIntegration:
     def test_encode_sequence(self, tst_model: TST) -> None:
         """encode() with SEQUENCE returns (N, seq_len, hidden_dims)."""
         data = torch.randn(5, 16, 3)
-        result = tst_model.encode(
-            data, batch_size=2, output=EncodingOutputShape.SEQUENCE
-        )
+        result = tst_model.encode(data, batch_size=2, output=EncodingOutputShape.SEQUENCE)
         assert result.shape == (5, 16, 8)

@@ -43,9 +43,7 @@ class TestTimeNetVectorOutput:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)
 
     def test_vector_ndim(self) -> None:
@@ -53,9 +51,7 @@ class TestTimeNetVectorOutput:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
 
 
@@ -67,9 +63,7 @@ class TestTimeNetSequenceOutput:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.shape == (4, 20, 16)
 
     def test_sequence_ndim(self) -> None:
@@ -77,9 +71,7 @@ class TestTimeNetSequenceOutput:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3
 
     def test_sequence_length_matches_input(self) -> None:
@@ -87,9 +79,7 @@ class TestTimeNetSequenceOutput:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(3, 25, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.shape[1] == 25
 
 
@@ -101,9 +91,7 @@ class TestTimeNetGradientFlow:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -113,9 +101,7 @@ class TestTimeNetGradientFlow:
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -137,9 +123,7 @@ class TestTimeNetEncodeIntegration:
         """encode() mixin passes VECTOR through to _encode_batch."""
         model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
         data = torch.randn(4, 20, 3)
-        result = model.encode(
-            data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR
-        )
+        result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)
 
 
@@ -172,9 +156,7 @@ class TestRecurrentAEVectorOutput:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)
 
     def test_vector_ndim(self) -> None:
@@ -182,9 +164,7 @@ class TestRecurrentAEVectorOutput:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
 
 
@@ -196,9 +176,7 @@ class TestRecurrentAESequenceOutput:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.shape == (4, 20, 16)
 
     def test_sequence_ndim(self) -> None:
@@ -206,9 +184,7 @@ class TestRecurrentAESequenceOutput:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3
 
     def test_sequence_length_matches_input(self) -> None:
@@ -216,9 +192,7 @@ class TestRecurrentAESequenceOutput:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(3, 25, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.shape[1] == 25
 
 
@@ -230,9 +204,7 @@ class TestRecurrentAEGradientFlow:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -242,9 +214,7 @@ class TestRecurrentAEGradientFlow:
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -266,7 +236,5 @@ class TestRecurrentAEEncodeIntegration:
         """encode() mixin passes VECTOR through to _encode_batch."""
         model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
         data = torch.randn(4, 20, 3)
-        result = model.encode(
-            data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR
-        )
+        result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)

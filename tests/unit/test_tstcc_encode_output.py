@@ -37,9 +37,7 @@ class TestTSTCCVectorOutput:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(4, 256, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)
 
     def test_vector_ndim(self) -> None:
@@ -47,9 +45,7 @@ class TestTSTCCVectorOutput:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
 
 
@@ -61,9 +57,7 @@ class TestTSTCCSequenceOutput:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(4, 256, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         # conv with kernel=8, stride=4: L' = (256 - 8) // 4 + 1 = 63
         # then two inner blocks with kernel=8, stride=1: L'' = 63 - 8 + 1 = 56
         # (exact length depends on encoder internals; assert ndim and last dim)
@@ -76,9 +70,7 @@ class TestTSTCCSequenceOutput:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3
 
     def test_sequence_length_matches_conv_output(self) -> None:
@@ -88,9 +80,7 @@ class TestTSTCCSequenceOutput:
         data = torch.randn(2, 256, 3)
         # encoder outputs (B, C, L')
         raw = encoder(data.float())
-        seq = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        seq = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         # SEQUENCE should be (B, L', C) so seq.shape[1] == raw.shape[2]
         assert seq.shape[1] == raw.shape[2]
 
@@ -103,9 +93,7 @@ class TestTSTCCGradientFlow:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.VECTOR
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -115,9 +103,7 @@ class TestTSTCCGradientFlow:
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3, requires_grad=True)
-        result = model._encode_batch(
-            encoder, data, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
         result.sum().backward()
         assert data.grad is not None
         assert torch.isfinite(data.grad).all()
@@ -141,8 +127,6 @@ class TestTSTCCEncodeIntegration:
         """encode() mixin passes VECTOR through to _encode_batch."""
         model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
         data = torch.randn(4, 256, 3)
-        result = model.encode(
-            data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR
-        )
+        result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
         assert result.shape == (4, 16)

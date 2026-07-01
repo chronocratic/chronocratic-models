@@ -20,6 +20,7 @@ class TestWarnSequenceFallback:
         """Reset the module-level dedup set before each test."""
         try:
             from chronocratic.models.utils.helpers import _warned_sequence_fallback as _set
+
             _set.clear()
         except ImportError:
             pass  # helpers not created yet (RED phase)

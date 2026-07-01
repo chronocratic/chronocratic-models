@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import torch
 
-from chronocratic.models.convolutional.dilated._mixin.encoding import (
-    DecompositionEncodingMixin,
-)
+from chronocratic.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
 
 
 class _TestableDecompositionModel(DecompositionEncodingMixin, torch.nn.Module):
@@ -37,9 +35,7 @@ class _DecompositionEncoder(torch.nn.Module):
         super().__init__()
         self.feature_dim = feature_dim
 
-    def forward(
-        self, x: torch.Tensor, mask_mode=None
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor, mask_mode=None) -> tuple[torch.Tensor, torch.Tensor]:
         """Produce (trend, seasonality) pairs of shape (B, L, D)."""
         batch, seq = x.shape[:2]
         trend = torch.ones(batch, seq, self.feature_dim, device=x.device)
@@ -92,6 +88,8 @@ class TestCostSequenceConcat:
 
         model = _TestableDecompositionModel(feature_dim=4)
         data = torch.randn(4, 10, 4)
-        result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
+        result = model.encode(
+            data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
+        )
         assert result.ndim == 3
         assert result.shape == (4, 10, 8), f"Expected (4, 10, 8), got {result.shape}"

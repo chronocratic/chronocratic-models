@@ -30,11 +30,7 @@ class _TestableEncodingModel(BaseEncodingMixin, torch.nn.Module):
         return self._evaluate_for_test
 
     def _evaluate_for_test(
-        self,
-        input_tensor: torch.Tensor,
-        mask=None,
-        slicing=None,
-        encoding_window=None,
+        self, input_tensor: torch.Tensor, mask=None, slicing=None, encoding_window=None
     ) -> torch.Tensor:
         """Echo encoding_window into output shape so derivation is testable."""
         batch, seq, features = input_tensor.shape
@@ -104,9 +100,7 @@ class TestEncodeBatchOutputDerivation:
         """encoding_window='full_series' takes precedence over output=SEQUENCE."""
         batch_x = torch.randn(2, 10, 5)
         result = model.encode_batch(
-            batch_x,
-            output=EncodingOutputShape.SEQUENCE,
-            encoding_window="full_series",
+            batch_x, output=EncodingOutputShape.SEQUENCE, encoding_window="full_series"
         )
         # explicit encoding_window wins, so we get squeezed VECTOR output
         assert result.ndim == 2
@@ -124,7 +118,9 @@ class TestEncodeOutputDerivation:
     def test_encode_sequence_returns_3d(self, model: _TestableEncodingModel) -> None:
         """encode(data, batch_size=N, output=SEQUENCE) returns 3D."""
         data = torch.randn(4, 10, 5)
-        result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
+        result = model.encode(
+            data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
+        )
         assert result.ndim == 3
 
     def test_encode_explicit_encoding_window_overrides(self, model: _TestableEncodingModel) -> None:

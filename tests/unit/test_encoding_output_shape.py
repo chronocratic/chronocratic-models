@@ -83,12 +83,7 @@ def tstcc_model() -> TSTCC:
 def tst_model() -> TST:
     """TST (Tier B, Basic mixin)."""
     return TST(
-        input_dims=3,
-        sequence_length=32,
-        hidden_dims=16,
-        num_heads=4,
-        depth=1,
-        feedforward_dims=32,
+        input_dims=3, sequence_length=32, hidden_dims=16, num_heads=4, depth=1, feedforward_dims=32
     )
 
 
@@ -101,13 +96,7 @@ def series2vec_model() -> Series2Vec:
 @pytest.fixture(scope="module")
 def cost_model() -> CoST:
     """CoST (Tier A, Dilated mixin)."""
-    return CoST(
-        input_dims=3,
-        sequence_length=64,
-        hidden_dims=16,
-        output_dims=32,
-        depth=2,
-    )
+    return CoST(input_dims=3, sequence_length=64, hidden_dims=16, output_dims=32, depth=2)
 
 
 @pytest.fixture(scope="module")
@@ -203,9 +192,7 @@ class TestDefaultVectorShape:
         model = _resolve_model(model_name, request)
         data = _make_data(model_name)
         result = model.encode(data, batch_size=2, num_workers=0)
-        assert result.ndim == 2, (
-            f"{model_name} encode() default should be 2-D, got {result.ndim}-D"
-        )
+        assert result.ndim == 2, f"{model_name} encode() default should be 2-D, got {result.ndim}-D"
         assert result.shape[0] == data.shape[0]
 
     @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
@@ -268,9 +255,7 @@ class TestSequenceShape:
             encoder = model._get_encoder()
             encoder.eval()
         result = model.encode_batch(data, output=EncodingOutputShape.SEQUENCE)
-        assert result.ndim == 3, (
-            f"{model_name} SEQUENCE should be 3-D, got {result.ndim}-D"
-        )
+        assert result.ndim == 3, f"{model_name} SEQUENCE should be 3-D, got {result.ndim}-D"
         assert result.shape[0] == data.shape[0]
 
     @pytest.mark.parametrize("model_name", TIER_AB_NAMES)
@@ -331,9 +316,7 @@ class TestSupportedOutputs:
     """Each model declares the correct supported_outputs frozenset."""
 
     @pytest.mark.parametrize("model_name", TIER_AB_NAMES)
-    def test_tier_ab_supports_both(
-        self, model_name: str, request: pytest.FixtureRequest
-    ) -> None:
+    def test_tier_ab_supports_both(self, model_name: str, request: pytest.FixtureRequest) -> None:
         """Tier A/B models support both VECTOR and SEQUENCE."""
         model = _resolve_model(model_name, request)
         assert model.supported_outputs == frozenset(
@@ -346,9 +329,9 @@ class TestSupportedOutputs:
     ) -> None:
         """Tier C models support only VECTOR."""
         model = _resolve_model(model_name, request)
-        assert model.supported_outputs == frozenset(
-            {EncodingOutputShape.VECTOR}
-        ), f"{model_name} should support {{VECTOR}} only"
+        assert model.supported_outputs == frozenset({EncodingOutputShape.VECTOR}), (
+            f"{model_name} should support {{VECTOR}} only"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -403,15 +386,9 @@ class TestGradientFlow:
         data = _make_data(model_name)
         x = data.requires_grad_(True)
         result = model.encode(
-            x,
-            batch_size=2,
-            num_workers=0,
-            output=EncodingOutputShape.VECTOR,
-            gradient_enabled=True,
+            x, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR, gradient_enabled=True
         )
-        assert result.requires_grad, (
-            f"{model_name} VECTOR encode should require grad"
-        )
+        assert result.requires_grad, f"{model_name} VECTOR encode should require grad"
 
     @pytest.mark.parametrize("model_name", sorted(TIER_A_BASIC | TIER_B_BASIC | TIER_C_BASIC))
     def test_encode_sequence_gradient_enabled(
@@ -429,9 +406,7 @@ class TestGradientFlow:
             output=EncodingOutputShape.SEQUENCE,
             gradient_enabled=True,
         )
-        assert result.requires_grad, (
-            f"{model_name} SEQUENCE encode should require grad"
-        )
+        assert result.requires_grad, f"{model_name} SEQUENCE encode should require grad"
 
 
 # ---------------------------------------------------------------------------
@@ -461,9 +436,7 @@ class TestRankAssert:
         model = _BrokenModel(input_dims=3, output_dims=16)
         data = torch.randn(4, 50, 3)
         with pytest.raises(AssertionError, match=r"Expected 2D, got 3D"):
-            model.encode(
-                data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR
-            )
+            model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
 
     def test_sequence_assert_fires_on_2d_output(self) -> None:
         """encode(output=SEQUENCE) raises AssertionError if _encode_batch returns 2-D."""
@@ -495,9 +468,7 @@ class TestRankAssert:
         )
         data = torch.randn(4, 32, 3)
         with pytest.raises(AssertionError, match=r"Expected 3D, got 2D"):
-            model.encode(
-                data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
-            )
+            model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
 
 
 # ---------------------------------------------------------------------------
@@ -509,18 +480,13 @@ class TestEncodeEncodeBatchAgreement:
     """encode() and encode_batch() return the same rank for the same output."""
 
     @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
-    def test_vector_rank_agreement(
-        self, model_name: str, request: pytest.FixtureRequest
-    ) -> None:
+    def test_vector_rank_agreement(self, model_name: str, request: pytest.FixtureRequest) -> None:
         """encode(output=VECTOR) and encode_batch(output=VECTOR) agree on rank."""
         _warned_sequence_fallback.clear()
         model = _resolve_model(model_name, request)
         data = _make_data(model_name)
         encode_result = model.encode(
-            data,
-            batch_size=data.shape[0],
-            num_workers=0,
-            output=EncodingOutputShape.VECTOR,
+            data, batch_size=data.shape[0], num_workers=0, output=EncodingOutputShape.VECTOR
         )
 
         data2 = _make_data(model_name)
@@ -535,18 +501,13 @@ class TestEncodeEncodeBatchAgreement:
         )
 
     @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
-    def test_sequence_rank_agreement(
-        self, model_name: str, request: pytest.FixtureRequest
-    ) -> None:
+    def test_sequence_rank_agreement(self, model_name: str, request: pytest.FixtureRequest) -> None:
         """encode(output=SEQUENCE) and encode_batch(output=SEQUENCE) agree on rank."""
         _warned_sequence_fallback.clear()
         model = _resolve_model(model_name, request)
         data = _make_data(model_name)
         encode_result = model.encode(
-            data,
-            batch_size=data.shape[0],
-            num_workers=0,
-            output=EncodingOutputShape.SEQUENCE,
+            data, batch_size=data.shape[0], num_workers=0, output=EncodingOutputShape.SEQUENCE
         )
 
         data2 = _make_data(model_name)
@@ -597,9 +558,7 @@ class TestEncodingWindowPrecedence:
         data = _make_data(model_name)
         encoder = model._get_encoder()
         encoder.eval()
-        result = model.encode_batch(
-            data, output=EncodingOutputShape.VECTOR, encoding_window=None
-        )
+        result = model.encode_batch(data, output=EncodingOutputShape.VECTOR, encoding_window=None)
         assert result.ndim == 3, (
             f"{model_name}: explicit encoding_window=None "
             f"should produce 3-D despite output=VECTOR, got {result.ndim}-D"
@@ -626,9 +585,7 @@ class TestTierCWarning:
             warnings.simplefilter("always")
             model.encode_batch(data, output=EncodingOutputShape.SEQUENCE)
             seq_warnings = [
-                x
-                for x in w
-                if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
+                x for x in w if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
             ]
             assert len(seq_warnings) >= 1, f"{model_name} should emit SEQUENCE warning"
 
@@ -643,16 +600,9 @@ class TestTierCWarning:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             # batch_size=2, 4 samples -> 2 batches
-            model.encode(
-                data,
-                batch_size=2,
-                num_workers=0,
-                output=EncodingOutputShape.SEQUENCE,
-            )
+            model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
             seq_warnings = [
-                x
-                for x in w
-                if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
+                x for x in w if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
             ]
             assert len(seq_warnings) == 1, (
                 f"{model_name} should emit exactly 1 SEQUENCE warning "
@@ -660,9 +610,7 @@ class TestTierCWarning:
             )
 
     @pytest.mark.parametrize("model_name", TIER_C_NAMES)
-    def test_no_warning_on_vector(
-        self, model_name: str, request: pytest.FixtureRequest
-    ) -> None:
+    def test_no_warning_on_vector(self, model_name: str, request: pytest.FixtureRequest) -> None:
         """encode_batch(output=VECTOR) does not emit SEQUENCE warning."""
         _warned_sequence_fallback.clear()
         model = _resolve_model(model_name, request)
@@ -671,8 +619,6 @@ class TestTierCWarning:
             warnings.simplefilter("always")
             model.encode_batch(data, output=EncodingOutputShape.VECTOR)
             seq_warnings = [
-                x
-                for x in w
-                if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
+                x for x in w if issubclass(x.category, UserWarning) and "SEQUENCE" in str(x.message)
             ]
             assert len(seq_warnings) == 0

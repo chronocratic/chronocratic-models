@@ -35,8 +35,7 @@ def _warn_sequence_fallback(cls: type) -> None:
         return
     _warned_sequence_fallback.add(cls_name)
     warnings.warn(
-        f"{cls_name} has no temporal axis; output=SEQUENCE returns "
-        f"a length-1 sequence (N, 1, D).",
+        f"{cls_name} has no temporal axis; output=SEQUENCE returns a length-1 sequence (N, 1, D).",
         category=UserWarning,
         stacklevel=3,
     )

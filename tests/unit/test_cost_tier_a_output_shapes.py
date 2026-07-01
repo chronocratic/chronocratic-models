@@ -11,11 +11,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from chronocratic.models import (
-    AutoTCL,
-    CoST,
-    TS2Vec,
-)
+from chronocratic.models import AutoTCL, CoST, TS2Vec
 from chronocratic.models.enums.encoding import EncodingOutputShape
 
 
@@ -57,9 +53,7 @@ class TestCoSTVectorShape:
         x = torch.randn(2, 50, 3)
         result = model.encode(x, batch_size=2, num_workers=0)
         # Ensure no phantom temporal axis: shape must be (N, D), not (N, 1, D)
-        assert result.shape != (2, 1, result.shape[-1]), (
-            f"Phantom axis detected: {result.shape}"
-        )
+        assert result.shape != (2, 1, result.shape[-1]), f"Phantom axis detected: {result.shape}"
 
 
 class TestCoSTSequenceShape:
@@ -71,28 +65,20 @@ class TestCoSTSequenceShape:
 
     def test_sequence_returns_3d_tensor(self, model: CoST) -> None:
         x = torch.randn(2, 50, 3)
-        result = model.encode(
-            x, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model.encode(x, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3, f"CoST SEQUENCE ndim={result.ndim}, shape={result.shape}"
 
     def test_sequence_preserves_temporal_dim(self, model: CoST) -> None:
         x = torch.randn(2, 50, 3)
-        result = model.encode(
-            x, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model.encode(x, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE)
         assert result.shape[0] == 2, f"Expected batch=2, got {result.shape[0]}"
         # Temporal dim should match input length (not collapsed)
-        assert result.shape[1] == 50, (
-            f"Expected temporal=50, got {result.shape[1]}"
-        )
+        assert result.shape[1] == 50, f"Expected temporal=50, got {result.shape[1]}"
 
     def test_sequence_feature_dim_is_concatenated(self, model: CoST) -> None:
         """SEQUENCE feature dim = trend_dim + seasonality_dim (2D)."""
         x = torch.randn(1, 50, 3)
-        result = model.encode(
-            x, batch_size=1, num_workers=0, output=EncodingOutputShape.SEQUENCE
-        )
+        result = model.encode(x, batch_size=1, num_workers=0, output=EncodingOutputShape.SEQUENCE)
         # Feature dim should be 2x the encoder component_dim
         assert result.shape[2] > 0, f"Feature dim must be positive, got {result.shape[2]}"
 

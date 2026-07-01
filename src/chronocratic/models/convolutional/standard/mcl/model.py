@@ -19,9 +19,7 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
     """
 
-    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
-        {EncodingOutputShape.VECTOR}
-    )
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
 
     def __init__(
         self,

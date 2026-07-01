@@ -223,11 +223,7 @@ class BaseEncodingMixin(ABC):
         """
         # Derive encoding_window from output when not explicitly provided
         if encoding_window is _encoding_window_unset:
-            encoding_window = (
-                "full_series"
-                if output == EncodingOutputShape.VECTOR
-                else None
-            )
+            encoding_window = "full_series" if output == EncodingOutputShape.VECTOR else None
 
         reps = self._get_eval_method()(
             input_tensor=batch_x, mask=mask, slicing=None, encoding_window=encoding_window
@@ -287,11 +283,7 @@ class BaseEncodingMixin(ABC):
 
         # Derive encoding_window from output when not explicitly provided
         if encoding_window is _encoding_window_unset:
-            encoding_window = (
-                "full_series"
-                if output == EncodingOutputShape.VECTOR
-                else None
-            )
+            encoding_window = "full_series" if output == EncodingOutputShape.VECTOR else None
 
         original_training_state = encoder.training
         grad_ctx = nullcontext() if gradient_enabled else torch.inference_mode()
@@ -453,9 +445,7 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
 
         if encoding_window is None:
             # SEQUENCE: concatenate full sequences along feature dim -> (B, L, 2D)
-            output_tensor = torch.cat(
-                [output_trend_tensor, output_seasonality_tensor], dim=-1
-            )
+            output_tensor = torch.cat([output_trend_tensor, output_seasonality_tensor], dim=-1)
         else:
             # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
             output_tensor = concat_last_step_features(
