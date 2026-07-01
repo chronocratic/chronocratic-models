@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a9 (2026-07-01)
+
+### Added
+
+- feat(models): encoding output shape contract (VECTOR/SEQUENCE) across 10 models: Introduces a typed `EncodingOutputShape` contract (VECTOR / SEQUENCE) across all 10 models, so `encode()` can return a flat vector `(B, D)` or a full sequence `(B, T, D)` / `(B, L', C)` depending on model architecture. Adds `supported_outputs` to each mixin, `_encode_batch` output branching on 7 models, a `_warn_sequence_fallback` helper for Tier-C models with no native temporal axis, and a utils/ package split. Includes 2892 lines of new code (16 new test files, 10 model/mixin edits) and renames FCN → MCL. ([#54](https://github.com/chronocratic/chronocratic-models/issues/54))
+
+
 ## v0.1.0a8 (2026-06-29)
 
 ### Added
