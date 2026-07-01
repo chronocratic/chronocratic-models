@@ -34,7 +34,7 @@ class TestUtilsPackageStructure:
 
 
 class TestBarrelReExports:
-    """Verify all 10 __all__ symbols + pad_tensor_with_nan are importable via barrel."""
+    """Verify all __all__ symbols + pad_tensor_with_nan are importable via barrel."""
 
     def test_import_extract_features_from_batch(self) -> None:
         from chronocratic.models.utils import extract_features_from_batch  # noqa: F401

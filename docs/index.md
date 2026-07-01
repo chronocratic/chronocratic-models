@@ -19,7 +19,7 @@ pip install chronocratic-models
 
 ## Models
 
-The library provides ten time series models organized by architecture family.
+The library provides time series models organized by architecture family.
 
 **Convolutional (Dilated):** [](api/conv_dilated) — TS2Vec, CoST, AutoTCL
 

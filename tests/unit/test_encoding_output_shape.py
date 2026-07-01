@@ -1,7 +1,7 @@
-"""Comprehensive tests for the encoding output-shape contract across all 10 models.
+"""Comprehensive tests for the encoding output-shape contract across all models.
 
-Verifies spec §10 requirements:
-- All 10 models return 2-D with VECTOR (default).
+Verifies spec requirements:
+- All models return 2-D with VECTOR (default).
 - Tier A/B models return 3-D with SEQUENCE.
 - Tier C models return (N, 1, D) with SEQUENCE plus a once-per-class warning.
 - supported_outputs is correct per model.
@@ -176,12 +176,12 @@ def _resolve_model(model_name: str, request: pytest.FixtureRequest) -> nn.Module
 
 
 # ---------------------------------------------------------------------------
-# Test 1: All 10 models return 2-D with VECTOR default (encode)
+# Test 1: All models return 2-D with VECTOR default (encode)
 # ---------------------------------------------------------------------------
 
 
 class TestDefaultVectorShape:
-    """All 10 models return 2-D tensors when using the default output=VECTOR."""
+    """All models return 2-D tensors when using the default output=VECTOR."""
 
     @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
     def test_encode_default_returns_2d(
@@ -213,12 +213,12 @@ class TestDefaultVectorShape:
 
 
 # ---------------------------------------------------------------------------
-# Test 2: All 10 models return 2-D with explicit VECTOR (encode_batch)
+# Test 2: All models return 2-D with explicit VECTOR (encode_batch)
 # ---------------------------------------------------------------------------
 
 
 class TestExplicitVector:
-    """All 10 models return 2-D tensors with explicit output=VECTOR."""
+    """All models return 2-D tensors with explicit output=VECTOR."""
 
     @pytest.mark.parametrize("model_name", ALL_MODEL_NAMES)
     def test_encode_batch_vector_returns_2d(
