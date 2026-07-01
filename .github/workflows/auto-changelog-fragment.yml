@@ -107,15 +107,19 @@ jobs:
             [ -f "$OLD" ] && [ "$(basename "$OLD")" != "${PR_NUMBER}.${FRAGMENT_TYPE}.md" ] && rm -f "$OLD"
           done
 
-          # Content: [PR title]: [one-line brief from body].
-          # Strip a leading Conventional Commits prefix from the title for the
-          # bracketed label, then use the first sentence of the PR body as the
-          # brief description (max one line).
-          TITLE="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//' | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
-          TITLE="${TITLE%.}"
-          BRIEF="$(printf '%s' "${PR_BODY}" | sed '/^$/Q' | head -1 | sed 's/[[:space:]]*$//')"
-          BRIEF="${BRIEF%.}"
-          FRAGMENT_CONTENT="[${TITLE}]: ${BRIEF}"
+          # Content: try TL;DR / TL:DR first, then Summary, then stripped title.
+          TLDR="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## \(TL;\|TL:\)DR$/,/^##/p' | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          if [ -z "$TLDR" ]; then
+            TLDR="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## Summary$/,/^##/p' | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          if [ -n "$TLDR" ]; then
+            FRAGMENT_CONTENT="$TLDR"
+          else
+            # Strip Conventional Commits prefix, capitalise first letter.
+            FRAGMENT_CONTENT="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
+            FRAGMENT_CONTENT="$(printf '%s' "${FRAGMENT_CONTENT}" | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
+            FRAGMENT_CONTENT="${FRAGMENT_CONTENT%.}"
+          fi
 
           FRAGMENT="changelog.d/${PR_NUMBER}.${FRAGMENT_TYPE}.md"
           printf '%s\n' "${FRAGMENT_CONTENT}" > "${FRAGMENT}"
