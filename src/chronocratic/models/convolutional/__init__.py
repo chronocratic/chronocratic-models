@@ -21,15 +21,15 @@ from .standard import (
 
 __all__ = [
     "MCL",
-    "MCLModelParameters",
     "TSTCC",
-    "TSTCCModelParameters",
     "AutoTCL",
     "AutoTCLModelParameters",
     "CoST",
     "CoSTModelParameters",
+    "MCLModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
     "TS2Vec",
     "TS2VecModelParameters",
+    "TSTCCModelParameters",
 ]

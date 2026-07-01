@@ -114,13 +114,10 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         encoded = encoder(batch_x)  # (B, T, D) - T=time steps, D=hidden dim
         if output == EncodingOutputShape.VECTOR:
             return encoded[:, -1, :]  # (B, D) - last time step
-        elif output == EncodingOutputShape.SEQUENCE:
+        if output == EncodingOutputShape.SEQUENCE:
             return encoded  # (B, T, D)
-        else:
-            raise ValueError(
-                f"TimeNet does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
-            )
+        msg = f"TimeNet does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""

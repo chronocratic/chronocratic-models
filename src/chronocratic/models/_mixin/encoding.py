@@ -55,9 +55,7 @@ class BasicEncodingMixin(ABC):
     # checkers see the contract; not set at the mixin level.
     device: torch.device
 
-    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
-        {EncodingOutputShape.VECTOR}
-    )
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
 
     @abstractmethod
     def _get_encoder(self) -> nn.Module:
@@ -72,7 +70,7 @@ class BasicEncodingMixin(ABC):
         encoder: nn.Module,
         batch_x: torch.Tensor,
         *,
-        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,  # noqa:ARG002
     ) -> torch.Tensor:
         """Map one on-device batch to its representation tensor.
 
@@ -97,10 +95,7 @@ class BasicEncodingMixin(ABC):
         return encoder(batch_x)
 
     def encode_batch(
-        self,
-        batch_x: torch.Tensor,
-        *,
-        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+        self, batch_x: torch.Tensor, *, output: EncodingOutputShape = EncodingOutputShape.VECTOR
     ) -> torch.Tensor:
         """Encode one on-device batch in a single forward pass.
 
@@ -117,9 +112,7 @@ class BasicEncodingMixin(ABC):
             Representation tensor, on ``self.device``. Rank matches
             ``output``: 2-D for VECTOR, 3-D for SEQUENCE.
         """
-        return self._encode_batch(
-            self._get_encoder(), batch_x.to(self.device), output=output
-        )
+        return self._encode_batch(self._get_encoder(), batch_x.to(self.device), output=output)
 
     def encode(
         self,
@@ -186,10 +179,8 @@ class BasicEncodingMixin(ABC):
                     for (batch_x,) in loader
                 ]
                 result = torch.cat(outputs, dim=0)
-                expected_ndim = (
-                    2 if output == EncodingOutputShape.VECTOR else 3
-                )
-                assert result.ndim == expected_ndim, (
+                expected_ndim = 2 if output == EncodingOutputShape.VECTOR else 3
+                assert result.ndim == expected_ndim, (  # noqa:S101
                     f"Expected {expected_ndim}D, got {result.ndim}D"
                 )
                 return result

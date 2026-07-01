@@ -8,9 +8,9 @@ from .tstcc import TSTCC, TSTCCModelParameters
 
 __all__ = [
     "MCL",
+    "TSTCC",
     "MCLModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
-    "TSTCC",
     "TSTCCModelParameters",
 ]

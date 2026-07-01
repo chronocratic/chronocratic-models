@@ -5,7 +5,6 @@ __all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils.helpers import _warn_sequence_fallback
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from chronocratic.models.layers.general import (
     LevelModel,
@@ -14,6 +13,7 @@ from chronocratic.models.layers.general import (
     SeasonalLayer,
     TrendLayer,
 )
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
 class TimeVAEEncoder(nn.Module):
@@ -223,14 +223,11 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         z_mean = encoder(batch_x)[0]  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
             return z_mean  # (B, D) — VECTOR
-        elif output == EncodingOutputShape.SEQUENCE:
+        if output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
             return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        else:
-            raise ValueError(
-                f"TimeVAE does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
-            )
+        msg = f"TimeVAE does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(

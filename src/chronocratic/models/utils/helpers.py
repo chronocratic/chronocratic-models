@@ -6,7 +6,6 @@ See :mod:`chronocratic.models.utils` for the public API.
 
 import warnings
 
-
 # Module-level dedup tracker for once-per-class warnings
 _warned_sequence_fallback: set[str] = set()
 

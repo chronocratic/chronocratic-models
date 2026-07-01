@@ -8,8 +8,8 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils.helpers import _warn_sequence_fallback
 from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
 class MCL(pl.LightningModule, BasicEncodingMixin):
@@ -81,14 +81,11 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         flat = encoder(batch_x)  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        elif output == EncodingOutputShape.SEQUENCE:
+        if output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
             return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        else:
-            raise ValueError(
-                f"MCL does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
-            )
+        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = extract_features_from_batch(batch)

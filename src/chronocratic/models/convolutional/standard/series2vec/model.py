@@ -8,8 +8,6 @@ from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
-from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils.helpers import _warn_sequence_fallback
 from chronocratic.models.convolutional.standard.series2vec.losses import (
     pairwise_euclidean_distances,
     pairwise_soft_dtw_distances,
@@ -17,7 +15,9 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 )
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.distances.soft_dtw import SoftDTW
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
 def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
@@ -113,14 +113,14 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         flat = encoder.encode(batch_x)  # (B, D) - D=2*representation_dims
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        elif output == EncodingOutputShape.SEQUENCE:
+        if output == EncodingOutputShape.SEQUENCE:
             _warn_sequence_fallback(type(self))
             return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        else:
-            raise ValueError(
-                f"Series2Vec does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
-            )
+        msg = (
+            f"Series2Vec does not support output={output}; "
+            f"supported: {type(self).supported_outputs}"
+        )
+        raise ValueError(msg)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)
