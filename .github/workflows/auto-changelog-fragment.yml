@@ -98,21 +98,32 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           FRAGMENT_TYPE: ${{ steps.type.outputs.type }}
         run: |
-          # Strip a leading Conventional Commits prefix (e.g. "ci(changelog): ")
-          # so the changelog reads as user-facing prose, then capitalise and
-          # ensure a single trailing period.
-          BODY="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
-          BODY="$(printf '%s' "${BODY}" | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
-          BODY="${BODY%.}."
+          # Remove stale fragments for this PR with a different type so only
+          # one fragment per PR exists.
+          for OLD in changelog.d/${PR_NUMBER}.*.md; do
+            [ -f "$OLD" ] && [ "$(basename "$OLD")" != "${PR_NUMBER}.${FRAGMENT_TYPE}.md" ] && rm -f "$OLD"
+          done
+
+          # Content: [PR title]: [one-line brief from body].
+          # Strip a leading Conventional Commits prefix from the title for the
+          # bracketed label, then use the first sentence of the PR body as the
+          # brief description (max one line).
+          TITLE="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//' | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
+          TITLE="${TITLE%.}"
+          BRIEF="$(printf '%s' "${PR_BODY}" | sed '/^$/Q' | head -1 | sed 's/[[:space:]]*$//')"
+          BRIEF="${BRIEF%.}"
+          FRAGMENT_CONTENT="[${TITLE}]: ${BRIEF}"
 
           FRAGMENT="changelog.d/${PR_NUMBER}.${FRAGMENT_TYPE}.md"
-          printf '%s\n' "${BODY}" > "${FRAGMENT}"
+          printf '%s\n' "${FRAGMENT_CONTENT}" > "${FRAGMENT}"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${FRAGMENT}"
+          git add changelog.d/
           git commit -m "ci: add towncrier fragment for PR #${PR_NUMBER}"
           git push
 
