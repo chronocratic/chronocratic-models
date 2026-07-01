@@ -52,21 +52,12 @@ jobs:
       - name: Install towncrier
         run: pip install towncrier
 
-      - name: Check if a fragment already exists
-        id: check
-        env:
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          if compgen -G "changelog.d/${PR}.*.md" > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
 
       # A `changelog:<type>` label wins; otherwise infer from the Conventional
       # Commits prefix of the PR title; otherwise fall back to `changed`.
+      # Always resolves (even when fragment exists) so the fragment can be
+      # overwritten when labels or the PR title change.
       - name: Resolve fragment type
-        if: steps.check.outputs.exists == 'false'
         id: type
         env:
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
@@ -99,9 +90,10 @@ jobs:
 
       # Only same-repo PRs can be pushed to. Forks fall through to the check
       # step, which fails until the contributor adds a fragment by hand.
+      # Always runs (overwrites existing fragment) so label/title changes
+      # propagate into the fragment content.
       - name: Create and commit fragment
         if: >-
-          steps.check.outputs.exists == 'false' &&
           github.event.pull_request.head.repo.full_name == github.repository
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
