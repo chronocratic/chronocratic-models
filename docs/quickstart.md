@@ -1,6 +1,6 @@
 # Quick Start
 
-This guide shows how to install and use `chronocratic-models` for encoding time-series data with TS2Vec.
+This guide shows how to install and use `chronocratic-models` for encoding time series data with TS2Vec.
 
 ## Installation
 

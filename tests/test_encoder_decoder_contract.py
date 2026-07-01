@@ -17,7 +17,7 @@ from torch import nn
 from chronocratic.models import (
     AutoTCL,
     CoST,
-    FCN,
+    MCL,
     RecurrentAutoEncoder,
     Series2Vec,
     TimeNet,
@@ -33,7 +33,7 @@ from chronocratic.models.protocols import HasDecoder, HasEncoder
 # ---------------------------------------------------------------------------
 
 ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
-    (FCN, {"input_dims": 1}, "FCN"),
+    (MCL, {"input_dims": 1}, "MCL"),
     (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
     (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
     (TS2Vec, {"input_dims": 1}, "TS2Vec"),
@@ -57,7 +57,7 @@ ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
 ]
 
 ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
-    (FCN, {"input_dims": 1}, "FCN"),
+    (MCL, {"input_dims": 1}, "MCL"),
     (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
     (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
     (TS2Vec, {"input_dims": 1}, "TS2Vec"),

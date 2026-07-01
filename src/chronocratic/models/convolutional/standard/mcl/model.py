@@ -1,4 +1,4 @@
-__all__ = ["FCN"]
+__all__ = ["MCL"]
 
 import lightning.pytorch as pl
 import torch
@@ -7,15 +7,19 @@ from torch import nn
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
-class FCN(pl.LightningModule, BasicEncodingMixin):
-    """FCN encoder for Mixup Contrastive Learning (MCL).
+class MCL(pl.LightningModule, BasicEncodingMixin):
+    """FCN-based encoder for Mixup Contrastive Learning (MCL).
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
 
     def __init__(
         self,
@@ -53,7 +57,7 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
 
     @property
     def encoder(self) -> nn.Module:
-        """Return the FCN encoder."""
+        """Return the encoder."""
         return self._encoder
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -61,12 +65,25 @@ class FCN(pl.LightningModule, BasicEncodingMixin):
         return self.proj_head(self._encoder(x))
 
     def _get_encoder(self) -> nn.Module:
-        """Expose the FCN encoder (before the MixUp projection head)."""
+        """Expose the encoder (before the MixUp projection head)."""
         return self.encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Add a trailing singleton dim so the shape matches the flag-pattern convention."""
-        return encoder(batch_x).unsqueeze(1)
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
+        flat = encoder(batch_x)  # (B, D) - D=latent_dim
+        if output == EncodingOutputShape.VECTOR:
+            return flat  # (B, D) — VECTOR
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         x = extract_features_from_batch(batch)

@@ -4,6 +4,7 @@ from torch import nn
 __all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from chronocratic.models.layers.general import (
     LevelModel,
@@ -12,6 +13,7 @@ from chronocratic.models.layers.general import (
     SeasonalLayer,
     TrendLayer,
 )
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
 class TimeVAEEncoder(nn.Module):
@@ -112,7 +114,7 @@ class TimeVAEDecoder(nn.Module):
             )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Decode latent samples into reconstructed time-series batches."""
+        """Decode latent samples into reconstructed time series batches."""
         outputs = self.level_model(z)
         if self.trend_poly > 0:
             outputs += self.trend_layer(z)
@@ -200,9 +202,32 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Expose the VAE encoder for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Return the latent mean ``z_mean`` from the encoder output tuple."""
-        return encoder(batch_x)[0]
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return the latent mean ``z_mean`` from the encoder output tuple.
+
+        Args:
+            encoder: The TimeVAEEncoder module.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+
+        Returns:
+            Representations of shape ``(B, D)`` for VECTOR or
+            ``(B, 1, D)`` for SEQUENCE (B=batch, D=latent_dim).
+        """
+        z_mean = encoder(batch_x)[0]  # (B, D) - D=latent_dim
+        if output == EncodingOutputShape.VECTOR:
+            return z_mean  # (B, D) — VECTOR
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return z_mean.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = f"TimeVAE does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(

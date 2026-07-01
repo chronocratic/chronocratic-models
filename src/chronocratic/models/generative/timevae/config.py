@@ -15,7 +15,7 @@ class TimeVAEModelParameters:
     """Configuration for the TimeVAE model.
 
     Args:
-        sequence_length: Length of each input time-series sample.
+        sequence_length: Length of each input time series sample.
         input_dims: Number of input features (channels).
         latent_dim: Dimensionality of the latent space.
         reconstruction_weight: Weight applied to the reconstruction term

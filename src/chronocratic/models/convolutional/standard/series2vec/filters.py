@@ -56,7 +56,7 @@ def filter_frequencies(
 
 
 def apply_fft(sample: torch.Tensor) -> torch.Tensor:
-    """Return the complex FFT of one time-series sample."""
+    """Return the complex FFT of one time series sample."""
     return torch.fft.fft(sample)
 
 

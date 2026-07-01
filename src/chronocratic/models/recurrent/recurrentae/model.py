@@ -11,6 +11,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.recurrent.enums import OptimizerName, ReconstructionLoss, RecurrentCellType
 from chronocratic.models.recurrent.recurrentae.layers import (
     _build_decoder,
@@ -55,6 +56,10 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         learning_rate: Base learning rate for the optimizer.
         sync_dist: Whether to sync logged metrics across devices.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -102,8 +107,24 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def _get_encoder(self) -> nn.Module:
         return self.encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        return encoder(batch_x)[:, -1, :]
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return last-step vector or full sequence from the encoder."""
+        encoded = encoder(batch_x)  # (B, T, D) - T=time steps, D=hidden dim
+        if output == EncodingOutputShape.VECTOR:
+            return encoded[:, -1, :]  # (B, D) - last time step
+        if output == EncodingOutputShape.SEQUENCE:
+            return encoded  # (B, T, D)
+        msg = (
+            f"RecurrentAE does not support output={output}; "
+            f"supported: {type(self).supported_outputs}"
+        )
+        raise ValueError(msg)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""

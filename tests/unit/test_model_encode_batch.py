@@ -1,6 +1,6 @@
 """Tests for 5 simple BasicEncodingMixin models after 2-hook refactor.
 
-Verifies that TimeVAE, TimeNet, RecurrentAutoEncoder, FCN, and TSTCC
+Verifies that TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, and TSTCC
 use _encode_batch (not _postprocess) and produce correct output shapes.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from chronocratic.models import FCN
+from chronocratic.models import MCL
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.generative.timevae.model import TimeVAE
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
@@ -20,7 +20,7 @@ MODELS = {
     "TimeVAE": TimeVAE(sequence_length=32, input_dims=3, latent_dim=8),
     "TimeNet": TimeNet(hidden_dims=16, depth=1, input_dims=3),
     "RecurrentAutoEncoder": RecurrentAutoEncoder(input_dims=3, layers=(16,)),
-    "FCN": FCN(input_dims=3),
+    "MCL": MCL(input_dims=3),
     "TSTCC": TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16),
 }
 
@@ -72,12 +72,12 @@ class TestEncodeOutputShapes:
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 16)
 
-    def test_fcn_encode_shape(self) -> None:
-        """FCN.encode() returns (B, 1, output_dims)."""
-        model = FCN(input_dims=3, output_dims=128)
+    def test_mcl_encode_shape(self) -> None:
+        """MCL.encode() returns (B, output_dims) with VECTOR default."""
+        model = MCL(input_dims=3, output_dims=128)
         data = torch.randn(4, 50, 3)
         result = model.encode(data, batch_size=2)
-        assert result.shape == (4, 1, 128)
+        assert result.shape == (4, 128)
 
     def test_tstcc_encode_shape(self) -> None:
         """TSTCC.encode() returns (B, output_dims) after pooling."""

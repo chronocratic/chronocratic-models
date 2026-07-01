@@ -11,7 +11,7 @@ from .dilated import (
     TS2VecModelParameters,
 )
 from .standard import (
-    FCN,
+    MCL,
     MCLModelParameters,
     Series2Vec,
     Series2VecModelParameters,
@@ -20,7 +20,7 @@ from .standard import (
 )
 
 __all__ = [
-    "FCN",
+    "MCL",
     "TSTCC",
     "AutoTCL",
     "AutoTCLModelParameters",

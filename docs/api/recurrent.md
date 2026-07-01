@@ -1,6 +1,6 @@
 # Recurrent Models
 
-RNN-based architectures for sequential time-series modeling.
+RNN-based architectures for sequential time series modeling.
 
 ## RecurrentAutoEncoder
 

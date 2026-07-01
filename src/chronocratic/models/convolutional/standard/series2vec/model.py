@@ -15,7 +15,9 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 )
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.distances.soft_dtw import SoftDTW
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
 def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
@@ -37,6 +39,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
 
     def __init__(
         self,
@@ -86,17 +90,35 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Return the Series2Vec network for ``BasicEncodingMixin.encode``."""
         return self.network
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Call ``encoder.encode(batch_x).unsqueeze(1)`` for representation extraction.
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return flat representation for VECTOR, unsqueeze for SEQUENCE.
 
         Args:
             encoder: The Series2VecNetwork module.
             batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, 1, 2 * representation_dims)``.
+            Representations of shape ``(B, 2 * representation_dims)`` for
+            VECTOR or ``(B, 1, 2 * representation_dims)`` for SEQUENCE.
         """
-        return encoder.encode(batch_x).unsqueeze(1)
+        flat = encoder.encode(batch_x)  # (B, D) - D=2*representation_dims
+        if output == EncodingOutputShape.VECTOR:
+            return flat  # (B, D) — VECTOR
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = (
+            f"Series2Vec does not support output={output}; "
+            f"supported: {type(self).supported_outputs}"
+        )
+        raise ValueError(msg)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)

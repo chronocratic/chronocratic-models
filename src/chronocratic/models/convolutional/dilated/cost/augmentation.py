@@ -114,7 +114,7 @@ class CosTRandomFunctionAugmentation(Augmentation):
         Protocol: ``__call__(Tensor) -> Tensor``.
 
         Args:
-            x: Input time-series tensor of shape ``(batch, time, channels)``.
+            x: Input time series tensor of shape ``(batch, time, channels)``.
 
         Returns:
             Augmented tensor with the same shape as ``x``.

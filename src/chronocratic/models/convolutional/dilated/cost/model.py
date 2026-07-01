@@ -16,6 +16,7 @@ from chronocratic.models.convolutional.dilated._mixin.encoding import Decomposit
 from chronocratic.models.convolutional.dilated.cost.utils import compute_amplitude_and_phase
 from chronocratic.models.convolutional.dilated.encoders.encoders import CoSTTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.losses import instance_contrastive_loss
 from chronocratic.models.utils import extract_features_from_batch, process_sample_length
 
@@ -25,6 +26,10 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
     Code source: https://github.com/salesforce/CoST
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,

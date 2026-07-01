@@ -65,7 +65,7 @@ The project uses [towncrier](https://towncrier.readthedocs.io/) for managing cha
 
 ```bash
 # Create a fragment (e.g., for a new feature in PR #42)
-echo "Added new TimeVAE model for generative time-series encoding." > changelog.d/42.added.md
+echo "Added new TimeVAE model for generative time series encoding." > changelog.d/42.added.md
 ```
 
 Fragment types: `added`, `changed`, `deprecated`, `removed`, `fixed`, `security`.
@@ -271,6 +271,59 @@ Augmentation primitives (Scaling, Permutation) operate on the raw `(B, T, C)` da
 ### Testing
 
 Always use **asymmetric shapes** (`T != C`) in encoder tests to catch transpose regressions. For example, `torch.randn(4, 50, 3)` for `(B, T, C)` with `T=50` and `C=3` will crash if the encoder drops its transpose, because Conv1d would see 50 channels instead of 3.
+
+### Encoder Output Shape Consistency
+
+All models expose a uniform `encode()` API via encoding mixins. The output shape is controlled by `EncodingOutputShape` (`VECTOR` | `SEQUENCE`), defined in `chronocratic.models.enums.encoding`.
+
+- **`VECTOR`** (`"vector"`): Returns 2-D tensor `(N, D)` — one representation per sample.
+- **`SEQUENCE`** (`"sequence"`): Returns 3-D tensor `(N, T, D)` — one representation per timestep.
+
+The mixin `encode()` and `encode_batch()` methods accept an `output: EncodingOutputShape = EncodingOutputShape.VECTOR` keyword argument. Models that natively produce `(N, T, D)` apply their default reduction (last-step, mean-pool, global average pooling) when `VECTOR` is requested. Models that natively produce flat vectors return a length-1 sequence when `SEQUENCE` is requested.
+
+Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as a class attribute. This frozenset documents which output shapes the model supports natively without fallback warnings.
+
+#### Model Support Matrix
+
+| Model | VECTOR | SEQUENCE | Notes |
+|---|---|---|---|
+| TS2Vec | Yes | Yes | Both via pooling |
+| CoST | Yes | Yes | Both via feature concatenation |
+| MCL | Yes | No | VECTOR only |
+| TimeNet | Yes | Yes | Both supported |
+| TST | Yes | Yes | Both supported |
+| TimeVAE | Yes | No | VECTOR only |
+| AutoTCL | Yes | Yes | Both via pooling |
+| TSTCC | Yes | No | VECTOR only |
+| Series2Vec | Yes | Yes | Both supported |
+| RecurrentAutoEncoder | Yes | Yes | Both supported |
+
+#### Encoding Mixin Architecture
+
+Two mixin families serve different encoder topologies:
+
+1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, TSTCC, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
+
+2. **`BaseEncodingMixin`** (`convolutional/dilated/_mixin/encoding.py`) — Dilated conv models (TS2Vec, AutoTCL, CoST) with sliding-window inference, multi-scale pooling, and mask-mode handling. Subclasses override `_get_encoder()`, `_get_eval_method()`, and `_get_slice()`. Specialized mixins extend the base: `PoolingEncodingMixin` (TS2Vec, AutoTCL) and `DecompositionEncodingMixin` (CoST).
+
+All encoders implement `HasEncoder` protocol (`chronocratic.models.protocols`). The `.encoder` property returns an `nn.Module` for representation extraction, checkpointing, or fine-tuning. Decoder-bearing models implement `HasDecoder` and `HasEncoderDecoder`.
+
+#### Implementation Rules
+
+- `supported_outputs` is a class-level `frozenset`. Override in model subclasses to declare capabilities.
+- `_encode_batch()` signature must accept `output: EncodingOutputShape` keyword arg. Branch on value to return correct rank.
+- The `encode()` mixin verifies output rank via assert: `result.ndim == expected_ndim` (2 for VECTOR, 3 for SEQUENCE). Do not silence this assert.
+- When `encoding_window` is not explicitly provided, `output` drives the pooling strategy: VECTOR → `"full_series"`, SEQUENCE → `None`.
+- Never hardcode shape logic outside the mixin. Use `EncodingOutputShape` enum values, not string literals.
+- `encode_batch()` is gradient-preserving and DataLoader-free. Use for adversarial loops and single-batch encoding.
+
+#### Testing Encoder Output Shapes
+
+- Test both `VECTOR` and `SEQUENCE` outputs for models that declare support.
+- Verify tensor rank: `assert result.ndim == 2` for VECTOR, `assert result.ndim == 3` for SEQUENCE.
+- Verify `supported_outputs` frozenset matches actual capabilities — calling with unsupported shape must either fall back with warning or raise appropriately.
+- Test `HasEncoder` protocol conformance: `assert isinstance(model, HasEncoder)`.
+- Verify `encode_batch()` preserves gradients when `batch_x.requires_grad`: `assert result.requires_grad`.
 
 ## Device Compatibility (CPU / CUDA / MPS)
 

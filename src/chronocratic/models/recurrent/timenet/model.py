@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
@@ -34,6 +35,10 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     This model was implemented based on the code available on this GitHub
     repo https://github.com/paudan/TimeNet under MIT License.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -98,9 +103,21 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         """Expose the GRU encoder to ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Select the final timestep as the pooled representation."""
-        return encoder(batch_x)[:, -1, :]
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Return last-step vector or full sequence from the encoder."""
+        encoded = encoder(batch_x)  # (B, T, D) - T=time steps, D=hidden dim
+        if output == EncodingOutputShape.VECTOR:
+            return encoded[:, -1, :]  # (B, D) - last time step
+        if output == EncodingOutputShape.SEQUENCE:
+            return encoded  # (B, T, D)
+        msg = f"TimeNet does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""

@@ -12,7 +12,7 @@ from .convolutional import (
     AutoTCLModelParameters,
     CoST,
     CoSTModelParameters,
-    FCN,
+    MCL,
     MCLModelParameters,
     Series2Vec,
     Series2VecModelParameters,
@@ -21,6 +21,7 @@ from .convolutional import (
     TSTCC,
     TSTCCModelParameters,
 )
+from .enums import EncodingOutputShape
 from .generative import TimeVAE, TimeVAEModelParameters
 from .recurrent import (
     RecurrentAutoEncoder,
@@ -31,13 +32,14 @@ from .recurrent import (
 from .transformer import TST, TSTModelParameters
 
 __all__ = [
-    "FCN",
+    "MCL",
     "TST",
     "TSTCC",
     "AutoTCL",
     "AutoTCLModelParameters",
     "CoST",
     "CoSTModelParameters",
+    "EncodingOutputShape",
     "MCLModelParameters",
     "RecurrentAutoEncoder",
     "RecurrentAutoEncoderModelParameters",

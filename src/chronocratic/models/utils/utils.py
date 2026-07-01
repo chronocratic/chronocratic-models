@@ -5,7 +5,6 @@ __all__ = [
     "full_series_pooling",
     "integer_pooling",
     "multiscale_pooling",
-    "pool_feature_map",
     "process_sample_length",
     "process_sliding_window",
 ]
@@ -45,12 +44,9 @@ def process_sample_length(
 ) -> torch.Tensor:
     """Randomly crop the sample to `max_sample_length` along the time axis; no-op if unset."""
     if max_sample_length is not None and sample.size(1) > max_sample_length:
-        device = sample.device
         rng = np.random.default_rng()
         window_offset = rng.integers(sample.size(1) - max_sample_length + 1)
         sample = sample[:, window_offset : window_offset + max_sample_length]
-
-        sample = sample.to(device)
 
     return sample
 
@@ -190,28 +186,6 @@ def concat_last_step_features(
     return concatenated_features
 
 
-def pool_feature_map(features: torch.Tensor) -> torch.Tensor:
-    """Global-average-pool an encoder feature map over the time dimension.
-
-    Shared by TSTCC (via ``_encode_batch``) and the supervised adapter
-    (``tstcc_representations``) to avoid duplicating the pooling logic.
-
-    Args:
-        features: Feature map of shape ``(B, C, L)``.
-
-    Returns:
-        Pooled tensor of shape ``(B, C)``.
-
-    Raises:
-        ValueError: If features is not 3-dimensional.
-    """
-    # pool_feature_map is designed for (B, C, L) feature maps
-    if features.ndim != 3:  # noqa: PLR2004
-        msg = f"pool_feature_map expects (B, C, L), got {features.ndim}D tensor"
-        raise ValueError(msg)
-    return features.mean(dim=-1)
-
-
 def pad_tensor_with_nan(
     tensor: torch.Tensor, left_pad: int = 0, right_pad: int = 0, axis: int = 0
 ) -> torch.Tensor:
@@ -230,15 +204,17 @@ def pad_tensor_with_nan(
     if left_pad > 0:
         left_padding_shape = list(tensor.shape)
         left_padding_shape[axis] = left_pad
-        # device-ok: CPU padding, concatenated with input tensor
-        left_padding = torch.full(left_padding_shape, np.nan)
+        left_padding = torch.full(
+            left_padding_shape, float("nan"), device=tensor.device, dtype=tensor.dtype
+        )
         tensor = torch.cat((left_padding, tensor), dim=axis)
 
     if right_pad > 0:
         right_padding_shape = list(tensor.shape)
         right_padding_shape[axis] = right_pad
-        # device-ok: CPU padding, concatenated with input tensor
-        right_padding = torch.full(right_padding_shape, np.nan)
+        right_padding = torch.full(
+            right_padding_shape, float("nan"), device=tensor.device, dtype=tensor.dtype
+        )
         tensor = torch.cat((tensor, right_padding), dim=axis)
 
     return tensor

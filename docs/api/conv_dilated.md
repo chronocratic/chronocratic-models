@@ -1,6 +1,6 @@
 # Dilated Convolutional Models
 
-Models that use dilated 1D convolutions for multi-scale time-series representations.
+Models that use dilated 1D convolutions for multi-scale time series representations.
 All three share `PoolingEncodingMixin` for sliding-window, multi-resolution encoding.
 
 ## TS2Vec
@@ -19,7 +19,7 @@ Hierarchical contrastive learning via progressively dilated convolutions.
 
 ## CoST
 
-Contrastive Seasonality-Trend decomposition for time-series pretraining.
+Contrastive Seasonality-Trend decomposition for time series pretraining.
 
 ```{eval-rst}
 .. automodule:: chronocratic.models.convolutional.dilated.cost.model

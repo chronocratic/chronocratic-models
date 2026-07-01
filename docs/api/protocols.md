@@ -36,4 +36,4 @@ if isinstance(model, HasDecoder):
 - `HasEncoder` requires a `@property encoder` returning `nn.Module`
 - `HasDecoder` requires a `@property decoder` returning `nn.Module`
 - Both are `@runtime_checkable` — use `isinstance()` for checks
-- The conformance test (`tests/test_encoder_decoder_contract.py`) verifies all 9 models satisfy these contracts
+- The conformance test (`tests/test_encoder_decoder_contract.py`) verifies all models satisfy these contracts

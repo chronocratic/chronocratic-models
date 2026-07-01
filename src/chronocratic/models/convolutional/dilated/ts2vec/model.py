@@ -12,6 +12,7 @@ from chronocratic.models.augmentation.base import AlignedPair, AugmentationProdu
 from chronocratic.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
 from chronocratic.models.convolutional.dilated.encoders.encoders import TS2VecTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.losses import hierarchical_contrastive_loss
 from chronocratic.models.utils import extract_features_from_batch, process_sample_length
 
@@ -21,6 +22,10 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     Code source: https://github.com/zhihanyue/ts2vec
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -73,8 +78,12 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
     @property
     def encoder(self) -> TS2VecTimeSeriesEncoder:
-        """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return cast("TS2VecTimeSeriesEncoder", self._encoder)
+        """Return the averaged encoder used for inference.
+
+        Matches the module returned by ``_get_encoder()`` so that the
+        ``HasEncoder`` protocol is consistent with the encode() path.
+        """
+        return cast("TS2VecTimeSeriesEncoder", self._averaged_encoder)
 
     def configure_optimizers(self) -> AdamW:
         """Return the AdamW optimizer for the TS2Vec encoder."""

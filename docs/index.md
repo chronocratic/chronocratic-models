@@ -19,15 +19,15 @@ pip install chronocratic-models
 
 ## Models
 
-The library provides ten pre-trained encoders organized by architecture family:
+The library provides time series models organized by architecture family.
 
 **Convolutional (Dilated):** [](api/conv_dilated) — TS2Vec, CoST, AutoTCL
 
-**Convolutional (Standard):** [](api/conv_standard) — Series2Vec, TSTCC, FCN
+**Convolutional (Standard):** [](api/conv_standard) — Series2Vec, TSTCC, MCL
 
 **Transformer:** [](api/transformer) — TST
 
-**Recurrent:** [](api/recurrent) — TimeNet
+**Recurrent:** [](api/recurrent) — TimeNet, RecurrentAutoEncoder
 
 **Generative:** [](api/generative) — TimeVAE
 
@@ -37,7 +37,7 @@ The library provides ten pre-trained encoders organized by architecture family:
 
 - **Polymorphic augmentation producer contract** — models accept any augmentation through a unified interface, eliminating enum-based branching.
 - **Lightning integration** — all models are built on PyTorch Lightning for clean training loops and extensibility.
-- **Self-supervised representation learning** — pre-trained encoders ready for downstream tasks without labeled data.
+- **Self-supervised representation learning** — train encoders for downstream tasks without labeled data.
 - **Pre-configured model parameters** — each model ships with tested default configuration dataclasses.
 - **NumPy and PyTorch tensor support** — flexible input handling for both frameworks.
 

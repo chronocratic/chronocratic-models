@@ -91,7 +91,7 @@ def train_steps() -> Callable[..., list[torch.Tensor]]:
 
 @pytest.fixture
 def random_data() -> Callable[..., torch.Tensor]:
-    """Factory for random time-series tensors.
+    """Factory for random time series tensors.
 
     Usage:
         data = random_data(batch=4, seq_length=100, input_dims=1)

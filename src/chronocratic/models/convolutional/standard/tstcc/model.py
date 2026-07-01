@@ -11,7 +11,8 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
-from chronocratic.models.utils import extract_features_from_batch, pool_feature_map
+from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -40,6 +41,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     This model was implemented based on the code available on this GitHub
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -104,7 +109,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Run the encoder. Returns convolutional feature map ``(B, output_dims, L')``."""
+        """Run the encoder. Returns convolutional feature map ``(B, C, L')``."""
         return self._encoder(x)
 
     # ------------------------------------------------------------------
@@ -205,14 +210,31 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Return the TCC encoder for inspection and checkpointing."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
-        """Cast to float and global-average-pool the encoder feature map.
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
+        """Cast to float and encode the batch.
 
         The TCC encoder expects float inputs, so we cast batch_x to float
-        before encoding. The feature map ``(B, output_dims, L')`` is then
-        pooled to ``(B, output_dims)``.
+        before encoding. The feature map ``(B, C, L')`` is then
+        pooled to ``(B, C)`` for VECTOR, or transposed to
+        ``(B, L', C)`` for SEQUENCE, where:
+
+        - ``B``: batch size
+        - ``C``: encoder output channels (``output_dims``)
+        - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
-        return pool_feature_map(encoder(batch_x.float()))
+        features = encoder(batch_x.float())  # (B, C, L')
+        if output == EncodingOutputShape.VECTOR:
+            return features.mean(dim=-1)  # (B, C)
+        if output == EncodingOutputShape.SEQUENCE:
+            return features.transpose(1, 2)  # (B, L', C)
+        msg = f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     @property
     def representation_dim(self) -> int:

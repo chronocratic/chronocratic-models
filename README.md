@@ -23,6 +23,7 @@ pip install chronocratic-models
 
 ```python
 import torch
+from lightning.pytorch import Trainer
 from chronocratic.models import TS2Vec, TS2VecModelParameters
 
 # Create model using parameters dataclass
@@ -31,6 +32,10 @@ model = TS2Vec(**vars(params))
 
 # Prepare synthetic time series (n_instance, n_timestamps, n_features)
 synthetic_data = torch.randn(2, 100, 1)
+
+# Train the model first (models do not ship with pre-trained weights)
+trainer = Trainer(max_epochs=1, accelerator="cpu", enable_checkpointing=False)
+trainer.fit(model, train_dataloaders=synthetic_data)
 
 # Get multi-scale representations
 representations = model.encode(
@@ -58,7 +63,7 @@ print(representations.shape)
 |-------|-------------|
 | **Series2Vec** | Self-supervised pretraining via contrastive learning on augmented time-series segments. |
 | **TSTCC** | Temporal and contextual contrastive pretraining for time-series representation learning. |
-| **FCN** | Fully convolutional encoder designed for Mixup Contrastive Learning (MCL) objectives. |
+| **MCL** | Fully convolutional encoder designed for Mixup Contrastive Learning objectives. |
 
 ### Transformer
 
@@ -71,6 +76,7 @@ print(representations.shape)
 | Model | Description |
 |-------|-------------|
 | **TimeNet** | Recurrent encoder-decoder architecture for time-series representation learning. |
+| **RecurrentAutoEncoder** | Recurrent autoencoder for time-series representation learning. Code source: [time-series-foundation-models/time-series-autoencoder](https://github.com/time-series-foundation-models/time-series-autoencoder) |
 
 ### Generative
 
@@ -78,11 +84,13 @@ print(representations.shape)
 |-------|-------------|
 | **TimeVAE** | Variational autoencoder for time-series data with latent representation encoding and generation. |
 
+> **Important:** These models are provided as training-ready implementations. No pre-trained weights are included — you must train them on your own data before using them for inference.
+
 ## Features
 
 - **Polymorphic augmentation producer contract** — models accept any augmentation through a unified interface, eliminating enum-based branching.
 - **Lightning integration** — all models are built on PyTorch Lightning for clean training loops and extensibility.
-- **Self-supervised representation learning** — pre-trained encoders ready for downstream tasks without labeled data.
+- **Self-supervised representation learning** — train encoders for downstream tasks without labeled data.
 - **Pre-configured model parameters** — each model ships with tested default configuration dataclasses.
 - **NumPy and PyTorch tensor support** — flexible input handling for both frameworks.
 

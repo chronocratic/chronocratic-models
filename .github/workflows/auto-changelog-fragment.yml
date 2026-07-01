@@ -52,21 +52,12 @@ jobs:
       - name: Install towncrier
         run: pip install towncrier
 
-      - name: Check if a fragment already exists
-        id: check
-        env:
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          if compgen -G "changelog.d/${PR}.*.md" > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
 
       # A `changelog:<type>` label wins; otherwise infer from the Conventional
       # Commits prefix of the PR title; otherwise fall back to `changed`.
+      # Always resolves (even when fragment exists) so the fragment can be
+      # overwritten when labels or the PR title change.
       - name: Resolve fragment type
-        if: steps.check.outputs.exists == 'false'
         id: type
         env:
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
@@ -99,30 +90,54 @@ jobs:
 
       # Only same-repo PRs can be pushed to. Forks fall through to the check
       # step, which fails until the contributor adds a fragment by hand.
+      # Always runs (overwrites existing fragment) so label/title changes
+      # propagate into the fragment content.
       - name: Create and commit fragment
         if: >-
-          steps.check.outputs.exists == 'false' &&
           github.event.pull_request.head.repo.full_name == github.repository
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           FRAGMENT_TYPE: ${{ steps.type.outputs.type }}
         run: |
-          # Strip a leading Conventional Commits prefix (e.g. "ci(changelog): ")
-          # so the changelog reads as user-facing prose, then capitalise and
-          # ensure a single trailing period.
-          BODY="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
-          BODY="$(printf '%s' "${BODY}" | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
-          BODY="${BODY%.}."
+          # Remove stale fragments for this PR with a different type so only
+          # one fragment per PR exists.
+          for OLD in changelog.d/${PR_NUMBER}.*.md; do
+            [ -f "$OLD" ] && [ "$(basename "$OLD")" != "${PR_NUMBER}.${FRAGMENT_TYPE}.md" ] && rm -f "$OLD"
+          done
+
+          # Content format: "[PR title]: summary".
+          # Summary comes from TL;DR / TL:DR or Summary section in PR body,
+          # or falls back to stripped title (no CC prefix).
+          SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## \(TL;\|TL:\)DR$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          if [ -z "$SUMMARY" ]; then
+            SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## Summary$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          fi
+          if [ -n "$SUMMARY" ]; then
+            FRAGMENT_CONTENT="${PR_TITLE}: ${SUMMARY}"
+          else
+            # Strip Conventional Commits prefix, capitalise first letter.
+            FRAGMENT_CONTENT="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
+            FRAGMENT_CONTENT="$(printf '%s' "${FRAGMENT_CONTENT}" | awk '{ print toupper(substr($0,1,1)) substr($0,2) }')"
+            FRAGMENT_CONTENT="${FRAGMENT_CONTENT%.}"
+          fi
 
           FRAGMENT="changelog.d/${PR_NUMBER}.${FRAGMENT_TYPE}.md"
-          printf '%s\n' "${BODY}" > "${FRAGMENT}"
+          printf '%s\n' "${FRAGMENT_CONTENT}" > "${FRAGMENT}"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${FRAGMENT}"
-          git commit -m "ci: add towncrier fragment for PR #${PR_NUMBER}"
-          git push
+          git add changelog.d/
+
+          # Skip commit if fragment already matches new content
+          if git diff --cached --quiet; then
+            echo "No changes to commit — fragment already up to date."
+          else
+            git commit -m "ci: add towncrier fragment for PR #${PR_NUMBER}"
+            git push
+          fi
 
       - name: Verify a fragment is present
         run: towncrier check --compare-with origin/${{ github.base_ref }}

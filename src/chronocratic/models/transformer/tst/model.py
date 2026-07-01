@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
@@ -43,6 +44,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -204,18 +209,32 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         """Return the transformer encoder module for ``BasicEncodingMixin.encode``."""
         return self._encoder
 
-    def _encode_batch(self, encoder: nn.Module, batch_x: torch.Tensor) -> torch.Tensor:
+    def _encode_batch(
+        self,
+        encoder: nn.Module,
+        batch_x: torch.Tensor,
+        *,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+    ) -> torch.Tensor:
         """Build padding mask and call ``encoder.encode_representations``.
 
         Args:
             encoder: The TSTransformerEncoder module.
             batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, seq_len, hidden_dims)``.
+            Representations of shape ``(B, D)`` for VECTOR
+            or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dims).
         """
         padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
-        return encoder.encode_representations(batch_x, padding_masks)
+        full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
+        if output == EncodingOutputShape.VECTOR:
+            return full_sequence.mean(dim=1)  # (B, D) - mean over T
+        if output == EncodingOutputShape.SEQUENCE:
+            return full_sequence  # (B, T, D)
+        msg = f"TST does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     @property
     def encoder(self) -> nn.Module:

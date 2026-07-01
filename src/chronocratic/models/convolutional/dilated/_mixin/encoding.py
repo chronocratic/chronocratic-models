@@ -11,6 +11,7 @@ import torch.nn.functional as F  # noqa: N812
 from torch.utils.data import DataLoader, TensorDataset
 import tqdm
 
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import (
     apply_slicing,
     concat_last_step_features,
@@ -20,6 +21,8 @@ from chronocratic.models.utils import (
     multiscale_pooling,
     process_sliding_window,
 )
+
+_encoding_window_unset = object()
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -45,6 +48,10 @@ class BaseEncodingMixin(ABC):
     device: torch.device  # Provided by LightningModule
     _encoder: nn.Module
     _averaged_encoder: nn.Module
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def _get_encoder(self) -> nn.Module:
         """Return the encoder used for inference.
@@ -186,7 +193,8 @@ class BaseEncodingMixin(ABC):
         batch_x: torch.Tensor,
         *,
         mask: "MaskMode | None" = None,
-        encoding_window: str | int | None = "full_series",
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
+        encoding_window: object = _encoding_window_unset,
     ) -> torch.Tensor:
         """Encode one batch in a single forward pass (no sliding window).
 
@@ -199,13 +207,24 @@ class BaseEncodingMixin(ABC):
             batch_x: Batch tensor, shape (batch, seq_len, features). Moved to
                 ``self.device`` inside the eval method.
             mask: Mask mode for the encoder. Ignored by decomposition models.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+                When ``encoding_window`` is not explicitly provided, the value
+                of ``output`` determines the pooling strategy: VECTOR derives
+                ``encoding_window="full_series"``, SEQUENCE derives
+                ``encoding_window=None``.
             encoding_window: Pooling strategy ('full_series', 'multiscale', an
                 int kernel size, or None). Decomposition models accept only
-                None / 'full_series'.
+                None / 'full_series'. Takes precedence over ``output`` when
+                explicitly provided.
 
         Returns:
-            Representation tensor, on ``self.device``.
+            Representation tensor, on ``self.device``. Shape is ``(B, D)``
+            for VECTOR (B=batch, D=feature dims) or ``(B, T, D)`` for SEQUENCE.
         """
+        # Derive encoding_window from output when not explicitly provided
+        if encoding_window is _encoding_window_unset:
+            encoding_window = "full_series" if output == EncodingOutputShape.VECTOR else None
+
         reps = self._get_eval_method()(
             input_tensor=batch_x, mask=mask, slicing=None, encoding_window=encoding_window
         )
@@ -219,12 +238,13 @@ class BaseEncodingMixin(ABC):
         batch_size: int,
         num_workers: int,
         mask: "MaskMode | None" = None,
-        encoding_window: str | int | None = None,
+        encoding_window: object = _encoding_window_unset,
         *,
         causal: bool = False,
         sliding_length: int | None = None,
         sliding_padding: int = 0,
         gradient_enabled: bool = False,
+        output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Compute representations using the model.
 
@@ -235,7 +255,8 @@ class BaseEncodingMixin(ABC):
             mask: Mask for the encoder. One of 'binomial', 'continuous',
                 'all_true', 'all_false', or 'mask_last'.
             encoding_window: Pooling strategy. 'full_series', 'multiscale',
-                or an integer for the pooling kernel size.
+                or an integer for the pooling kernel size. Takes precedence
+                over ``output`` when explicitly provided.
             causal: If True, future information is not encoded.
             sliding_length: Sliding window length. If set, sliding inference
                 is applied.
@@ -243,6 +264,11 @@ class BaseEncodingMixin(ABC):
             gradient_enabled: When True, keep the autograd graph alive by
                 using ``nullcontext()`` instead of ``inference_mode()``.
                 The encoder remains in ``eval()`` regardless. Default False.
+            output: Requested output shape. Defaults to VECTOR (2-D).
+                When ``encoding_window`` is not explicitly provided, the value
+                of ``output`` determines the pooling strategy: VECTOR derives
+                ``encoding_window="full_series"``, SEQUENCE derives
+                ``encoding_window=None``.
 
         Returns:
             The representations for data.
@@ -254,6 +280,10 @@ class BaseEncodingMixin(ABC):
             raise ValueError(msg)
 
         num_samples, time_series_length, _ = data.shape  # noqa: RUF059
+
+        # Derive encoding_window from output when not explicitly provided
+        if encoding_window is _encoding_window_unset:
+            encoding_window = "full_series" if output == EncodingOutputShape.VECTOR else None
 
         original_training_state = encoder.training
         grad_ctx = nullcontext() if gradient_enabled else torch.inference_mode()
@@ -295,7 +325,7 @@ class BaseEncodingMixin(ABC):
                         )
                     else:
                         representations = self.encode_batch(
-                            input_tensor, mask=mask, encoding_window=encoding_window
+                            input_tensor, mask=mask, output=output, encoding_window=encoding_window
                         )
 
                     all_outputs.append(representations.cpu())
@@ -390,9 +420,14 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
             mask: Unused for decomposition models.
             slicing: Unused for decomposition models.
             encoding_window: Must be ``None`` or ``'full_series'``.
+                When ``None``, full-sequence concatenation is performed
+                (SEQUENCE output). When ``'full_series'``, last-step
+                concatenation is performed (VECTOR output).
 
         Returns:
-            Concatenated last-step features from trend and seasonality encoders.
+            For SEQUENCE (encoding_window=None): concatenated full sequences
+            of shape ``(B, L, 2D)``. For VECTOR (encoding_window='full_series'):
+            concatenated last-step features of shape ``(B, 1, 2D)``.
 
         Raises:
             ValueError: If ``encoding_window`` is not ``None`` or ``'full_series'``.
@@ -407,5 +442,13 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         output_trend_tensor, output_seasonality_tensor = self._get_encoder()(
             x=input_tensor.to(self.device, non_blocking=True), mask_mode=None
         )
-        output_tensor = concat_last_step_features(output_trend_tensor, output_seasonality_tensor)
+
+        if encoding_window is None:
+            # SEQUENCE: concatenate full sequences along feature dim -> (B, L, 2D)
+            output_tensor = torch.cat([output_trend_tensor, output_seasonality_tensor], dim=-1)
+        else:
+            # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
+            output_tensor = concat_last_step_features(
+                output_trend_tensor, output_seasonality_tensor
+            )
         return output_tensor

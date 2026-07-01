@@ -24,6 +24,7 @@ from chronocratic.models.convolutional.dilated.autotcl.losses import (
 )
 from chronocratic.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch, process_sample_length
 
 
@@ -32,6 +33,10 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
     Code source: https://github.com/AslanDing/AutoTCL
     """
+
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -93,8 +98,12 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
     @property
     def encoder(self) -> AutoTCLTimeSeriesEncoder:
-        """Return the primary (non-averaged) encoder for inspection and checkpointing."""
-        return self._encoder
+        """Return the averaged encoder used for inference.
+
+        Matches the module returned by ``_get_encoder()`` so that the
+        ``HasEncoder`` protocol is consistent with the encode() path.
+        """
+        return self._averaged_encoder
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
         """Return encoder optimizer(s); two optimizers when using trainable aug."""
