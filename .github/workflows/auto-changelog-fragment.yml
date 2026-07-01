@@ -107,13 +107,15 @@ jobs:
             [ -f "$OLD" ] && [ "$(basename "$OLD")" != "${PR_NUMBER}.${FRAGMENT_TYPE}.md" ] && rm -f "$OLD"
           done
 
-          # Content: try TL;DR / TL:DR first, then Summary, then stripped title.
-          TLDR="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## \(TL;\|TL:\)DR$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-          if [ -z "$TLDR" ]; then
-            TLDR="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## Summary$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          # Content format: "[PR title]: summary".
+          # Summary comes from TL;DR / TL:DR or Summary section in PR body,
+          # or falls back to stripped title (no CC prefix).
+          SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## \(TL;\|TL:\)DR$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+          if [ -z "$SUMMARY" ]; then
+            SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## Summary$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           fi
-          if [ -n "$TLDR" ]; then
-            FRAGMENT_CONTENT="$TLDR"
+          if [ -n "$SUMMARY" ]; then
+            FRAGMENT_CONTENT="[${PR_TITLE}]: ${SUMMARY}"
           else
             # Strip Conventional Commits prefix, capitalise first letter.
             FRAGMENT_CONTENT="$(printf '%s' "${PR_TITLE}" | sed -E 's/^[a-z]+(\([^)]*\))?!?:[[:space:]]*//')"
