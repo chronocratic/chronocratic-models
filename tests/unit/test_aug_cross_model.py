@@ -37,7 +37,7 @@ from chronocratic.models.augmentation.producers import (
 from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 
 # Import _train_steps from test_smoke.py to avoid duplication
-from tests.test_smoke import _train_steps
+from tests.unit.test_smoke import _train_steps
 
 
 class TestCrossModelReuse:
