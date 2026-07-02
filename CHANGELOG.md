@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a10 (2026-07-02)
+
+### Fixed
+
+- fix(11): Series2Vec distance normalizer fix + batch_size=1 gradient safety across MCL/TSTCC/S2V: Fixed Series2Vec `_distance_normalizer` gradient break at batch_size=1, added `norm` parameter with GroupNorm default to MCL, TSTCC, and Series2Vec encoders for batch_size=1 safety, and created 40 parametrized gradient flow tests across all 10 models. ([#57](https://github.com/chronocratic/chronocratic-models/issues/57))
+
+
 ## v0.1.0a9 (2026-07-01)
 
 ### Added
