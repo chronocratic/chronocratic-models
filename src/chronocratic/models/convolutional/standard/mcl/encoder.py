@@ -17,6 +17,9 @@ class FCNEncoder(nn.Module):
         encoder_channels: Tuple of channel counts for each Conv1d block.
         encoder_kernels: Tuple of kernel sizes for each Conv1d block.
         encoder_dilations: Tuple of dilation rates for each Conv1d block.
+        norm: Normalization strategy. Use ``"layer"`` for GroupNorm(1, C)
+            which works correctly at batch_size=1, or ``"batch"`` for
+            BatchNorm1d(C) (original behavior). Defaults to ``"layer"``.
     """
 
     def __init__(
@@ -26,8 +29,14 @@ class FCNEncoder(nn.Module):
         encoder_channels: tuple[int, ...] = (128, 256, 128),
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
+        self.norm = norm
         self.encoder_channels = encoder_channels
         self.encoder_kernels = encoder_kernels
         self.encoder_dilations = encoder_dilations
@@ -36,7 +45,10 @@ class FCNEncoder(nn.Module):
         in_ch = input_dims
         for ch, k, d in zip(encoder_channels, encoder_kernels, encoder_dilations, strict=True):
             layers.append(nn.Conv1d(in_ch, ch, kernel_size=k, padding=k // 2 * d, dilation=d))
-            layers.append(nn.BatchNorm1d(ch))
+            if norm == "layer":
+                layers.append(nn.GroupNorm(num_groups=1, num_channels=ch))
+            else:
+                layers.append(nn.BatchNorm1d(ch))
             layers.append(nn.ReLU())
             in_ch = ch
 
