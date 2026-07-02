@@ -29,6 +29,9 @@ class MCLModelParameters:
             for contrastive learning.
         sync_dist: Whether to synchronize metrics across distributed
             processes during logging.
+        norm: Normalization strategy for encoder and projection head.
+            ``"layer"`` (default) uses GroupNorm for batch_size=1 safety.
+            ``"batch"`` uses BatchNorm1d (original behavior).
     """
 
     input_dims: int
@@ -40,3 +43,4 @@ class MCLModelParameters:
     encoder_dilations: tuple[int, ...] = (2, 4, 8)
     projection_dims: int = 128
     sync_dist: bool = False
+    norm: str = "layer"

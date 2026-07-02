@@ -61,17 +61,17 @@ class TCCEncoder(nn.Module):
             raise ValueError(msg)
 
         _norm1 = (
-            nn.GroupNorm(1, encoder_channels[0])
+            nn.GroupNorm(num_groups=1, num_channels=encoder_channels[0])
             if norm == "layer"
             else nn.BatchNorm1d(encoder_channels[0])
         )
         _norm2 = (
-            nn.GroupNorm(1, encoder_channels[1])
+            nn.GroupNorm(num_groups=1, num_channels=encoder_channels[1])
             if norm == "layer"
             else nn.BatchNorm1d(encoder_channels[1])
         )
         _norm3 = (
-            nn.GroupNorm(1, output_dims)
+            nn.GroupNorm(num_groups=1, num_channels=output_dims)
             if norm == "layer"
             else nn.BatchNorm1d(output_dims)
         )

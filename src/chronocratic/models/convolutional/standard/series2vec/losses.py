@@ -65,6 +65,8 @@ def pretraining_loss(
         torch.masked_select(temporal_distances, lower_triangular_mask)
     )
     if temporal_distances.numel() == 0:
+        # batch_size=1: no pairs exist, return disconnected zero scalars
+        # (no gradient signal from empty distance set)
         zero_loss = temporal_distances.new_tensor(0.0)
         return zero_loss, zero_loss, zero_loss
 

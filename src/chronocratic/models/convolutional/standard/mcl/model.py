@@ -34,7 +34,9 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             Defaults to ``"layer"``.
     """
 
-    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -102,16 +104,24 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
+        if output not in type(self).supported_outputs:
+            msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+            raise ValueError(msg)
         flat = encoder(batch_x)  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        if output == EncodingOutputShape.SEQUENCE:
-            _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
-        raise ValueError(msg)
+        _warn_sequence_fallback(type(self))
+        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
+        """Run one contrastive training step.
+
+        Note:
+            At ``batch_size=1``, ``randperm(1)`` returns identity, so
+            MixUp interpolation collapses to ``x_aug = x_1`` and
+            ``z_1 == z_2 == z_aug``, producing trivially near-zero loss.
+            Use ``batch_size >= 2`` for meaningful contrastive training.
+        """
         x = extract_features_from_batch(batch)
 
         x_1 = x

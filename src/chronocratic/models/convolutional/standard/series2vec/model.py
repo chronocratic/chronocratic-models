@@ -44,7 +44,9 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/Navidfoumani/Series2Vec.
     """
 
-    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -112,17 +114,17 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             Representations of shape ``(B, 2 * representation_dims)`` for
             VECTOR or ``(B, 1, 2 * representation_dims)`` for SEQUENCE.
         """
+        if output not in type(self).supported_outputs:
+            msg = (
+                f"Series2Vec does not support output={output}; "
+                f"supported: {type(self).supported_outputs}"
+            )
+            raise ValueError(msg)
         flat = encoder.encode(batch_x)  # (B, D) - D=2*representation_dims
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        if output == EncodingOutputShape.SEQUENCE:
-            _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        msg = (
-            f"Series2Vec does not support output={output}; "
-            f"supported: {type(self).supported_outputs}"
-        )
-        raise ValueError(msg)
+        _warn_sequence_fallback(type(self))
+        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)

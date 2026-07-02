@@ -264,13 +264,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         - ``C``: encoder output channels (``output_dims``)
         - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
+        if output not in type(self).supported_outputs:
+            msg = f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
+            raise ValueError(msg)
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
             return features.mean(dim=-1)  # (B, C)
-        if output == EncodingOutputShape.SEQUENCE:
-            return features.transpose(1, 2)  # (B, L', C)
-        msg = f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
-        raise ValueError(msg)
+        return features.transpose(1, 2)  # (B, L', C)
 
     @property
     def representation_dim(self) -> int:
