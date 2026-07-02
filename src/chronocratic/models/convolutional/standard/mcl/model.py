@@ -17,6 +17,21 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
+
+    Args:
+        input_dims: Number of input feature channels.
+        output_dims: Dimension of the flat encoder output.
+        alpha: Beta-distribution parameter for MixUp interpolation.
+        learning_rate: Base learning rate for the Adam optimizer.
+        encoder_channels: Tuple of channel counts for each Conv1d block.
+        encoder_kernels: Tuple of kernel sizes for each Conv1d block.
+        encoder_dilations: Tuple of dilation rates for each Conv1d block.
+        projection_dims: Hidden dimension of the projection head.
+        sync_dist: Whether to synchronize metrics across processes.
+        norm: Normalization strategy for encoder and projection head.
+            Use ``"layer"`` for GroupNorm (batch_size=1 safe) or
+            ``"batch"`` for BatchNorm1d (original behavior).
+            Defaults to ``"layer"``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
@@ -32,8 +47,13 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
         projection_dims: int = 128,
         sync_dist: bool = False,
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
         self.save_hyperparameters()
         self._alpha = alpha
         self._learning_rate = learning_rate
@@ -47,10 +67,16 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             encoder_channels=encoder_channels,
             encoder_kernels=encoder_kernels,
             encoder_dilations=encoder_dilations,
+            norm=norm,
+        )
+        proj_norm = (
+            nn.GroupNorm(num_groups=1, num_channels=projection_dims)
+            if norm == "layer"
+            else nn.BatchNorm1d(projection_dims)
         )
         self.proj_head = nn.Sequential(
             nn.Linear(output_dims, projection_dims),
-            nn.BatchNorm1d(projection_dims),
+            proj_norm,
             nn.ReLU(),
             nn.Linear(projection_dims, projection_dims),
         )
