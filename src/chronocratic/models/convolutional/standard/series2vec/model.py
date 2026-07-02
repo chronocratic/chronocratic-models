@@ -36,6 +36,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
     The public input shape is ``(batch, time, channels)``.
 
+    The encoder uses GroupNorm for normalization, ensuring correct gradient
+    flow at batch_size=1 (unlike BatchNorm, which degenerates with zero
+    variance statistics for single-sample batches).
+
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
     """
