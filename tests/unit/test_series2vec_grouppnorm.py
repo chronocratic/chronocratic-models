@@ -6,12 +6,11 @@ ensuring correct gradient flow at batch_size=1.
 
 import inspect
 
-import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.series2vec.encoder import DisjoinEncoder
-from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
+from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 
 
 class TestDisjoinEncoderGroupNorm:
