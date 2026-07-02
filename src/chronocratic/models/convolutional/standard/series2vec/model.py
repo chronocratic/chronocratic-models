@@ -136,12 +136,19 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
         filtered_frequency_data = filter_frequencies(x.detach(), training=self.training)
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
-        return pretraining_loss(
+        result = pretraining_loss(
             temporal_distances=temporal_distances,
             frequency_distances=frequency_distances,
             target_temporal_distances=target_temporal_distances,
             target_frequency_distances=target_frequency_distances,
         )
+        # Ensure loss connects to graph even when batch_size=1 (no pairs, zero loss).
+        # pretraining_loss returns new_tensor(0.0) — disconnected from graph — which
+        # crashes backward(). x.sum() * 0.0 produces zero with valid grad_fn.
+        if not result[0].requires_grad:
+            dummy = x.sum() * 0.0
+            result = (dummy, dummy, dummy)
+        return result
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec pretraining loss for one batch."""
