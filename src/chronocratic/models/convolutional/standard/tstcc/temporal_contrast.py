@@ -138,12 +138,7 @@ class TemporalContrast(nn.Module):
     """
 
     def __init__(
-        self,
-        num_channels: int,
-        hidden_dim: int,
-        timesteps: int,
-        *,
-        norm: str = "layer",
+        self, num_channels: int, hidden_dim: int, timesteps: int, *, norm: str = "layer"
     ) -> None:
         super().__init__()
         if norm not in ("layer", "batch"):

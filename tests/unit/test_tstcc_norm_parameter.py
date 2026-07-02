@@ -10,9 +10,7 @@ import torch
 from torch import nn
 
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
-from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import (
-    TemporalContrast,
-)
+from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 
 
@@ -37,11 +35,7 @@ class TestTCCEncoderNormDefault:
     def test_default_group_norm_channels(self) -> None:
         """GroupNorm channels match the expected channel counts."""
         encoder = TCCEncoder(
-            input_dims=3,
-            conv_kernel_size=8,
-            stride=4,
-            encoder_channels=(32, 64),
-            output_dims=128,
+            input_dims=3, conv_kernel_size=8, stride=4, encoder_channels=(32, 64), output_dims=128
         )
         assert encoder.conv_block1[1].num_channels == 32
         assert encoder.conv_block2[1].num_channels == 64
@@ -53,18 +47,14 @@ class TestTCCEncoderNormExplicit:
 
     def test_explicit_layer_norm(self) -> None:
         """TCCEncoder(norm='layer') uses GroupNorm."""
-        encoder = TCCEncoder(
-            input_dims=3, conv_kernel_size=8, stride=4, norm="layer"
-        )
+        encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=4, norm="layer")
         assert isinstance(encoder.conv_block1[1], nn.GroupNorm)
         assert isinstance(encoder.conv_block2[1], nn.GroupNorm)
         assert isinstance(encoder.conv_block3[1], nn.GroupNorm)
 
     def test_explicit_batch_norm(self) -> None:
         """TCCEncoder(norm='batch') uses BatchNorm1d (backward compat)."""
-        encoder = TCCEncoder(
-            input_dims=3, conv_kernel_size=8, stride=4, norm="batch"
-        )
+        encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=4, norm="batch")
         assert isinstance(encoder.conv_block1[1], nn.BatchNorm1d)
         assert isinstance(encoder.conv_block2[1], nn.BatchNorm1d)
         assert isinstance(encoder.conv_block3[1], nn.BatchNorm1d)
@@ -112,16 +102,12 @@ class TestTemporalContrastNormExplicit:
 
     def test_explicit_layer_norm(self) -> None:
         """TemporalContrast(norm='layer') uses LayerNorm."""
-        tc = TemporalContrast(
-            num_channels=16, hidden_dim=100, timesteps=6, norm="layer"
-        )
+        tc = TemporalContrast(num_channels=16, hidden_dim=100, timesteps=6, norm="layer")
         assert isinstance(tc.projection_head[1], nn.LayerNorm)
 
     def test_explicit_batch_norm(self) -> None:
         """TemporalContrast(norm='batch') uses BatchNorm1d (backward compat)."""
-        tc = TemporalContrast(
-            num_channels=16, hidden_dim=100, timesteps=6, norm="batch"
-        )
+        tc = TemporalContrast(num_channels=16, hidden_dim=100, timesteps=6, norm="batch")
         assert isinstance(tc.projection_head[1], nn.BatchNorm1d)
 
 

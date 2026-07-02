@@ -77,11 +77,12 @@ class TestMCLModelParameters:
             "encoder_dilations",
             "projection_dims",
             "sync_dist",
+            "norm",
         }
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(MCLModelParameters)) == 9
+        assert len(fields(MCLModelParameters)) == 10
 
 
 class TestMCLConfigContract:

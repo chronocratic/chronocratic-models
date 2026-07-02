@@ -266,8 +266,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """
         if output not in type(self).supported_outputs:
             msg = (
-                f"TSTCC does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
+                f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
             )
             raise ValueError(msg)
         features = encoder(batch_x.float())  # (B, C, L')

@@ -35,6 +35,7 @@ from chronocratic.models import (
 # Model factories — minimal configs that produce a working instance
 # ---------------------------------------------------------------------------
 
+
 def _make_mcl() -> MCL:
     return MCL(
         input_dims=3,
@@ -72,22 +73,12 @@ def _make_series2vec() -> Series2Vec:
 
 def _make_tst() -> TST:
     return TST(
-        input_dims=3,
-        sequence_length=32,
-        hidden_dims=16,
-        num_heads=2,
-        depth=1,
-        feedforward_dims=32,
+        input_dims=3, sequence_length=32, hidden_dims=16, num_heads=2, depth=1, feedforward_dims=32
     )
 
 
 def _make_ts2vec() -> TS2Vec:
-    return TS2Vec(
-        input_dims=3,
-        hidden_dims=16,
-        output_dims=32,
-        depth=2,
-    )
+    return TS2Vec(input_dims=3, hidden_dims=16, output_dims=32, depth=2)
 
 
 def _make_cost() -> CoST:
@@ -103,30 +94,15 @@ def _make_cost() -> CoST:
 
 
 def _make_autotcl() -> AutoTCL:
-    return AutoTCL(
-        input_dims=3,
-        hidden_dims=16,
-        output_dims=32,
-        depth=2,
-        max_train_length=32,
-    )
+    return AutoTCL(input_dims=3, hidden_dims=16, output_dims=32, depth=2, max_train_length=32)
 
 
 def _make_timevae() -> TimeVAE:
-    return TimeVAE(
-        sequence_length=32,
-        input_dims=3,
-        latent_dim=8,
-        hidden_layer_sizes=(16, 32),
-    )
+    return TimeVAE(sequence_length=32, input_dims=3, latent_dim=8, hidden_layer_sizes=(16, 32))
 
 
 def _make_timenet() -> TimeNet:
-    return TimeNet(
-        input_dims=3,
-        hidden_dims=16,
-        depth=1,
-    )
+    return TimeNet(input_dims=3, hidden_dims=16, depth=1)
 
 
 def _make_recurrentae() -> RecurrentAutoEncoder:
@@ -177,13 +153,12 @@ def input_tensor(model_name: str) -> torch.Tensor:
 # Gradient flow assertions
 # ---------------------------------------------------------------------------
 
+
 class TestBatchOneGradientFlow:
     """encode_batch(x) at batch_size=1 preserves gradient flow for all 10 models."""
 
     @pytest.mark.parametrize("model_name", MODEL_NAMES)
-    def test_gradient_not_none(
-        self, model_name: str, model, input_tensor: torch.Tensor
-    ) -> None:
+    def test_gradient_not_none(self, model_name: str, model, input_tensor: torch.Tensor) -> None:
         """x.grad is populated after backward through encode_batch."""
         output = model.encode_batch(input_tensor)
         output.sum().backward()
@@ -192,9 +167,7 @@ class TestBatchOneGradientFlow:
         )
 
     @pytest.mark.parametrize("model_name", MODEL_NAMES)
-    def test_gradient_finite(
-        self, model_name: str, model, input_tensor: torch.Tensor
-    ) -> None:
+    def test_gradient_finite(self, model_name: str, model, input_tensor: torch.Tensor) -> None:
         """All gradient values are finite (no NaN / Inf) at batch_size=1."""
         output = model.encode_batch(input_tensor)
         output.sum().backward()
@@ -221,6 +194,7 @@ class TestBatchOneGradientFlow:
 # Training mode preservation
 # ---------------------------------------------------------------------------
 
+
 class TestTrainModePreserved:
     """encode_batch must not toggle the encoder's train/eval state."""
 
@@ -232,6 +206,4 @@ class TestTrainModePreserved:
         # Verify model is in train mode
         assert model.training, f"{model_name}: model should be in train mode"
         _ = model.encode_batch(input_tensor)
-        assert model.training, (
-            f"{model_name}: encode_batch toggled model to eval mode"
-        )
+        assert model.training, f"{model_name}: encode_batch toggled model to eval mode"
