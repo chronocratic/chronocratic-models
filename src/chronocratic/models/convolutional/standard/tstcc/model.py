@@ -40,6 +40,35 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.
+
+    Args:
+        input_dims: Number of input features (channels).
+        conv_kernel_size: Kernel size for the first convolution block.
+        stride: Stride for the first convolution block.
+        output_dims: Number of output channels from the encoder.
+        encoder_channels: Channel counts for the first two conv blocks.
+        encoder_inner_kernels: Kernel sizes for the second and third conv
+            blocks.
+        dropout_rate: Dropout rate applied after the first conv block.
+        temporal_contrast_hidden_dim: Hidden dimension for the transformer
+            and projection head in TemporalContrast.
+        temporal_contrast_timesteps: Number of timesteps for temporal
+            contrastive prediction.
+        temperature: Temperature parameter for NT-Xent loss.
+        use_cosine_similarity: Whether to use cosine similarity in NT-Xent.
+        learning_rate: Learning rate for Adam optimizers.
+        temporal_loss_weight: Weight for the temporal contrastive loss.
+        contextual_loss_weight: Weight for the contextual NT-Xent loss.
+        weight_decay: Weight decay for Adam optimizers.
+        sync_dist: Whether to synchronize metrics across processes.
+        norm: Normalization strategy. ``"layer"`` uses GroupNorm(1, C) in
+            the encoder and LayerNorm in the projection head, which is
+            batch-size independent and avoids degeneracy at small batch
+            sizes. ``"batch"`` uses BatchNorm1d for backward compatibility.
+            Defaults to ``"layer"``.
+        augmentation: Optional custom augmentation producer. Defaults to
+            the standard TSTCC pair (Gaussian scaling + segment permutation
+            with jitter).
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -65,6 +94,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         contextual_loss_weight: float = 0.7,
         weight_decay: float = 0.0003,
         sync_dist: bool = False,
+        norm: str = "layer",
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
     ) -> None:
         super().__init__()
@@ -76,6 +106,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._contextual_loss_weight = contextual_loss_weight
         self._weight_decay = weight_decay
         self._sync_dist = sync_dist
+
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
 
         if augmentation is None:
             from chronocratic.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
@@ -94,11 +128,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             encoder_channels=encoder_channels,
             encoder_inner_kernels=encoder_inner_kernels,
             dropout_rate=dropout_rate,
+            norm=norm,
         )
         self._tc_model = TemporalContrast(
             num_channels=output_dims,
             hidden_dim=temporal_contrast_hidden_dim,
             timesteps=temporal_contrast_timesteps,
+            norm=norm,
         )
         self._nt_xent_loss = NTXentLoss(
             temperature=temperature, use_cosine_similarity=use_cosine_similarity
