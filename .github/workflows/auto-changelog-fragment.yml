@@ -110,6 +110,8 @@ jobs:
           # Content format: "[PR title]: summary".
           # Summary comes from TL;DR / TL:DR or Summary section in PR body,
           # or falls back to stripped title (no CC prefix).
+          # Strip \r — GitHub PR bodies use CRLF which breaks sed $-anchors.
+          PR_BODY="$(printf '%s' "${PR_BODY}" | tr -d '\r')"
           SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## \(TL;\|TL:\)DR$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
           if [ -z "$SUMMARY" ]; then
             SUMMARY="$(printf '%s\n' "${PR_BODY}" | sed -n '/^## Summary$/,/^##/p' | tail -n +2 | head -n -1 | sed '/^$/d' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"

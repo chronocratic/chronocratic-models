@@ -14,13 +14,13 @@ def _lower_triangular_pair_indices(batch_size: int, device: torch.device) -> tor
 def _distance_normalizer(distance: torch.Tensor) -> torch.Tensor:
     """Normalize distances to ``[0, 1]`` without changing device placement."""
     if distance.numel() <= 1:
-        return torch.zeros_like(distance)
+        return distance.detach()
 
     min_val = torch.min(distance)
     max_val = torch.max(distance)
     denominator = max_val - min_val
     if torch.isclose(denominator, torch.zeros_like(denominator)):
-        return torch.zeros_like(distance)
+        return distance.detach()
     return (distance - min_val) / denominator
 
 
@@ -65,6 +65,8 @@ def pretraining_loss(
         torch.masked_select(temporal_distances, lower_triangular_mask)
     )
     if temporal_distances.numel() == 0:
+        # batch_size=1: no pairs exist, return disconnected zero scalars
+        # (no gradient signal from empty distance set)
         zero_loss = temporal_distances.new_tensor(0.0)
         return zero_loss, zero_loss, zero_loss
 

@@ -17,9 +17,26 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
+
+    Args:
+        input_dims: Number of input feature channels.
+        output_dims: Dimension of the flat encoder output.
+        alpha: Beta-distribution parameter for MixUp interpolation.
+        learning_rate: Base learning rate for the Adam optimizer.
+        encoder_channels: Tuple of channel counts for each Conv1d block.
+        encoder_kernels: Tuple of kernel sizes for each Conv1d block.
+        encoder_dilations: Tuple of dilation rates for each Conv1d block.
+        projection_dims: Hidden dimension of the projection head.
+        sync_dist: Whether to synchronize metrics across processes.
+        norm: Normalization strategy for encoder and projection head.
+            Use ``"layer"`` for GroupNorm (batch_size=1 safe) or
+            ``"batch"`` for BatchNorm1d (original behavior).
+            Defaults to ``"layer"``.
     """
 
-    supported_outputs: frozenset[EncodingOutputShape] = frozenset({EncodingOutputShape.VECTOR})
+    supported_outputs: frozenset[EncodingOutputShape] = frozenset(
+        {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
+    )
 
     def __init__(
         self,
@@ -32,8 +49,13 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
         projection_dims: int = 128,
         sync_dist: bool = False,
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
         self.save_hyperparameters()
         self._alpha = alpha
         self._learning_rate = learning_rate
@@ -47,10 +69,16 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             encoder_channels=encoder_channels,
             encoder_kernels=encoder_kernels,
             encoder_dilations=encoder_dilations,
+            norm=norm,
+        )
+        proj_norm = (
+            nn.GroupNorm(num_groups=1, num_channels=projection_dims)
+            if norm == "layer"
+            else nn.BatchNorm1d(projection_dims)
         )
         self.proj_head = nn.Sequential(
             nn.Linear(output_dims, projection_dims),
-            nn.BatchNorm1d(projection_dims),
+            proj_norm,
             nn.ReLU(),
             nn.Linear(projection_dims, projection_dims),
         )
@@ -76,16 +104,24 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
+        if output not in type(self).supported_outputs:
+            msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+            raise ValueError(msg)
         flat = encoder(batch_x)  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        if output == EncodingOutputShape.SEQUENCE:
-            _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
-        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
-        raise ValueError(msg)
+        _warn_sequence_fallback(type(self))
+        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
+        """Run one contrastive training step.
+
+        Note:
+            At ``batch_size=1``, ``randperm(1)`` returns identity, so
+            MixUp interpolation collapses to ``x_aug = x_1`` and
+            ``z_1 == z_2 == z_aug``, producing trivially near-zero loss.
+            Use ``batch_size >= 2`` for meaningful contrastive training.
+        """
         x = extract_features_from_batch(batch)
 
         x_1 = x

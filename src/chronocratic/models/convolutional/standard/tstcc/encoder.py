@@ -12,6 +12,21 @@ class TCCEncoder(nn.Module):
 
     Returns the convolutional feature map ``(B, output_dims, L')`` used for
     contrastive learning and downstream representation extraction.
+
+    Args:
+        input_dims: Number of input features (channels).
+        conv_kernel_size: Kernel size for the first convolution block.
+        stride: Stride for the first convolution block.
+        output_dims: Number of output channels from the encoder.
+        dropout_rate: Dropout rate applied after the first conv block.
+        encoder_channels: Channel counts for the first two conv blocks.
+            Must have exactly 2 elements.
+        encoder_inner_kernels: Kernel sizes for the second and third conv
+            blocks. Must have exactly 2 elements.
+        norm: Normalization strategy. ``"layer"`` uses GroupNorm(1, C),
+            which is batch-size independent and avoids degeneracy at
+            small batch sizes. ``"batch"`` uses BatchNorm1d for backward
+            compatibility. Defaults to ``"layer"``.
     """
 
     def __init__(
@@ -23,10 +38,15 @@ class TCCEncoder(nn.Module):
         dropout_rate: float = 0.35,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
         self.output_dims = output_dims
 
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
         if len(encoder_channels) != _EXPECTED_CHANNEL_COUNT:
             msg = (
                 f"encoder_channels must have exactly {_EXPECTED_CHANNEL_COUNT} elements, "
@@ -40,6 +60,22 @@ class TCCEncoder(nn.Module):
             )
             raise ValueError(msg)
 
+        _norm1 = (
+            nn.GroupNorm(num_groups=1, num_channels=encoder_channels[0])
+            if norm == "layer"
+            else nn.BatchNorm1d(encoder_channels[0])
+        )
+        _norm2 = (
+            nn.GroupNorm(num_groups=1, num_channels=encoder_channels[1])
+            if norm == "layer"
+            else nn.BatchNorm1d(encoder_channels[1])
+        )
+        _norm3 = (
+            nn.GroupNorm(num_groups=1, num_channels=output_dims)
+            if norm == "layer"
+            else nn.BatchNorm1d(output_dims)
+        )
+
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
                 input_dims,
@@ -49,7 +85,7 @@ class TCCEncoder(nn.Module):
                 bias=False,
                 padding=conv_kernel_size // 2,
             ),
-            nn.BatchNorm1d(encoder_channels[0]),
+            _norm1,
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
             nn.Dropout(dropout_rate),
@@ -63,7 +99,7 @@ class TCCEncoder(nn.Module):
                 bias=False,
                 padding=encoder_inner_kernels[0] // 2,
             ),
-            nn.BatchNorm1d(encoder_channels[1]),
+            _norm2,
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
         )
@@ -76,7 +112,7 @@ class TCCEncoder(nn.Module):
                 bias=False,
                 padding=encoder_inner_kernels[1] // 2,
             ),
-            nn.BatchNorm1d(output_dims),
+            _norm3,
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
         )

@@ -16,7 +16,7 @@ Model tier classification
         TSTCC, TimeNet, RecurrentAutoEncoder (Basic mixin),
         CoST, TS2Vec, AutoTCL (Dilated mixin).
     Tier B (native 3-D, {VECTOR, SEQUENCE}): TST (Basic mixin).
-    Tier C (flat-permissive, {VECTOR}):
+    Tier C (flat-permissive, {VECTOR, SEQUENCE}):
         Series2Vec, MCL, TimeVAE (Basic mixin).
 """
 
@@ -323,15 +323,21 @@ class TestSupportedOutputs:
             {EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}
         ), f"{model_name} should support {{VECTOR, SEQUENCE}}"
 
+    # MCL and Series2Vec now declare SEQUENCE (with fallback warning); TimeVAE
+    # remains VECTOR-only. Tier C = flat-permissive fallback.
+    _EXPECTED_TIER_C_SUPPORT: dict[str, frozenset[EncodingOutputShape]] = {
+        "MCL": frozenset({EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}),
+        "Series2Vec": frozenset({EncodingOutputShape.VECTOR, EncodingOutputShape.SEQUENCE}),
+        "TimeVAE": frozenset({EncodingOutputShape.VECTOR}),
+    }
+
     @pytest.mark.parametrize("model_name", TIER_C_NAMES)
-    def test_tier_c_supports_vector_only(
+    def test_tier_c_supported_outputs(
         self, model_name: str, request: pytest.FixtureRequest
     ) -> None:
-        """Tier C models support only VECTOR."""
+        """Tier C models declare the correct supported_outputs."""
         model = _resolve_model(model_name, request)
-        assert model.supported_outputs == frozenset({EncodingOutputShape.VECTOR}), (
-            f"{model_name} should support {{VECTOR}} only"
-        )
+        assert model.supported_outputs == self._EXPECTED_TIER_C_SUPPORT[model_name]
 
 
 # ---------------------------------------------------------------------------

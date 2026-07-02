@@ -42,6 +42,10 @@ class TSTCCModelParameters:
         weight_decay: Weight decay for the Adam optimizers.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
+        norm: Normalization strategy for TCCEncoder and TemporalContrast.
+            ``"layer"`` (default) uses GroupNorm for encoder conv blocks and
+            LayerNorm for the projection head — safe at batch_size=1.
+            ``"batch"`` uses BatchNorm1d (original behavior).
     """
 
     input_dims: int
@@ -60,6 +64,7 @@ class TSTCCModelParameters:
     contextual_loss_weight: float = 0.7
     weight_decay: float = 0.0003
     sync_dist: bool = False
+    norm: str = "layer"
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""

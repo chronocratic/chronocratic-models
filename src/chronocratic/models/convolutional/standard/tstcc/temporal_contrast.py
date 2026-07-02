@@ -126,20 +126,36 @@ class TemporalContrast(nn.Module):
 
     Computes a temporal contrastive (NCE) loss between two augmented views and
     returns a projection-head embedding for instance-level (NT-Xent) loss.
+
+    Args:
+        num_channels: Number of input feature channels from the encoder.
+        hidden_dim: Hidden dimension for the transformer and projection head.
+        timesteps: Number of timesteps for temporal contrastive prediction.
+        norm: Normalization strategy for the projection head. ``"layer"``
+            uses LayerNorm, which is batch-size independent and avoids
+            degeneracy at small batch sizes. ``"batch"`` uses BatchNorm1d
+            for backward compatibility. Defaults to ``"layer"``.
     """
 
-    def __init__(self, num_channels: int, hidden_dim: int, timesteps: int) -> None:
+    def __init__(
+        self, num_channels: int, hidden_dim: int, timesteps: int, *, norm: str = "layer"
+    ) -> None:
         super().__init__()
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
+
         self.num_channels = num_channels
         self.timestep = timesteps
         self.Wk = nn.ModuleList([nn.Linear(hidden_dim, num_channels) for _ in range(timesteps)])
         self.lsoftmax = nn.LogSoftmax(dim=-1)
 
+        _proj_norm = num_channels // 2
         self.projection_head = nn.Sequential(
-            nn.Linear(hidden_dim, num_channels // 2),
-            nn.BatchNorm1d(num_channels // 2),
+            nn.Linear(hidden_dim, _proj_norm),
+            nn.LayerNorm(_proj_norm) if norm == "layer" else nn.BatchNorm1d(_proj_norm),
             nn.ReLU(inplace=True),
-            nn.Linear(num_channels // 2, num_channels // 4),
+            nn.Linear(_proj_norm, num_channels // 4),
         )
         self.seq_transformer = _SeqTransformer(
             patch_size=num_channels, dim=hidden_dim, depth=4, heads=4, mlp_dim=64
