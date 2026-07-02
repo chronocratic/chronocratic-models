@@ -4,25 +4,33 @@ from torch.nn import init
 
 
 class DisjoinEncoder(nn.Module):
+    """DisjoinEncoder with GroupNorm normalization.
+
+    Uses GroupNorm(num_groups=1, num_channels=C) for all convolutional blocks
+    instead of BatchNorm. GroupNorm operates on a per-sample basis and works
+    correctly at batch_size=1, where BatchNorm degenerates due to zero variance
+    in running statistics.
+    """
+
     def __init__(
         self, input_dims: int, embedding_dims: int, representation_dims: int, kernel_size: int
     ) -> None:
         super().__init__()
         self.temporal_CNN = nn.Sequential(
             nn.Conv2d(1, embedding_dims, kernel_size=(1, kernel_size), padding="valid"),
-            nn.BatchNorm2d(embedding_dims),
+            nn.GroupNorm(num_groups=1, num_channels=embedding_dims),
             nn.GELU(),
         )
 
         self.spatial_CNN = nn.Sequential(
             nn.Conv2d(embedding_dims, embedding_dims, kernel_size=(input_dims, 1), padding="valid"),
-            nn.BatchNorm2d(embedding_dims),
+            nn.GroupNorm(num_groups=1, num_channels=embedding_dims),
             nn.GELU(),
         )
 
         self.rep_CNN = nn.Sequential(
             nn.Conv1d(embedding_dims, representation_dims, kernel_size=3),
-            nn.BatchNorm1d(representation_dims),
+            nn.GroupNorm(num_groups=1, num_channels=representation_dims),
             nn.GELU(),
         )
         self.initialize_weights()

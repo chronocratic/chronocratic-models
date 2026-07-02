@@ -87,21 +87,21 @@ class TestSeries2VecNetworkGroupNorm:
 
     def test_both_encoders_use_group_norm(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
         )
         assert isinstance(network.embed_layer.temporal_CNN[1], torch.nn.GroupNorm)
         assert isinstance(network.embed_layer_f.spatial_CNN[1], torch.nn.GroupNorm)
 
     def test_no_batch_norm_in_network(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
         )
         for module in network.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
 
     def test_encode_batch_size_one(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
         )
         x = torch.randn(1, 20, 3)  # (batch, time, channels) — time must be >= kernel_size
         out = network.encode(x)
