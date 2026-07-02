@@ -13,6 +13,10 @@ class Series2VecNetwork(nn.Module):
     Series2Vec convolution blocks operate on ``(batch, channels, time)``, so this
     class transposes internally before calling the encoders.
 
+    Both :class:`DisjoinEncoder` instances (temporal and frequency branches)
+    use GroupNorm for normalization, ensuring correct gradient flow at
+    batch_size=1.
+
     The network produces representations only; downstream classification and
     regression use :class:`SupervisedModule` from
     ``chronocratic.models.supervised``.
