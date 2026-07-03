@@ -10,6 +10,9 @@ class DisjoinEncoder(nn.Module):
         input_dims: Number of input channels (spatial conv kernel height).
         embedding_dims: Channel count of the temporal/spatial conv blocks.
         representation_dims: Channel count of the representation conv block.
+            This is the **per-branch** dimension (each DisjoinEncoder produces
+            this many features); the final concatenated output is
+            ``2 * representation_dims``.
         kernel_size: Temporal convolution kernel width.
         norm: Normalization strategy. ``"layer"`` (default) uses
             GroupNorm(num_groups=1, C), which is per-sample and works correctly

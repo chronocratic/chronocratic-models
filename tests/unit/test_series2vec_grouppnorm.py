@@ -103,7 +103,7 @@ class TestSeries2VecNetworkGroupNorm:
         )
         x = torch.randn(1, 20, 3)  # (batch, time, channels) — time must be >= kernel_size
         out = network.encode(x)
-        assert out.shape == (1, 64)  # (batch, 2 * representation_dims)
+        assert out.shape == (1, 32)  # (batch, representation_dims) — each branch contributes 16
 
 
 class TestSeries2VecGroupNorm:
@@ -126,4 +126,4 @@ class TestSeries2VecGroupNorm:
         model = Series2Vec(input_dims=3)
         x = torch.randn(1, 50, 3)  # (batch, time, channels) — time >= kernel_size
         out = model.network.encode(x)
-        assert out.shape == (1, 640)  # (batch, 2 * 320)
+        assert out.shape == (1, 320)  # (batch, representation_dims) — each branch contributes 160

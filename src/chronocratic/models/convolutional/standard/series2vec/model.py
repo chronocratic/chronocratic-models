@@ -127,8 +127,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, 2 * representation_dims)`` for
-            VECTOR or ``(B, 1, 2 * representation_dims)`` for SEQUENCE.
+            Representations of shape ``(B, representation_dims)`` for
+            VECTOR or ``(B, 1, representation_dims)`` for SEQUENCE.
         """
         if output not in type(self).supported_outputs:
             msg = (
@@ -234,7 +234,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Flattened representation size (temporal + frequency concatenated).
 
         Returns:
-            ``2 * representation_dims`` — the output dimension of
-            :meth:`Series2VecNetwork.encode`.
+            ``representation_dims`` — the output dimension of
+            :meth:`Series2VecNetwork.encode`, matching the constructor parameter.
         """
-        return 2 * self.network.branch_representation_dim
+        return self.network.representation_dim

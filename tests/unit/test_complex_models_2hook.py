@@ -113,8 +113,8 @@ class TestSeries2VecTwoHookContract:
         encoder = model._get_encoder()
         batch_x = torch.randn(2, 20, 3)
         result = model._encode_batch(encoder, batch_x)
-        # VECTOR default: no unsqueeze -> (B, 2*rep_dims)
-        expected_shape = (2, 8)  # 2 * 4 = 8
+        # VECTOR default: no unsqueeze -> (B, rep_dims)
+        expected_shape = (2, 4)  # representation_dims (was 2 * rep_dims before halving)
         assert result.shape == expected_shape, f"Expected {expected_shape}, got {result.shape}"
 
     def test_no_get_encoder_module_override(self) -> None:
@@ -130,7 +130,7 @@ class TestSeries2VecTwoHookContract:
         )
 
     def test_encode_output_shape(self) -> None:
-        """encode() produces (B, 2*representation_dims) output with VECTOR default."""
+        """encode() produces (B, representation_dims) output with VECTOR default."""
         model = Series2Vec(
             input_dims=3,
             embedding_dims=8,
@@ -140,5 +140,5 @@ class TestSeries2VecTwoHookContract:
         )
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2)
-        expected_shape = (4, 8)  # VECTOR: (B, 2*rep_dims)
+        expected_shape = (4, 4)  # VECTOR: (B, rep_dims) — each branch contributes rep_dims//2
         assert result.shape == expected_shape, f"Expected {expected_shape}, got {result.shape}"
