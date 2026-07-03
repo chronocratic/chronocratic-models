@@ -48,6 +48,39 @@ class TestSeries2VecLossBatchSize1:
         loss, _, _ = model._calculate_loss(x)
         assert torch.isfinite(loss), f"Loss is {loss}"
 
+    def test_split_path_produces_encoder_gradient(self, model: Series2Vec) -> None:
+        """Long singleton is windowed into pairs, yielding a real encoder gradient."""
+        model.train()
+        # L=256, K=2 -> window_len 128 >= kernel: the split path runs, not the dummy.
+        x = torch.randn(1, 256, 3)
+        loss, _, _ = model._calculate_loss(x)
+        assert torch.isfinite(loss)
+        assert loss.requires_grad
+        loss.backward()
+        grads = [p.grad for p in model.network.parameters() if p.grad is not None]
+        assert grads, "no encoder parameter received a gradient"
+        assert any(torch.any(g != 0) for g in grads), "encoder gradient is all zeros"
+
+    def test_unsplittable_series_falls_back_without_crash(self) -> None:
+        """When windows would be shorter than the kernel, split is skipped safely."""
+        # K=16 on L=32 -> window_len 2 < kernel 4: split skipped, x stays (1, 32, 3),
+        # pretraining_loss finds no pairs -> connected zero-dummy fallback, no crash.
+        model = Series2Vec(
+            input_dims=3,
+            embedding_dims=8,
+            representation_dims=16,
+            encoder_kernel_size=4,
+            num_heads=2,
+            feedforward_dims=32,
+            singleton_split_count=16,
+        )
+        model.train()
+        x = torch.randn(1, 32, 3, requires_grad=True)
+        loss, _, _ = model._calculate_loss(x)
+        assert torch.isfinite(loss)
+        loss.backward()  # must not raise
+        assert x.grad is not None
+
 
 class TestTSTCCLossBatchSize1:
     """TSTCC uses TemporalContrast (nce accumulator) + NTXentLoss."""

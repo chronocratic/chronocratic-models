@@ -19,6 +19,10 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
+# Minimum windows to split a singleton batch into: K<3 gives <2 unique pairwise
+# distances, which _distance_normalizer detaches (no min-max range), so no gradient.
+_MIN_SPLIT_COUNT = 3
+
 
 def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
     if name == "Adam":
@@ -60,11 +64,18 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
         *,
+        singleton_split_count: int = 3,
         sync_dist: bool = False,
         optimizer_name: str = "RAdam",
         weight_decay: float = 0.0,
     ) -> None:
         super().__init__()
+        if singleton_split_count < _MIN_SPLIT_COUNT:
+            msg = (
+                f"singleton_split_count must be >= {_MIN_SPLIT_COUNT}, "
+                f"got {singleton_split_count}"
+            )
+            raise ValueError(msg)
         self.save_hyperparameters()
 
         self._learning_rate = learning_rate
@@ -72,6 +83,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
         self._optimizer_name = optimizer_name
         self._weight_decay = weight_decay
+        self._singleton_split_count = singleton_split_count
+        self._encoder_kernel_size = encoder_kernel_size
 
         self.network = Series2VecNetwork(
             input_dims=input_dims,
@@ -131,7 +144,32 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         # this correctly falls back to the CPU path. Do not add an MPS branch.
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
 
+    def _ensure_pairable_batch(self, x: torch.Tensor) -> torch.Tensor:
+        """Split a singleton ``(1, L, C)`` batch into K windows for pairwise loss.
+
+        The Series2Vec loss matches the batch's pairwise distance matrix, so a
+        single long series (``B == 1``) yields no pairs and no learning signal.
+        Splitting it into ``singleton_split_count`` contiguous, non-overlapping
+        sub-series manufactures a real batch. No-op when ``B > 1`` or when the
+        series is too short to form windows of at least the encoder kernel size
+        (the caller's zero-loss fallback then handles the degenerate case).
+
+        Args:
+            x: Input batch of shape ``(B, L, C)``.
+
+        Returns:
+            ``(K, L // K, C)`` when ``x`` is a splittable singleton, else ``x``.
+        """
+        if x.size(0) != 1:
+            return x
+        k = self._singleton_split_count
+        window_len = x.size(1) // k
+        if window_len < self._encoder_kernel_size:
+            return x
+        return x[0, : k * window_len].reshape(k, window_len, x.size(2))
+
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        x = self._ensure_pairable_batch(x)
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
         filtered_frequency_data = filter_frequencies(x.detach(), training=self.training)
@@ -142,11 +180,11 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             target_temporal_distances=target_temporal_distances,
             target_frequency_distances=target_frequency_distances,
         )
-        # Ensure loss connects to graph even when batch_size=1 (no pairs, zero loss).
-        # pretraining_loss returns new_tensor(0.0) — disconnected from graph — which
-        # crashes backward(). x.sum() * 0.0 produces zero with valid grad_fn.
+        # Fallback for series too short to split (window_len < kernel): pretraining_loss
+        # returns new_tensor(0.0), disconnected from the graph, which crashes backward().
+        # temporal_distances.sum() * 0.0 produces zero with a grad_fn reaching the encoder.
         if not result[0].requires_grad:
-            dummy = x.sum() * 0.0
+            dummy = temporal_distances.sum() * 0.0
             result = (dummy, dummy, dummy)
         return result
 
