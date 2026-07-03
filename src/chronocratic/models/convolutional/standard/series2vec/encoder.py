@@ -4,33 +4,65 @@ from torch.nn import init
 
 
 class DisjoinEncoder(nn.Module):
-    """DisjoinEncoder with GroupNorm normalization.
+    """DisjoinEncoder with a selectable normalization strategy.
 
-    Uses GroupNorm(num_groups=1, num_channels=C) for all convolutional blocks
-    instead of BatchNorm. GroupNorm operates on a per-sample basis and works
-    correctly at batch_size=1, where BatchNorm degenerates due to zero variance
-    in running statistics.
+    Args:
+        input_dims: Number of input channels (spatial conv kernel height).
+        embedding_dims: Channel count of the temporal/spatial conv blocks.
+        representation_dims: Channel count of the representation conv block.
+        kernel_size: Temporal convolution kernel width.
+        norm: Normalization strategy. ``"layer"`` (default) uses
+            GroupNorm(num_groups=1, C), which is per-sample and works correctly
+            at batch_size=1, where BatchNorm degenerates due to zero variance in
+            running statistics. ``"batch"`` uses BatchNorm2d/BatchNorm1d to
+            reproduce the upstream Series2Vec architecture exactly.
     """
 
     def __init__(
-        self, input_dims: int, embedding_dims: int, representation_dims: int, kernel_size: int
+        self,
+        input_dims: int,
+        embedding_dims: int,
+        representation_dims: int,
+        kernel_size: int,
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
+        if norm not in ("layer", "batch"):
+            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
+            raise ValueError(msg)
+
+        _temporal_norm = (
+            nn.GroupNorm(num_groups=1, num_channels=embedding_dims)
+            if norm == "layer"
+            else nn.BatchNorm2d(embedding_dims)
+        )
+        _spatial_norm = (
+            nn.GroupNorm(num_groups=1, num_channels=embedding_dims)
+            if norm == "layer"
+            else nn.BatchNorm2d(embedding_dims)
+        )
+        _rep_norm = (
+            nn.GroupNorm(num_groups=1, num_channels=representation_dims)
+            if norm == "layer"
+            else nn.BatchNorm1d(representation_dims)
+        )
+
         self.temporal_CNN = nn.Sequential(
             nn.Conv2d(1, embedding_dims, kernel_size=(1, kernel_size), padding="valid"),
-            nn.GroupNorm(num_groups=1, num_channels=embedding_dims),
+            _temporal_norm,
             nn.GELU(),
         )
 
         self.spatial_CNN = nn.Sequential(
             nn.Conv2d(embedding_dims, embedding_dims, kernel_size=(input_dims, 1), padding="valid"),
-            nn.GroupNorm(num_groups=1, num_channels=embedding_dims),
+            _spatial_norm,
             nn.GELU(),
         )
 
         self.rep_CNN = nn.Sequential(
             nn.Conv1d(embedding_dims, representation_dims, kernel_size=3),
-            nn.GroupNorm(num_groups=1, num_channels=representation_dims),
+            _rep_norm,
             nn.GELU(),
         )
         self.initialize_weights()

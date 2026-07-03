@@ -40,9 +40,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
     The public input shape is ``(batch, time, channels)``.
 
-    The encoder uses GroupNorm for normalization, ensuring correct gradient
-    flow at batch_size=1 (unlike BatchNorm, which degenerates with zero
-    variance statistics for single-sample batches).
+    The encoder defaults to GroupNorm (``norm="layer"``), ensuring correct
+    gradient flow at batch_size=1 (unlike BatchNorm, which degenerates with
+    zero variance statistics for single-sample batches). Pass ``norm="batch"``
+    to reproduce the upstream BatchNorm architecture exactly.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
@@ -65,6 +66,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         soft_dtw_gamma: float = 0.1,
         *,
         singleton_split_count: int = 3,
+        norm: str = "layer",
         sync_dist: bool = False,
         optimizer_name: str = "RAdam",
         weight_decay: float = 0.0,
@@ -94,6 +96,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             representation_dims=representation_dims,
             dropout_rate=dropout_rate,
             encoder_kernel_size=encoder_kernel_size,
+            norm=norm,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

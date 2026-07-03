@@ -31,6 +31,8 @@ class Series2VecNetwork(nn.Module):
         representation_dims: int = 320,
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
 
@@ -41,12 +43,14 @@ class Series2VecNetwork(nn.Module):
             embedding_dims=embedding_dims,
             representation_dims=representation_dims,
             kernel_size=encoder_kernel_size,
+            norm=norm,
         )
         self.embed_layer_f = DisjoinEncoder(
             input_dims=input_dims,
             embedding_dims=embedding_dims,
             representation_dims=representation_dims,
             kernel_size=encoder_kernel_size,
+            norm=norm,
         )
 
         self.layer_norm = nn.LayerNorm(representation_dims, eps=1e-5)
