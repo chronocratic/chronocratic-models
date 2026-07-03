@@ -74,11 +74,10 @@ class TestDisjoinEncoderGroupNorm:
         assert x.grad is not None
         assert not torch.all(x.grad == 0)
 
-    def test_no_norm_parameter_in_init(self) -> None:
-        """DisjoinEncoder should not accept a norm parameter."""
+    def test_norm_parameter_defaults_to_layer(self) -> None:
+        """DisjoinEncoder accepts a norm parameter defaulting to 'layer' (GroupNorm)."""
         sig = inspect.signature(DisjoinEncoder.__init__)
-        param_names = list(sig.parameters.keys())
-        assert "norm" not in param_names
+        assert sig.parameters["norm"].default == "layer"
 
 
 class TestSeries2VecNetworkGroupNorm:
@@ -104,11 +103,11 @@ class TestSeries2VecNetworkGroupNorm:
         )
         x = torch.randn(1, 20, 3)  # (batch, time, channels) — time must be >= kernel_size
         out = network.encode(x)
-        assert out.shape == (1, 64)  # (batch, 2 * representation_dims)
+        assert out.shape == (1, 32)  # (batch, representation_dims) — each branch contributes 16
 
 
 class TestSeries2VecGroupNorm:
-    """Series2Vec model has no norm parameter and uses GroupNorm internally."""
+    """Series2Vec model defaults to GroupNorm internally (norm='layer')."""
 
     def test_default_model_uses_group_norm(self) -> None:
         model = Series2Vec(input_dims=3)
@@ -119,13 +118,12 @@ class TestSeries2VecGroupNorm:
         for module in model.network.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
 
-    def test_no_norm_parameter(self) -> None:
+    def test_norm_parameter_defaults_to_layer(self) -> None:
         sig = inspect.signature(Series2Vec.__init__)
-        param_names = list(sig.parameters.keys())
-        assert "norm" not in param_names
+        assert sig.parameters["norm"].default == "layer"
 
     def test_encode_batch_size_one(self) -> None:
         model = Series2Vec(input_dims=3)
         x = torch.randn(1, 50, 3)  # (batch, time, channels) — time >= kernel_size
         out = model.network.encode(x)
-        assert out.shape == (1, 640)  # (batch, 2 * 320)
+        assert out.shape == (1, 320)  # (batch, representation_dims) — each branch contributes 160

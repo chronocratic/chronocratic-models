@@ -34,15 +34,14 @@ from chronocratic.models import (
     MCL,
     RecurrentAutoEncoder,
     Series2Vec,
+    TimeNet,
+    TimeVAE,
     TS2Vec,
     TST,
     TSTCC,
-    TimeNet,
-    TimeVAE,
 )
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils.helpers import _warned_sequence_fallback
-
 
 # ---------------------------------------------------------------------------
 # Model fixtures — lightweight instances that fit in CPU memory
@@ -90,7 +89,7 @@ def tst_model() -> TST:
 @pytest.fixture(scope="module")
 def series2vec_model() -> Series2Vec:
     """Series2Vec (Tier C, Basic mixin)."""
-    return Series2Vec(input_dims=3, representation_dims=8)
+    return Series2Vec(input_dims=3, representation_dims=16)
 
 
 @pytest.fixture(scope="module")

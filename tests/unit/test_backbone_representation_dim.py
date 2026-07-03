@@ -69,7 +69,7 @@ class TestSeries2VecRepresentationDim:
         assert reps.shape[1] == model.representation_dim
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = 2 * representation_dims."""
+        """representation_dim = representation_dims (output matches constructor param)."""
         model = Series2Vec(
             input_dims=2,
             embedding_dims=8,
@@ -78,7 +78,7 @@ class TestSeries2VecRepresentationDim:
             representation_dims=4,
             dropout_rate=0.1,
         )
-        assert model.representation_dim == 2 * 4
+        assert model.representation_dim == 4
 
 
 class TestTSTCCRepresentationDim:
@@ -88,7 +88,7 @@ class TestTSTCCRepresentationDim:
         """representation_dim returns the encoder's output_dims."""
         model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
         # Per design spec: representation_dim == output_dims (pooling makes it length-independent)
-        assert model.representation_dim == model._encoder.output_dims  # noqa: SLF001
+        assert model.representation_dim == model._encoder.output_dims
 
     def test_representation_dim_value(self) -> None:
         """representation_dim = output_dims."""
@@ -134,5 +134,5 @@ class TestFactoriesWithRealBackbones:
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # Verify module construction works (head uses backbone.representation_dim)
-        assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
-        assert module._head._fc.out_features == 5  # noqa: SLF001
+        assert module._head._fc.in_features == backbone.representation_dim
+        assert module._head._fc.out_features == 5

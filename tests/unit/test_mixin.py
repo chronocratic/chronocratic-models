@@ -214,12 +214,12 @@ class TestEncodeBehavior:
 class TestBugFixes:
     """Verify the two runtime bug fixes are present in the source."""
 
-    def test_persistent_workers_condition(self) -> None:
-        """DataLoader must use persistent_workers=num_workers > 0."""
+    @pytest.fixture(autouse=True)
+    def _mixin_source(self) -> None:
         import pathlib
 
         mixin_file = (
-            pathlib.Path(__file__).parents[1]
+            pathlib.Path(__file__).parents[2]
             / "src"
             / "chronocratic"
             / "models"
@@ -228,25 +228,15 @@ class TestBugFixes:
             / "_mixin"
             / "encoding.py"
         )
-        source = mixin_file.read_text()
-        assert "persistent_workers=num_workers > 0" in source
+        self.source = mixin_file.read_text()
+
+    def test_persistent_workers_condition(self) -> None:
+        """DataLoader must use persistent_workers=num_workers > 0."""
+        assert "persistent_workers=num_workers > 0" in self.source
 
     def test_sliding_window_transpose(self) -> None:
         """_compute_sliding_representations full_series path uses .transpose(1, 2)."""
-        import pathlib
-
-        mixin_file = (
-            pathlib.Path(__file__).parents[1]
-            / "src"
-            / "chronocratic"
-            / "models"
-            / "convolutional"
-            / "dilated"
-            / "_mixin"
-            / "encoding.py"
-        )
-        source = mixin_file.read_text()
-        assert "transpose(1, 2)" in source
+        assert "transpose(1, 2)" in self.source
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +282,7 @@ class TestSourceCompliance:
         import pathlib
 
         mixin_file = (
-            pathlib.Path(__file__).parents[1]
+            pathlib.Path(__file__).parents[2]
             / "src"
             / "chronocratic"
             / "models"

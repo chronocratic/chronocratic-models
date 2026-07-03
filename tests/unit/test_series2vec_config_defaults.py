@@ -5,8 +5,6 @@ input_dims and that all five formerly-required fields carry sensible
 defaults taken from the reference repository.
 """
 
-import pytest
-
 from chronocratic.models.convolutional.standard.series2vec.config import Series2VecModelParameters
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 
@@ -50,4 +48,4 @@ class TestSeries2VecModelInstantiation:
     def test_model_representation_dim(self) -> None:
         cfg = Series2VecModelParameters(input_dims=1)
         model = Series2Vec(**vars(cfg))
-        assert model.representation_dim == 2 * cfg.representation_dims
+        assert model.representation_dim == cfg.representation_dims

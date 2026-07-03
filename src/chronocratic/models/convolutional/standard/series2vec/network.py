@@ -20,6 +20,11 @@ class Series2VecNetwork(nn.Module):
     The network produces representations only; downstream classification and
     regression use :class:`SupervisedModule` from
     ``chronocratic.models.supervised``.
+
+    The ``representation_dims`` parameter controls the **output dimension** of
+    :meth:`encode` (temporal + frequency concatenated). Internally, each branch
+    encodes to ``representation_dims // 2`` features, so the parameter must be
+    even.
     """
 
     def __init__(
@@ -31,33 +36,47 @@ class Series2VecNetwork(nn.Module):
         representation_dims: int = 320,
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
+        *,
+        norm: str = "layer",
     ) -> None:
         super().__init__()
+        if representation_dims % 2 != 0:
+            msg = f"representation_dims must be even, got {representation_dims}"
+            raise ValueError(msg)
 
-        self._representation_dims = representation_dims
+        branch_dims = representation_dims // 2
+        if branch_dims % num_heads != 0:
+            msg = (
+                f"representation_dims // 2 ({branch_dims}) must be divisible by "
+                f"num_heads ({num_heads}) for MultiheadAttention"
+            )
+            raise ValueError(msg)
+        self._branch_representation_dim = branch_dims
 
         self.embed_layer = DisjoinEncoder(
             input_dims=input_dims,
             embedding_dims=embedding_dims,
-            representation_dims=representation_dims,
+            representation_dims=branch_dims,
             kernel_size=encoder_kernel_size,
+            norm=norm,
         )
         self.embed_layer_f = DisjoinEncoder(
             input_dims=input_dims,
             embedding_dims=embedding_dims,
-            representation_dims=representation_dims,
+            representation_dims=branch_dims,
             kernel_size=encoder_kernel_size,
+            norm=norm,
         )
 
-        self.layer_norm = nn.LayerNorm(representation_dims, eps=1e-5)
-        self.layer_norm_2 = nn.LayerNorm(representation_dims, eps=1e-5)
-        self.attention_layer = nn.MultiheadAttention(representation_dims, num_heads, dropout_rate)
+        self.layer_norm = nn.LayerNorm(branch_dims, eps=1e-5)
+        self.layer_norm_2 = nn.LayerNorm(branch_dims, eps=1e-5)
+        self.attention_layer = nn.MultiheadAttention(branch_dims, num_heads, dropout_rate)
 
         self.feed_forward = nn.Sequential(
-            nn.Linear(representation_dims, feedforward_dims),
+            nn.Linear(branch_dims, feedforward_dims),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(feedforward_dims, representation_dims),
+            nn.Linear(feedforward_dims, branch_dims),
             nn.Dropout(dropout_rate),
         )
 
@@ -88,7 +107,7 @@ class Series2VecNetwork(nn.Module):
         return self.gap_f(out_f).squeeze(-1)
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        """Return ``(batch, 2 * representation_dims)`` temporal + frequency concat."""
+        """Return ``(batch, representation_dims)`` temporal + frequency concat."""
         temporal_representation = self._temporal_representation(x)
         frequency_representation = self._frequency_representation(x)
         return torch.cat((temporal_representation, frequency_representation), dim=1)
@@ -125,14 +144,14 @@ class Series2VecNetwork(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Return representations of shape ``(batch, 2 * representation_dims)``."""
+        """Return representations of shape ``(batch, representation_dims)``."""
         return self.encode(x)
 
     @property
-    def branch_representation_dim(self) -> int:
-        """Per-branch representation size (temporal OR frequency, not concatenated).
+    def representation_dim(self) -> int:
+        """Output representation size (temporal + frequency concatenated).
 
         Returns:
-            The number of features in a single branch before concatenation.
+            The number of features produced by :meth:`encode`.
         """
-        return self._representation_dims
+        return self._branch_representation_dim * 2

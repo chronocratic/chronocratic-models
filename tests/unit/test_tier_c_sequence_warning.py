@@ -43,14 +43,14 @@ def batch_input() -> torch.Tensor:
 
 
 class TestSeries2VecVectorOutput:
-    """Series2Vec VECTOR returns (B, 2*representation_dims)."""
+    """Series2Vec VECTOR returns (B, representation_dims)."""
 
     def test_vector_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()
         result = series2vec_model._encode_batch(
             encoder, batch_input, output=EncodingOutputShape.VECTOR
         )
-        expected_dim = series2vec_model.representation_dim  # 2 * representation_dims
+        expected_dim = series2vec_model.representation_dim  # matches constructor param
         assert result.shape == (2, expected_dim)
 
     def test_vector_is_2d(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
@@ -62,7 +62,7 @@ class TestSeries2VecVectorOutput:
 
 
 class TestSeries2VecSequenceOutput:
-    """Series2Vec SEQUENCE returns (B, 1, 2*representation_dims) with warning."""
+    """Series2Vec SEQUENCE returns (B, 1, representation_dims) with warning."""
 
     def test_sequence_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()
@@ -71,7 +71,7 @@ class TestSeries2VecSequenceOutput:
             result = series2vec_model._encode_batch(
                 encoder, batch_input, output=EncodingOutputShape.SEQUENCE
             )
-            expected_dim = series2vec_model.representation_dim  # 2 * representation_dims
+            expected_dim = series2vec_model.representation_dim  # matches constructor param
             assert result.shape == (2, 1, expected_dim)
             assert len(w) == 1
             assert "SEQUENCE" in str(w[0].message)
