@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a11 (2026-07-03)
+
+### Fixed
+
+- fix(series2vec): Series2Vec batch_size=1 crash + representation_dim consistency: Fixes Series2Vec training crashes at `batch_size=1` and aligns `representation_dims` with actual encoding output. Adds norm strategy toggle and reorganizes test files. ([#61](https://github.com/chronocratic/chronocratic-models/issues/61))
+
+
 ## v0.1.0a10 (2026-07-02)
 
 ### Fixed
