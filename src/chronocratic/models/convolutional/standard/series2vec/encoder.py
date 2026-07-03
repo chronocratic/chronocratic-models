@@ -64,9 +64,7 @@ class DisjoinEncoder(nn.Module):
         )
 
         self.rep_CNN = nn.Sequential(
-            nn.Conv1d(embedding_dims, representation_dims, kernel_size=3),
-            _rep_norm,
-            nn.GELU(),
+            nn.Conv1d(embedding_dims, representation_dims, kernel_size=3), _rep_norm, nn.GELU()
         )
         self.initialize_weights()
 

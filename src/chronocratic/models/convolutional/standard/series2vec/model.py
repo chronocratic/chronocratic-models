@@ -74,8 +74,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         super().__init__()
         if singleton_split_count < _MIN_SPLIT_COUNT:
             msg = (
-                f"singleton_split_count must be >= {_MIN_SPLIT_COUNT}, "
-                f"got {singleton_split_count}"
+                f"singleton_split_count must be >= {_MIN_SPLIT_COUNT}, got {singleton_split_count}"
             )
             raise ValueError(msg)
         self.save_hyperparameters()
@@ -136,7 +135,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
                 f"supported: {type(self).supported_outputs}"
             )
             raise ValueError(msg)
-        flat = encoder.encode(batch_x)  # (B, D) - D=2*representation_dims
+        flat = encoder.encode(batch_x)  # (B, D) — D=representation_dims
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
         _warn_sequence_fallback(type(self))
