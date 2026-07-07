@@ -22,6 +22,8 @@ from torch.nn.modules import (
     TransformerEncoderLayer,
 )
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 ActivationFn = Callable[[Tensor], Tensor]
 
 
@@ -219,7 +221,7 @@ class TSTransformerEncoder(nn.Module):
         dropout_rate: float = 0.1,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
-        norm: str = "BatchNorm",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH,
         *,
         freeze: bool = False,
     ) -> None:
@@ -234,7 +236,7 @@ class TSTransformerEncoder(nn.Module):
             hidden_dims, dropout_rate=dropout_rate * (1.0 - freeze), sequence_length=sequence_length
         )
 
-        if norm == "LayerNorm":
+        if normalization_layer_type == NormalizationLayerType.CHANNEL:
             encoder_layer = TransformerEncoderLayer(
                 hidden_dims,
                 self.num_heads,

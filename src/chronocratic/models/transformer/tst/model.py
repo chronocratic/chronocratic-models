@@ -10,6 +10,7 @@ from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
 
@@ -60,7 +61,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         dropout_rate: float = 0.1,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
-        norm: str = "BatchNorm",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH,
         *,
         freeze: bool = False,
         learning_rate: float = 1e-3,
@@ -93,7 +94,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             dropout_rate=dropout_rate,
             pos_encoding=pos_encoding,
             activation=activation,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
             freeze=freeze,
         )
         self._loss_fn: nn.Module = MaskedMSELoss(reduction="none")

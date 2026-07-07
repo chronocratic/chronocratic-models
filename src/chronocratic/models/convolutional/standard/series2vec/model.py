@@ -16,6 +16,7 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.distances.soft_dtw import SoftDTW
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -40,10 +41,11 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
     The public input shape is ``(batch, time, channels)``.
 
-    The encoder defaults to GroupNorm (``norm="layer"``), ensuring correct
-    gradient flow at batch_size=1 (unlike BatchNorm, which degenerates with
-    zero variance statistics for single-sample batches). Pass ``norm="batch"``
-    to reproduce the upstream BatchNorm architecture exactly.
+    The encoder defaults to GroupNorm (``normalization_layer_type=CHANNEL``),
+    ensuring correct gradient flow at batch_size=1 (unlike BatchNorm, which
+    degenerates with zero variance statistics for single-sample batches). Pass
+    ``normalization_layer_type=BATCH`` to reproduce the upstream BatchNorm
+    architecture exactly.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
@@ -66,7 +68,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         soft_dtw_gamma: float = 0.1,
         *,
         singleton_split_count: int = 3,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,
         optimizer_name: str = "RAdam",
         weight_decay: float = 0.0,
@@ -95,7 +97,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             representation_dims=representation_dims,
             dropout_rate=dropout_rate,
             encoder_kernel_size=encoder_kernel_size,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

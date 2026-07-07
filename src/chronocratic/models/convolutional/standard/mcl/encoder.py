@@ -3,6 +3,8 @@ __all__ = ["FCNEncoder"]
 import torch
 from torch import nn
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 
 class FCNEncoder(nn.Module):
     """Configurable dilated Conv1D encoder for MCL.
@@ -17,9 +19,9 @@ class FCNEncoder(nn.Module):
         encoder_channels: Tuple of channel counts for each Conv1d block.
         encoder_kernels: Tuple of kernel sizes for each Conv1d block.
         encoder_dilations: Tuple of dilation rates for each Conv1d block.
-        norm: Normalization strategy. Use ``"layer"`` for GroupNorm(1, C)
-            which works correctly at batch_size=1, or ``"batch"`` for
-            BatchNorm1d(C) (original behavior). Defaults to ``"layer"``.
+        normalization_layer_type: Normalization strategy. Use ``CHANNEL``
+            for GroupNorm(1, C) which works correctly at batch_size=1,
+            or ``BATCH`` for BatchNorm1d(C). Defaults to ``CHANNEL``.
     """
 
     def __init__(
@@ -30,13 +32,9 @@ class FCNEncoder(nn.Module):
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
         *,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
-        self.norm = norm
         self.encoder_channels = encoder_channels
         self.encoder_kernels = encoder_kernels
         self.encoder_dilations = encoder_dilations
@@ -45,7 +43,7 @@ class FCNEncoder(nn.Module):
         in_ch = input_dims
         for ch, k, d in zip(encoder_channels, encoder_kernels, encoder_dilations, strict=True):
             layers.append(nn.Conv1d(in_ch, ch, kernel_size=k, padding=k // 2 * d, dilation=d))
-            if norm == "layer":
+            if normalization_layer_type == NormalizationLayerType.CHANNEL:
                 layers.append(nn.GroupNorm(num_groups=1, num_channels=ch))
             else:
                 layers.append(nn.BatchNorm1d(ch))

@@ -12,6 +12,7 @@ from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
 from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
@@ -61,11 +62,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         contextual_loss_weight: Weight for the contextual NT-Xent loss.
         weight_decay: Weight decay for Adam optimizers.
         sync_dist: Whether to synchronize metrics across processes.
-        norm: Normalization strategy. ``"layer"`` uses GroupNorm(1, C) in
-            the encoder and LayerNorm in the projection head, which is
-            batch-size independent and avoids degeneracy at small batch
-            sizes. ``"batch"`` uses BatchNorm1d for backward compatibility.
-            Defaults to ``"layer"``.
+        normalization_layer_type: Normalization strategy. ``CHANNEL`` uses
+            GroupNorm(1, C) in the encoder and LayerNorm in the projection
+            head, which is batch-size independent and avoids degeneracy at
+            small batch sizes. ``BATCH`` uses BatchNorm1d. Defaults to
+            ``CHANNEL``.
         augmentation: Optional custom augmentation producer. Defaults to
             the standard TSTCC pair (Gaussian scaling + segment permutation
             with jitter).
@@ -94,7 +95,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         contextual_loss_weight: float = 0.7,
         weight_decay: float = 0.0003,
         sync_dist: bool = False,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
     ) -> None:
         super().__init__()
@@ -106,10 +107,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._contextual_loss_weight = contextual_loss_weight
         self._weight_decay = weight_decay
         self._sync_dist = sync_dist
-
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
 
         if augmentation is None:
             from chronocratic.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
@@ -128,13 +125,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             encoder_channels=encoder_channels,
             encoder_inner_kernels=encoder_inner_kernels,
             dropout_rate=dropout_rate,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
         self._tc_model = TemporalContrast(
             num_channels=output_dims,
             hidden_dim=temporal_contrast_hidden_dim,
             timesteps=temporal_contrast_timesteps,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
         self._nt_xent_loss = NTXentLoss(
             temperature=temperature, use_cosine_similarity=use_cosine_similarity

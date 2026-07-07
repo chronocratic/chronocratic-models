@@ -74,10 +74,11 @@ class TestDisjoinEncoderGroupNorm:
         assert x.grad is not None
         assert not torch.all(x.grad == 0)
 
-    def test_norm_parameter_defaults_to_layer(self) -> None:
-        """DisjoinEncoder accepts a norm parameter defaulting to 'layer' (GroupNorm)."""
+    def test_normalization_layer_type_defaults_to_channel(self) -> None:
+        from chronocratic.models.enums.layers import NormalizationLayerType
+
         sig = inspect.signature(DisjoinEncoder.__init__)
-        assert sig.parameters["norm"].default == "layer"
+        assert sig.parameters["normalization_layer_type"].default == NormalizationLayerType.CHANNEL
 
 
 class TestSeries2VecNetworkGroupNorm:
@@ -107,7 +108,7 @@ class TestSeries2VecNetworkGroupNorm:
 
 
 class TestSeries2VecGroupNorm:
-    """Series2Vec model defaults to GroupNorm internally (norm='layer')."""
+    """Series2Vec model defaults to GroupNorm internally (normalization_layer_type=CHANNEL)."""
 
     def test_default_model_uses_group_norm(self) -> None:
         model = Series2Vec(input_dims=3)
@@ -118,9 +119,11 @@ class TestSeries2VecGroupNorm:
         for module in model.network.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
 
-    def test_norm_parameter_defaults_to_layer(self) -> None:
+    def test_normalization_layer_type_defaults_to_channel(self) -> None:
+        from chronocratic.models.enums.layers import NormalizationLayerType
+
         sig = inspect.signature(Series2Vec.__init__)
-        assert sig.parameters["norm"].default == "layer"
+        assert sig.parameters["normalization_layer_type"].default == NormalizationLayerType.CHANNEL
 
     def test_encode_batch_size_one(self) -> None:
         model = Series2Vec(input_dims=3)

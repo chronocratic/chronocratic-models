@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torch.nn import init
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 
 class DisjoinEncoder(nn.Module):
     """DisjoinEncoder with a selectable normalization strategy.
@@ -14,11 +16,11 @@ class DisjoinEncoder(nn.Module):
             this many features); the final concatenated output is
             ``2 * representation_dims``.
         kernel_size: Temporal convolution kernel width.
-        norm: Normalization strategy. ``"layer"`` (default) uses
-            GroupNorm(num_groups=1, C), which is per-sample and works correctly
-            at batch_size=1, where BatchNorm degenerates due to zero variance in
-            running statistics. ``"batch"`` uses BatchNorm2d/BatchNorm1d to
-            reproduce the upstream Series2Vec architecture exactly.
+        normalization_layer_type: Normalization strategy. ``CHANNEL``
+            (default) uses GroupNorm(num_groups=1, C), which is per-sample
+            and works correctly at batch_size=1. ``BATCH`` uses
+            BatchNorm2d/BatchNorm1d to reproduce the upstream Series2Vec
+            architecture exactly.
     """
 
     def __init__(
@@ -28,26 +30,23 @@ class DisjoinEncoder(nn.Module):
         representation_dims: int,
         kernel_size: int,
         *,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
 
         _temporal_norm = (
             nn.GroupNorm(num_groups=1, num_channels=embedding_dims)
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm2d(embedding_dims)
         )
         _spatial_norm = (
             nn.GroupNorm(num_groups=1, num_channels=embedding_dims)
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm2d(embedding_dims)
         )
         _rep_norm = (
             nn.GroupNorm(num_groups=1, num_channels=representation_dims)
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm1d(representation_dims)
         )
 

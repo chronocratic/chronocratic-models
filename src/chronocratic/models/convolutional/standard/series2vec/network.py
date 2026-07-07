@@ -4,6 +4,7 @@ import torch
 from torch import nn
 
 from chronocratic.models.convolutional.standard.series2vec.encoder import DisjoinEncoder
+from chronocratic.models.enums.layers import NormalizationLayerType
 
 
 class Series2VecNetwork(nn.Module):
@@ -37,7 +38,7 @@ class Series2VecNetwork(nn.Module):
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
         *,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
         if representation_dims % 2 != 0:
@@ -58,14 +59,14 @@ class Series2VecNetwork(nn.Module):
             embedding_dims=embedding_dims,
             representation_dims=branch_dims,
             kernel_size=encoder_kernel_size,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
         self.embed_layer_f = DisjoinEncoder(
             input_dims=input_dims,
             embedding_dims=embedding_dims,
             representation_dims=branch_dims,
             kernel_size=encoder_kernel_size,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
 
         self.layer_norm = nn.LayerNorm(branch_dims, eps=1e-5)
