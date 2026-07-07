@@ -24,6 +24,10 @@ class TimeVAEModelParameters:
         hidden_layer_sizes: Output channel sizes of the successive
             Conv1d / ConvTranspose1d blocks in the encoder and
             residual decoder.
+        conv_kernel_size: Kernel size for the encoder Conv1d layers.
+            Defaults to ``3`` matching the source TimeVAE implementation.
+        conv_stride: Stride for the encoder Conv1d layers.
+            Defaults to ``2`` matching the source TimeVAE implementation.
         trend_poly: Degree of the polynomial trend basis used by the
             trend decoder branch. ``0`` disables the trend branch.
         custom_seasonality: Optional tuple of ``(num_seasons, len_per_season)``
@@ -39,6 +43,8 @@ class TimeVAEModelParameters:
     reconstruction_weight: float = 3.0
     learning_rate: float = 1e-3
     hidden_layer_sizes: tuple[int, ...] = (50, 100, 200)
+    conv_kernel_size: int = 3
+    conv_stride: int = 2
     trend_poly: int = 0
     custom_seasonality: tuple[tuple[int, int], ...] | None = None
     use_residual_conn: bool = True

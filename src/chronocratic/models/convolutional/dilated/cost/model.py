@@ -43,6 +43,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         output_dims: int = 320,
         depth: int = 10,
         dropout_rate: float = 0.1,
+        conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
         learning_rate: float = 1e-3,
         seasonal_loss_weight: float = 0.0005,
@@ -87,6 +88,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             dropout_rate=dropout_rate,
             kernel_sizes=kernel_sizes,
             length=length,
+            conv_kernel_size=conv_kernel_size,
             mask_mode=mask_mode,
         )
 
@@ -106,6 +108,7 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             dropout_rate=dropout_rate,
             kernel_sizes=kernel_sizes,
             length=length,
+            conv_kernel_size=conv_kernel_size,
             mask_mode=mask_mode,
         )
 

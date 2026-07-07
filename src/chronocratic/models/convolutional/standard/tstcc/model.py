@@ -78,8 +78,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     def __init__(
         self,
         input_dims: int,
-        conv_kernel_size: int,
-        stride: int,
+        conv_kernel_size: int = 8,
+        stride: int = 1,
         output_dims: int = 128,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),

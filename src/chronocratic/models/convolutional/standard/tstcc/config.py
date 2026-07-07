@@ -18,7 +18,9 @@ class TSTCCModelParameters:
         input_dims: Number of input features (dimensions) in the time
             series.
         conv_kernel_size: Convolutional kernel size used in the TCC encoder.
+            Defaults to ``8`` matching the source TS-TCC implementation.
         stride: Convolutional stride used in the TCC encoder.
+            Defaults to ``1`` matching the source TS-TCC implementation.
         output_dims: Number of channels produced by the final encoder
             block (also used as the temporal-contrast input dim).
         encoder_channels: Tuple of channel counts for the first two
@@ -49,8 +51,8 @@ class TSTCCModelParameters:
     """
 
     input_dims: int
-    conv_kernel_size: int
-    stride: int
+    conv_kernel_size: int = 8
+    stride: int = 1
     output_dims: int = 128
     encoder_channels: tuple[int, ...] = (32, 64)
     encoder_inner_kernels: tuple[int, ...] = (8, 8)

@@ -39,6 +39,12 @@ class Series2VecModelParameters:
             or ``'AdamW'``.
         weight_decay: L2 weight-decay coefficient passed to the
             optimizer.
+        norm: Normalization strategy for encoder and projection head.
+            ``"layer"`` (default) uses GroupNorm for batch_size=1 safety.
+            ``"batch"`` uses BatchNorm (original behavior).
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for pairwise loss computation. Defaults
+            to ``3`` to ensure sufficient gradients at batch_size=1.
     """
 
     input_dims: int
@@ -53,3 +59,5 @@ class Series2VecModelParameters:
     sync_dist: bool = False
     optimizer_name: OptimizerName = "RAdam"
     weight_decay: float = 0.0
+    norm: str = "layer"
+    singleton_split_count: int = 3

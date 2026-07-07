@@ -145,6 +145,10 @@ class TestCoSTModelParameters:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         assert params.sync_dist is False
 
+    def test_default_conv_kernel_size(self) -> None:
+        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        assert params.conv_kernel_size == 3
+
     def test_vars_produces_correct_keys(self) -> None:
         params = CoSTModelParameters(input_dims=1, sequence_length=100)
         result = vars(params)
@@ -157,6 +161,7 @@ class TestCoSTModelParameters:
             "output_dims",
             "depth",
             "dropout_rate",
+            "conv_kernel_size",
             "mask_mode",
             "learning_rate",
             "seasonal_loss_weight",
@@ -168,7 +173,7 @@ class TestCoSTModelParameters:
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(CoSTModelParameters)) == 15
+        assert len(fields(CoSTModelParameters)) == 16
 
 
 class TestAutoTCLModelParameters:
@@ -217,6 +222,10 @@ class TestAutoTCLModelParameters:
         params = AutoTCLModelParameters(input_dims=1)
         assert params.local_loss_weight == 0.1
 
+    def test_default_info_nce_loss_temperature(self) -> None:
+        params = AutoTCLModelParameters(input_dims=1)
+        assert params.info_nce_loss_temperature == 1.0
+
     def test_vars_produces_correct_keys(self) -> None:
         params = AutoTCLModelParameters(input_dims=1)
         result = vars(params)
@@ -233,12 +242,13 @@ class TestAutoTCLModelParameters:
             "max_train_length",
             "meta_learning_rate",
             "local_loss_weight",
+            "info_nce_loss_temperature",
             "sync_dist",
         }
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(AutoTCLModelParameters)) == 13
+        assert len(fields(AutoTCLModelParameters)) == 14
 
 
 class TestNoModelParameters:

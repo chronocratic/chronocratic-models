@@ -25,6 +25,8 @@ class CoSTModelParameters:
         output_dims: Number of output features produced by the encoder.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
+        conv_kernel_size: Convolutional kernel size in the dilated encoder.
+            Defaults to ``3`` matching the source CoST implementation.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
         seasonal_loss_weight: Weight for the seasonal contrastive loss term.
@@ -47,6 +49,7 @@ class CoSTModelParameters:
     output_dims: int = 320
     depth: int = 10
     dropout_rate: float = 0.1
+    conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
     seasonal_loss_weight: float = 0.0005
