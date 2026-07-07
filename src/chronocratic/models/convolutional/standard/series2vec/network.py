@@ -26,6 +26,19 @@ class Series2VecNetwork(nn.Module):
     :meth:`encode` (temporal + frequency concatenated). Internally, each branch
     encodes to ``representation_dims // 2`` features, so the parameter must be
     even.
+
+    Args:
+        input_dims: Number of input features (channels).
+        embedding_dims: Token embedding dimensionality for the conv encoders.
+        num_heads: Number of attention heads in the cross-attention layer.
+        feedforward_dims: Hidden dimensionality of the feed-forward network.
+        representation_dims: Output dimensionality of :meth:`encode`
+            (temporal + frequency concatenated). Must be even.
+        dropout_rate: Dropout probability applied in attention and FFN.
+        encoder_kernel_size: Kernel size for the convolutional tokenizer.
+        normalization_layer_type: Normalization strategy for the
+            DisjoinEncoder instances. ``CHANNEL`` (default) uses GroupNorm
+            for batch_size=1 safety. ``BATCH`` uses BatchNorm.
     """
 
     def __init__(

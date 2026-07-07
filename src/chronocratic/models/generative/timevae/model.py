@@ -143,7 +143,31 @@ class TimeVAEDecoder(nn.Module):
 
 
 class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
-    """TimeVAE Model.
+    """TimeVAE model.
+
+    Variational autoencoder with interpretable trend and seasonality
+    decomposition in the decoder. The encoder uses 1-D convolutions
+    followed by a latent Gaussian representation.
+
+    Args:
+        sequence_length: Length of each input time series sample.
+        input_dims: Number of input features (channels).
+        latent_dim: Dimensionality of the latent space.
+        reconstruction_weight: Weight applied to the reconstruction term
+            of the VAE loss (the KL term is unweighted).
+        learning_rate: Base learning rate for the optimizer.
+        hidden_layer_sizes: Output channel sizes of the successive
+            Conv1d / ConvTranspose1d blocks in the encoder and
+            residual decoder.
+        conv_kernel_size: Kernel size for the encoder Conv1d layers.
+        conv_stride: Stride for the encoder Conv1d layers.
+        trend_poly: Degree of the polynomial trend basis used by the
+            trend decoder branch. ``0`` disables the trend branch.
+        custom_seasonality: Optional tuple of ``(num_seasons, len_per_season)``
+            tuples describing additive seasonal components. ``None``
+            disables the seasonal branch.
+        use_residual_conn: Whether to include the residual ConvTranspose
+            branch in the decoder.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/abudesai/timeVAE under MIT License.

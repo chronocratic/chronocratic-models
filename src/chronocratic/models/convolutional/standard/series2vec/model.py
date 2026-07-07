@@ -39,6 +39,11 @@ def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
 class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     """Lightning wrapper for Series2Vec pretraining.
 
+    Learns representations by aligning pairwise distance matrices between
+    temporal and frequency-domain encodings using soft-DTW and Euclidean
+    losses. Dual-branch architecture with separate conv encoders for time
+    and frequency domains, followed by transformer-based cross-attention.
+
     The public input shape is ``(batch, time, channels)``.
 
     The encoder defaults to GroupNorm (``normalization_layer_type=CHANNEL``),
@@ -46,6 +51,32 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     degenerates with zero variance statistics for single-sample batches). Pass
     ``normalization_layer_type=BATCH`` to reproduce the upstream BatchNorm
     architecture exactly.
+
+    Args:
+        input_dims: Number of input features (channels).
+        embedding_dims: Token embedding dimensionality.
+        num_heads: Number of attention heads in the transformer encoder.
+        feedforward_dims: Hidden dimensionality of the transformer
+            feed-forward block.
+        representation_dims: Output dimensionality of the encoding
+            (temporal + frequency concatenated). Must be even.
+        dropout_rate: Dropout probability applied throughout the
+            network.
+        encoder_kernel_size: Kernel size of the convolutional tokenizer.
+        learning_rate: Base learning rate for the optimizer.
+        soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
+            used as the temporal target.
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for pairwise loss computation.
+        normalization_layer_type: Normalization strategy for the
+            DisjoinEncoder. ``CHANNEL`` (default) uses GroupNorm for
+            batch_size=1 safety. ``BATCH`` uses BatchNorm.
+        sync_dist: Whether to synchronize logged metrics across
+            distributed processes.
+        optimizer_name: Optimizer to use; one of ``'Adam'``, ``'RAdam'``,
+            or ``'AdamW'``.
+        weight_decay: L2 weight-decay coefficient passed to the
+            optimizer.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.

@@ -22,7 +22,32 @@ from chronocratic.models.utils import extract_features_from_batch, process_sampl
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
-    """CoST Model.
+    """CoST model.
+
+    Performs seasonal-trend decomposition via DWT-based multi-scale
+    convolutions and learns representations through instance-level
+    contrastive learning with a memory queue.
+
+    Args:
+        input_dims: Number of input features (channels).
+        sequence_length: Length of each input time series sample.
+        kernel_sizes: DWT decomposition levels as kernel sizes.
+        augmentation: Custom augmentation producer. Defaults to
+            CosTRandomFunctionAugmentation.
+        max_train_length: Maximum sequence length for training samples.
+        hidden_dims: Number of hidden units in each encoder layer.
+        output_dims: Number of output features produced by the encoder.
+        depth: Number of encoder layers.
+        dropout_rate: Dropout probability applied after each encoder layer.
+        conv_kernel_size: Convolutional kernel size in the dilated encoder.
+        mask_mode: Strategy for masking input tokens during training.
+        learning_rate: Base learning rate for the optimizer.
+        seasonal_loss_weight: Weight for the seasonal contrastive loss term.
+        queue_size: Size of the memory queue for contrastive learning.
+        momentum: Momentum coefficient for the key encoder update.
+        temperature: Temperature scaling for the contrastive loss.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
 
     Code source: https://github.com/salesforce/CoST
     """

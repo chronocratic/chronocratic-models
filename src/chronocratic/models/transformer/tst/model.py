@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class TST(pl.LightningModule, BasicEncodingMixin):
-    """PyTorch Lightning module for the Time Series Transformer (TST).
+    """PyTorch Lightning module for TST.
 
     Representation-learning model trained with a masked-reconstruction
     pretraining objective. The same model supports both random-mask
@@ -41,6 +41,42 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     For downstream classification / regression, use :class:`SupervisedModule`
     from ``chronocratic.models.supervised``.
+
+    Args:
+        input_dims: Number of input features (channels).
+        sequence_length: Maximum sequence length supported by the positional
+            encoding.
+        hidden_dims: Transformer model (token) dimensionality.
+        num_heads: Number of attention heads.
+        depth: Number of stacked transformer encoder layers.
+        feedforward_dims: Hidden dimensionality of the transformer
+            feed-forward block.
+        dropout_rate: Dropout probability used throughout the transformer.
+        pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
+            ``'learnable'``) passed to the encoder.
+        activation: Activation function name passed to the transformer
+            feed-forward block.
+        normalization_layer_type: Normalization layer used inside the
+            encoder. ``BATCH`` (default) uses custom BatchNorm transformer
+            layers. ``CHANNEL`` uses PyTorch's LayerNorm-based
+            TransformerEncoderLayer.
+        freeze: When ``True``, freezes the backbone weights and only
+            trains the output layer.
+        learning_rate: Base learning rate for the Adam optimizer.
+        lr_step: Milestones (in epochs) for the MultiStepLR scheduler.
+            ``None`` means no decay (defaults to a single far-future
+            milestone internally).
+        lr_factor: Multiplicative decay factor applied at each
+            ``lr_step`` milestone.
+        weight_decay: L2 regularization coefficient. Applied to the output
+            layer only when ``global_reg=False``, or to all parameters
+            (via optimizer weight decay) when ``global_reg=True``.
+        global_reg: Whether ``weight_decay`` is applied globally as
+            weight decay (``True``) or only to the output layer
+            (``False``).
+        sync_dist: Whether to synchronize logged metrics across
+            distributed processes.
+        augmentation: Optional custom augmentation function.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.

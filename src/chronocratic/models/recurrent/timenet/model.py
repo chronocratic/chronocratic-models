@@ -30,7 +30,21 @@ class GRUWrapper(nn.Module):
 
 
 class TimeNet(LightningModule, BasicEncodingMixin):
-    """TimeNet Model.
+    """TimeNet model.
+
+    Stacked GRU autoencoder that reconstructs input sequences from the
+    reversed encoder output. Multiple GRU layers are stacked with optional
+    dropout between layers.
+
+    Args:
+        input_dims: Number of input features (channels).
+        hidden_dims: Number of hidden units in each GRU layer.
+        depth: Number of stacked GRU layers in encoder and decoder.
+        dropout_rate: Dropout probability inserted between successive GRU
+            layers. ``0`` disables dropout.
+        learning_rate: Base learning rate for the Adam optimizer.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/paudan/TimeNet under MIT License.
