@@ -18,7 +18,28 @@ from chronocratic.models.utils import extract_features_from_batch, process_sampl
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
-    """TS2Vec Model.
+    """TS2Vec model.
+
+    Learns ordered representation through hierarchical contrastive
+    learning at multiple scales. Uses dilated convolutions with
+    masking strategies for self-supervised pretraining.
+
+    Args:
+        input_dims: Number of input features (channels).
+        augmentation: Custom augmentation producer. Defaults to
+            CropShiftProducer.
+        hidden_dims: Number of hidden units in each encoder layer.
+        output_dims: Number of output features produced by the encoder.
+        depth: Number of encoder layers.
+        dropout_rate: Dropout probability applied after each encoder layer.
+        conv_kernel_size: Size of the convolutional kernel in each layer.
+        mask_mode: Strategy for masking input tokens during training.
+        learning_rate: Base learning rate for the optimizer.
+        max_train_length: Maximum sequence length; longer samples are
+            truncated. ``None`` means no limit.
+        temporal_unit: Token-level temporal unit index.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
 
     Code source: https://github.com/zhihanyue/ts2vec
     """

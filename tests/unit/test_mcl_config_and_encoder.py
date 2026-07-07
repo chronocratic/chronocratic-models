@@ -77,7 +77,7 @@ class TestMCLModelParameters:
             "encoder_dilations",
             "projection_dims",
             "sync_dist",
-            "norm",
+            "normalization_layer_type",
         }
         assert set(result.keys()) == expected_keys
 
@@ -117,11 +117,11 @@ class TestMCLSyncDist:
 
     def test_sync_dist_attribute_set(self) -> None:
         model = MCL(input_dims=1)
-        assert model._sync_dist is False  # noqa: SLF001
+        assert model._sync_dist is False
 
     def test_sync_dist_true(self) -> None:
         model = MCL(input_dims=1, sync_dist=True)
-        assert model._sync_dist is True  # noqa: SLF001
+        assert model._sync_dist is True
 
 
 class TestFCNEncoder:

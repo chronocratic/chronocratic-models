@@ -7,6 +7,8 @@ import torch
 from torch import nn
 from torch.nn import functional
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 # ---------------------------------------------------------------------------
 # Seq_Transformer building blocks (internal to this module)
 # ---------------------------------------------------------------------------
@@ -131,19 +133,21 @@ class TemporalContrast(nn.Module):
         num_channels: Number of input feature channels from the encoder.
         hidden_dim: Hidden dimension for the transformer and projection head.
         timesteps: Number of timesteps for temporal contrastive prediction.
-        norm: Normalization strategy for the projection head. ``"layer"``
-            uses LayerNorm, which is batch-size independent and avoids
-            degeneracy at small batch sizes. ``"batch"`` uses BatchNorm1d
-            for backward compatibility. Defaults to ``"layer"``.
+        normalization_layer_type: Normalization strategy for the projection
+            head. ``CHANNEL`` uses LayerNorm, which is batch-size independent
+            and avoids degeneracy at small batch sizes. ``BATCH`` uses
+            BatchNorm1d. Defaults to ``CHANNEL``.
     """
 
     def __init__(
-        self, num_channels: int, hidden_dim: int, timesteps: int, *, norm: str = "layer"
+        self,
+        num_channels: int,
+        hidden_dim: int,
+        timesteps: int,
+        *,
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
 
         self.num_channels = num_channels
         self.timestep = timesteps
@@ -153,7 +157,9 @@ class TemporalContrast(nn.Module):
         _proj_norm = num_channels // 2
         self.projection_head = nn.Sequential(
             nn.Linear(hidden_dim, _proj_norm),
-            nn.LayerNorm(_proj_norm) if norm == "layer" else nn.BatchNorm1d(_proj_norm),
+            nn.LayerNorm(_proj_norm)
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
+            else nn.BatchNorm1d(_proj_norm),
             nn.ReLU(inplace=True),
             nn.Linear(_proj_norm, num_channels // 4),
         )

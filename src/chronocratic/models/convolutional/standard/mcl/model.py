@@ -8,6 +8,7 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -28,10 +29,9 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         encoder_dilations: Tuple of dilation rates for each Conv1d block.
         projection_dims: Hidden dimension of the projection head.
         sync_dist: Whether to synchronize metrics across processes.
-        norm: Normalization strategy for encoder and projection head.
-            Use ``"layer"`` for GroupNorm (batch_size=1 safe) or
-            ``"batch"`` for BatchNorm1d (original behavior).
-            Defaults to ``"layer"``.
+        normalization_layer_type: Normalization strategy for encoder and
+            projection head. Use ``CHANNEL`` for GroupNorm (batch_size=1
+            safe) or ``BATCH`` for BatchNorm1d. Defaults to ``CHANNEL``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -50,12 +50,9 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         projection_dims: int = 128,
         sync_dist: bool = False,
         *,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
         self.save_hyperparameters()
         self._alpha = alpha
         self._learning_rate = learning_rate
@@ -69,11 +66,11 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             encoder_channels=encoder_channels,
             encoder_kernels=encoder_kernels,
             encoder_dilations=encoder_dilations,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
         proj_norm = (
             nn.GroupNorm(num_groups=1, num_channels=projection_dims)
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm1d(projection_dims)
         )
         self.proj_head = nn.Sequential(

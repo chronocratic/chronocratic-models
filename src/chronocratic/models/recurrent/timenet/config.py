@@ -22,10 +22,13 @@ class TimeNetModelParameters:
         dropout_rate: Dropout probability inserted between successive GRU
             layers. ``0`` disables dropout.
         learning_rate: Base learning rate for the Adam optimizer.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
     """
 
+    input_dims: int
     hidden_dims: int = 64
     depth: int = 3
-    input_dims: int = 1
     dropout_rate: float = 0.4
     learning_rate: float = 5e-3
+    sync_dist: bool = False

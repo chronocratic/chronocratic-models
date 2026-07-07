@@ -23,8 +23,8 @@ class TestTimeNetConfigRename:
         assert config.hidden_dims == 64
 
     def test_config_defaults(self) -> None:
-        """Defaults match source repo: hidden_dims=64, depth=3, input_dims=1, dropout_rate=0.4, learning_rate=5e-3."""
-        config = TimeNetModelParameters()
+        """Defaults match source repo: hidden_dims=64, depth=3, input_dims required, dropout_rate=0.4, learning_rate=5e-3."""
+        config = TimeNetModelParameters(input_dims=1)
         assert config.input_dims == 1
         assert config.dropout_rate == 0.4
         assert config.hidden_dims == 64
@@ -37,7 +37,7 @@ class TestTimeNetVarsContract:
 
     def test_vars_passesthrough(self) -> None:
         """TimeNet(**vars(config)) must not raise TypeError."""
-        config = TimeNetModelParameters(hidden_dims=64, depth=1)
+        config = TimeNetModelParameters(input_dims=1, hidden_dims=64, depth=1)
         model = TimeNet(**vars(config))
         assert model is not None
 

@@ -15,8 +15,9 @@ class RecurrentAutoEncoderModelParameters:
 
     Args:
         input_dims: Number of input features (channels) per timestep.
-        layers: Hidden sizes for each encoder RNN layer, e.g. ``(64, 32)``.
-            The decoder uses the reversed order.
+        layers: Hidden sizes for each encoder RNN layer, e.g. ``(16, 8)``.
+            The decoder uses the reversed order. Defaults to ``(16, 8)``
+            matching the source Recurrent-Autoencoder (latent_dim=8).
         recurrent_cell_type: RNN variant — LSTM, GRU, or RNN.
         dropout: Dropout probability applied between successive layers. A single
             float applies uniformly; a tuple must match ``len(layers)``.
@@ -27,7 +28,7 @@ class RecurrentAutoEncoderModelParameters:
     """
 
     input_dims: int
-    layers: tuple[int, ...]
+    layers: tuple[int, ...] = (16, 8)
     recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM
     dropout: float | tuple[float, ...] = 0.2
     loss: ReconstructionLoss = ReconstructionLoss.MSE

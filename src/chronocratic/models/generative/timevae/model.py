@@ -23,6 +23,8 @@ class TimeVAEEncoder(nn.Module):
         input_dims: int,
         hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
+        conv_kernel_size: int = 3,
+        conv_stride: int = 2,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -31,13 +33,25 @@ class TimeVAEEncoder(nn.Module):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.layers: nn.ModuleList = nn.ModuleList()
         self.layers.append(
-            nn.Conv1d(input_dims, hidden_layer_sizes[0], kernel_size=3, stride=2, padding=1)
+            nn.Conv1d(
+                input_dims,
+                hidden_layer_sizes[0],
+                kernel_size=conv_kernel_size,
+                stride=conv_stride,
+                padding=1,
+            )
         )
         self.layers.append(nn.ReLU())
 
         for i, num_filters in enumerate(hidden_layer_sizes[1:]):
             self.layers.append(
-                nn.Conv1d(hidden_layer_sizes[i], num_filters, kernel_size=3, stride=2, padding=1)
+                nn.Conv1d(
+                    hidden_layer_sizes[i],
+                    num_filters,
+                    kernel_size=conv_kernel_size,
+                    stride=conv_stride,
+                    padding=1,
+                )
             )
             self.layers.append(nn.ReLU())
 
@@ -79,6 +93,8 @@ class TimeVAEDecoder(nn.Module):
         trend_poly: int = 0,
         custom_seasonality: tuple[Seasonality, ...] | None = None,
         *,
+        conv_kernel_size: int = 3,
+        conv_stride: int = 2,
         use_residual_conn: bool = True,
         encoder_last_dense_dim: int | None = None,
     ) -> None:
@@ -89,6 +105,8 @@ class TimeVAEDecoder(nn.Module):
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
         self.custom_seasonality = custom_seasonality
+        self.conv_kernel_size = conv_kernel_size
+        self.conv_stride = conv_stride
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
                 self.sequence_length, self.input_dims, self.latent_dim, self.trend_poly
@@ -131,7 +149,31 @@ class TimeVAEDecoder(nn.Module):
 
 
 class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
-    """TimeVAE Model.
+    """TimeVAE model.
+
+    Variational autoencoder with interpretable trend and seasonality
+    decomposition in the decoder. The encoder uses 1-D convolutions
+    followed by a latent Gaussian representation.
+
+    Args:
+        sequence_length: Length of each input time series sample.
+        input_dims: Number of input features (channels).
+        latent_dim: Dimensionality of the latent space.
+        reconstruction_weight: Weight applied to the reconstruction term
+            of the VAE loss (the KL term is unweighted).
+        learning_rate: Base learning rate for the optimizer.
+        hidden_layer_sizes: Output channel sizes of the successive
+            Conv1d / ConvTranspose1d blocks in the encoder and
+            residual decoder.
+        conv_kernel_size: Kernel size for the encoder Conv1d layers.
+        conv_stride: Stride for the encoder Conv1d layers.
+        trend_poly: Degree of the polynomial trend basis used by the
+            trend decoder branch. ``0`` disables the trend branch.
+        custom_seasonality: Optional tuple of ``(num_seasons, len_per_season)``
+            tuples describing additive seasonal components. ``None``
+            disables the seasonal branch.
+        use_residual_conn: Whether to include the residual ConvTranspose
+            branch in the decoder.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/abudesai/timeVAE under MIT License.
@@ -159,6 +201,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
         hidden_layer_sizes: tuple[int, ...] | None = None,
+        conv_kernel_size: int = 3,
+        conv_stride: int = 2,
         trend_poly: int = 0,
         custom_seasonality: tuple[tuple[int, int], ...] | None = None,
         *,
@@ -177,6 +221,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             hidden_layer_sizes = (50, 100, 200)
 
         self.hidden_layer_sizes = hidden_layer_sizes
+        self.conv_kernel_size = conv_kernel_size
+        self.conv_stride = conv_stride
         self.trend_poly = trend_poly
         self.custom_seasonality = custom_seasonality
         self.use_residual_conn = use_residual_conn
@@ -196,6 +242,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             input_dims=self.input_dims,
             hidden_layer_sizes=self.hidden_layer_sizes,
             latent_dim=self.latent_dim,
+            conv_kernel_size=self.conv_kernel_size,
+            conv_stride=self.conv_stride,
         )
 
     def _get_encoder(self) -> nn.Module:
@@ -237,6 +285,8 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             latent_dim=self.latent_dim,
             trend_poly=self.trend_poly,
             custom_seasonality=self.custom_seasonality,
+            conv_kernel_size=self.conv_kernel_size,
+            conv_stride=self.conv_stride,
             use_residual_conn=self.use_residual_conn,
             encoder_last_dense_dim=self._encoder.encoder_last_dense_dim,
         )

@@ -32,6 +32,9 @@ class AutoTCLModelParameters:
             optimizer.
         local_loss_weight: Weight for the local InfoNCE loss term in the
             encoder contrastive loss.
+        info_nce_loss_temperature: Temperature scaling for the global
+            InfoNCE contrastive loss. Defaults to ``1.0`` matching the
+            source AutoTCL implementation.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
     """
@@ -46,6 +49,7 @@ class AutoTCLModelParameters:
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
     max_train_length: int | None = None
+    info_nce_loss_temperature: float = 1.0
     meta_learning_rate: float = 1e-2
     local_loss_weight: float = 0.1
     sync_dist: bool = False

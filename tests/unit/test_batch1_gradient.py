@@ -7,7 +7,7 @@ in training mode.  This catches:
 2. Gradient-breaking patterns such as detached tensors in the forward path.
 3. Shape mismatches that only appear with tiny batch sizes.
 
-All models use their default ``norm="layer"`` setting (GroupNorm / LayerNorm),
+All models use their default ``normalization_layer_type=CHANNEL`` setting (GroupNorm / LayerNorm),
 so BatchNorm degeneracy should not occur.  Tests run in **.train()** mode to
 exercise normalization-layer behavior under the worst-case statistics regime.
 """

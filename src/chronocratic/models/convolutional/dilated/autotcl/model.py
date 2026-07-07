@@ -29,7 +29,34 @@ from chronocratic.models.utils import extract_features_from_batch, process_sampl
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
-    """AutoTCL Model.
+    """AutoTCL model.
+
+    Learns representations via hierarchical contrastive loss and a trainable
+    neural augmentation network. Uses DWT-based multi-scale decomposition for
+    feature extraction.
+
+    Args:
+        input_dims: Number of input features (channels).
+        kernel_sizes: DWT decomposition levels as kernel sizes.
+        augmentation: Custom augmentation producer. Defaults to a trainable
+            neural augmentation network.
+        hidden_dims: Number of hidden units in each encoder layer.
+        output_dims: Number of output features produced by the encoder.
+        depth: Number of encoder layers.
+        dropout_rate: Dropout probability applied after each encoder layer.
+        conv_kernel_size: Size of the convolutional kernel in each layer.
+        mask_mode: Strategy for masking input tokens during training.
+        learning_rate: Base learning rate for the optimizer.
+        max_train_length: Maximum sequence length; longer samples are
+            truncated. ``None`` means no limit.
+        meta_learning_rate: Learning rate for the augmentation network
+            optimizer.
+        local_loss_weight: Weight for the local InfoNCE loss term in the
+            encoder contrastive loss.
+        info_nce_loss_temperature: Temperature scaling for the global
+            InfoNCE contrastive loss.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
 
     Code source: https://github.com/AslanDing/AutoTCL
     """
@@ -54,6 +81,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         max_train_length: int | None = None,
         meta_learning_rate: float = 1e-2,
         local_loss_weight: float = 0.1,
+        info_nce_loss_temperature: float = 1.0,
         sync_dist: bool = False,
     ) -> None:
         super().__init__()
@@ -65,6 +93,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self._meta_learning_rate = meta_learning_rate
         self._local_loss_weight = local_loss_weight
         self._sync_dist = sync_dist
+        self._info_nce_loss_temperature = info_nce_loss_temperature
 
         if augmentation is None:
             from chronocratic.models.convolutional.dilated.autotcl.augmentation import (  # noqa: PLC0415
@@ -123,7 +152,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         Encoder loss remains model-internal.
         """
         local_loss = local_info_nce_loss(x_embeddings, augmented_x_embeddings)
-        loss = info_nce_loss(x_embeddings, augmented_x_embeddings, temperature=1.0)
+        loss = info_nce_loss(
+            x_embeddings, augmented_x_embeddings, temperature=self._info_nce_loss_temperature
+        )
         return loss + self._local_loss_weight * local_loss
 
     def training_step(

@@ -16,6 +16,7 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.distances.soft_dtw import SoftDTW
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -38,12 +39,44 @@ def _get_optimizer(name: str) -> type[torch.optim.Optimizer]:
 class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     """Lightning wrapper for Series2Vec pretraining.
 
+    Learns representations by aligning pairwise distance matrices between
+    temporal and frequency-domain encodings using soft-DTW and Euclidean
+    losses. Dual-branch architecture with separate conv encoders for time
+    and frequency domains, followed by transformer-based cross-attention.
+
     The public input shape is ``(batch, time, channels)``.
 
-    The encoder defaults to GroupNorm (``norm="layer"``), ensuring correct
-    gradient flow at batch_size=1 (unlike BatchNorm, which degenerates with
-    zero variance statistics for single-sample batches). Pass ``norm="batch"``
-    to reproduce the upstream BatchNorm architecture exactly.
+    The encoder defaults to GroupNorm (``normalization_layer_type=CHANNEL``),
+    ensuring correct gradient flow at batch_size=1 (unlike BatchNorm, which
+    degenerates with zero variance statistics for single-sample batches). Pass
+    ``normalization_layer_type=BATCH`` to reproduce the upstream BatchNorm
+    architecture exactly.
+
+    Args:
+        input_dims: Number of input features (channels).
+        embedding_dims: Token embedding dimensionality.
+        num_heads: Number of attention heads in the transformer encoder.
+        feedforward_dims: Hidden dimensionality of the transformer
+            feed-forward block.
+        representation_dims: Output dimensionality of the encoding
+            (temporal + frequency concatenated). Must be even.
+        dropout_rate: Dropout probability applied throughout the
+            network.
+        encoder_kernel_size: Kernel size of the convolutional tokenizer.
+        learning_rate: Base learning rate for the optimizer.
+        soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
+            used as the temporal target.
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for pairwise loss computation.
+        normalization_layer_type: Normalization strategy for the
+            DisjoinEncoder. ``CHANNEL`` (default) uses GroupNorm for
+            batch_size=1 safety. ``BATCH`` uses BatchNorm.
+        sync_dist: Whether to synchronize logged metrics across
+            distributed processes.
+        optimizer_name: Optimizer to use; one of ``'Adam'``, ``'RAdam'``,
+            or ``'AdamW'``.
+        weight_decay: L2 weight-decay coefficient passed to the
+            optimizer.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
@@ -66,7 +99,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         soft_dtw_gamma: float = 0.1,
         *,
         singleton_split_count: int = 3,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,
         optimizer_name: str = "RAdam",
         weight_decay: float = 0.0,
@@ -95,7 +128,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             representation_dims=representation_dims,
             dropout_rate=dropout_rate,
             encoder_kernel_size=encoder_kernel_size,
-            norm=norm,
+            normalization_layer_type=normalization_layer_type,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

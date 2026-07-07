@@ -80,10 +80,11 @@ See [`changelog.d/README.md`](../changelog.d/README.md) for detailed fragment in
 ## Code Style
 
 - Use **snake_case** for functions and variables, **PascalCase** for classes.
-- Write **Google-style docstrings** for all public functions and classes.
+- Write **Google-style docstrings** for all public functions, classes, and config dataclasses.
 - Use **type hints** for all function signatures and return types.
 - Prefer **functional programming patterns** and modular code organization.
 - Use **keyword arguments** for all function calls.
+- Model configuration uses **`@dataclass(kw_only=True)`** — see [Config-to-Model Contract](#config-to-model-contract).
 
 ## Parameters Consistency
 
@@ -122,27 +123,50 @@ Config dataclasses and model `__init__` signatures must mirror each other exactl
 **Example:**
 
 ```python
-# Config
+# Config — chronocratic/models/<model>/config.py
 @dataclass(kw_only=True)
 class MyModelParameters:
+    """Configuration for the MyModel model.
+
+    Args:
+        input_dims: Number of input features (channels).
+        hidden_dims: Hidden representation dimensionality.
+        dropout_rate: Dropout probability applied after each layer.
+    """
+
     input_dims: int
     hidden_dims: int = 64
     dropout_rate: float = 0.1
+```
 
-# Model
-class MyModel(pl.LightningModule):
+```python
+# Model — chronocratic/models/<model>/model.py
+class MyModel(pl.LightningModule, BasicEncodingMixin):
+    """Short description of the model.
+
+    Args:
+        input_dims: Number of input features (channels).
+        hidden_dims: Hidden representation dimensionality.
+        dropout_rate: Dropout probability applied after each layer.
+    """
+
     def __init__(
         self,
         input_dims: int,
         hidden_dims: int = 64,
         dropout_rate: float = 0.1,
-    ):
+    ) -> None:
         super().__init__()
+        self.save_hyperparameters(ignore=["augmentation"])
         self._input_dims = input_dims
         self._hidden_dims = hidden_dims
         self._dropout_rate = dropout_rate
-        save_hyperparameters(ignore=["augmentation"])
 ```
+
+**Rules:**
+- Every config dataclass gets a class-level Google-style docstring with an `Args:` section.
+- Every model `__init__` inherits the docstring in the class docstring. Do not duplicate per-parameter docs in `__init__`.
+- Config and model param descriptions must match — they describe the same hyperparameter from two entry points.
 
 ### Tuple over List for Sequence Defaults
 
@@ -214,12 +238,14 @@ Public attributes are reserved for computed values (e.g., `self.criterion`, `sel
 
 | Pattern | When to Use | Example |
 |---|---|---|
-| **Enum (`StrEnum`)** | Closed, small set of values | `MaskMode`, `RecurrentCellType` |
+| **Enum (`StrEnum`)** | Closed, small set of values | `MaskMode`, `RecurrentCellType`, `NormalizationLayerType` |
 | **`str` with default** | Broad options, open-ended | `pos_encoding: str = "fixed"`, `activation: str = "gelu"` |
 | **Unconstrained numeric** | Values users may override freely | `dropout_rate: float = 0.01` |
 | **`Literal`** | Only in config dataclasses, not model `__init__` | `OptimizerName = Literal["Adam", "RAdam", "AdamW"]` |
 
 Never use `Literal` to restrict numeric values — users may legitimately override them. Keep model `__init__` signatures using `str` or concrete Enum types; reserve `Literal` for config-layer type narrowing.
+
+**Shared enums live in `chronocratic.models.enums`** (e.g., `EncodingOutputShape`, `NormalizationLayerType`). Reuse existing enums across models instead of inventing new string conventions. If a new enum is needed, add it to `models/enums/` as a `StrEnum` subclass and export from `models/enums/__init__.py`. Prefer enums over string-based `if x == "foo"` guards — the type system enforces valid values, eliminating runtime validation.
 
 ### Cross-Model Consistency Checklist
 

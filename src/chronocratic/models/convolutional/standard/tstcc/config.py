@@ -9,6 +9,8 @@ __all__ = ["TSTCCModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 
 @dataclass(kw_only=True)
 class TSTCCModelParameters:
@@ -18,7 +20,9 @@ class TSTCCModelParameters:
         input_dims: Number of input features (dimensions) in the time
             series.
         conv_kernel_size: Convolutional kernel size used in the TCC encoder.
+            Defaults to ``8`` matching the source TS-TCC implementation.
         stride: Convolutional stride used in the TCC encoder.
+            Defaults to ``1`` matching the source TS-TCC implementation.
         output_dims: Number of channels produced by the final encoder
             block (also used as the temporal-contrast input dim).
         encoder_channels: Tuple of channel counts for the first two
@@ -42,15 +46,15 @@ class TSTCCModelParameters:
         weight_decay: Weight decay for the Adam optimizers.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
-        norm: Normalization strategy for TCCEncoder and TemporalContrast.
-            ``"layer"`` (default) uses GroupNorm for encoder conv blocks and
-            LayerNorm for the projection head — safe at batch_size=1.
-            ``"batch"`` uses BatchNorm1d (original behavior).
+        normalization_layer_type: Normalization strategy for TCCEncoder and
+            TemporalContrast. ``CHANNEL`` (default) uses GroupNorm for
+            encoder conv blocks and LayerNorm for the projection head — safe
+            at batch_size=1. ``BATCH`` uses BatchNorm1d.
     """
 
     input_dims: int
-    conv_kernel_size: int
-    stride: int
+    conv_kernel_size: int = 8
+    stride: int = 1
     output_dims: int = 128
     encoder_channels: tuple[int, ...] = (32, 64)
     encoder_inner_kernels: tuple[int, ...] = (8, 8)
@@ -64,7 +68,7 @@ class TSTCCModelParameters:
     contextual_loss_weight: float = 0.7
     weight_decay: float = 0.0003
     sync_dist: bool = False
-    norm: str = "layer"
+    normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""

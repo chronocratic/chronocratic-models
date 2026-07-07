@@ -30,7 +30,21 @@ class GRUWrapper(nn.Module):
 
 
 class TimeNet(LightningModule, BasicEncodingMixin):
-    """TimeNet Model.
+    """TimeNet model.
+
+    Stacked GRU autoencoder that reconstructs input sequences from the
+    reversed encoder output. Multiple GRU layers are stacked with optional
+    dropout between layers.
+
+    Args:
+        input_dims: Number of input features (channels).
+        hidden_dims: Number of hidden units in each GRU layer.
+        depth: Number of stacked GRU layers in encoder and decoder.
+        dropout_rate: Dropout probability inserted between successive GRU
+            layers. ``0`` disables dropout.
+        learning_rate: Base learning rate for the Adam optimizer.
+        sync_dist: Whether to synchronize metrics across distributed
+            processes.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/paudan/TimeNet under MIT License.
@@ -42,11 +56,12 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        input_dims: int,
         hidden_dims: int = 64,
         depth: int = 3,
-        input_dims: int = 1,
         dropout_rate: float = 0.4,
         learning_rate: float = 5e-3,
+        sync_dist: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -57,6 +72,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         self._encoder: nn.Module = self._build_encoder()
         self._decoder: nn.Module = self._build_decoder()
         self._learning_rate = learning_rate
+        self._sync_dist = sync_dist
         self.loss_fn = nn.MSELoss()
 
     @property
@@ -124,7 +140,14 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log(
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=self._sync_dist,
+        )
 
         return loss
 
@@ -133,7 +156,9 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log(
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+        )
 
         return loss
 

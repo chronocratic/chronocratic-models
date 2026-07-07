@@ -8,6 +8,8 @@ __all__ = ["TSTModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 
 @dataclass(kw_only=True)
 class TSTModelParameters:
@@ -28,8 +30,10 @@ class TSTModelParameters:
             ``'learnable'``) passed to the encoder.
         activation: Activation function name passed to the transformer
             feed-forward block.
-        norm: Normalization layer name (``'BatchNorm'`` or
-            ``'LayerNorm'``) used inside the encoder.
+        normalization_layer_type: Normalization layer used inside the
+            encoder. ``BATCH`` (default) uses custom BatchNorm transformer
+            layers. ``CHANNEL`` uses PyTorch's LayerNorm-based
+            TransformerEncoderLayer.
         freeze: When ``True``, freezes the backbone weights and only
             trains the output layer.
         learning_rate: Base learning rate for the Adam optimizer.
@@ -57,7 +61,7 @@ class TSTModelParameters:
     dropout_rate: float = 0.1
     pos_encoding: str = "fixed"
     activation: str = "gelu"
-    norm: str = "BatchNorm"
+    normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH
     freeze: bool = False
     learning_rate: float = 1e-3
     lr_step: tuple[int, ...] | None = None

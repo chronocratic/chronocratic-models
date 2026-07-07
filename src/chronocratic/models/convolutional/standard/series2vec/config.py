@@ -10,6 +10,8 @@ __all__ = ["Series2VecModelParameters"]
 from dataclasses import dataclass
 from typing import Literal
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 OptimizerName = Literal["Adam", "RAdam", "AdamW"]
 
 
@@ -39,6 +41,12 @@ class Series2VecModelParameters:
             or ``'AdamW'``.
         weight_decay: L2 weight-decay coefficient passed to the
             optimizer.
+        normalization_layer_type: Normalization strategy for encoder and
+            projection head. ``CHANNEL`` (default) uses GroupNorm for
+            batch_size=1 safety. ``BATCH`` uses BatchNorm.
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for pairwise loss computation. Defaults
+            to ``3`` to ensure sufficient gradients at batch_size=1.
     """
 
     input_dims: int
@@ -53,3 +61,5 @@ class Series2VecModelParameters:
     sync_dist: bool = False
     optimizer_name: OptimizerName = "RAdam"
     weight_decay: float = 0.0
+    normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
+    singleton_split_count: int = 3

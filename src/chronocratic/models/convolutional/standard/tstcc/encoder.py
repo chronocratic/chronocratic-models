@@ -3,6 +3,8 @@ __all__ = ["TCCEncoder"]
 import torch
 from torch import nn
 
+from chronocratic.models.enums.layers import NormalizationLayerType
+
 # 3-block architecture requires exactly 2 channel/kernel values
 _EXPECTED_CHANNEL_COUNT = 2
 
@@ -23,10 +25,10 @@ class TCCEncoder(nn.Module):
             Must have exactly 2 elements.
         encoder_inner_kernels: Kernel sizes for the second and third conv
             blocks. Must have exactly 2 elements.
-        norm: Normalization strategy. ``"layer"`` uses GroupNorm(1, C),
-            which is batch-size independent and avoids degeneracy at
-            small batch sizes. ``"batch"`` uses BatchNorm1d for backward
-            compatibility. Defaults to ``"layer"``.
+        normalization_layer_type: Normalization strategy. ``CHANNEL`` uses
+            GroupNorm(1, C), which is batch-size independent and avoids
+            degeneracy at small batch sizes. ``BATCH`` uses BatchNorm1d.
+            Defaults to ``CHANNEL``.
     """
 
     def __init__(
@@ -39,14 +41,11 @@ class TCCEncoder(nn.Module):
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
         *,
-        norm: str = "layer",
+        normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
         self.output_dims = output_dims
 
-        if norm not in ("layer", "batch"):
-            msg = f"norm must be 'layer' or 'batch', got '{norm}'"
-            raise ValueError(msg)
         if len(encoder_channels) != _EXPECTED_CHANNEL_COUNT:
             msg = (
                 f"encoder_channels must have exactly {_EXPECTED_CHANNEL_COUNT} elements, "
@@ -62,17 +61,17 @@ class TCCEncoder(nn.Module):
 
         _norm1 = (
             nn.GroupNorm(num_groups=1, num_channels=encoder_channels[0])
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm1d(encoder_channels[0])
         )
         _norm2 = (
             nn.GroupNorm(num_groups=1, num_channels=encoder_channels[1])
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm1d(encoder_channels[1])
         )
         _norm3 = (
             nn.GroupNorm(num_groups=1, num_channels=output_dims)
-            if norm == "layer"
+            if normalization_layer_type == NormalizationLayerType.CHANNEL
             else nn.BatchNorm1d(output_dims)
         )
 
