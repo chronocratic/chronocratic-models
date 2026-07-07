@@ -140,8 +140,14 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True,
-                 sync_dist=self._sync_dist)
+        self.log(
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=self._sync_dist,
+        )
 
         return loss
 
@@ -150,8 +156,9 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x = extract_features_from_batch(batch)
         output = self(x)
         loss = self.loss_fn(output, x)
-        self.log("val_loss", loss, on_step=True, on_epoch=True, prog_bar=True,
-                 sync_dist=self._sync_dist)
+        self.log(
+            "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
+        )
 
         return loss
 

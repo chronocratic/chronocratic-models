@@ -34,8 +34,11 @@ class TimeVAEEncoder(nn.Module):
         self.layers: nn.ModuleList = nn.ModuleList()
         self.layers.append(
             nn.Conv1d(
-                input_dims, hidden_layer_sizes[0],
-                kernel_size=conv_kernel_size, stride=conv_stride, padding=1,
+                input_dims,
+                hidden_layer_sizes[0],
+                kernel_size=conv_kernel_size,
+                stride=conv_stride,
+                padding=1,
             )
         )
         self.layers.append(nn.ReLU())
@@ -43,8 +46,11 @@ class TimeVAEEncoder(nn.Module):
         for i, num_filters in enumerate(hidden_layer_sizes[1:]):
             self.layers.append(
                 nn.Conv1d(
-                    hidden_layer_sizes[i], num_filters,
-                    kernel_size=conv_kernel_size, stride=conv_stride, padding=1,
+                    hidden_layer_sizes[i],
+                    num_filters,
+                    kernel_size=conv_kernel_size,
+                    stride=conv_stride,
+                    padding=1,
                 )
             )
             self.layers.append(nn.ReLU())

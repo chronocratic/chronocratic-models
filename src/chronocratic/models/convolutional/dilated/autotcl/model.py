@@ -153,8 +153,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         """
         local_loss = local_info_nce_loss(x_embeddings, augmented_x_embeddings)
         loss = info_nce_loss(
-            x_embeddings, augmented_x_embeddings,
-            temperature=self._info_nce_loss_temperature,
+            x_embeddings, augmented_x_embeddings, temperature=self._info_nce_loss_temperature
         )
         return loss + self._local_loss_weight * local_loss
 
