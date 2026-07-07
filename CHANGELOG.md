@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a12 (2026-07-07)
+
+### Changed
+
+- refactor(models): replace norm: str with NormalizationLayerType enum: Audited default hyperparameters across 10 models against upstream source repositories (7 models fixed), replaced duplicated `norm: str` parameter with type-safe `NormalizationLayerType(StrEnum)` enum, added missing Args docstrings to 8 model classes, and updated contributing guide with dataclass docstring and shared enum guidelines. ([#64](https://github.com/chronocratic/chronocratic-models/issues/64))
+
+
 ## v0.1.0a11 (2026-07-03)
 
 ### Fixed
