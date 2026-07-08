@@ -14,7 +14,7 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
     pretraining_loss,
 )
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
-from chronocratic.models.distances.soft_dtw import SoftDTW
+from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
