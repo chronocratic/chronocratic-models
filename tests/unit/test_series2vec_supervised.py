@@ -18,11 +18,11 @@ class TestSeries2VecFinetuningModule:
     def test_classification_output_shape(self) -> None:
         """make_series2vec_supervised classification produces (B, num_outputs)."""
         backbone = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
@@ -35,11 +35,11 @@ class TestSeries2VecFinetuningModule:
     def test_regression_output_shape(self) -> None:
         """make_series2vec_supervised regression produces (B, num_outputs)."""
         backbone = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
@@ -52,11 +52,11 @@ class TestSeries2VecFinetuningModule:
     def test_training_step_returns_scalar(self) -> None:
         """training_step returns a finite scalar loss."""
         backbone = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
@@ -72,11 +72,11 @@ class TestSeries2VecFinetuningModule:
     def test_freeze_backbone_prevents_grads(self) -> None:
         """freeze_backbone=True: backbone params don't receive gradients."""
         backbone = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
