@@ -135,9 +135,7 @@ class TestMCLNormChannel:
 
     def test_channel_proj_head(self) -> None:
         model = MCL(
-            input_dim=3,
-            normalization_layer_type=NormalizationLayerType.CHANNEL,
-            projection_dim=64,
+            input_dim=3, normalization_layer_type=NormalizationLayerType.CHANNEL, projection_dim=64
         )
         assert isinstance(model.proj_head[1], nn.GroupNorm)
         assert model.proj_head[1].num_channels == 64

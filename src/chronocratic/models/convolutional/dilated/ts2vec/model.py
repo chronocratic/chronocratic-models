@@ -126,9 +126,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self, embeddings_1: torch.Tensor, embeddings_2: torch.Tensor
     ) -> torch.Tensor:
         return hierarchical_contrastive_loss(
-            instance_1=embeddings_1,
-            instance_2=embeddings_2,
-            temporal_unit=self._temporal_unit,
+            instance_1=embeddings_1, instance_2=embeddings_2, temporal_unit=self._temporal_unit
         )
 
     def _encode_augmented_views(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

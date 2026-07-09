@@ -84,9 +84,7 @@ class TestTSTFinetuningModule:
         grad_count = sum(1 for p in backbone.parameters() if p.grad is not None)
         assert grad_count > 0
 
-    def test_head_in_features_is_representation_dim_times_sequence_length(
-        self,
-    ) -> None:
+    def test_head_in_features_is_representation_dim_times_sequence_length(self) -> None:
         """Head in_features == representation_dim * sequence_length (D-06)."""
         backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(

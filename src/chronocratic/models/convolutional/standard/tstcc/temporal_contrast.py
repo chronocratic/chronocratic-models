@@ -72,19 +72,14 @@ class _Attention(nn.Module):
 
 
 class _Transformer(nn.Module):
-    def __init__(
-        self, *, dim: int, depth: int, heads: int, mlp_dim: int, dropout: float
-    ) -> None:
+    def __init__(self, *, dim: int, depth: int, heads: int, mlp_dim: int, dropout: float) -> None:
         super().__init__()
         self.layers = nn.ModuleList(
             [
                 nn.ModuleList(
                     [
                         _Residual(
-                            _PreNorm(
-                                dim=dim,
-                                fn=_Attention(dim=dim, heads=heads, dropout=dropout),
-                            )
+                            _PreNorm(dim=dim, fn=_Attention(dim=dim, heads=heads, dropout=dropout))
                         ),
                         _Residual(
                             _PreNorm(

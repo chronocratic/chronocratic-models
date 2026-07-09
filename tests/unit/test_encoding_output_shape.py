@@ -464,12 +464,7 @@ class TestRankAssert:
                 return seq.mean(dim=1)  # (B, H) -- 2-D
 
         model = _BrokenModel(
-            input_dim=3,
-            sequence_length=32,
-            hidden_dim=16,
-            num_heads=4,
-            depth=1,
-            feedforward_dim=32,
+            input_dim=3, sequence_length=32, hidden_dim=16, num_heads=4, depth=1, feedforward_dim=32
         )
         data = torch.randn(4, 32, 3)
         with pytest.raises(AssertionError, match=r"Expected 3D, got 2D"):

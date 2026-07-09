@@ -64,7 +64,9 @@ class TestModelInstantiation:
     def test_tstcc_instantiation_returns_instance(self) -> None:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
-        config = TSTCCModelParameters(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
+        config = TSTCCModelParameters(
+            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16
+        )
         model = TSTCC(**vars(config), augmentation=_default_tstcc_pair())
         assert isinstance(model, TSTCC)
 

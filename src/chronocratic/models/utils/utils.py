@@ -134,11 +134,7 @@ def integer_pooling(
 
 
 def process_sliding_window(
-    *,
-    input_tensor: torch.Tensor,
-    left_index: int,
-    right_index: int,
-    time_series_length: int,
+    *, input_tensor: torch.Tensor, left_index: int, right_index: int, time_series_length: int
 ) -> torch.Tensor:
     """
     Process a sliding window of the input tensor with padding.

@@ -35,7 +35,11 @@ from chronocratic.models.protocols import HasDecoder, HasEncoder
 ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
     (MCL, {"input_dim": 1}, "MCL"),
     (TST, {"input_dim": 1, "sequence_length": 100}, "TST"),
-    (TSTCC, {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16}, "TSTCC"),
+    (
+        TSTCC,
+        {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16},
+        "TSTCC",
+    ),
     (TS2Vec, {"input_dim": 1}, "TS2Vec"),
     (AutoTCL, {"input_dim": 1, "kernel_sizes": (3,)}, "AutoTCL"),
     (CoST, {"input_dim": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
@@ -59,7 +63,11 @@ ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
 ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
     (MCL, {"input_dim": 1}, "MCL"),
     (TST, {"input_dim": 1, "sequence_length": 100}, "TST"),
-    (TSTCC, {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16}, "TSTCC"),
+    (
+        TSTCC,
+        {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16},
+        "TSTCC",
+    ),
     (TS2Vec, {"input_dim": 1}, "TS2Vec"),
     (AutoTCL, {"input_dim": 1, "kernel_sizes": (3,)}, "AutoTCL"),
     (CoST, {"input_dim": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),

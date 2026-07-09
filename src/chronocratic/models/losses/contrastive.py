@@ -138,9 +138,7 @@ def hierarchical_contrastive_loss(
     hierarchy_level = 0
     while instance_1.size(1) > 1:
         if alpha != 0:
-            loss += alpha * instance_contrastive_loss(
-                instance_1=instance_1, instance_2=instance_2
-            )
+            loss += alpha * instance_contrastive_loss(instance_1=instance_1, instance_2=instance_2)
         if hierarchy_level >= temporal_unit:  # noqa: SIM102
             if 1 - alpha != 0:
                 loss += (1 - alpha) * temporal_contrastive_loss(
@@ -151,8 +149,6 @@ def hierarchical_contrastive_loss(
         instance_2 = F.max_pool1d(instance_2.transpose(1, 2), kernel_size=2).transpose(1, 2)
     if instance_1.size(1) == 1:
         if alpha != 0:
-            loss += alpha * instance_contrastive_loss(
-                instance_1=instance_1, instance_2=instance_2
-            )
+            loss += alpha * instance_contrastive_loss(instance_1=instance_1, instance_2=instance_2)
         hierarchy_level += 1
     return loss / hierarchy_level

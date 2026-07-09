@@ -33,12 +33,12 @@ class TestConfigSingularDimensionNames:
     def test_representation_dim_field_exists(self) -> None:
         """Config has representation_dim (not output_dims)."""
         fields = TSTCCModelParameters.__dataclass_fields__
-        assert (
-            "representation_dim" in fields
-        ), "Expected 'representation_dim' field in TSTCCModelParameters"
-        assert (
-            "output_dims" not in fields
-        ), "'output_dims' should be renamed to 'representation_dim'"
+        assert "representation_dim" in fields, (
+            "Expected 'representation_dim' field in TSTCCModelParameters"
+        )
+        assert "output_dims" not in fields, (
+            "'output_dims' should be renamed to 'representation_dim'"
+        )
 
     def test_config_constructs_with_singular_names(self) -> None:
         """TSTCCModelParameters accepts singular param names."""
@@ -80,10 +80,7 @@ class TestModelSingularParams:
     def test_model_from_config_vars(self) -> None:
         """TSTCC(**vars(TSTCCModelParameters(...))) succeeds."""
         config = TSTCCModelParameters(
-            input_dim=3,
-            conv_kernel_size=8,
-            stride=4,
-            representation_dim=16,
+            input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16
         )
         # Extract only __init__-compatible fields (skip training-only params)
         init_sig = inspect.signature(TSTCC.__init__)

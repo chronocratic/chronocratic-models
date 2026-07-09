@@ -25,12 +25,7 @@ class TestTSTRepresentationDim:
     def test_representation_dim_matches_forward(self) -> None:
         """Flattened output size equals model.representation_dim * sequence_length."""
         model = TST(
-            input_dim=2,
-            sequence_length=10,
-            hidden_dim=8,
-            num_heads=2,
-            depth=1,
-            feedforward_dim=16,
+            input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=16
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)

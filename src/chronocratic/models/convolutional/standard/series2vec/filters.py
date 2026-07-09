@@ -44,9 +44,7 @@ def filter_frequencies(
         return torch.stack(
             [
                 lowpass_filter(
-                    data=sample,
-                    cutoff_frequency=lowpass_cutoff,
-                    sampling_rate=SAMPLING_RATE,
+                    data=sample, cutoff_frequency=lowpass_cutoff, sampling_rate=SAMPLING_RATE
                 )
                 for sample in fft_results
             ]
@@ -54,9 +52,7 @@ def filter_frequencies(
     return torch.stack(
         [
             highpass_filter(
-                data=sample,
-                cutoff_frequency=highpass_cutoff,
-                sampling_rate=SAMPLING_RATE,
+                data=sample, cutoff_frequency=highpass_cutoff, sampling_rate=SAMPLING_RATE
             )
             for sample in fft_results
         ]

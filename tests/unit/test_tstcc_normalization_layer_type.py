@@ -32,7 +32,11 @@ class TestTCCEncoderNormDefault:
 
     def test_default_group_norm_channels(self) -> None:
         encoder = TCCEncoder(
-            input_dim=3, conv_kernel_size=8, stride=4, encoder_channels=(32, 64), representation_dim=128
+            input_dim=3,
+            conv_kernel_size=8,
+            stride=4,
+            encoder_channels=(32, 64),
+            representation_dim=128,
         )
         assert encoder.conv_block1[1].num_channels == 32
         assert encoder.conv_block2[1].num_channels == 64
