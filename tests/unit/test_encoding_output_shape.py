@@ -69,7 +69,7 @@ def recurrentae_model() -> RecurrentAutoEncoder:
 @pytest.fixture(scope="module")
 def mcl_model() -> MCL:
     """MCL (Tier C, Basic mixin)."""
-    return MCL(input_dims=3, output_dims=16)
+    return MCL(input_dim=3, representation_dim=16)
 
 
 @pytest.fixture(scope="module")

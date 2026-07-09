@@ -28,7 +28,7 @@ def series2vec_model() -> Series2Vec:
 
 @pytest.fixture
 def mcl_model() -> MCL:
-    return MCL(input_dims=3, output_dims=64)
+    return MCL(input_dim=3, representation_dim=64)
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ class TestSeries2VecSupportedOutputs:
 
 
 class TestMCLVectorOutput:
-    """MCL VECTOR returns (B, output_dims)."""
+    """MCL VECTOR returns (B, representation_dim)."""
 
     def test_vector_shape(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()
@@ -111,7 +111,7 @@ class TestMCLVectorOutput:
 
 
 class TestMCLSequenceOutput:
-    """MCL SEQUENCE returns (B, 1, output_dims) with warning."""
+    """MCL SEQUENCE returns (B, 1, representation_dim) with warning."""
 
     def test_sequence_shape(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()

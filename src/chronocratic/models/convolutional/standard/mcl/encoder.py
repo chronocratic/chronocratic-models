@@ -11,11 +11,11 @@ class FCNEncoder(nn.Module):
 
     Builds ``len(encoder_channels)`` dilated Conv1D blocks dynamically,
     followed by adaptive average pooling and a final linear projection to
-    ``output_dims``.
+    ``representation_dim``.
 
     Args:
-        input_dims: Number of input feature channels.
-        output_dims: Dimension of the flat encoder output.
+        input_dim: Number of input feature channels.
+        representation_dim: Dimension of the flat encoder output.
         encoder_channels: Tuple of channel counts for each Conv1d block.
         encoder_kernels: Tuple of kernel sizes for each Conv1d block.
         encoder_dilations: Tuple of dilation rates for each Conv1d block.
@@ -26,8 +26,8 @@ class FCNEncoder(nn.Module):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int = 128,
+        input_dim: int,
+        representation_dim: int = 128,
         encoder_channels: tuple[int, ...] = (128, 256, 128),
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
@@ -35,12 +35,13 @@ class FCNEncoder(nn.Module):
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
+        self.representation_dim = representation_dim
         self.encoder_channels = encoder_channels
         self.encoder_kernels = encoder_kernels
         self.encoder_dilations = encoder_dilations
 
         layers: list[nn.Module] = []
-        in_ch = input_dims
+        in_ch = input_dim
         for ch, k, d in zip(encoder_channels, encoder_kernels, encoder_dilations, strict=True):
             layers.append(nn.Conv1d(in_ch, ch, kernel_size=k, padding=k // 2 * d, dilation=d))
             if normalization_layer_type == NormalizationLayerType.CHANNEL:
@@ -52,7 +53,7 @@ class FCNEncoder(nn.Module):
 
         layers.append(nn.AdaptiveAvgPool1d(1))
         layers.append(nn.Flatten())
-        layers.append(nn.Linear(in_ch, output_dims))
+        layers.append(nn.Linear(in_ch, representation_dim))
 
         self.layers = nn.Sequential(*layers)
 
@@ -60,10 +61,10 @@ class FCNEncoder(nn.Module):
         """Encode a batch of time series into flat FCN representations.
 
         Args:
-            x: Input batch of shape ``(batch, seq_len, input_dims)``.
+            x: Input batch of shape ``(batch, seq_len, input_dim)``.
 
         Returns:
-            Flat representations of shape ``(batch, output_dims)``.
+            Flat representations of shape ``(batch, representation_dim)``.
         """
         x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
         return self.layers(x)

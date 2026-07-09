@@ -121,7 +121,7 @@ class TestMCLLossBatchSize1:
 
     @pytest.fixture
     def model(self) -> MCL:
-        return MCL(input_dims=3, output_dims=16)
+        return MCL(input_dim=3, representation_dim=16)
 
     def test_backward_does_not_crash(self, model: MCL) -> None:
         """_step + backward at batch_size=1 should not raise."""

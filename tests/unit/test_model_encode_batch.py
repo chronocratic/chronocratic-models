@@ -20,7 +20,7 @@ MODELS = {
     "TimeVAE": TimeVAE(sequence_length=32, input_dims=3, latent_dim=8),
     "TimeNet": TimeNet(hidden_dims=16, depth=1, input_dims=3),
     "RecurrentAutoEncoder": RecurrentAutoEncoder(input_dims=3, layers=(16,)),
-    "MCL": MCL(input_dims=3),
+    "MCL": MCL(input_dim=3),
     "TSTCC": TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16),
 }
 
@@ -73,8 +73,8 @@ class TestEncodeOutputShapes:
         assert result.shape == (4, 16)
 
     def test_mcl_encode_shape(self) -> None:
-        """MCL.encode() returns (B, output_dims) with VECTOR default."""
-        model = MCL(input_dims=3, output_dims=128)
+        """MCL.encode() returns (B, representation_dim) with VECTOR default."""
+        model = MCL(input_dim=3, representation_dim=128)
         data = torch.randn(4, 50, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 128)
