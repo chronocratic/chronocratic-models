@@ -43,10 +43,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/emadeldeen24/TS-TCC under MIT License.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         conv_kernel_size: Kernel size for the first convolution block.
         stride: Stride for the first convolution block.
-        output_dims: Number of output channels from the encoder.
+        representation_dim: Number of output channels from the encoder.
         encoder_channels: Channel counts for the first two conv blocks.
         encoder_inner_kernels: Kernel sizes for the second and third conv
             blocks.
@@ -78,10 +78,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
+        input_dim: int,
         conv_kernel_size: int = 8,
         stride: int = 1,
-        output_dims: int = 128,
+        representation_dim: int = 128,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
         dropout_rate: float = 0.35,
@@ -118,17 +118,17 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             self._augmentation = augmentation
 
         self._encoder = TCCEncoder(
-            input_dims=input_dims,
+            input_dim=input_dim,
             conv_kernel_size=conv_kernel_size,
             stride=stride,
-            output_dims=output_dims,
+            representation_dim=representation_dim,
             encoder_channels=encoder_channels,
             encoder_inner_kernels=encoder_inner_kernels,
             dropout_rate=dropout_rate,
             normalization_layer_type=normalization_layer_type,
         )
         self._tc_model = TemporalContrast(
-            num_channels=output_dims,
+            num_channels=representation_dim,
             hidden_dim=temporal_contrast_hidden_dim,
             timesteps=temporal_contrast_timesteps,
             normalization_layer_type=normalization_layer_type,
@@ -258,7 +258,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         ``(B, L', C)`` for SEQUENCE, where:
 
         - ``B``: batch size
-        - ``C``: encoder output channels (``output_dims``)
+        - ``C``: encoder output channels (``representation_dim``)
         - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
         if output not in type(self).supported_outputs:
@@ -276,7 +276,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         """Representation dimension after global average pooling.
 
         Returns:
-            The encoder's ``output_dims``, matching the pooled feature shape
-            ``(B, output_dims)``.
+            The encoder's ``representation_dim``, matching the pooled feature
+            shape ``(B, representation_dim)``.
         """
-        return self._encoder.output_dims
+        return self._encoder.representation_dim

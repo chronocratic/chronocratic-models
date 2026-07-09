@@ -46,14 +46,14 @@ class TestTSTCCModelCleaned:
     def test_only_selfsupervised_contrastive(self) -> None:
         """TSTCC._compute_loss produces contrastive loss (no supervised branch)."""
         # Using L=256, stride=4, kernel=8 to get a large enough seq_len.
-        # Encoder forward returns feature map (B, output_dims, L').
+        # Encoder forward returns feature map (B, representation_dim, L').
         seq_len = 256
-        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         # Verify forward returns a single tensor (feature map), not a tuple
         test_x = torch.randn(1, seq_len, 2)  # (B, T, C)
         features = model(test_x)
         assert isinstance(features, torch.Tensor)
-        assert features.shape == (1, 16, features.shape[2])  # (B, output_dims, L')
+        assert features.shape == (1, 16, features.shape[2])  # (B, representation_dim, L')
         # Now run the contrastive loss
         x = torch.randn(4, seq_len, 2)  # (B, T, C)
         labels = torch.randint(0, 3, (4,))
@@ -76,7 +76,7 @@ class TestTSTCCSupervisedModule:
 
     def test_finetuner_classification_shape(self) -> None:
         """make_tstcc_supervised produces (B, num_outputs) classification logits."""
-        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        backbone = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -86,7 +86,7 @@ class TestTSTCCSupervisedModule:
 
     def test_finetuner_training_step(self) -> None:
         """training_step returns scalar loss."""
-        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        backbone = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -104,7 +104,7 @@ class TestTSTCCSupervisedModule:
         ``TSTCCTrainingMode.SUPERVISED``: an un-pretrained encoder trained
         end-to-end on labels.
         """
-        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        backbone = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -117,12 +117,12 @@ class TestTSTCCSupervisedModule:
 
 
 def test_tcc_encoder_accepts_btc_and_is_transpose_sensitive() -> None:
-    """TCCEncoder must accept (B, T, C) input with T != C and return (B, output_dims, L').
+    """TCCEncoder must accept (B, T, C) input with T != C and return (B, representation_dim, L').
 
     Regression test: without the transpose(1, 2) inside forward(), Conv1d
-    sees T channels instead of input_dims and raises RuntimeError.
+    sees T channels instead of input_dim and raises RuntimeError.
     """
-    encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=1, output_dims=128)
+    encoder = TCCEncoder(input_dim=3, conv_kernel_size=8, stride=1, representation_dim=128)
     x = torch.randn(4, 50, 3)  # (B, T, C) with T=50 != C=3
     out = encoder(x)
     assert out.ndim == 3

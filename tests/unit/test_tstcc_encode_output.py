@@ -30,11 +30,11 @@ class TestTSTCCSupportedOutputs:
 
 
 class TestTSTCCVectorOutput:
-    """TSTCC._encode_batch with VECTOR returns (B, output_dims)."""
+    """TSTCC._encode_batch with VECTOR returns (B, representation_dim)."""
 
     def test_vector_shape(self) -> None:
         """VECTOR produces 2-D tensor with pooled feature shape."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(4, 256, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -42,7 +42,7 @@ class TestTSTCCVectorOutput:
 
     def test_vector_ndim(self) -> None:
         """VECTOR output is exactly 2-D."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -50,11 +50,11 @@ class TestTSTCCVectorOutput:
 
 
 class TestTSTCCSequenceOutput:
-    """TSTCC._encode_batch with SEQUENCE returns (B, L_prime, output_dims)."""
+    """TSTCC._encode_batch with SEQUENCE returns (B, L_prime, representation_dim)."""
 
     def test_sequence_shape(self) -> None:
         """SEQUENCE produces 3-D tensor from conv feature map transpose."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(4, 256, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -63,11 +63,11 @@ class TestTSTCCSequenceOutput:
         # (exact length depends on encoder internals; assert ndim and last dim)
         assert result.ndim == 3
         assert result.shape[0] == 4  # batch
-        assert result.shape[2] == 16  # output_dims
+        assert result.shape[2] == 16  # representation_dim
 
     def test_sequence_ndim(self) -> None:
         """SEQUENCE output is exactly 3-D."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -75,7 +75,7 @@ class TestTSTCCSequenceOutput:
 
     def test_sequence_length_matches_conv_output(self) -> None:
         """SEQUENCE length dimension matches encoder output spatial dimension."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 256, 3)
         # encoder outputs (B, C, L')
@@ -90,7 +90,7 @@ class TestTSTCCGradientFlow:
 
     def test_vector_gradient_flows(self) -> None:
         """Gradients flow back through VECTOR encoding path."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -100,7 +100,7 @@ class TestTSTCCGradientFlow:
 
     def test_sequence_gradient_flows(self) -> None:
         """Gradients flow back through SEQUENCE encoding path."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         encoder = model._get_encoder()
         data = torch.randn(2, 128, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -114,7 +114,7 @@ class TestTSTCCEncodeIntegration:
 
     def test_encode_sequence_via_mixin(self) -> None:
         """encode() mixin passes SEQUENCE through to _encode_batch."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         data = torch.randn(4, 256, 3)
         result = model.encode(
             data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
@@ -125,7 +125,7 @@ class TestTSTCCEncodeIntegration:
 
     def test_encode_vector_via_mixin(self) -> None:
         """encode() mixin passes VECTOR through to _encode_batch."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         data = torch.randn(4, 256, 3)
         result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
