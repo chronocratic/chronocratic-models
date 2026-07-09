@@ -267,7 +267,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dim).
         """
         padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
-        assert isinstance(encoder, TSTransformerEncoder)  # narrows Module -> TSTransformerEncoder
+        assert isinstance(encoder, TSTransformerEncoder)  # noqa: S101  # narrows Module -> TSTransformerEncoder
         full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
         if output == EncodingOutputShape.VECTOR:
             return full_sequence.mean(dim=1)  # (B, D) - mean over T
