@@ -49,7 +49,7 @@ class TestAllModelsExposeRepresentationDim:
     """D-03: All 10 models must expose a representation_dim property."""
 
     def test_mcl(self) -> None:
-        model = MCL(MCLModelParameters(input_dim=1))
+        model = MCL(**vars(MCLModelParameters(input_dim=1)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
@@ -62,19 +62,19 @@ class TestAllModelsExposeRepresentationDim:
         assert model.representation_dim == 16
 
     def test_ts2vec(self) -> None:
-        model = TS2Vec(TS2VecModelParameters(input_dim=1))
+        model = TS2Vec(**vars(TS2VecModelParameters(input_dim=1)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
 
     def test_autotcl(self) -> None:
-        model = AutoTCL(AutoTCLModelParameters(input_dim=1))
+        model = AutoTCL(**vars(AutoTCLModelParameters(input_dim=1)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
 
     def test_cost(self) -> None:
-        model = CoST(CoSTModelParameters(input_dim=1, sequence_length=100))
+        model = CoST(**vars(CoSTModelParameters(input_dim=1, sequence_length=100)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
@@ -92,26 +92,26 @@ class TestAllModelsExposeRepresentationDim:
         assert model.representation_dim == 4
 
     def test_tst(self) -> None:
-        model = TST(TSTModelParameters(input_dim=1, sequence_length=100))
+        model = TST(**vars(TSTModelParameters(input_dim=1, sequence_length=100)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
 
     def test_timenet(self) -> None:
-        model = TimeNet(TimeNetModelParameters(input_dim=1))
+        model = TimeNet(**vars(TimeNetModelParameters(input_dim=1)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
 
     def test_timevae(self) -> None:
-        model = TimeVAE(TimeVAEModelParameters(input_dim=1))
+        model = TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
 
     def test_recurrent_autoencoder(self) -> None:
         model = RecurrentAutoEncoder(
-            RecurrentAutoEncoderModelParameters(input_dim=1)
+            **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
         )
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
@@ -127,35 +127,35 @@ class TestRepresentationDimMatchesEncodeOutput:
     """D-03: representation_dim == last axis of encode() output."""
 
     def test_mcl_encode_output_matches(self) -> None:
-        model = MCL(MCLModelParameters(input_dim=1))
+        model = MCL(**vars(MCLModelParameters(input_dim=1)))
         x = torch.randn(2, 100, 1)
-        reps = model.encode(x)
+        reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
 
     def test_tstcc_encode_output_matches(self) -> None:
         model = TSTCC(
             input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16
         )
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
 
     def test_ts2vec_encode_output_matches(self) -> None:
-        model = TS2Vec(TS2VecModelParameters(input_dim=1))
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        model = TS2Vec(**vars(TS2VecModelParameters(input_dim=1)))
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2, num_workers=0)
         assert reps.shape[-1] == model.representation_dim
 
     def test_autotcl_encode_output_matches(self) -> None:
-        model = AutoTCL(AutoTCLModelParameters(input_dim=1))
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        model = AutoTCL(**vars(AutoTCLModelParameters(input_dim=1)))
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2, num_workers=0)
         assert reps.shape[-1] == model.representation_dim
 
     def test_cost_encode_output_matches(self) -> None:
-        model = CoST(CoSTModelParameters(input_dim=1, sequence_length=100))
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        model = CoST(**vars(CoSTModelParameters(input_dim=1, sequence_length=100)))
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2, num_workers=0)
         # CoST: encode() output width == representation_dim (full, not 2x)
         assert reps.shape[-1] == model.representation_dim
 
@@ -173,23 +173,23 @@ class TestRepresentationDimMatchesEncodeOutput:
         assert reps.shape[1] == model.representation_dim
 
     def test_timenet_encode_output_matches(self) -> None:
-        model = TimeNet(TimeNetModelParameters(input_dim=1))
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        model = TimeNet(**vars(TimeNetModelParameters(input_dim=1)))
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
 
     def test_timevae_encode_output_matches(self) -> None:
-        model = TimeVAE(TimeVAEModelParameters(input_dim=1))
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        model = TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32)))
+        x = torch.randn(2, 32, 1)
+        reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
 
     def test_recurrent_autoencoder_encode_output_matches(self) -> None:
         model = RecurrentAutoEncoder(
-            RecurrentAutoEncoderModelParameters(input_dim=1)
+            **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
         )
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
 
 
@@ -260,15 +260,15 @@ class TestCoSTAlignment:
 
     def test_cost_encode_width_equals_representation_dim(self) -> None:
         model = CoST(
-            CoSTModelParameters(input_dim=1, sequence_length=100, representation_dim=16)
+            **vars(CoSTModelParameters(input_dim=1, sequence_length=100, representation_dim=16))
         )
-        x = torch.randn(2, 1, 100)
-        reps = model.encode(x)
+        x = torch.randn(2, 100, 1)
+        reps = model.encode(x, batch_size=2, num_workers=0)
         assert reps.shape[-1] == model.representation_dim
 
     def test_cost_representation_dim_is_even(self) -> None:
         model = CoST(
-            CoSTModelParameters(input_dim=1, sequence_length=100, representation_dim=16)
+            **vars(CoSTModelParameters(input_dim=1, sequence_length=100, representation_dim=16))
         )
         assert model.representation_dim % 2 == 0
 
@@ -282,15 +282,15 @@ class TestPreservedNames:
     """D-04: latent_dim (TimeVAE) and layers (RecurrentAE) remain unchanged."""
 
     def test_timevae_latent_dim_preserved(self) -> None:
-        model = TimeVAE(TimeVAEModelParameters(input_dim=1, latent_dim=16))
+        model = TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32, latent_dim=16)))
         assert model.latent_dim == 16
         assert model.representation_dim == 16
 
     def test_recurrent_autoencoder_layers_preserved(self) -> None:
         model = RecurrentAutoEncoder(
-            RecurrentAutoEncoderModelParameters(input_dim=1, layers=(16, 8))
+            **vars(RecurrentAutoEncoderModelParameters(input_dim=1, layers=(16, 8)))
         )
-        assert model.layers == (16, 8)
+        assert model._layers == (16, 8)
         assert model.representation_dim == 8
 
 
@@ -304,11 +304,11 @@ class TestNoEncodingOutputDim:
 
     def test_no_encoding_output_dim(self) -> None:
         models = [
-            MCL(MCLModelParameters(input_dim=1)),
+            MCL(**vars(MCLModelParameters(input_dim=1))),
             TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16),
-            TS2Vec(TS2VecModelParameters(input_dim=1)),
-            AutoTCL(AutoTCLModelParameters(input_dim=1)),
-            CoST(CoSTModelParameters(input_dim=1, sequence_length=100)),
+            TS2Vec(**vars(TS2VecModelParameters(input_dim=1))),
+            AutoTCL(**vars(AutoTCLModelParameters(input_dim=1))),
+            CoST(**vars(CoSTModelParameters(input_dim=1, sequence_length=100))),
             Series2Vec(
                 input_dim=2,
                 embedding_dim=8,
@@ -317,11 +317,11 @@ class TestNoEncodingOutputDim:
                 representation_dim=4,
                 dropout_rate=0.1,
             ),
-            TST(TSTModelParameters(input_dim=1, sequence_length=100)),
-            TimeNet(TimeNetModelParameters(input_dim=1)),
-            TimeVAE(TimeVAEModelParameters(input_dim=1)),
+            TST(**vars(TSTModelParameters(input_dim=1, sequence_length=100))),
+            TimeNet(**vars(TimeNetModelParameters(input_dim=1))),
+            TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32))),
             RecurrentAutoEncoder(
-                RecurrentAutoEncoderModelParameters(input_dim=1)
+                **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
             ),
         ]
         for m in models:
@@ -403,11 +403,11 @@ class TestRepresentationBackboneProtocol:
 
     def test_all_are_representation_backbones(self) -> None:
         models = [
-            MCL(MCLModelParameters(input_dim=1)),
+            MCL(**vars(MCLModelParameters(input_dim=1))),
             TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16),
-            TS2Vec(TS2VecModelParameters(input_dim=1)),
-            AutoTCL(AutoTCLModelParameters(input_dim=1)),
-            CoST(CoSTModelParameters(input_dim=1, sequence_length=100)),
+            TS2Vec(**vars(TS2VecModelParameters(input_dim=1))),
+            AutoTCL(**vars(AutoTCLModelParameters(input_dim=1))),
+            CoST(**vars(CoSTModelParameters(input_dim=1, sequence_length=100))),
             Series2Vec(
                 input_dim=2,
                 embedding_dim=8,
@@ -416,11 +416,11 @@ class TestRepresentationBackboneProtocol:
                 representation_dim=4,
                 dropout_rate=0.1,
             ),
-            TST(TSTModelParameters(input_dim=1, sequence_length=100)),
-            TimeNet(TimeNetModelParameters(input_dim=1)),
-            TimeVAE(TimeVAEModelParameters(input_dim=1)),
+            TST(**vars(TSTModelParameters(input_dim=1, sequence_length=100))),
+            TimeNet(**vars(TimeNetModelParameters(input_dim=1))),
+            TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32))),
             RecurrentAutoEncoder(
-                RecurrentAutoEncoderModelParameters(input_dim=1)
+                **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
             ),
         ]
         for m in models:

@@ -27,7 +27,7 @@ class TestConfigInputDimRename:
     def test_config_does_not_have_input_dims(self) -> None:
         """Old plural field name input_dims should not exist."""
         with pytest.raises(TypeError):
-            RecurrentAutoEncoderModelParameters(input_dim=3)  # type: ignore[call-arg]
+            RecurrentAutoEncoderModelParameters(**{"input_dims": 3})  # noqa: PIE796
 
     def test_config_layers_preserved(self) -> None:
         """layers tuple field stays unchanged."""
@@ -51,7 +51,7 @@ class TestModelInputDimRename:
     def test_model_does_not_accept_input_dims(self) -> None:
         """Old plural param name input_dims should not be accepted."""
         with pytest.raises(TypeError):
-            RecurrentAutoEncoder(input_dim=3, layers=(8,))  # type: ignore[call-arg]
+            RecurrentAutoEncoder(**{"input_dims": 3}, layers=(8,))  # noqa: PIE796
 
     def test_input_dim_stored_correctly(self) -> None:
         """Model stores input_dim value correctly."""
@@ -114,7 +114,7 @@ class TestLayerBuilderFunctions:
         )
 
         dropout = _prepare_dropout(0.0, 1)
-        encoder = _build_encoder(torch.nn.LSTM, input_dim=3, layers=(8,), dropout=dropout)
+        encoder = _build_encoder(rnn_cls=torch.nn.LSTM, input_dim=3, layers=(8,), dropout=dropout)
         assert isinstance(encoder, torch.nn.Sequential)
 
     def test_build_decoder_uses_input_dim(self) -> None:
@@ -125,5 +125,5 @@ class TestLayerBuilderFunctions:
         )
 
         dropout = _prepare_dropout(0.0, 1)
-        decoder = _build_decoder(torch.nn.LSTM, input_dim=3, layers=(8,), dropout=dropout)
+        decoder = _build_decoder(rnn_cls=torch.nn.LSTM, input_dim=3, layers=(8,), dropout=dropout)
         assert isinstance(decoder, torch.nn.Sequential)
