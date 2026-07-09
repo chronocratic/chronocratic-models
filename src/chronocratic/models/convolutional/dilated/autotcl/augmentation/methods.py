@@ -97,7 +97,7 @@ class AutoTCLNeuralNetworkAugmentation(TrainableAugmentationProducer):
     def __init__(
         self,
         *,
-        params: AutoTCLNeuralNetworkAugmentationParameters | dict[str, Any],
+        params: AutoTCLNeuralNetworkAugmentationParameters,
         training_strategy: AugmentationTrainingStrategy | None = None,
     ) -> None:
         """Initialize the neural-network augmentation.

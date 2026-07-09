@@ -2,6 +2,7 @@ __all__ = ["BaseEncodingMixin", "DecompositionEncodingMixin", "PoolingEncodingMi
 
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
+import enum
 import logging
 from typing import override, TYPE_CHECKING
 
@@ -22,7 +23,14 @@ from chronocratic.models.utils import (
     process_sliding_window,
 )
 
-_encoding_window_unset = object()
+
+class _EncodingWindowSentinel(enum.Enum):
+    """Sentinel for an unset ``encoding_window`` (distinct from a genuine ``None``)."""
+
+    UNSET = enum.auto()
+
+
+_encoding_window_unset = _EncodingWindowSentinel.UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -194,7 +202,7 @@ class BaseEncodingMixin(ABC):
         *,
         mask: "MaskMode | None" = None,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
-        encoding_window: object = _encoding_window_unset,
+        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
     ) -> torch.Tensor:
         """Encode one batch in a single forward pass (no sliding window).
 
@@ -238,7 +246,7 @@ class BaseEncodingMixin(ABC):
         batch_size: int,
         num_workers: int,
         mask: "MaskMode | None" = None,
-        encoding_window: object = _encoding_window_unset,
+        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
         *,
         causal: bool = False,
         sliding_length: int | None = None,

@@ -138,7 +138,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         Matches the module returned by ``_get_encoder()`` so that the
         ``HasEncoder`` protocol is consistent with the encode() path.
         """
-        return self._averaged_encoder
+        # AveragedModel (SWA wrapper) delegates attribute access to the wrapped
+        # encoder, so it behaves as an AutoTCLTimeSeriesEncoder structurally.
+        return cast("AutoTCLTimeSeriesEncoder", self._averaged_encoder)
 
     def configure_optimizers(self) -> AdamW | list[AdamW]:
         """Return encoder optimizer(s); two optimizers when using trainable aug."""
