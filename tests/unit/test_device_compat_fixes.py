@@ -59,7 +59,7 @@ class TestFilterOnDeviceHelper:
         from chronocratic.models.convolutional.standard.series2vec.filters import lowpass_filter
 
         data = torch.randn(128)
-        result = lowpass_filter(data, cutoff_frequency=40.0, sampling_rate=128)
+        result = lowpass_filter(data=data, cutoff_frequency=40.0, sampling_rate=128)
         assert result.device.type == "cpu"
 
 
