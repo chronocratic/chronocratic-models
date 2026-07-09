@@ -43,6 +43,7 @@ class Series2VecNetwork(nn.Module):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         embedding_dim: int = 16,
         num_heads: int = 8,
@@ -50,7 +51,6 @@ class Series2VecNetwork(nn.Module):
         representation_dim: int = 320,
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()

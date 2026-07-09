@@ -57,8 +57,8 @@ def test_contrastive_losses_run(device: str) -> None:
 
     a = torch.randn(4, 16, 8, device=device)
     b = torch.randn(4, 16, 8, device=device)
-    assert torch.isfinite(temporal_contrastive_loss(a, b))
-    assert torch.isfinite(instance_contrastive_loss(a, b))
+    assert torch.isfinite(temporal_contrastive_loss(instance_1=a, instance_2=b))
+    assert torch.isfinite(instance_contrastive_loss(instance_1=a, instance_2=b))
 
 
 @pytest.mark.parametrize("device", DEVICES)

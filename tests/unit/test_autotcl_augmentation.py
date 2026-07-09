@@ -147,7 +147,7 @@ class TestAutoTCLTrainingWithProducer:
             training_strategy=RIPTrainingStrategy(),
         )
         model = AutoTCL(input_dim=1, augmentation=aug)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=1)
 
     def test_trains_5_steps_with_static_aug(
@@ -155,7 +155,7 @@ class TestAutoTCLTrainingWithProducer:
     ) -> None:
         producer = SingleViewProducer(aug=Jitter())
         model = AutoTCL(input_dim=1, augmentation=producer)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
 
@@ -185,10 +185,10 @@ class TestAutoTCLSeededEquivalence:
         )
 
         losses1 = train_steps(
-            model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model1, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
         losses2 = train_steps(
-            model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model2, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
 
         assert len(losses1) == len(losses2)

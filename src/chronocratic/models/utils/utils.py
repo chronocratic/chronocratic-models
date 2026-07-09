@@ -40,7 +40,7 @@ def extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Ten
 
 
 def process_sample_length(
-    sample: torch.Tensor, max_sample_length: int | None = None
+    *, sample: torch.Tensor, max_sample_length: int | None = None
 ) -> torch.Tensor:
     """Randomly crop the sample to `max_sample_length` along the time axis; no-op if unset."""
     if max_sample_length is not None and sample.size(1) > max_sample_length:
@@ -111,7 +111,7 @@ def multiscale_pooling(tensor: torch.Tensor, slicing: slice | None = None) -> to
 
 
 def integer_pooling(
-    tensor: torch.Tensor, encoding_window: int, slicing: slice | None = None
+    *, tensor: torch.Tensor, encoding_window: int, slicing: slice | None = None
 ) -> torch.Tensor:
     """
     Apply integer-based pooling to the tensor.
@@ -134,7 +134,11 @@ def integer_pooling(
 
 
 def process_sliding_window(
-    input_tensor: torch.Tensor, left_index: int, right_index: int, time_series_length: int
+    *,
+    input_tensor: torch.Tensor,
+    left_index: int,
+    right_index: int,
+    time_series_length: int,
 ) -> torch.Tensor:
     """
     Process a sliding window of the input tensor with padding.
@@ -157,7 +161,7 @@ def process_sliding_window(
 
 
 def concat_last_step_features(
-    trend_embeddings: torch.Tensor, seasonality_embeddings: torch.Tensor
+    *, trend_embeddings: torch.Tensor, seasonality_embeddings: torch.Tensor
 ) -> torch.Tensor:
     """
     Extract last time-step features from out_t and out_s, concatenate them, and return the result.
@@ -187,7 +191,7 @@ def concat_last_step_features(
 
 
 def pad_tensor_with_nan(
-    tensor: torch.Tensor, left_pad: int = 0, right_pad: int = 0, axis: int = 0
+    *, tensor: torch.Tensor, left_pad: int = 0, right_pad: int = 0, axis: int = 0
 ) -> torch.Tensor:
     """
     Pad a tensor with NaN values along a specified axis.

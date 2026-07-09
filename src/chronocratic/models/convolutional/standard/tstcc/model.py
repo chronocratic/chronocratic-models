@@ -78,6 +78,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         conv_kernel_size: int = 8,
         stride: int = 1,
@@ -88,7 +89,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         temporal_contrast_hidden_dim: int = 100,
         temporal_contrast_timesteps: int = 6,
         temperature: float = 0.2,
-        *,
         use_cosine_similarity: bool = True,
         learning_rate: float = 3e-4,
         temporal_loss_weight: float = 1.0,

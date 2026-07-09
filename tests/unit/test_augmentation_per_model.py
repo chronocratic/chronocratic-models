@@ -213,7 +213,7 @@ class TestAutoTCLAugmentationMethods:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, output_dim=320)
         aug = AutoTCLNeuralNetworkAugmentation(params=params)
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
@@ -223,7 +223,7 @@ class TestAutoTCLAugmentationMethods:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1, output_dims=320)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, output_dim=320)
         aug = AutoTCLNeuralNetworkAugmentation(params=params)
         assert len(list(aug.parameters())) > 0
 
@@ -235,7 +235,7 @@ class TestAutoTCLAugmentationMethods:
         )
 
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, output_dims=320, kernel_sizes=[3]
+            input_dim=1, output_dim=320, kernel_sizes=[3]
         )
         aug = AutoTCLNeuralNetworkAugmentation(params=params)
         aug.eval()

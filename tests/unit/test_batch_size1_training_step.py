@@ -23,12 +23,12 @@ class TestSeries2VecLossBatchSize1:
     @pytest.fixture
     def model(self) -> Series2Vec:
         return Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
-            representation_dims=16,
+            input_dim=3,
+            embedding_dim=8,
+            representation_dim=16,
             encoder_kernel_size=4,
             num_heads=2,
-            feedforward_dims=32,
+            feedforward_dim=32,
         )
 
     def test_backward_does_not_crash(self, model: Series2Vec) -> None:
@@ -66,12 +66,12 @@ class TestSeries2VecLossBatchSize1:
         # K=16 on L=32 -> window_len 2 < kernel 4: split skipped, x stays (1, 32, 3),
         # pretraining_loss finds no pairs -> connected zero-dummy fallback, no crash.
         model = Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
-            representation_dims=16,
+            input_dim=3,
+            embedding_dim=8,
+            representation_dim=16,
             encoder_kernel_size=4,
             num_heads=2,
-            feedforward_dims=32,
+            feedforward_dim=32,
             singleton_split_count=16,
         )
         model.train()
@@ -88,10 +88,10 @@ class TestTSTCCLossBatchSize1:
     @pytest.fixture
     def model(self) -> TSTCC:
         return TSTCC(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=5,
             stride=2,
-            output_dims=16,
+            representation_dim=16,
             encoder_channels=(8, 16),
             encoder_inner_kernels=(5, 5),
             temporal_contrast_hidden_dim=32,

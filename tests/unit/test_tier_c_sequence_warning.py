@@ -33,7 +33,7 @@ def mcl_model() -> MCL:
 
 @pytest.fixture
 def timevae_model() -> TimeVAE:
-    return TimeVAE(sequence_length=32, input_dims=3, latent_dim=8)
+    return TimeVAE(sequence_length=32, input_dim=3, latent_dim=8)
 
 
 @pytest.fixture

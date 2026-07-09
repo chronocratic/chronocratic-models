@@ -88,6 +88,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         embedding_dim: int = 16,
         num_heads: int = 8,
@@ -97,7 +98,6 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         encoder_kernel_size: int = 8,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
-        *,
         singleton_split_count: int = 3,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,

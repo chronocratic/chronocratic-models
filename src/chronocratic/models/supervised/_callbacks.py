@@ -38,7 +38,7 @@ class BackboneUnfreeze(BaseFinetuning):
             (discriminative LR; 10.0 is the ULMFiT default).
     """
 
-    def __init__(self, unfreeze_at_epoch: int = 10, initial_denom_lr: float = 10.0) -> None:
+    def __init__(self, *, unfreeze_at_epoch: int = 10, initial_denom_lr: float = 10.0) -> None:
         super().__init__()
         self._unfreeze_at_epoch = unfreeze_at_epoch
         self._initial_denom_lr = initial_denom_lr

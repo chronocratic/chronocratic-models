@@ -143,7 +143,7 @@ class TestContrastiveLossNoNumpyRoundTrip:
 
         a = torch.randn(4, 16, 8)
         b = torch.randn(4, 16, 8)
-        loss = temporal_contrastive_loss(a, b)
+        loss = temporal_contrastive_loss(instance_1=a, instance_2=b)
         assert loss.device.type == "cpu"
         assert torch.isfinite(loss)
 
@@ -153,6 +153,6 @@ class TestContrastiveLossNoNumpyRoundTrip:
 
         a = torch.randn(4, 16, 8)
         b = torch.randn(4, 16, 8)
-        loss = instance_contrastive_loss(a, b)
+        loss = instance_contrastive_loss(instance_1=a, instance_2=b)
         assert loss.device.type == "cpu"
         assert torch.isfinite(loss)

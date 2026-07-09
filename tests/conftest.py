@@ -17,7 +17,7 @@ def _run_train_steps(
     model: pl.LightningModule,
     batch_size: int = 4,
     seq_length: int = 100,
-    input_dims: int = 1,
+    input_dim: int = 1,
     num_steps: int = 5,
     seed: int | None = None,
     layout: str = "NLC",  # "NLC"=(B,T,D), "NCL"=(B,C,T)
@@ -37,9 +37,9 @@ def _run_train_steps(
         torch.manual_seed(seed)
 
     if layout == "NLC":
-        data = torch.randn(batch_size * num_steps, seq_length, input_dims)
+        data = torch.randn(batch_size * num_steps, seq_length, input_dim)
     else:  # NCL
-        data = torch.randn(batch_size * num_steps, input_dims, seq_length)
+        data = torch.randn(batch_size * num_steps, input_dim, seq_length)
 
     if with_labels:
         labels = torch.zeros(batch_size * num_steps, dtype=torch.long)
@@ -94,16 +94,16 @@ def random_data() -> Callable[..., torch.Tensor]:
     """Factory for random time series tensors.
 
     Usage:
-        data = random_data(batch=4, seq_length=100, input_dims=1)
-        data_ncl = random_data(batch=4, seq_length=100, input_dims=1, layout="NCL")
+        data = random_data(batch=4, seq_length=100, input_dim=1)
+        data_ncl = random_data(batch=4, seq_length=100, input_dim=1, layout="NCL")
     """
 
     def _factory(
-        batch: int = 4, seq_length: int = 100, input_dims: int = 1, layout: str = "NLC"
+        batch: int = 4, seq_length: int = 100, input_dim: int = 1, layout: str = "NLC"
     ) -> torch.Tensor:
         if layout == "NLC":
-            return torch.randn(batch, seq_length, input_dims)
-        return torch.randn(batch, input_dims, seq_length)
+            return torch.randn(batch, seq_length, input_dim)
+        return torch.randn(batch, input_dim, seq_length)
 
     return _factory
 

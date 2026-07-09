@@ -85,14 +85,14 @@ class TestCoSTTrainingWithProducer:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPairProducer(aug=aug)
         model = CoST(input_dim=1, sequence_length=100, augmentation=producer)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
     def test_cost_trains_5_steps_with_default_augmentation(
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         model = CoST(input_dim=1, sequence_length=100)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
 
@@ -108,10 +108,10 @@ class TestCoSTSeededEquivalence:
         model2 = CoST(input_dim=1, sequence_length=100)
 
         losses1 = train_steps(
-            model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model1, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
         losses2 = train_steps(
-            model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model2, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
 
         assert len(losses1) == len(losses2) == 5

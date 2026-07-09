@@ -70,7 +70,7 @@ class FlattenLinearHead(nn.Module):
         num_outputs: Number of classes (classification) or targets (regression).
     """
 
-    def __init__(self, in_features: int, num_outputs: int) -> None:
+    def __init__(self, *, in_features: int, num_outputs: int) -> None:
         super().__init__()
         self._fc = nn.Linear(in_features, num_outputs)
 

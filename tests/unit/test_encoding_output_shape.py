@@ -51,19 +51,19 @@ from chronocratic.models.utils.helpers import _warned_sequence_fallback
 @pytest.fixture(scope="module")
 def timevae_model() -> TimeVAE:
     """TimeVAE (Tier C, Basic mixin)."""
-    return TimeVAE(sequence_length=32, input_dims=3, latent_dim=8)
+    return TimeVAE(sequence_length=32, input_dim=3, latent_dim=8)
 
 
 @pytest.fixture(scope="module")
 def timenet_model() -> TimeNet:
     """TimeNet (Tier A, Basic mixin)."""
-    return TimeNet(hidden_dims=16, depth=1, input_dims=3)
+    return TimeNet(hidden_dim=16, depth=1, input_dim=3)
 
 
 @pytest.fixture(scope="module")
 def recurrentae_model() -> RecurrentAutoEncoder:
     """RecurrentAutoEncoder (Tier A, Basic mixin)."""
-    return RecurrentAutoEncoder(input_dims=3, layers=(16,))
+    return RecurrentAutoEncoder(input_dim=3, layers=(16,))
 
 
 @pytest.fixture(scope="module")
@@ -75,7 +75,7 @@ def mcl_model() -> MCL:
 @pytest.fixture(scope="module")
 def tstcc_model() -> TSTCC:
     """TSTCC (Tier A, Basic mixin)."""
-    return TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+    return TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
 
 
 @pytest.fixture(scope="module")
@@ -95,19 +95,19 @@ def series2vec_model() -> Series2Vec:
 @pytest.fixture(scope="module")
 def cost_model() -> CoST:
     """CoST (Tier A, Dilated mixin)."""
-    return CoST(input_dims=3, sequence_length=64, hidden_dims=16, output_dims=32, depth=2)
+    return CoST(input_dim=3, sequence_length=64, hidden_dim=16, representation_dim=32, depth=2)
 
 
 @pytest.fixture(scope="module")
 def ts2vec_model() -> TS2Vec:
     """TS2Vec (Tier A, Dilated mixin)."""
-    return TS2Vec(input_dims=3, hidden_dims=16, output_dims=32, depth=2)
+    return TS2Vec(input_dim=3, hidden_dim=16, representation_dim=32, depth=2)
 
 
 @pytest.fixture(scope="module")
 def autotcl_model() -> AutoTCL:
     """AutoTCL (Tier A, Dilated mixin)."""
-    return AutoTCL(input_dims=3, hidden_dims=16, output_dims=32, depth=2)
+    return AutoTCL(input_dim=3, hidden_dim=16, representation_dim=32, depth=2)
 
 
 # Mapping: human-readable name -> pytest fixture name
@@ -438,7 +438,7 @@ class TestRankAssert:
                 # Always return 3-D regardless of output
                 return encoder(batch_x).unsqueeze(1)
 
-        model = _BrokenModel(input_dims=3, output_dims=16)
+        model = _BrokenModel(input_dim=3, representation_dim=16)
         data = torch.randn(4, 50, 3)
         with pytest.raises(AssertionError, match=r"Expected 2D, got 3D"):
             model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
@@ -464,12 +464,12 @@ class TestRankAssert:
                 return seq.mean(dim=1)  # (B, H) -- 2-D
 
         model = _BrokenModel(
-            input_dims=3,
+            input_dim=3,
             sequence_length=32,
-            hidden_dims=16,
+            hidden_dim=16,
             num_heads=4,
             depth=1,
-            feedforward_dims=32,
+            feedforward_dim=32,
         )
         data = torch.randn(4, 32, 3)
         with pytest.raises(AssertionError, match=r"Expected 3D, got 2D"):

@@ -115,7 +115,7 @@ class TestTS2VecTraining:
         """TS2Vec trains 5 steps with CropShiftProducer (finite loss)."""
         model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
 
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
 
         finite_losses(losses, expected_min=5)
 
@@ -127,7 +127,7 @@ class TestTS2VecTraining:
         producer = FullOverlapProducer(aug=jitter)
         model = TS2Vec(input_dim=1, augmentation=producer)
 
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
 
         finite_losses(losses, expected_min=5)
 

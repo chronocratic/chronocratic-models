@@ -21,44 +21,44 @@ class TestTS2VecModelParameters:
         assert is_dataclass(TS2VecModelParameters)
 
     def test_requires_only_input_dims(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
-        assert params.input_dims == 1
+        params = TS2VecModelParameters(input_dim=1)
+        assert params.input_dim == 1
 
     def test_default_mask_mode(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.mask_mode == MaskMode.BINOMIAL
 
     def test_default_learning_rate(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.learning_rate == 1e-3
 
     def test_default_max_train_length(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.max_train_length is None
 
     def test_default_temporal_unit(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.temporal_unit == 0
 
     def test_default_sync_dist(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.sync_dist is False
 
     def test_encoder_field_defaults(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
+        params = TS2VecModelParameters(input_dim=1)
+        assert params.hidden_dim == 64
+        assert params.representation_dim == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
 
     def test_vars_produces_correct_keys(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         result = vars(params)
         expected_keys = {
-            "input_dims",
-            "hidden_dims",
-            "output_dims",
+            "input_dim",
+            "hidden_dim",
+            "representation_dim",
             "depth",
             "dropout_rate",
             "conv_kernel_size",
@@ -81,8 +81,8 @@ class TestCoSTModelParameters:
         assert is_dataclass(CoSTModelParameters)
 
     def test_requires_input_dims_and_sequence_length(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.input_dims == 1
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
+        assert params.input_dim == 1
         assert params.sequence_length == 100
 
     def test_missing_input_dims_raises(self) -> None:
@@ -91,74 +91,74 @@ class TestCoSTModelParameters:
 
     def test_missing_sequence_length_raises(self) -> None:
         with pytest.raises(TypeError):
-            CoSTModelParameters(input_dims=1)  # type: ignore[call-arg]
+            CoSTModelParameters(input_dim=1)  # type: ignore[call-arg]
 
     def test_default_kernel_sizes(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
 
     def test_default_max_train_length(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.max_train_length == 201
 
     def test_default_hidden_dims(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.hidden_dims == 64
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
+        assert params.hidden_dim == 64
 
     def test_default_output_dims(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.output_dims == 320
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
+        assert params.representation_dim == 320
 
     def test_default_depth(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.depth == 10
 
     def test_default_dropout_rate(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.dropout_rate == 0.1
 
     def test_default_mask_mode(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.mask_mode == MaskMode.BINOMIAL
 
     def test_default_learning_rate(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.learning_rate == 1e-3
 
     def test_default_seasonal_loss_weight(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.seasonal_loss_weight == 0.0005
 
     def test_default_queue_size(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.queue_size == 256
 
     def test_default_momentum(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.momentum == 0.999
 
     def test_default_temperature(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.temperature == 0.07
 
     def test_default_sync_dist(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.sync_dist is False
 
     def test_default_conv_kernel_size(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.conv_kernel_size == 3
 
     def test_vars_produces_correct_keys(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         result = vars(params)
         expected_keys = {
-            "input_dims",
+            "input_dim",
             "sequence_length",
             "kernel_sizes",
             "max_train_length",
-            "hidden_dims",
-            "output_dims",
+            "hidden_dim",
+            "representation_dim",
             "depth",
             "dropout_rate",
             "conv_kernel_size",
@@ -183,57 +183,57 @@ class TestAutoTCLModelParameters:
         assert is_dataclass(AutoTCLModelParameters)
 
     def test_requires_only_input_dims(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
-        assert params.input_dims == 1
+        params = AutoTCLModelParameters(input_dim=1)
+        assert params.input_dim == 1
 
     def test_default_kernel_sizes(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
 
     def test_default_mask_mode(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.mask_mode == MaskMode.BINOMIAL
 
     def test_default_learning_rate(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.learning_rate == 1e-3
 
     def test_default_max_train_length(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.max_train_length is None
 
     def test_default_sync_dist(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.sync_dist is False
 
     def test_encoder_field_defaults(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
+        params = AutoTCLModelParameters(input_dim=1)
+        assert params.hidden_dim == 64
+        assert params.representation_dim == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
 
     def test_meta_learning_rate_default(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.meta_learning_rate == 1e-2
 
     def test_local_loss_weight_default(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.local_loss_weight == 0.1
 
     def test_default_info_nce_loss_temperature(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.info_nce_loss_temperature == 1.0
 
     def test_vars_produces_correct_keys(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         result = vars(params)
         expected_keys = {
-            "input_dims",
+            "input_dim",
             "kernel_sizes",
-            "hidden_dims",
-            "output_dims",
+            "hidden_dim",
+            "representation_dim",
             "depth",
             "dropout_rate",
             "conv_kernel_size",

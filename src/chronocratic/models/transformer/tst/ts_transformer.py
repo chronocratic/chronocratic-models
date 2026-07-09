@@ -55,6 +55,7 @@ class FixedPositionalEncoding(nn.Module):
 
     def __init__(
         self,
+        *,
         hidden_dim: int,
         dropout_rate: float = 0.1,
         sequence_length: int = 1024,
@@ -94,7 +95,7 @@ class FixedPositionalEncoding(nn.Module):
 
 class LearnablePositionalEncoding(nn.Module):
     def __init__(
-        self, hidden_dim: int, dropout_rate: float = 0.1, sequence_length: int = 1024
+        self, *, hidden_dim: int, dropout_rate: float = 0.1, sequence_length: int = 1024
     ) -> None:
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_rate)
@@ -146,6 +147,7 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 
     def __init__(
         self,
+        *,
         hidden_dim: int,
         num_heads: int,
         feedforward_dim: int = 2048,
@@ -212,6 +214,7 @@ class TransformerBatchNormEncoderLayer(nn.modules.Module):
 class TSTransformerEncoder(nn.Module):
     def __init__(
         self,
+        *,
         input_dim: int,
         sequence_length: int,
         hidden_dim: int,
@@ -222,7 +225,6 @@ class TSTransformerEncoder(nn.Module):
         pos_encoding: str = "fixed",
         activation: str = "gelu",
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH,
-        *,
         freeze: bool = False,
     ) -> None:
         super().__init__()
@@ -233,7 +235,9 @@ class TSTransformerEncoder(nn.Module):
 
         self.project_inp = nn.Linear(input_dim, hidden_dim)
         self.pos_enc = get_pos_encoder(pos_encoding)(
-            hidden_dim, dropout_rate=dropout_rate * (1.0 - freeze), sequence_length=sequence_length
+            hidden_dim=hidden_dim,
+            dropout_rate=dropout_rate * (1.0 - freeze),
+            sequence_length=sequence_length,
         )
 
         if normalization_layer_type == NormalizationLayerType.CHANNEL:
@@ -246,10 +250,10 @@ class TSTransformerEncoder(nn.Module):
             )
         else:
             encoder_layer = TransformerBatchNormEncoderLayer(
-                hidden_dim,
-                self.num_heads,
-                feedforward_dim,
-                dropout_rate * (1.0 - freeze),
+                hidden_dim=hidden_dim,
+                num_heads=self.num_heads,
+                feedforward_dim=feedforward_dim,
+                dropout_rate=dropout_rate * (1.0 - freeze),
                 activation=activation,
             )
 

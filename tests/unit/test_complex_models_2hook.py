@@ -78,10 +78,10 @@ class TestSeries2VecTwoHookContract:
     def test_get_encoder_returns_nn_module(self) -> None:
         """_get_encoder returns an nn.Module (Series2VecNetwork), not a bound method."""
         model = Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
+            input_dim=3,
+            embedding_dim=8,
             num_heads=2,
-            representation_dims=4,
+            representation_dim=4,
             encoder_kernel_size=8,
         )
         encoder = model._get_encoder()
@@ -92,10 +92,10 @@ class TestSeries2VecTwoHookContract:
     def test_get_encoder_returns_network(self) -> None:
         """_get_encoder returns self.network, not self.network.encode."""
         model = Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
+            input_dim=3,
+            embedding_dim=8,
             num_heads=2,
-            representation_dims=4,
+            representation_dim=4,
             encoder_kernel_size=8,
         )
         encoder = model._get_encoder()
@@ -104,10 +104,10 @@ class TestSeries2VecTwoHookContract:
     def test_encode_batch_calls_encoder_encode(self) -> None:
         """_encode_batch calls encoder.encode(batch_x) without unsqueeze for VECTOR."""
         model = Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
+            input_dim=3,
+            embedding_dim=8,
             num_heads=2,
-            representation_dims=4,
+            representation_dim=4,
             encoder_kernel_size=8,
         )
         encoder = model._get_encoder()
@@ -132,10 +132,10 @@ class TestSeries2VecTwoHookContract:
     def test_encode_output_shape(self) -> None:
         """encode() produces (B, representation_dims) output with VECTOR default."""
         model = Series2Vec(
-            input_dims=3,
-            embedding_dims=8,
+            input_dim=3,
+            embedding_dim=8,
             num_heads=2,
-            representation_dims=4,
+            representation_dim=4,
             encoder_kernel_size=8,
         )
         data = torch.randn(4, 20, 3)

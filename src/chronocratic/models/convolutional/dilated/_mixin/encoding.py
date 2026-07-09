@@ -449,6 +449,7 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         else:
             # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
             output_tensor = concat_last_step_features(
-                output_trend_tensor, output_seasonality_tensor
+                trend_embeddings=output_trend_tensor,
+                seasonality_embeddings=output_seasonality_tensor,
             )
         return output_tensor

@@ -44,6 +44,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
 
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dim: int,
         latent_dim: int,

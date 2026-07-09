@@ -40,6 +40,7 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         representation_dim: int = 128,
         alpha: float = 1.0,
@@ -49,7 +50,6 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
         projection_dim: int = 128,
         sync_dist: bool = False,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()

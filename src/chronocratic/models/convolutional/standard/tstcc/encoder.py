@@ -33,6 +33,7 @@ class TCCEncoder(nn.Module):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         conv_kernel_size: int,
         stride: int,
@@ -40,7 +41,6 @@ class TCCEncoder(nn.Module):
         dropout_rate: float = 0.35,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()

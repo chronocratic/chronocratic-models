@@ -25,11 +25,11 @@ class DisjoinEncoder(nn.Module):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         embedding_dim: int,
         representation_dim: int,
         kernel_size: int,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()

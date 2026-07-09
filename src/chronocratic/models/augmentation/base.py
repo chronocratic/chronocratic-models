@@ -96,7 +96,7 @@ class AugmentationTrainingStrategy(ABC):
     schedules.
     """
 
-    def __init__(self, training_ratio_step: int = 1) -> None:
+    def __init__(self, *, training_ratio_step: int = 1) -> None:
         """Initialize the training strategy.
 
         Args:

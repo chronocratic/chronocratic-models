@@ -87,8 +87,12 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         inverse_dropout = dropout_tuple[::-1]
 
         rnn_cls = _RNN_CLASSES[recurrent_cell_type]
-        self._encoder = _build_encoder(rnn_cls, input_dim, layers, dropout_tuple)
-        self._decoder = _build_decoder(rnn_cls, input_dim, inverse_layers, inverse_dropout)
+        self._encoder = _build_encoder(
+            rnn_cls=rnn_cls, input_dim=input_dim, layers=layers, dropout=dropout_tuple
+        )
+        self._decoder = _build_decoder(
+            rnn_cls=rnn_cls, input_dim=input_dim, layers=inverse_layers, dropout=inverse_dropout
+        )
         self.loss_fn: nn.Module = _LOSS_FNS[loss]()
 
     @property

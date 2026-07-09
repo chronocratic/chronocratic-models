@@ -38,21 +38,21 @@ from chronocratic.models import (
 
 def _make_mcl() -> MCL:
     return MCL(
-        input_dims=3,
-        output_dims=16,
+        input_dim=3,
+        representation_dim=16,
         encoder_channels=(16, 32, 16),
         encoder_kernels=(5, 3, 3),
         encoder_dilations=(1, 2, 4),
-        projection_dims=16,
+        projection_dim=16,
     )
 
 
 def _make_tstcc() -> TSTCC:
     return TSTCC(
-        input_dims=3,
+        input_dim=3,
         conv_kernel_size=5,
         stride=2,
-        output_dims=16,
+        representation_dim=16,
         encoder_channels=(8, 16),
         encoder_inner_kernels=(5, 5),
         temporal_contrast_hidden_dim=32,
@@ -62,12 +62,12 @@ def _make_tstcc() -> TSTCC:
 
 def _make_series2vec() -> Series2Vec:
     return Series2Vec(
-        input_dims=3,
-        embedding_dims=8,
-        representation_dims=16,
+        input_dim=3,
+        embedding_dim=8,
+        representation_dim=16,
         encoder_kernel_size=4,
         num_heads=2,
-        feedforward_dims=32,
+        feedforward_dim=32,
     )
 
 
@@ -78,15 +78,15 @@ def _make_tst() -> TST:
 
 
 def _make_ts2vec() -> TS2Vec:
-    return TS2Vec(input_dims=3, hidden_dims=16, output_dims=32, depth=2)
+    return TS2Vec(input_dim=3, hidden_dim=16, representation_dim=32, depth=2)
 
 
 def _make_cost() -> CoST:
     return CoST(
-        input_dims=3,
+        input_dim=3,
         sequence_length=32,
-        hidden_dims=16,
-        output_dims=32,
+        hidden_dim=16,
+        representation_dim=32,
         depth=2,
         max_train_length=32,
         queue_size=8,
@@ -94,23 +94,23 @@ def _make_cost() -> CoST:
 
 
 def _make_autotcl() -> AutoTCL:
-    return AutoTCL(input_dims=3, hidden_dims=16, output_dims=32, depth=2, max_train_length=32)
+    return AutoTCL(input_dim=3, hidden_dim=16, representation_dim=32, depth=2, max_train_length=32)
 
 
 def _make_timevae() -> TimeVAE:
-    return TimeVAE(sequence_length=32, input_dims=3, latent_dim=8, hidden_layer_sizes=(16, 32))
+    return TimeVAE(sequence_length=32, input_dim=3, latent_dim=8, hidden_layer_sizes=(16, 32))
 
 
 def _make_timenet() -> TimeNet:
-    return TimeNet(input_dims=3, hidden_dims=16, depth=1)
+    return TimeNet(input_dim=3, hidden_dim=16, depth=1)
 
 
 def _make_recurrentae() -> RecurrentAutoEncoder:
-    return RecurrentAutoEncoder(input_dims=3, layers=(16,))
+    return RecurrentAutoEncoder(input_dim=3, layers=(16,))
 
 
 # Mapping: model name -> (factory, input_shape)
-# All shapes use batch_size=1, sequence_length=32, input_dims=3.
+# All shapes use batch_size=1, sequence_length=32, input_dim=3.
 MODEL_PARAMS: dict[str, tuple] = {
     "MCL": (_make_mcl, (1, 32, 3)),
     "TSTCC": (_make_tstcc, (1, 32, 3)),

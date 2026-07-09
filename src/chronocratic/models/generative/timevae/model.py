@@ -19,6 +19,7 @@ from chronocratic.models.utils.helpers import _warn_sequence_fallback
 class TimeVAEEncoder(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dim: int,
         hidden_layer_sizes: tuple[int, ...],
@@ -86,13 +87,13 @@ class TimeVAEEncoder(nn.Module):
 class TimeVAEDecoder(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dim: int,
         hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
         trend_poly: int = 0,
         custom_seasonality: tuple[Seasonality, ...] | None = None,
-        *,
         conv_kernel_size: int = 3,
         conv_stride: int = 2,
         use_residual_conn: bool = True,
@@ -109,26 +110,36 @@ class TimeVAEDecoder(nn.Module):
         self.conv_stride = conv_stride
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
-                self.sequence_length, self.input_dim, self.latent_dim, self.trend_poly
+                sequence_length=self.sequence_length,
+                input_dims=self.input_dim,
+                latent_dim=self.latent_dim,
+                trend_poly=self.trend_poly,
             )
         if self.custom_seasonality is not None and len(self.custom_seasonality) > 0:
             self.seasonal_layer = SeasonalLayer(
-                self.sequence_length, self.input_dim, self.latent_dim, self.custom_seasonality
+                sequence_length=self.sequence_length,
+                input_dims=self.input_dim,
+                latent_dim=self.latent_dim,
+                custom_seasonality=self.custom_seasonality,
             )
         self.use_residual_conn = use_residual_conn
         self.encoder_last_dense_dim = encoder_last_dense_dim
-        self.level_model = LevelModel(self.latent_dim, self.input_dim, self.sequence_length)
+        self.level_model = LevelModel(
+            latent_dim=self.latent_dim,
+            input_dims=self.input_dim,
+            sequence_length=self.sequence_length,
+        )
 
         if use_residual_conn:
             if encoder_last_dense_dim is None:
                 msg = "encoder_last_dense_dim is required when use_residual_conn is True."
                 raise ValueError(msg)
             self.residual_conn = ResidualConnection(
-                self.sequence_length,
-                self.input_dim,
-                hidden_layer_sizes,
-                latent_dim,
-                encoder_last_dense_dim,
+                sequence_length=self.sequence_length,
+                input_dims=self.input_dim,
+                hidden_layer_sizes=hidden_layer_sizes,
+                latent_dim=latent_dim,
+                encoder_last_dense_dim=encoder_last_dense_dim,
             )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
@@ -204,6 +215,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dim: int,
         latent_dim: int = 8,
@@ -214,7 +226,6 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         conv_stride: int = 2,
         trend_poly: int = 0,
         custom_seasonality: tuple[tuple[int, int], ...] | None = None,
-        *,
         use_residual_conn: bool = True,
     ) -> None:
         super().__init__(

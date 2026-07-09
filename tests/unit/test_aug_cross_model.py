@@ -46,8 +46,8 @@ class TestCrossModelReuse:
     def test_full_overlap_pair_into_ts2vec(self) -> None:
         """FullOverlapProducer(Jitter) injected into TS2Vec trains 1 step with finite loss."""
         aug = FullOverlapProducer(aug=Jitter(JitterParameters(sigma=0.1)))
-        model = TS2Vec(input_dims=1, augmentation=aug)
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
+        model = TS2Vec(input_dim=1, augmentation=aug)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 
@@ -85,8 +85,8 @@ class TestCrossModelReuse:
             [Jitter(JitterParameters(sigma=0.05)), Scaling(ScalingParameters(sigma=0.05))]
         )
         aug = FullOverlapProducer(aug=composed)
-        model = TS2Vec(input_dims=1, augmentation=aug)
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
+        model = TS2Vec(input_dim=1, augmentation=aug)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=1)
         assert len(losses) == 1
         assert math.isfinite(losses[0].item())
 

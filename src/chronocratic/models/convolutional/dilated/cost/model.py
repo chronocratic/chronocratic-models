@@ -309,8 +309,10 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         )
 
         seasonal_loss = instance_contrastive_loss(
-            query_seasonality_amplitude, key_seasonality_amplitude
-        ) + instance_contrastive_loss(query_seasonality_phase, key_seasonality_phase)
+            instance_1=query_seasonality_amplitude, instance_2=key_seasonality_amplitude
+        ) + instance_contrastive_loss(
+            instance_1=query_seasonality_phase, instance_2=key_seasonality_phase
+        )
 
         loss += self.seasonal_loss_weight * (seasonal_loss / 2)
 

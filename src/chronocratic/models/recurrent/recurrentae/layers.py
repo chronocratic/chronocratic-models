@@ -53,7 +53,7 @@ class _RNNLayer(nn.Module):
 
 
 def _build_encoder(
-    rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
+    *, rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
     encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(input_dim, layers[0], batch_first=True))]
     for i in range(1, len(layers)):
@@ -64,7 +64,7 @@ def _build_encoder(
 
 
 def _build_decoder(
-    rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
+    *, rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
     decoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(layers[0], layers[0], batch_first=True))]
     for i in range(1, len(layers)):
