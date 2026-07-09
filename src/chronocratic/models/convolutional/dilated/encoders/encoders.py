@@ -566,12 +566,12 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
 class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
     """
-    A class to encode time series data using a Convolutional Sparse Transformer based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
+    A class to encode time series data using a Dilated Convolutional Neural Network based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
 
     Parameters
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
-    hidden_dims: Number of hidden dimensions.
+    input_dim: Number of input dimensions.
+    representation_dim: Number of output dimensions (the feature dim of encode() output).
+    hidden_dim: Number of hidden dimensions.
     feature_extractor_depth: the depth of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
     conv_kernel_size: the size of the kernel for the convolutions.
@@ -580,18 +580,18 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
-        hidden_dims: int = 64,
+        input_dim: int,
+        representation_dim: int,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dims=input_dim,
+            output_dims=representation_dim,
+            hidden_dims=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -627,7 +627,7 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
             mask_mode: Masking strategy applied to the input.
 
         Returns:
-            Encoded tensor of shape ``(batch, time, output_dims)``.
+            Encoded tensor of shape ``(batch, time, representation_dim)``.
         """
         x = self._common_forward(x=x, mask_mode=mask_mode)
 
