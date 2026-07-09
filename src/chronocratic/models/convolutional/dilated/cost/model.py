@@ -29,14 +29,14 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     contrastive learning with a memory queue.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         sequence_length: Length of each input time series sample.
         kernel_sizes: DWT decomposition levels as kernel sizes.
         augmentation: Custom augmentation producer. Defaults to
             CosTRandomFunctionAugmentation.
         max_train_length: Maximum sequence length for training samples.
-        hidden_dims: Number of hidden units in each encoder layer.
-        output_dims: Number of output features produced by the encoder.
+        hidden_dim: Number of hidden units in each encoder layer.
+        representation_dim: Number of output features produced by the encoder.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Convolutional kernel size in the dilated encoder.
@@ -59,13 +59,13 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     def __init__(
         self,
         *,
-        input_dims: int,
+        input_dim: int,
         sequence_length: int,
         kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128),
         augmentation: AugmentationProducer[ViewPair] | None = None,
         max_train_length: int = 201,
-        hidden_dims: int = 64,
-        output_dims: int = 320,
+        hidden_dim: int = 64,
+        representation_dim: int = 320,
         depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -81,6 +81,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
 
         self.save_hyperparameters(ignore=["augmentation"])
 
+        self._input_dim = input_dim
+        self._hidden_dim = hidden_dim
+        self._representation_dim = representation_dim
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._sync_dist = sync_dist
@@ -106,9 +109,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         length = min(max_train_length, sequence_length)
 
         self.query_encoder = CoSTTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=depth,
             dropout_rate=dropout_rate,
             kernel_sizes=kernel_sizes,
@@ -117,18 +120,18 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
             mask_mode=mask_mode,
         )
 
-        component_dims = self.query_encoder.component_dims
+        component_dim = self.query_encoder.component_dim
 
         self.query_projection_head = nn.Sequential(
-            nn.Linear(component_dims, component_dims),
+            nn.Linear(component_dim, component_dim),
             nn.ReLU(),
-            nn.Linear(component_dims, component_dims),
+            nn.Linear(component_dim, component_dim),
         )
 
         self.key_encoder = CoSTTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=depth,
             dropout_rate=dropout_rate,
             kernel_sizes=kernel_sizes,
@@ -138,9 +141,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         )
 
         self.key_projection_head = nn.Sequential(
-            nn.Linear(component_dims, component_dims),
+            nn.Linear(component_dim, component_dim),
             nn.ReLU(),
-            nn.Linear(component_dims, component_dims),
+            nn.Linear(component_dim, component_dim),
         )
 
         for param_query_encoder, param_key_encoder in zip(
@@ -159,13 +162,22 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         self.queue: torch.Tensor
         self.queue_insert_index: torch.Tensor
 
-        self.register_buffer("queue", F.normalize(torch.randn(component_dims, queue_size), dim=0))
+        self.register_buffer("queue", F.normalize(torch.randn(component_dim, queue_size), dim=0))
         self.register_buffer("queue_insert_index", torch.zeros(1, dtype=torch.long))
 
         self.queue_size = queue_size
         self.momentum = momentum
         self.temperature = temperature
         self.seasonal_loss_weight = seasonal_loss_weight
+
+    @property
+    def representation_dim(self) -> int:
+        """Return the full width of the encode() representation.
+
+        For CoST, this is the representation_dim config value (trend + season
+        concatenated internally), not component_dim.
+        """
+        return self._representation_dim
 
     def on_fit_start(self) -> None:
         """Initialize the numpy RNG after the trainer has set the PyTorch seed."""
