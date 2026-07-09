@@ -55,9 +55,7 @@ class TestAllModelsExposeRepresentationDim:
         assert model.representation_dim > 0
 
     def test_tstcc(self) -> None:
-        model = TSTCC(
-            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16
-        )
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         assert hasattr(model, "representation_dim")
         assert model.representation_dim == 16
 
@@ -110,9 +108,7 @@ class TestAllModelsExposeRepresentationDim:
         assert model.representation_dim > 0
 
     def test_recurrent_autoencoder(self) -> None:
-        model = RecurrentAutoEncoder(
-            **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
-        )
+        model = RecurrentAutoEncoder(**vars(RecurrentAutoEncoderModelParameters(input_dim=1)))
         assert hasattr(model, "representation_dim")
         assert isinstance(model.representation_dim, int)
         assert model.representation_dim > 0
@@ -133,9 +129,7 @@ class TestRepresentationDimMatchesEncodeOutput:
         assert reps.shape[-1] == model.representation_dim
 
     def test_tstcc_encode_output_matches(self) -> None:
-        model = TSTCC(
-            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16
-        )
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         x = torch.randn(2, 100, 1)
         reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
@@ -185,9 +179,7 @@ class TestRepresentationDimMatchesEncodeOutput:
         assert reps.shape[-1] == model.representation_dim
 
     def test_recurrent_autoencoder_encode_output_matches(self) -> None:
-        model = RecurrentAutoEncoder(
-            **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
-        )
+        model = RecurrentAutoEncoder(**vars(RecurrentAutoEncoderModelParameters(input_dim=1)))
         x = torch.randn(2, 100, 1)
         reps = model.encode(x, batch_size=2)
         assert reps.shape[-1] == model.representation_dim
@@ -202,47 +194,23 @@ class TestTSTRepresentationDimFix:
     """D-03, D-06: TST property returns hidden_dim, factory computes flatten inline."""
 
     def test_tst_representation_dim_is_hidden_dim(self) -> None:
-        model = TST(
-            input_dim=2,
-            sequence_length=10,
-            hidden_dim=8,
-            num_heads=2,
-            depth=1,
-        )
+        model = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         assert model.representation_dim == 8
         # Must NOT be hidden_dim * sequence_length
         assert model.representation_dim != 80
 
     def test_tst_supervised_factory_in_features(self) -> None:
-        backbone = TST(
-            input_dim=2,
-            sequence_length=10,
-            hidden_dim=8,
-            num_heads=2,
-            depth=1,
-        )
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
-            backbone=backbone,
-            num_outputs=3,
-            task="classification",
-            freeze_backbone=False,
+            backbone=backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         expected = backbone.representation_dim * backbone.encoder.sequence_length
         assert module._head._fc.in_features == expected
 
     def test_tst_supervised_forward_shape(self) -> None:
-        backbone = TST(
-            input_dim=2,
-            sequence_length=10,
-            hidden_dim=8,
-            num_heads=2,
-            depth=1,
-        )
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
-            backbone=backbone,
-            num_outputs=3,
-            task="classification",
-            freeze_backbone=False,
+            backbone=backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)
@@ -282,7 +250,9 @@ class TestPreservedNames:
     """D-04: latent_dim (TimeVAE) and layers (RecurrentAE) remain unchanged."""
 
     def test_timevae_latent_dim_preserved(self) -> None:
-        model = TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32, latent_dim=16)))
+        model = TimeVAE(
+            **vars(TimeVAEModelParameters(input_dim=1, sequence_length=32, latent_dim=16))
+        )
         assert model.latent_dim == 16
         assert model.representation_dim == 16
 
@@ -320,9 +290,7 @@ class TestNoEncodingOutputDim:
             TST(**vars(TSTModelParameters(input_dim=1, sequence_length=100))),
             TimeNet(**vars(TimeNetModelParameters(input_dim=1))),
             TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32))),
-            RecurrentAutoEncoder(
-                **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
-            ),
+            RecurrentAutoEncoder(**vars(RecurrentAutoEncoderModelParameters(input_dim=1))),
         ]
         for m in models:
             assert not hasattr(m, "encoding_output_dim"), (
@@ -419,9 +387,7 @@ class TestRepresentationBackboneProtocol:
             TST(**vars(TSTModelParameters(input_dim=1, sequence_length=100))),
             TimeNet(**vars(TimeNetModelParameters(input_dim=1))),
             TimeVAE(**vars(TimeVAEModelParameters(input_dim=1, sequence_length=32))),
-            RecurrentAutoEncoder(
-                **vars(RecurrentAutoEncoderModelParameters(input_dim=1))
-            ),
+            RecurrentAutoEncoder(**vars(RecurrentAutoEncoderModelParameters(input_dim=1))),
         ]
         for m in models:
             assert isinstance(m, RepresentationBackbone), (
@@ -443,8 +409,18 @@ class TestRepresentationBackboneDocstring:
 
     def test_lists_all_ten_models(self, docstring: str) -> None:
         """Protocol docstring should reference all 10 model names."""
-        expected = {"TST", "Series2Vec", "TSTCC", "MCL", "TS2Vec", "AutoTCL",
-                     "CoST", "TimeNet", "TimeVAE", "RecurrentAutoEncoder"}
+        expected = {
+            "TST",
+            "Series2Vec",
+            "TSTCC",
+            "MCL",
+            "TS2Vec",
+            "AutoTCL",
+            "CoST",
+            "TimeNet",
+            "TimeVAE",
+            "RecurrentAutoEncoder",
+        }
         found = {name for name in expected if name in docstring}
         missing = expected - found
         assert not missing, f"Missing models in RepresentationBackbone docstring: {missing}"
@@ -467,6 +443,7 @@ class TestSupervisedInitDocstring:
     @pytest.fixture
     def docstring(self) -> str:
         from chronocratic.models import supervised
+
         return supervised.__doc__ or ""
 
     def test_example_uses_singular_names(self, docstring: str) -> None:
@@ -511,10 +488,10 @@ class TestContributingMd:
                 if stripped.startswith("#"):
                     continue
                 # Param names in code should be singular
-                if re.search(r"\b(input_dims|hidden_dims|feedforward_dims|output_dims)\b", stripped):
-                    pytest.fail(
-                        f"Example code uses plural param name: {stripped}"
-                    )
+                if re.search(
+                    r"\b(input_dims|hidden_dims|feedforward_dims|output_dims)\b", stripped
+                ):
+                    pytest.fail(f"Example code uses plural param name: {stripped}")
 
     def test_has_kw_only_convention_documented(self, content: str) -> None:
         """CONTRIBUTING.md should document the keyword-only signature convention."""
@@ -581,7 +558,11 @@ class TestTowncrierFragment:
         fragment = Path(__file__).resolve().parents[2] / "changelog.d" / "12.changed.md"
         content = fragment.read_text()
         assert len(content.strip()) > 0
-        assert "dimension" in content.lower() or "rename" in content.lower() or "singular" in content.lower()
+        assert (
+            "dimension" in content.lower()
+            or "rename" in content.lower()
+            or "singular" in content.lower()
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -592,14 +573,17 @@ class TestTowncrierFragment:
 class TestSharedTestFilesUseSingular:
     """Plan 12: Shared test files should use singular param names."""
 
-    @pytest.mark.parametrize("test_file", [
-        "test_from_config.py",
-        "test_backbone_representation_dim.py",
-        "test_encoder_decoder_contract.py",
-        "test_smoke.py",
-        "test_supervised_package.py",
-        "test_tstcc_supervised.py",
-    ])
+    @pytest.mark.parametrize(
+        "test_file",
+        [
+            "test_from_config.py",
+            "test_backbone_representation_dim.py",
+            "test_encoder_decoder_contract.py",
+            "test_smoke.py",
+            "test_supervised_package.py",
+            "test_tstcc_supervised.py",
+        ],
+    )
     def test_file_uses_singular_params(self, test_file: str) -> None:
         """Test file should use singular param names for model construction."""
         filepath = Path(__file__).resolve().parent / test_file
@@ -607,12 +591,17 @@ class TestSharedTestFilesUseSingular:
         # Check for old plural param names that should have been renamed
         # Exclude encoder_channels, encoder_kernels, encoder_dilations
         plural_names = {
-            "input_dims", "hidden_dims", "output_dims", "representation_dims",
-            "feedforward_dims", "embedding_dims", "projection_dims"
+            "input_dims",
+            "hidden_dims",
+            "output_dims",
+            "representation_dims",
+            "feedforward_dims",
+            "embedding_dims",
+            "projection_dims",
         }
         violations = []
         for match in re.finditer(r"\b(" + "|".join(plural_names) + r")\b", content):
-            line_num = content[:match.start()].count("\n") + 1
+            line_num = content[: match.start()].count("\n") + 1
             line = content.split("\n")[line_num - 1]
             # Allow in comments about old names (migration breadcrumbs)
             if line.strip().startswith("#"):
@@ -620,5 +609,6 @@ class TestSharedTestFilesUseSingular:
             violations.append(f"  Line {line_num}: {match.group()} in: {line.strip()}")
 
         assert not violations, (
-            f"{test_file}: found plural param names that should be singular:\n" + "\n".join(violations)
+            f"{test_file}: found plural param names that should be singular:\n"
+            + "\n".join(violations)
         )
