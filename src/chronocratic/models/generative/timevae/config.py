@@ -16,7 +16,7 @@ class TimeVAEModelParameters:
 
     Args:
         sequence_length: Length of each input time series sample.
-        input_dim: Number of input features (channels); formerly `input_dims` (D-01).
+        input_dim: Number of input features (channels).
         latent_dim: Dimensionality of the latent space.
         reconstruction_weight: Weight applied to the reconstruction term
             of the VAE loss (the KL term is unweighted).

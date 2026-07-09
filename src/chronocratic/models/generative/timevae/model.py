@@ -198,7 +198,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Feature dim of the ``encode()`` output.
 
         For TimeVAE this equals ``latent_dim``, the dimensionality of
-        the stochastic bottleneck (D-03, D-04).
+        the stochastic bottleneck.
         """
         return self.latent_dim
 
