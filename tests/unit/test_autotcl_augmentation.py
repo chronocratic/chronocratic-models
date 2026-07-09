@@ -235,5 +235,5 @@ class TestAutoTCLModelSingularDimensions:
         model.eval()
         x = torch.randn(4, 50, 2)
         with torch.no_grad():
-            encoded = model.encode(x)
+            encoded = model.encode(x, batch_size=4, num_workers=0)
         assert encoded.shape[-1] == model.representation_dim

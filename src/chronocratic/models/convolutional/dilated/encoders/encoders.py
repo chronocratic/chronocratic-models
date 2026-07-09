@@ -109,10 +109,10 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     Parameters
     ----------
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
+    input_dim: Number of input dimensions.
+    representation_dim: Number of output dimensions (the feature dim of encode() output).
     kernel_sizes: Tuple of kernel sizes for the convolutions.
-    hidden_dims: Number of hidden dimensions.
+    hidden_dim: Number of hidden dimensions.
     feature_extractor_depth: the depth of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
     conv_kernel_size: the size of the kernel for the convolutions.
@@ -121,19 +121,19 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
+        input_dim: int,
+        representation_dim: int,
         kernel_sizes: tuple[int, ...],
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dims=input_dim,
+            output_dims=representation_dim,
+            hidden_dims=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -142,7 +142,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         self.kernel_sizes = kernel_sizes
         self.temporal_feature_decoders = nn.ModuleList(
-            [nn.Conv1d(output_dims, output_dims, k, padding=k - 1) for k in kernel_sizes]
+            [nn.Conv1d(representation_dim, representation_dim, k, padding=k - 1) for k in kernel_sizes]
         )
 
     def _process_not_nan_mask(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -192,12 +192,13 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
         Args:
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: If ``True``, return the raw TCN output
-                ``(batch, time, output_dims)`` before trend decoding.
+                ``(batch, time, representation_dim)`` before trend decoding.
             mask_mode: Masking strategy applied to the input.
 
         Returns:
-            Trend tensor of shape ``(batch, time, output_dims)``, or the raw
-            TCN output of the same shape when ``return_tcn_output`` is ``True``.
+            Trend tensor of shape ``(batch, time, representation_dim)``, or the
+            raw TCN output of the same shape when ``return_tcn_output`` is
+            ``True``.
         """
         x = self._common_forward(x=x, mask_mode=mask_mode)
 
@@ -219,10 +220,10 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
+        input_dim: int,
+        output_dim: int,
         kernel_sizes: tuple[int, ...],
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -243,10 +244,10 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         self.hard_mask = hard_mask
 
         self.augmentation_network = AutoTCLTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
+            input_dim=input_dim,
+            representation_dim=output_dim,
             kernel_sizes=kernel_sizes,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -254,12 +255,12 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         )
 
         self.factor_augmentation_network = nn.Sequential(
-            nn.Linear(output_dims, num_augmentation_channels), nn.Sigmoid()
+            nn.Linear(output_dim, num_augmentation_channels), nn.Sigmoid()
         )
         self.augmentation_projector = nn.Sequential(
-            nn.Linear(output_dims, output_dims),
+            nn.Linear(output_dim, output_dim),
             nn.ReLU(),
-            nn.Linear(output_dims, num_augmentation_channels),
+            nn.Linear(output_dim, num_augmentation_channels),
             nn.Sigmoid(),
         )
 

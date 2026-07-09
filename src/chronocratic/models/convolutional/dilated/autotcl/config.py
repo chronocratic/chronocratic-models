@@ -17,10 +17,10 @@ class AutoTCLModelParameters:
     """Configuration for the AutoTCL model.
 
     Args:
-        input_dims: Number of input features (channels) in the time series.
+        input_dim: Number of input features (channels) in the time series.
         kernel_sizes: DWT decomposition levels as kernel sizes.
-        hidden_dims: Number of hidden units in each encoder layer.
-        output_dims: Number of output features produced by the encoder.
+        hidden_dim: Number of hidden units in each encoder layer.
+        representation_dim: Width of the vector encode() returns.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Size of the convolutional kernel in each layer.
@@ -39,10 +39,11 @@ class AutoTCLModelParameters:
             processes.
     """
 
-    input_dims: int
+    input_dim: int
     kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
-    hidden_dims: int = 64
-    output_dims: int = 320
+    hidden_dim: int = 64
+    # migration(a13): renamed from output_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.  # noqa: E501
+    representation_dim: int = 320
     depth: int = 10
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3

@@ -36,12 +36,12 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     feature extraction.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         kernel_sizes: DWT decomposition levels as kernel sizes.
         augmentation: Custom augmentation producer. Defaults to a trainable
             neural augmentation network.
-        hidden_dims: Number of hidden units in each encoder layer.
-        output_dims: Number of output features produced by the encoder.
+        hidden_dim: Number of hidden units in each encoder layer.
+        representation_dim: Width of the vector encode() returns.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Size of the convolutional kernel in each layer.
@@ -68,11 +68,11 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     def __init__(
         self,
         *,
-        input_dims: int,
+        input_dim: int,
         kernel_sizes: tuple[int, ...] = (3, 5, 7),
         augmentation: AugmentationProducer[SingleView] | None = None,
-        hidden_dims: int = 64,
-        output_dims: int = 320,
+        hidden_dim: int = 64,
+        representation_dim: int = 320,
         depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -88,6 +88,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
         self.save_hyperparameters(ignore=["augmentation"])
 
+        self._representation_dim = representation_dim
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._meta_learning_rate = meta_learning_rate
@@ -103,7 +104,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
             )
 
             self._augmentation: AugmentationProducer[SingleView] = AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=input_dims),
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=input_dim),
                 training_strategy=RIPTrainingStrategy(),
             )
         else:
@@ -112,10 +113,10 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self.automatic_optimization = False
 
         self._encoder = AutoTCLTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
             kernel_sizes=kernel_sizes,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -124,6 +125,11 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
 
         self._averaged_encoder = AveragedModel(self._encoder)
         self._averaged_encoder.update_parameters(self._encoder)
+
+    @property
+    def representation_dim(self) -> int:
+        """Return the feature dim of the encode() output."""
+        return self._representation_dim
 
     @property
     def encoder(self) -> AutoTCLTimeSeriesEncoder:

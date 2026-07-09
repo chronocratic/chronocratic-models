@@ -51,11 +51,11 @@ class AutoTCLNeuralNetworkAugmentationParameters:
     unpacking to instantiate the encoder directly.
 
     Args:
-        input_dims: Number of input features (channels).
-        output_dims: Number of output features produced by the encoder.
+        input_dim: Number of input features (channels).
+        output_dim: Number of output features produced by the encoder.
         kernel_sizes: DWT decomposition levels as kernel sizes. Empty
             list means the encoder selects levels automatically.
-        hidden_dims: Number of hidden units in each encoder layer.
+        hidden_dim: Number of hidden units in each encoder layer.
         feature_extractor_depth: Number of encoder layers.
         dropout_rate: Dropout probability after each encoder layer.
         conv_kernel_size: Size of the convolutional kernel.
@@ -69,10 +69,10 @@ class AutoTCLNeuralNetworkAugmentationParameters:
             Merges into dataclass defaults before building the encoder.
     """
 
-    input_dims: int
-    output_dims: int = 16
+    input_dim: int
+    output_dim: int = 16
     kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
-    hidden_dims: int = 64
+    hidden_dim: int = 64
     feature_extractor_depth: int = 1
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3
