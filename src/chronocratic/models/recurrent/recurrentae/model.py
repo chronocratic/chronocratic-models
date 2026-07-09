@@ -63,6 +63,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         layers: tuple[int, ...] = (16, 8),
         recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM,

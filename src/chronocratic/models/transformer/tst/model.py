@@ -88,6 +88,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         sequence_length: int,
         hidden_dim: int = 64,
@@ -98,7 +99,6 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         pos_encoding: str = "fixed",
         activation: str = "gelu",
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH,
-        *,
         freeze: bool = False,
         learning_rate: float = 1e-3,
         lr_step: tuple[int, ...] | None = None,
