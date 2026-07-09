@@ -49,8 +49,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install towncrier
-        run: pip install towncrier
+      - name: Install uv
+        run: pip install uv
+      - name: Install dependencies
+        run: uv sync --no-install-project
 
 
       # A `changelog:<type>` label wins; otherwise infer from the Conventional
@@ -142,4 +144,4 @@ jobs:
           fi
 
       - name: Verify a fragment is present
-        run: towncrier check --compare-with origin/${{ github.base_ref }}
+        run: uv run towncrier check --compare-with origin/${{ github.base_ref }}
