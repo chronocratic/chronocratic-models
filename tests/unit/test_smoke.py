@@ -163,7 +163,7 @@ class TestModelTrainingSmoke:
     def test_autotcl_trains_5_steps(self) -> None:
         """AutoTCL with neural network augmentation trains 5 steps (VER-03)."""
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dim=1, output_dim=320, kernel_sizes=[3]
+            input_dim=1, representation_dim=320, kernel_sizes=[3]
         )
         model = AutoTCL(
             input_dim=1,
