@@ -133,6 +133,54 @@ class TestTS2VecTraining:
 
 
 # --------------------------------------------------------------------------- #
+# TS2Vec dimension rename + representation_dim property tests
+# --------------------------------------------------------------------------- #
+
+
+class TestTS2VecDimensionRename:
+    """TS2Vec uses singular dimension names (input_dim, hidden_dim, representation_dim)."""
+
+    def test_accepts_singular_input_dim(self) -> None:
+        """TS2Vec constructor accepts input_dim (singular)."""
+        model = TS2Vec(input_dim=1)
+
+        assert model._encoder.input_fc_layer.in_features == 1  # noqa: SLF001
+
+    def test_accepts_singular_hidden_dim(self) -> None:
+        """TS2Vec constructor accepts hidden_dim (singular)."""
+        model = TS2Vec(input_dim=1, hidden_dim=128)
+
+        assert model._encoder.input_fc_layer.out_features == 128  # noqa: SLF001
+
+    def test_accepts_singular_representation_dim(self) -> None:
+        """TS2Vec constructor accepts representation_dim (singular, formerly output_dims)."""
+        model = TS2Vec(input_dim=1, representation_dim=256)
+
+        # Last conv layer in feature_extractor outputs representation_dim channels
+        last_conv = model._encoder.feature_extractor.layers[-1][0]  # noqa: SLF001
+        assert last_conv.out_channels == 256
+
+    def test_representation_dim_property_returns_config_value(self) -> None:
+        """TS2Vec.representation_dim property returns the configured representation_dim."""
+        model = TS2Vec(input_dim=1, hidden_dim=64, representation_dim=320)
+
+        assert model.representation_dim == 320
+
+    def test_representation_dim_matches_encode_output_feature_dim(self) -> None:
+        """TS2Vec.representation_dim equals the last axis of encode() output."""
+        rep_dim = 128
+        model = TS2Vec(input_dim=3, hidden_dim=64, representation_dim=rep_dim)
+        model.eval()
+
+        data = torch.randn(2, 50, 3)
+        with torch.no_grad():
+            encoded = model.encode(data)
+
+        assert encoded.shape[-1] == rep_dim
+        assert model.representation_dim == rep_dim
+
+
+# --------------------------------------------------------------------------- #
 # Determinism test (SC-7)
 # --------------------------------------------------------------------------- #
 
