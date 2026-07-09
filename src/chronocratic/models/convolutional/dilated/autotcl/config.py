@@ -42,8 +42,7 @@ class AutoTCLModelParameters:
     input_dim: int
     kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     hidden_dim: int = 64
-    # migration(a13): renamed from output_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.  # noqa: E501
-    representation_dim: int = 320
+    representation_dim: int = 320  # renamed from `output_dims` in the original codebase
     depth: int = 10
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3

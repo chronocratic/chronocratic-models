@@ -34,7 +34,7 @@ class TS2VecModelParameters:
 
     input_dim: int
     hidden_dim: int = 64
-    representation_dim: int = 320  # migration(a13): renamed from output_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.
+    representation_dim: int = 320  # renamed from `output_dims` in the original codebase
     depth: int = 10
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3

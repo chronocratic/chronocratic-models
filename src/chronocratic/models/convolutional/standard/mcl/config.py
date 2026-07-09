@@ -38,7 +38,7 @@ class MCLModelParameters:
     """
 
     input_dim: int
-    representation_dim: int = 128  # migration(a13): renamed from `output_dims` - width of the vector encode() returns. See CHANGELOG v0.1.0a13.
+    representation_dim: int = 128  # renamed from `output_dims` in the original codebase
     alpha: float = 1.0
     learning_rate: float = 1e-3
     encoder_channels: tuple[int, ...] = (128, 256, 128)

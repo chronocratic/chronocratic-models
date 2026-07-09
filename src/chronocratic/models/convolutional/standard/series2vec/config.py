@@ -53,8 +53,7 @@ class Series2VecModelParameters:
     embedding_dim: int = 16
     num_heads: int = 8
     feedforward_dim: int = 256
-    # migration(a13): renamed from representation_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.
-    representation_dim: int = 320
+    representation_dim: int = 320  # renamed from `representation_dims` in the original codebase
     dropout_rate: float = 0.01
     encoder_kernel_size: int = 8
     learning_rate: float = 1e-3

@@ -55,8 +55,7 @@ class TSTCCModelParameters:
     input_dim: int
     conv_kernel_size: int = 8
     stride: int = 1
-    # migration(a13): renamed from output_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.
-    representation_dim: int = 128
+    representation_dim: int = 128  # renamed from `output_dims` in the original codebase
     encoder_channels: tuple[int, ...] = (32, 64)
     encoder_inner_kernels: tuple[int, ...] = (8, 8)
     dropout_rate: float = 0.35

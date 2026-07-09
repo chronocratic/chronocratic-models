@@ -47,7 +47,7 @@ class CoSTModelParameters:
     kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     max_train_length: int = 201
     hidden_dim: int = 64
-    representation_dim: int = 320  # migration(a13): renamed from output_dims
+    representation_dim: int = 320  # renamed from `output_dims` in the original codebase
     depth: int = 10
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3
