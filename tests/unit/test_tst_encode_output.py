@@ -1,8 +1,8 @@
 """Tests for TST output-aware _encode_batch with VECTOR/SEQUENCE.
 
 Verifies TST (Time Series Transformer) correctly handles the EncodingOutputShape
-parameter: VECTOR returns (B, hidden_dims) via mean-pool, SEQUENCE returns
-(B, seq_len, hidden_dims) natively. Gradient flow and supported_outputs are
+parameter: VECTOR returns (B, hidden_dim) via mean-pool, SEQUENCE returns
+(B, seq_len, hidden_dim) natively. Gradient flow and supported_outputs are
 also tested.
 """
 
@@ -19,7 +19,7 @@ from chronocratic.models.transformer.tst.model import TST
 def tst_model() -> TST:
     """Create a small TST model for testing."""
     return TST(
-        input_dims=3, sequence_length=16, hidden_dims=8, num_heads=2, depth=1, feedforward_dims=32
+        input_dim=3, sequence_length=16, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=32
     )
 
 
@@ -27,20 +27,20 @@ class TestTSTEncodeBatchShapes:
     """TST._encode_batch returns correct shapes for VECTOR and SEQUENCE."""
 
     def test_encode_batch_vector_returns_2d(self, tst_model: TST) -> None:
-        """VECTOR produces (B, hidden_dims) via mean(dim=1)."""
+        """VECTOR produces (B, hidden_dim) via mean(dim=1)."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(4, 16, 3)
         result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.VECTOR)
         assert result.ndim == 2
-        assert result.shape == (4, 8)  # (B, hidden_dims)
+        assert result.shape == (4, 8)  # (B, hidden_dim)
 
     def test_encode_batch_sequence_returns_3d(self, tst_model: TST) -> None:
-        """SEQUENCE produces (B, seq_len, hidden_dims) natively."""
+        """SEQUENCE produces (B, seq_len, hidden_dim) natively."""
         encoder = tst_model._get_encoder()
         batch_x = torch.randn(4, 16, 3)
         result = tst_model._encode_batch(encoder, batch_x, output=EncodingOutputShape.SEQUENCE)
         assert result.ndim == 3
-        assert result.shape == (4, 16, 8)  # (B, seq_len, hidden_dims)
+        assert result.shape == (4, 16, 8)  # (B, seq_len, hidden_dim)
 
     def test_encode_batch_default_is_vector(self, tst_model: TST) -> None:
         """Default output produces VECTOR shape."""
@@ -124,29 +124,43 @@ class TestTSTSupportedOutputs:
         assert EncodingOutputShape.SEQUENCE in TST.supported_outputs
 
 
+class TestTSTRepresentationDim:
+    """representation_dim returns hidden_dim (not hidden_dim * sequence_length)."""
+
+    def test_representation_dim_equals_hidden_dim(self, tst_model: TST) -> None:
+        """representation_dim must equal hidden_dim per D-03."""
+        assert tst_model.representation_dim == 8  # hidden_dim
+
+    def test_representation_dim_is_not_flattened(self, tst_model: TST) -> None:
+        """representation_dim must NOT equal hidden_dim * sequence_length."""
+        flattened = tst_model._encoder.hidden_dim * tst_model._encoder.sequence_length
+        assert tst_model.representation_dim != flattened
+        assert tst_model.representation_dim == tst_model._encoder.hidden_dim
+
+
 class TestTSTEncodeBatchIntegration:
     """Integration tests via encode_batch() and encode()."""
 
     def test_encode_batch_vector(self, tst_model: TST) -> None:
-        """encode_batch() with VECTOR returns (B, hidden_dims)."""
+        """encode_batch() with VECTOR returns (B, hidden_dim)."""
         batch_x = torch.randn(3, 16, 3)
         result = tst_model.encode_batch(batch_x, output=EncodingOutputShape.VECTOR)
         assert result.shape == (3, 8)
 
     def test_encode_batch_sequence(self, tst_model: TST) -> None:
-        """encode_batch() with SEQUENCE returns (B, seq_len, hidden_dims)."""
+        """encode_batch() with SEQUENCE returns (B, seq_len, hidden_dim)."""
         batch_x = torch.randn(3, 16, 3)
         result = tst_model.encode_batch(batch_x, output=EncodingOutputShape.SEQUENCE)
         assert result.shape == (3, 16, 8)
 
     def test_encode_vector(self, tst_model: TST) -> None:
-        """encode() with VECTOR returns (N, hidden_dims)."""
+        """encode() with VECTOR returns (N, hidden_dim)."""
         data = torch.randn(5, 16, 3)
         result = tst_model.encode(data, batch_size=2, output=EncodingOutputShape.VECTOR)
         assert result.shape == (5, 8)
 
     def test_encode_sequence(self, tst_model: TST) -> None:
-        """encode() with SEQUENCE returns (N, seq_len, hidden_dims)."""
+        """encode() with SEQUENCE returns (N, seq_len, hidden_dim)."""
         data = torch.randn(5, 16, 3)
         result = tst_model.encode(data, batch_size=2, output=EncodingOutputShape.SEQUENCE)
         assert result.shape == (5, 16, 8)
