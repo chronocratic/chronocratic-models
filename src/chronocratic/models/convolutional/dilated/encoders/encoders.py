@@ -38,6 +38,7 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         output_dim: int,
         hidden_dim: int = 64,
@@ -121,6 +122,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         representation_dim: int,
         kernel_sizes: tuple[int, ...],
@@ -220,6 +222,7 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         output_dim: int,
         kernel_sizes: tuple[int, ...],
@@ -232,7 +235,6 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         gumbel_bias: float = 0.001,
         zeta: float = 1.0,
         gamma_zeta: float = 0.05,
-        *,
         hard_mask: bool = True,
     ) -> None:
 
@@ -439,6 +441,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         representation_dim: int,
         kernel_sizes: tuple[int, ...],
@@ -584,6 +587,7 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         representation_dim: int,
         hidden_dim: int = 64,

@@ -318,21 +318,21 @@ Plans:
 
 **Depends on:** Phase 11
 
-**Plans:** 14 plans
+**Plans:** 11/14 plans executed
 
 **Plan list:**
 
-- [ ] 12-01-PLAN.md — MCL: rename config + model + encoder, add representation_dim property (D-01, D-02, D-03)
-- [ ] 12-02-PLAN.md — TSTCC: rename config + model + encoder, update representation_dim property (D-01, D-02, D-03)
-- [ ] 12-03-PLAN.md — TS2Vec: rename config + model + TS2VecTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03)
-- [ ] 12-04-PLAN.md — TimeVAE: rename config + model, add representation_dim property (D-01, D-03, D-04)
-- [ ] 12-05-PLAN.md — TimeNet: rename config + model, add representation_dim property (D-01, D-03)
-- [ ] 12-06-PLAN.md — AutoTCL: rename config + model + AutoTCLTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03)
-- [ ] 12-07-PLAN.md — CoST: rename config + model + CoSTTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03, D-05)
-- [ ] 12-08-PLAN.md — RecurrentAE: rename config + model + layers, add representation_dim property (D-01, D-03, D-04)
-- [ ] 12-09-PLAN.md — Sweep remaining *_dims in encoders.py (D-01, D-02, D-05)
-- [ ] 12-10-PLAN.md — Series2Vec: rename config + model + network, update representation_dim property (D-01, D-02, D-03)
-- [ ] 12-11-PLAN.md — TST: rename config + model, FIX representation_dim property, update supervised factory (D-01, D-03, D-06)
+- [x] 12-01-PLAN.md — MCL: rename config + model + encoder, add representation_dim property (D-01, D-02, D-03)
+- [x] 12-02-PLAN.md — TSTCC: rename config + model + encoder, update representation_dim property (D-01, D-02, D-03)
+- [x] 12-03-PLAN.md — TS2Vec: rename config + model + TS2VecTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03)
+- [x] 12-04-PLAN.md — TimeVAE: rename config + model, add representation_dim property (D-01, D-03, D-04)
+- [x] 12-05-PLAN.md — TimeNet: rename config + model, add representation_dim property (D-01, D-03)
+- [x] 12-06-PLAN.md — AutoTCL: rename config + model + AutoTCLTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03)
+- [x] 12-07-PLAN.md — CoST: rename config + model + CoSTTimeSeriesEncoder, add representation_dim property (D-01, D-02, D-03, D-05)
+- [x] 12-08-PLAN.md — RecurrentAE: rename config + model + layers, add representation_dim property (D-01, D-03, D-04)
+- [x] 12-09-PLAN.md — Sweep remaining *_dims in encoders.py (D-01, D-02, D-05)
+- [x] 12-10-PLAN.md — Series2Vec: rename config + model + network, update representation_dim property (D-01, D-02, D-03)
+- [x] 12-11-PLAN.md — TST: rename config + model, FIX representation_dim property, update supervised factory (D-01, D-03, D-06)
 - [ ] 12-12-PLAN.md — Protocol + factory + utils + CONTRIBUTING.md + CHANGELOG + shared test updates (D-02, D-06, D-07, D-09)
 - [ ] 12-13-PLAN.md — Enforce kw-only signatures on all multi-param functions
 - [ ] 12-14-PLAN.md — Final verification: *_dims sweep, test suite, ruff, ty, graphify (D-01, D-03, D-07, D-08, D-10)

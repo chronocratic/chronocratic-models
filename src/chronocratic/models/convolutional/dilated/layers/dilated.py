@@ -21,6 +21,7 @@ class Conv1dDilatedEncoder(nn.Module):
 
     def __init__(
         self,
+        *,
         in_channels: int,
         channels: list[int],
         kernel_size: int,

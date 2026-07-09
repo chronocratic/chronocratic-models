@@ -18,7 +18,12 @@ if TYPE_CHECKING:
 
 class GRUWrapper(nn.Module):
     def __init__(
-        self, input_size: int, hidden_size: int, num_layers: int = 1, *, batch_first: bool = True
+        self,
+        *,
+        input_size: int,
+        hidden_size: int,
+        num_layers: int = 1,
+        batch_first: bool = True
     ) -> None:
         super().__init__()
         self.gru = nn.GRU(input_size, hidden_size, num_layers=num_layers, batch_first=batch_first)
@@ -56,6 +61,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
+        *,
         input_dim: int,
         hidden_dim: int = 64,
         depth: int = 3,

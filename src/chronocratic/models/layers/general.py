@@ -22,7 +22,7 @@ class BandedFourierLayer(nn.Module):
     """
 
     def __init__(
-        self, in_channels: int, out_channels: int, band: int, num_bands: int, length: int = 201
+        self, *, in_channels: int, out_channels: int, band: int, num_bands: int, length: int = 201
     ) -> None:
         super().__init__()
 
@@ -94,7 +94,7 @@ class BandedFourierLayer(nn.Module):
 
 class TrendLayer(nn.Module):
     def __init__(
-        self, sequence_length: int, input_dims: int, latent_dim: int, trend_poly: int
+        self, *, sequence_length: int, input_dims: int, latent_dim: int, trend_poly: int
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -125,6 +125,7 @@ class TrendLayer(nn.Module):
 class SeasonalLayer(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dims: int,
         latent_dim: int,
@@ -186,7 +187,7 @@ class SeasonalLayer(nn.Module):
 
 
 class LevelModel(nn.Module):
-    def __init__(self, latent_dim: int, input_dims: int, sequence_length: int) -> None:
+    def __init__(self, *, latent_dim: int, input_dims: int, sequence_length: int) -> None:
         super().__init__()
         self.latent_dim = latent_dim
         self.input_dims = input_dims
@@ -209,6 +210,7 @@ class LevelModel(nn.Module):
 class ResidualConnection(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
         input_dims: int,
         hidden_layer_sizes: Sequence[int],
