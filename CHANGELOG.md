@@ -16,6 +16,7 @@ for instructions on adding changelog fragments.
 ### Changed
 
 - **Breaking: dimension parameter naming unification.** All dimension parameters renamed from plural ``*_dims`` to singular ``*_dim`` (e.g., ``input_dims`` -> ``input_dim``, ``hidden_dims`` -> ``hidden_dim``, ``output_dims`` -> ``representation_dim``). The encode-output width parameter is now uniformly ``representation_dim`` across all 10 models. ``RepresentationBackbone`` protocol updated to list all implementers and define ``representation_dim`` as the feature dim of ``encode()`` output. CONTRIBUTING.md updated with canonical singular names table and keyword-only signature convention. ([#68](https://github.com/chronocratic/chronocratic-models/issues/68))
+- **Refactor: move distances to utils.** Distance modules (e.g., SoftDTW) relocated from ``chronocratic.models.distances`` to ``chronocratic.models.utils.distances``. Import paths updated accordingly.
 
 ### Breaking Changes
 
