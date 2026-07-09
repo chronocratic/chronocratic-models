@@ -17,9 +17,9 @@ class TS2VecModelParameters:
     """Configuration for the TS2Vec model.
 
     Args:
-        input_dims: Number of input features (channels) in the time series.
-        hidden_dims: Number of hidden units in each encoder layer.
-        output_dims: Number of output features produced by the encoder.
+        input_dim: Number of input features (channels) in the time series.
+        hidden_dim: Number of hidden units in each encoder layer.
+        representation_dim: Number of output features produced by the encoder.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Size of the convolutional kernel in each layer.
@@ -32,9 +32,9 @@ class TS2VecModelParameters:
             processes.
     """
 
-    input_dims: int
-    hidden_dims: int = 64
-    output_dims: int = 320
+    input_dim: int
+    hidden_dim: int = 64
+    representation_dim: int = 320  # migration(a13): renamed from output_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.
     depth: int = 10
     dropout_rate: float = 0.1
     conv_kernel_size: int = 3

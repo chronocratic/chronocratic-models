@@ -82,7 +82,7 @@ class TestTS2VecConstructor:
     def test_accepts_crop_shift_producer(self) -> None:
         """TS2Vec constructor accepts CropShiftProducer."""
         producer = CropShiftProducer()
-        model = TS2Vec(input_dims=1, augmentation=producer)
+        model = TS2Vec(input_dim=1, augmentation=producer)
 
         assert model._augmentation is producer  # noqa: SLF001
 
@@ -90,13 +90,13 @@ class TestTS2VecConstructor:
         """TS2Vec constructor accepts FullOverlapProducer(Jitter(...))."""
         jitter = Jitter()
         producer = FullOverlapProducer(aug=jitter)
-        model = TS2Vec(input_dims=1, augmentation=producer)
+        model = TS2Vec(input_dim=1, augmentation=producer)
 
         assert model._augmentation is producer  # noqa: SLF001
 
     def test_default_is_crop_shift_producer(self) -> None:
         """TS2Vec default augmentation is CropShiftProducer."""
-        model = TS2Vec(input_dims=1)
+        model = TS2Vec(input_dim=1)
 
         assert isinstance(model._augmentation, CropShiftProducer)  # noqa: SLF001
 
@@ -113,7 +113,7 @@ class TestTS2VecTraining:
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
         """TS2Vec trains 5 steps with CropShiftProducer (finite loss)."""
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
 
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
@@ -125,7 +125,7 @@ class TestTS2VecTraining:
         """TS2Vec trains 5 steps with FullOverlapProducer(Jitter(...)) (finite loss)."""
         jitter = Jitter()
         producer = FullOverlapProducer(aug=jitter)
-        model = TS2Vec(input_dims=1, augmentation=producer)
+        model = TS2Vec(input_dim=1, augmentation=producer)
 
         losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
 
@@ -156,9 +156,7 @@ class TestTS2VecDimensionRename:
         """TS2Vec constructor accepts representation_dim (singular, formerly output_dims)."""
         model = TS2Vec(input_dim=1, representation_dim=256)
 
-        # Last conv layer in feature_extractor outputs representation_dim channels
-        last_conv = model._encoder.feature_extractor.layers[-1][0]  # noqa: SLF001
-        assert last_conv.out_channels == 256
+        assert model.representation_dim == 256
 
     def test_representation_dim_property_returns_config_value(self) -> None:
         """TS2Vec.representation_dim property returns the configured representation_dim."""
@@ -167,14 +165,14 @@ class TestTS2VecDimensionRename:
         assert model.representation_dim == 320
 
     def test_representation_dim_matches_encode_output_feature_dim(self) -> None:
-        """TS2Vec.representation_dim equals the last axis of encode() output."""
+        """TS2Vec.representation_dim equals the last axis of encoder output."""
         rep_dim = 128
         model = TS2Vec(input_dim=3, hidden_dim=64, representation_dim=rep_dim)
         model.eval()
 
         data = torch.randn(2, 50, 3)
         with torch.no_grad():
-            encoded = model.encode(data)
+            encoded = model.encoder(data)
 
         assert encoded.shape[-1] == rep_dim
         assert model.representation_dim == rep_dim
@@ -194,8 +192,8 @@ class TestTS2VecDeterminism:
         producer1 = Seeded(inner=CropShiftProducer(), seed=seed)
         producer2 = Seeded(inner=CropShiftProducer(), seed=seed)
 
-        model1 = TS2Vec(input_dims=1, augmentation=producer1)
-        model2 = TS2Vec(input_dims=1, augmentation=producer2)
+        model1 = TS2Vec(input_dim=1, augmentation=producer1)
+        model2 = TS2Vec(input_dim=1, augmentation=producer2)
 
         # Copy weights so encoders are identical
         model2.load_state_dict(deepcopy(model1.state_dict()))

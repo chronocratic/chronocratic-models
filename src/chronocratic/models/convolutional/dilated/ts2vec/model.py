@@ -25,11 +25,11 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     masking strategies for self-supervised pretraining.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         augmentation: Custom augmentation producer. Defaults to
             CropShiftProducer.
-        hidden_dims: Number of hidden units in each encoder layer.
-        output_dims: Number of output features produced by the encoder.
+        hidden_dim: Number of hidden units in each encoder layer.
+        representation_dim: Number of output features produced by the encoder.
         depth: Number of encoder layers.
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Size of the convolutional kernel in each layer.
@@ -51,10 +51,10 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     def __init__(
         self,
         *,
-        input_dims: int,
+        input_dim: int,
         augmentation: AugmentationProducer[AlignedPair] | None = None,
-        hidden_dims: int = 64,
-        output_dims: int = 320,
+        hidden_dim: int = 64,
+        representation_dim: int = 320,
         depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -68,6 +68,7 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         self.save_hyperparameters(ignore=["augmentation"])
 
+        self._representation_dim = representation_dim
         self._learning_rate = learning_rate
         self._max_train_length = max_train_length
         self._temporal_unit = temporal_unit
@@ -85,9 +86,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         self.automatic_optimization = False
 
         self._encoder = TS2VecTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -96,6 +97,16 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
 
         self._averaged_encoder = AveragedModel(self._encoder)
         self._averaged_encoder.update_parameters(self._encoder)
+
+    @property
+    def representation_dim(self) -> int:
+        """Return the feature dim of the ``encode()`` output.
+
+        This is the width of the representation vector produced by the
+        encoder, matching the ``representation_dim`` configuration
+        parameter.
+        """
+        return self._representation_dim
 
     @property
     def encoder(self) -> TS2VecTimeSeriesEncoder:
