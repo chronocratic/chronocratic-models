@@ -51,7 +51,10 @@ def supervised_batch_adapter(batch: tuple) -> tuple[tuple[torch.Tensor, ...], to
     return (x,), targets
 
 
-# ---- representation fns (differentiable; mirror each backbone's encode hook) --
+# ---- representation fns (differentiable) ----
+# Most mirror each backbone's encode hook. TST is the deliberate exception:
+# its encode() pools over time, but the supervised head needs the full sequence
+# to flatten (paper-fidelity classifier). See factory.py::make_tst_supervised.
 
 
 def tst_representations(
@@ -79,7 +82,7 @@ def series2vec_representations(backbone: Series2Vec, x: torch.Tensor) -> torch.T
         x: Input features of shape ``(B, seq, channels)``.
 
     Returns:
-        Concatenated representations of shape ``(B, 2*representation_dim)``.
+        Concatenated representations of shape ``(B, representation_dim)``.
     """
     return backbone.network.encode(x)
 
@@ -92,7 +95,7 @@ def tstcc_representations(backbone: TSTCC, x: torch.Tensor) -> torch.Tensor:
         x: Input features of shape ``(B, channels, seq)``.
 
     Returns:
-        Pooled feature tensor of shape ``(B, output_dims)``.
+        Pooled feature tensor of shape ``(B, representation_dim)``.
 
     Note:
         Casts input to ``.float()`` because the TCC encoder expects float inputs.

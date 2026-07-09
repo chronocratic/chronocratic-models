@@ -21,7 +21,7 @@ class TestTSTTwoHookContract:
 
     def test_get_encoder_returns_nn_module(self) -> None:
         """_get_encoder returns an nn.Module (TSTransformerEncoder), not a bound method."""
-        model = TST(input_dims=3, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        model = TST(input_dim=3, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         encoder = model._get_encoder()
         assert isinstance(encoder, nn.Module), (
             f"_get_encoder must return nn.Module, got {type(encoder).__name__}"
@@ -29,13 +29,13 @@ class TestTSTTwoHookContract:
 
     def test_get_encoder_returns_encoder_not_self(self) -> None:
         """_get_encoder returns self._encoder, not self."""
-        model = TST(input_dims=3, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        model = TST(input_dim=3, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         encoder = model._get_encoder()
         assert encoder is model._encoder
 
     def test_encode_batch_calls_encode_representations(self) -> None:
         """_encode_batch builds padding mask and calls encoder.encode_representations."""
-        model = TST(input_dims=3, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        model = TST(input_dim=3, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         encoder = model._get_encoder()
         batch_x = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, batch_x)
@@ -45,7 +45,7 @@ class TestTSTTwoHookContract:
 
     def test_encode_batch_uses_batch_x_device_for_mask(self) -> None:
         """_encode_batch builds padding mask on batch_x.device, not self.device."""
-        model = TST(input_dims=3, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        model = TST(input_dim=3, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         encoder = model._get_encoder()
         batch_x = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, batch_x)
@@ -65,7 +65,7 @@ class TestTSTTwoHookContract:
 
     def test_encode_output_shape(self) -> None:
         """encode() produces (B, hidden_dims) output with VECTOR default."""
-        model = TST(input_dims=3, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        model = TST(input_dim=3, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         data = torch.randn(4, 10, 3)
         result = model.encode(data, batch_size=2)
         expected_shape = (4, 8)  # (B, hidden_dims) — VECTOR default

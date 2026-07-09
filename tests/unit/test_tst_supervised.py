@@ -93,7 +93,7 @@ class TestTSTFinetuningModule:
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         expected = backbone.representation_dim * backbone.encoder.sequence_length
-        assert module.head.linear.in_features == expected
+        assert module._head._fc.in_features == expected
         assert backbone.representation_dim == 8  # hidden_dim, not flattened
 
     def test_representation_dim_is_hidden_dim(self) -> None:

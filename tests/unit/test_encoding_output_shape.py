@@ -82,7 +82,7 @@ def tstcc_model() -> TSTCC:
 def tst_model() -> TST:
     """TST (Tier B, Basic mixin)."""
     return TST(
-        input_dims=3, sequence_length=32, hidden_dims=16, num_heads=4, depth=1, feedforward_dims=32
+        input_dim=3, sequence_length=32, hidden_dim=16, num_heads=4, depth=1, feedforward_dim=32
     )
 
 

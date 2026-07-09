@@ -57,7 +57,7 @@ class TestModelInstantiation:
         from chronocratic.models.transformer.tst.config import TSTModelParameters
         from chronocratic.models.transformer.tst.model import TST
 
-        config = TSTModelParameters(input_dims=1, sequence_length=100)
+        config = TSTModelParameters(input_dim=1, sequence_length=100)
         model = TST(**vars(config))
         assert isinstance(model, TST)
 
