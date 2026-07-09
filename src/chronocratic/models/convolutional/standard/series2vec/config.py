@@ -20,14 +20,14 @@ class Series2VecModelParameters:
     """Configuration for the Series2Vec model.
 
     Args:
-        input_dims: Number of input features (channels) in the time
+        input_dim: Number of input features (channels) in the time
             series.
-        embedding_dims: Token embedding dimensionality. Defaults to 16.
+        embedding_dim: Token embedding dimensionality. Defaults to 16.
         num_heads: Number of attention heads in the transformer encoder.
             Defaults to 8.
-        feedforward_dims: Hidden dimensionality of the transformer
+        feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block. Defaults to 256.
-        representation_dims: Output dimensionality of the projection
+        representation_dim: Output dimensionality of the projection
             head used for pretraining. Defaults to 320.
         dropout_rate: Dropout probability applied throughout the
             network. Defaults to 0.01.
@@ -49,11 +49,12 @@ class Series2VecModelParameters:
             to ``3`` to ensure sufficient gradients at batch_size=1.
     """
 
-    input_dims: int
-    embedding_dims: int = 16
+    input_dim: int
+    embedding_dim: int = 16
     num_heads: int = 8
-    feedforward_dims: int = 256
-    representation_dims: int = 320
+    feedforward_dim: int = 256
+    # migration(a13): renamed from representation_dims — width of the vector encode() returns. See CHANGELOG v0.1.0a13.
+    representation_dim: int = 320
     dropout_rate: float = 0.01
     encoder_kernel_size: int = 8
     learning_rate: float = 1e-3
