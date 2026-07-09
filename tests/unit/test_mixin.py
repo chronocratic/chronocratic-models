@@ -303,7 +303,7 @@ class TestSourceCompliance:
         assert "_logger = logging" in self.source
 
     def test_has_expected_input_rank_constant(self) -> None:
-        assert "_EXPECTED_INPUT_RANK" in self.source
+        assert "_EXPECTED_INPUT_DIM" in self.source
 
     def test_has_override_decorator(self) -> None:
         assert "@override" in self.source
