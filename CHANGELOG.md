@@ -11,6 +11,34 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a13 (2026-07-09)
+
+### Changed
+
+- **Breaking: dimension parameter naming unification.** All dimension parameters renamed from plural ``*_dims`` to singular ``*_dim`` (e.g., ``input_dims`` -> ``input_dim``, ``hidden_dims`` -> ``hidden_dim``, ``output_dims`` -> ``representation_dim``). The encode-output width parameter is now uniformly ``representation_dim`` across all 10 models. ``RepresentationBackbone`` protocol updated to list all implementers and define ``representation_dim`` as the feature dim of ``encode()`` output. CONTRIBUTING.md updated with canonical singular names table and keyword-only signature convention. ([#68](https://github.com/chronocratic/chronocratic-models/issues/68))
+
+### Breaking Changes
+
+Full old -> new rename map for dimension parameters:
+
+| Old Name | New Name | Scope |
+|---|---|---|
+| ``input_dims`` | ``input_dim`` | All models |
+| ``hidden_dims`` | ``hidden_dim`` | All models |
+| ``feedforward_dims`` | ``feedforward_dim`` | TST, Series2Vec |
+| ``embedding_dims`` | ``embedding_dim`` | Series2Vec |
+| ``projection_dims`` | ``projection_dim`` | MCL |
+| ``output_dims`` | ``representation_dim`` | MCL, TSTCC, TS2Vec, AutoTCL, CoST |
+| ``representation_dims`` | ``representation_dim`` | Series2Vec |
+| ``component_dims`` | ``component_dim`` | CoST (internal) |
+| ``branch_dims`` | ``branch_dim`` | Series2Vec (internal) |
+| ``_hidden_dims`` | ``_hidden_dim`` | TimeNet (private attr) |
+| ``_input_dims`` | ``_input_dim`` | Private attrs |
+
+Names that did NOT change: ``latent_dim`` (TimeVAE — stochastic bottleneck), ``layers`` (RecurrentAE — genuine tuple), ``temporal_contrast_hidden_dim`` (TSTCC).
+
+Pretrained checkpoints saved with old hyperparameter names will not reload cleanly. This is expected for an alpha release (a12 -> a13).
+
 ## v0.1.0a12 (2026-07-07)
 
 ### Changed

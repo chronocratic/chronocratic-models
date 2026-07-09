@@ -12,6 +12,9 @@ Verifies that the dimension naming unification (phase 12) correctly:
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import torch
 
 from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
@@ -31,6 +34,7 @@ from chronocratic.models.recurrent.recurrentae.config import RecurrentAutoEncode
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.config import TimeNetModelParameters
 from chronocratic.models.recurrent.timenet.model import TimeNet
+import pytest
 from chronocratic.models.supervised import RepresentationBackbone, make_tst_supervised
 from chronocratic.models.transformer.tst.config import TSTModelParameters
 from chronocratic.models.transformer.tst.model import TST
@@ -423,3 +427,198 @@ class TestRepresentationBackboneProtocol:
             assert isinstance(m, RepresentationBackbone), (
                 f"{m.__class__.__name__} must satisfy RepresentationBackbone"
             )
+
+
+# ---------------------------------------------------------------------------
+# Protocol docstring: lists all 10 models
+# ---------------------------------------------------------------------------
+
+
+class TestRepresentationBackboneDocstring:
+    """Plan 12: RepresentationBackbone docstring lists all 10 implementers."""
+
+    @pytest.fixture
+    def docstring(self) -> str:
+        return RepresentationBackbone.__doc__ or ""
+
+    def test_lists_all_ten_models(self, docstring: str) -> None:
+        """Protocol docstring should reference all 10 model names."""
+        expected = {"TST", "Series2Vec", "TSTCC", "MCL", "TS2Vec", "AutoTCL",
+                     "CoST", "TimeNet", "TimeVAE", "RecurrentAutoEncoder"}
+        found = {name for name in expected if name in docstring}
+        missing = expected - found
+        assert not missing, f"Missing models in RepresentationBackbone docstring: {missing}"
+
+    def test_defines_representation_dim_as_encode_output(self, docstring: str) -> None:
+        """Protocol docstring should define representation_dim as feature dim of encode() output."""
+        lower = docstring.lower()
+        assert "encode" in lower, "Docstring should reference encode()"
+        assert "representation_dim" in docstring, "Docstring should mention representation_dim"
+
+
+# ---------------------------------------------------------------------------
+# supervised/__init__.py example uses singular names
+# ---------------------------------------------------------------------------
+
+
+class TestSupervisedInitDocstring:
+    """Plan 12: supervised package docstring example uses singular param names."""
+
+    @pytest.fixture
+    def docstring(self) -> str:
+        from chronocratic.models import supervised
+        return supervised.__doc__ or ""
+
+    def test_example_uses_singular_names(self, docstring: str) -> None:
+        """Example code should use input_dim, hidden_dim (not plural)."""
+        assert "input_dim" in docstring
+        assert "hidden_dim" in docstring
+        # Should NOT have the old plural forms in example code
+        assert "input_dims" not in docstring, "Example should not use input_dims"
+        assert "hidden_dims" not in docstring, "Example should not use hidden_dims"
+
+
+# ---------------------------------------------------------------------------
+# CONTRIBUTING.md canonical names table
+# ---------------------------------------------------------------------------
+
+
+class TestContributingMd:
+    """Plan 12: CONTRIBUTING.md uses singular canonical names."""
+
+    @pytest.fixture
+    def content(self) -> str:
+        return (Path(__file__).resolve().parents[2] / "docs" / "CONTRIBUTING.md").read_text()
+
+    def test_canonical_names_include_representation_dim(self, content: str) -> None:
+        """Canonical names table should include representation_dim."""
+        assert "representation_dim" in content
+
+    def test_canonical_names_are_singular(self, content: str) -> None:
+        """Canonical names table should use singular forms."""
+        # Check key singular names appear
+        assert "input_dim" in content
+        assert "hidden_dim" in content
+        assert "feedforward_dim" in content
+
+    def test_example_code_uses_singular_params(self, content: str) -> None:
+        """Example config/model code should use singular param names."""
+        code_blocks = re.findall(r"```python(.*?)```", content, re.DOTALL)
+        for block in code_blocks:
+            lines = block.split("\n")
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("#"):
+                    continue
+                # Param names in code should be singular
+                if re.search(r"\b(input_dims|hidden_dims|feedforward_dims|output_dims)\b", stripped):
+                    pytest.fail(
+                        f"Example code uses plural param name: {stripped}"
+                    )
+
+    def test_has_kw_only_convention_documented(self, content: str) -> None:
+        """CONTRIBUTING.md should document the keyword-only signature convention."""
+        lower = content.lower()
+        assert "keyword" in lower and "only" in lower, (
+            "CONTRIBUTING.md should document kw-only convention"
+        )
+
+
+# ---------------------------------------------------------------------------
+# CHANGELOG has breaking rename entry
+# ---------------------------------------------------------------------------
+
+
+class TestChangelog:
+    """Plan 12: CHANGELOG has v0.1.0a13 breaking rename entry."""
+
+    @pytest.fixture
+    def content(self) -> str:
+        return (Path(__file__).resolve().parents[2] / "CHANGELOG.md").read_text()
+
+    def test_v01a13_entry_exists(self, content: str) -> None:
+        """CHANGELOG should have v0.1.0a13 entry."""
+        assert "v0.1.0a13" in content
+
+    def test_breaking_rename_documented(self, content: str) -> None:
+        """CHANGELOG a13 entry should document dimension parameter renaming."""
+        # Find the a13 section
+        assert "v0.1.0a13" in content
+        # Should reference the rename
+        lines = content.split("\n")
+        in_a13 = False
+        a13_section = []
+        for line in lines:
+            if "v0.1.0a13" in line:
+                in_a13 = True
+                continue
+            if in_a13 and line.startswith("## v"):
+                break
+            if in_a13:
+                a13_section.append(line)
+
+        section_text = "\n".join(a13_section)
+        assert "rename" in section_text.lower() or "singular" in section_text.lower(), (
+            f"a13 changelog should mention rename: {section_text[:200]}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Towncrier fragment
+# ---------------------------------------------------------------------------
+
+
+class TestTowncrierFragment:
+    """Plan 12: Towncrier fragment exists for this phase."""
+
+    def test_fragment_exists(self) -> None:
+        """changelog.d/12.changed.md should exist."""
+        fragment = Path(__file__).resolve().parents[2] / "changelog.d" / "12.changed.md"
+        assert fragment.exists(), f"Towncrier fragment not found at {fragment}"
+
+    def test_fragment_has_content(self) -> None:
+        """Fragment should describe the dimension parameter naming changes."""
+        fragment = Path(__file__).resolve().parents[2] / "changelog.d" / "12.changed.md"
+        content = fragment.read_text()
+        assert len(content.strip()) > 0
+        assert "dimension" in content.lower() or "rename" in content.lower() or "singular" in content.lower()
+
+
+# ---------------------------------------------------------------------------
+# Shared test files use singular param names
+# ---------------------------------------------------------------------------
+
+
+class TestSharedTestFilesUseSingular:
+    """Plan 12: Shared test files should use singular param names."""
+
+    @pytest.mark.parametrize("test_file", [
+        "test_from_config.py",
+        "test_backbone_representation_dim.py",
+        "test_encoder_decoder_contract.py",
+        "test_smoke.py",
+        "test_supervised_package.py",
+        "test_tstcc_supervised.py",
+    ])
+    def test_file_uses_singular_params(self, test_file: str) -> None:
+        """Test file should use singular param names for model construction."""
+        filepath = Path(__file__).resolve().parent / test_file
+        content = filepath.read_text()
+        # Check for old plural param names that should have been renamed
+        # Exclude encoder_channels, encoder_kernels, encoder_dilations
+        plural_names = {
+            "input_dims", "hidden_dims", "output_dims", "representation_dims",
+            "feedforward_dims", "embedding_dims", "projection_dims"
+        }
+        violations = []
+        for match in re.finditer(r"\b(" + "|".join(plural_names) + r")\b", content):
+            line_num = content[:match.start()].count("\n") + 1
+            line = content.split("\n")[line_num - 1]
+            # Allow in comments about old names (migration breadcrumbs)
+            if line.strip().startswith("#"):
+                continue
+            violations.append(f"  Line {line_num}: {match.group()} in: {line.strip()}")
+
+        assert not violations, (
+            f"{test_file}: found plural param names that should be singular:\n" + "\n".join(violations)
+        )

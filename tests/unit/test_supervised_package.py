@@ -38,14 +38,19 @@ from chronocratic.models.supervised import (
 class _DummyBackbone(nn.Module):
     """A tiny backbone with a known representation_dim for tests."""
 
-    def __init__(self, rep_dim: int = 4) -> None:
+    def __init__(self, rep_dim: int = 4, sequence_length: int = 10) -> None:
         super().__init__()
         self._rep_dim = rep_dim
+        self._sequence_length = sequence_length
         self.fc = nn.Linear(2, rep_dim)
 
     @property
     def representation_dim(self) -> int:
         return self._rep_dim
+
+    @property
+    def sequence_length(self) -> int:
+        return self._sequence_length
 
 
 def _dummy_rep_fn(backbone: nn.Module, *inputs: torch.Tensor) -> torch.Tensor:
@@ -277,7 +282,7 @@ class TestRepresentationFunctions:
         """series2vec_representations calls backbone.network.encode(x)."""
         backbone = MagicMock()
         network = MagicMock()
-        reps = torch.randn(2, 16)  # (B, 2*rep_dims)
+        reps = torch.randn(2, 16)  # (B, representation_dim)
         network.encode.return_value = reps
         backbone.network = network
         x = torch.randn(2, 10, 3)
@@ -288,7 +293,7 @@ class TestRepresentationFunctions:
     def test_tstcc_representations(self) -> None:
         """tstcc_representations calls backbone(x.float()), pools feature map."""
         backbone = MagicMock()
-        # Backbone now returns a 3D feature map (B, output_dims, L')
+        # Backbone now returns a 3D feature map (B, representation_dim, L')
         feature_map = torch.randn(2, 16, 10)
         backbone.return_value = feature_map
         x = torch.randn(2, 10, 3)
@@ -296,7 +301,7 @@ class TestRepresentationFunctions:
         # Verify .float() was called
         call_arg = backbone.call_args[0][0]
         assert call_arg.dtype == torch.float32
-        # Result should be pooled to (B, output_dims)
+        # Result should be pooled to (B, representation_dim)
         assert result.shape == (2, 16)
         torch.testing.assert_close(result, feature_map.mean(dim=-1))
 
@@ -451,14 +456,14 @@ class TestFactoryFunctions:
         assert isinstance(module, SupervisedModule)
 
     def test_factory_creates_correct_head_size(self) -> None:
-        """Factory head size matches backbone.representation_dim * num_outputs."""
-        backbone = _DummyBackbone(rep_dim=8)
+        """TST factory head size matches representation_dim * sequence_length."""
+        backbone = _DummyBackbone(rep_dim=8, sequence_length=10)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
-        # The head should be a FlattenLinearHead with correct in_features
+        # TST factory: in_features = representation_dim * sequence_length
         head = module._head  # noqa: SLF001
         assert isinstance(head, FlattenLinearHead)
         fc = head._fc  # noqa: SLF001
-        assert fc.in_features == 8
+        assert fc.in_features == backbone.representation_dim * backbone.sequence_length
         assert fc.out_features == 5

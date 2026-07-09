@@ -22,17 +22,29 @@ __all__ = ["BatchAdapter", "FlattenLinearHead", "RepresentationBackbone", "Super
 
 @runtime_checkable
 class RepresentationBackbone(Protocol):
-    """A backbone that can report the flattened feature size of its representation.
+    """A backbone that reports the feature dim of its ``encode()`` output.
+
+    The ``representation_dim`` property returns the last-axis width of the
+    tensor produced by :meth:`~chronocratic.models.protocols.HasEncoder.encode`.
+    Shape-independent: VECTOR ``(B, D)`` and SEQUENCE ``(B, T, D)`` share
+    the same ``D``.  Not the flattened total (``T * D``).
 
     Implementations:
         - :class:`~chronocratic.models.transformer.tst.model.TST`
         - :class:`~chronocratic.models.convolutional.standard.series2vec.model.Series2Vec`
         - :class:`~chronocratic.models.convolutional.standard.tstcc.model.TSTCC`
+        - :class:`~chronocratic.models.convolutional.standard.mcl.model.MCL`
+        - :class:`~chronocratic.models.convolutional.dilated.ts2vec.model.TS2Vec`
+        - :class:`~chronocratic.models.convolutional.dilated.autotcl.model.AutoTCL`
+        - :class:`~chronocratic.models.convolutional.dilated.cost.model.CoST`
+        - :class:`~chronocratic.models.recurrent.timenet.model.TimeNet`
+        - :class:`~chronocratic.models.generative.timevae.model.TimeVAE`
+        - :class:`~chronocratic.models.recurrent.recurrentae.model.RecurrentAutoEncoder`
     """
 
     @property
     def representation_dim(self) -> int:
-        """Flattened feature size handed to a downstream head."""
+        """Feature dim (last axis) of the ``encode()`` output."""
 
 
 class BatchAdapter(Protocol):

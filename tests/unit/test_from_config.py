@@ -29,12 +29,12 @@ class TestModelInstantiation:
     """Test that direct instantiation returns valid model instances."""
 
     def test_ts2vec_instantiation_returns_instance(self) -> None:
-        config = TS2VecModelParameters(input_dims=1)
+        config = TS2VecModelParameters(input_dim=1)
         model = TS2Vec(**vars(config), augmentation=None)
         assert isinstance(model, TS2Vec)
 
     def test_cost_instantiation_returns_instance(self) -> None:
-        config = CoSTModelParameters(input_dims=1, sequence_length=100)
+        config = CoSTModelParameters(input_dim=1, sequence_length=100)
         model = CoST(**vars(config), augmentation=IndependentPairProducer(aug=None))
         assert isinstance(model, CoST)
 
@@ -44,11 +44,11 @@ class TestModelInstantiation:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        config = AutoTCLModelParameters(input_dims=1)
+        config = AutoTCLModelParameters(input_dim=1)
         model = AutoTCL(
             **vars(config),
             augmentation=AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
             ),
         )
         assert isinstance(model, AutoTCL)
@@ -64,7 +64,7 @@ class TestModelInstantiation:
     def test_tstcc_instantiation_returns_instance(self) -> None:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
-        config = TSTCCModelParameters(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+        config = TSTCCModelParameters(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         model = TSTCC(**vars(config), augmentation=_default_tstcc_pair())
         assert isinstance(model, TSTCC)
 
@@ -73,11 +73,11 @@ class TestMixinInheritance:
     """Test mixin inheritance for each model."""
 
     def test_ts2vec_is_pooling_encoding_mixin(self) -> None:
-        model = TS2Vec(input_dims=1)
+        model = TS2Vec(input_dim=1)
         assert isinstance(model, PoolingEncodingMixin)
 
     def test_cost_is_pooling_encoding_mixin(self) -> None:
-        model = CoST(input_dims=1, sequence_length=100)
+        model = CoST(input_dim=1, sequence_length=100)
         assert isinstance(model, DecompositionEncodingMixin)
 
     def test_autotcl_is_pooling_encoding_mixin(self) -> None:
@@ -87,15 +87,15 @@ class TestMixinInheritance:
         )
 
         model = AutoTCL(
-            input_dims=1,
+            input_dim=1,
             augmentation=AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
             ),
         )
         assert isinstance(model, PoolingEncodingMixin)
 
     def test_tstcc_is_basic_encoding_mixin(self) -> None:
-        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         assert isinstance(model, BasicEncodingMixin)
 
 
@@ -109,7 +109,7 @@ class TestAugmentationConfigPropagation:
         )
 
         config = CropShiftAugmentationParameters(temporal_unit=2)
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer(params=config))
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer(params=config))
         assert model._augmentation._params.temporal_unit == 2
 
     def test_cost_augmentation_config_propagates(self) -> None:
@@ -121,7 +121,7 @@ class TestAugmentationConfigPropagation:
 
         config = CosTRandomFunctionAugmentationParameters(sigma=0.2, p=0.8)
         model = CoST(
-            input_dims=1,
+            input_dim=1,
             sequence_length=100,
             augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation(params=config)),
         )
@@ -134,9 +134,9 @@ class TestAugmentationConfigPropagation:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        config = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
-        model = AutoTCL(input_dims=1, augmentation=AutoTCLNeuralNetworkAugmentation(params=config))
-        assert model._augmentation.params.input_dims == 1
+        config = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
+        model = AutoTCL(input_dim=1, augmentation=AutoTCLNeuralNetworkAugmentation(params=config))
+        assert model._augmentation.params.input_dim == 1
 
 
 class TestAugmentationPassThrough:
@@ -146,7 +146,7 @@ class TestAugmentationPassThrough:
         from chronocratic.models.augmentation.base import ViewPair
         from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
         result = model._augmentation.produce(torch.randn(4, 100, 1))
         assert isinstance(result, ViewPair)
@@ -158,7 +158,7 @@ class TestAugmentationPassThrough:
         )
 
         model = CoST(
-            input_dims=1,
+            input_dim=1,
             sequence_length=100,
             augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation()),
         )
@@ -174,9 +174,9 @@ class TestAugmentationPassThrough:
         )
 
         model = AutoTCL(
-            input_dims=1,
+            input_dim=1,
             augmentation=AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
             ),
         )
         assert model._augmentation is not None
@@ -186,7 +186,7 @@ class TestAugmentationPassThrough:
     def test_tstcc_augmentation_pass_through(self) -> None:
         from chronocratic.models.augmentation.base import ViewPair
 
-        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         assert model._augmentation is not None
         data = torch.randn(4, 1, 100)
         result = model._augmentation.produce(data)
@@ -200,7 +200,7 @@ class TestBackwardCompatModelConstruction:
         """CropShiftProducer still works with TS2Vec."""
         from chronocratic.models.convolutional.dilated.ts2vec.augmentation import CropShiftProducer
 
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
         assert model._augmentation is not None
 
     def test_cost_with_raw_augmentation(self) -> None:
@@ -210,7 +210,7 @@ class TestBackwardCompatModelConstruction:
         )
 
         model = CoST(
-            input_dims=1,
+            input_dim=1,
             sequence_length=100,
             augmentation=IndependentPairProducer(aug=CosTRandomFunctionAugmentation()),
         )
@@ -224,9 +224,9 @@ class TestBackwardCompatModelConstruction:
         )
 
         model = AutoTCL(
-            input_dims=1,
+            input_dim=1,
             augmentation=AutoTCLNeuralNetworkAugmentation(
-                params=AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+                params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
             ),
         )
         assert model._augmentation is not None
@@ -234,10 +234,10 @@ class TestBackwardCompatModelConstruction:
     def test_tstcc_with_default_pair(self) -> None:
         """TSTCC still accepts default augmentation pair."""
         model = TSTCC(
-            input_dims=1,
+            input_dim=1,
             conv_kernel_size=5,
             stride=1,
-            output_dims=16,
+            representation_dim=16,
             augmentation=_default_tstcc_pair(),
         )
         assert model._augmentation is not None

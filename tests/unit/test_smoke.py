@@ -41,7 +41,7 @@ from chronocratic.models.convolutional.standard.tstcc.augmentations import _defa
 
 
 def _train_steps(
-    model: pl.LightningModule, batch_size: int, seq_length: int, input_dims: int, num_steps: int
+    model: pl.LightningModule, batch_size: int, seq_length: int, input_dim: int, num_steps: int
 ) -> list[torch.Tensor]:
     """Run ``num_steps`` training steps via a minimal Lightning Trainer.
 
@@ -53,13 +53,13 @@ def _train_steps(
         model: The Lightning model to train.
         batch_size: Batch size for the dummy data.
         seq_length: Sequence length for the dummy data.
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         num_steps: How many training steps to execute.
 
     Returns:
         List of loss tensors returned by each training step.
     """
-    data = torch.randn(batch_size * num_steps, seq_length, input_dims)
+    data = torch.randn(batch_size * num_steps, seq_length, input_dim)
     dataset = TensorDataset(data)
     dataloader = DataLoader(dataset, batch_size=batch_size)
 
@@ -99,9 +99,9 @@ class TestModelTrainingSmoke:
 
     def test_ts2vec_trains_5_steps(self) -> None:
         """TS2Vec with CropShiftProducer trains 5 steps with finite loss (VER-01)."""
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
 
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
 
         assert len(losses) == 5
         for step_idx, loss in enumerate(losses):
@@ -118,7 +118,7 @@ class TestModelTrainingSmoke:
         weights_only=True, and verify that encoder state_dict keys and values
         match the originals exactly.
         """
-        model = TS2Vec(input_dims=1, augmentation=CropShiftProducer())
+        model = TS2Vec(input_dim=1, augmentation=CropShiftProducer())
 
         original = {k: v.clone() for k, v in model.encoder.state_dict().items()}
 
@@ -140,7 +140,7 @@ class TestModelTrainingSmoke:
     def test_cost_trains_5_steps(self) -> None:
         """CoST with IndependentPairProducer trains 5 steps (VER-02)."""
         model = CoST(
-            input_dims=1,
+            input_dim=1,
             sequence_length=100,
             kernel_sizes=[3],
             augmentation=IndependentPairProducer(
@@ -150,7 +150,7 @@ class TestModelTrainingSmoke:
             ),
         )
 
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
 
         assert len(losses) == 5
         for step_idx, loss in enumerate(losses):
@@ -163,17 +163,17 @@ class TestModelTrainingSmoke:
     def test_autotcl_trains_5_steps(self) -> None:
         """AutoTCL with neural network augmentation trains 5 steps (VER-03)."""
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, output_dims=320, kernel_sizes=[3]
+            input_dim=1, output_dim=320, kernel_sizes=[3]
         )
         model = AutoTCL(
-            input_dims=1,
+            input_dim=1,
             kernel_sizes=[3],
             augmentation=AutoTCLNeuralNetworkAugmentation(
                 params=aug_params, training_strategy=RIPTrainingStrategy()
             ),
         )
 
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
 
         assert len(losses) >= 1, "AutoTCL may skip steps during phase-1 aug training"
         for step_idx, loss in enumerate(losses):
@@ -201,9 +201,9 @@ class TestAugmentationExtensibility:
                 seq_len = x.size(1)
                 return AlignedPair(first=x, second=x, overlap_length=seq_len)
 
-        model = TS2Vec(input_dims=1, augmentation=IdentityProducer())
+        model = TS2Vec(input_dim=1, augmentation=IdentityProducer())
 
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=1)
 
         assert len(losses) == 1
         loss = losses[0]
@@ -220,9 +220,9 @@ class TestAugmentationExtensibility:
             def produce(self, x: torch.Tensor) -> SingleView:
                 return SingleView(view=x + torch.randn_like(x) * 0.1)
 
-        model = AutoTCL(input_dims=1, kernel_sizes=[3], augmentation=NoiseProducer())
+        model = AutoTCL(input_dim=1, kernel_sizes=[3], augmentation=NoiseProducer())
 
-        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=1)
+        losses = _train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=1)
 
         assert len(losses) >= 1
         for loss in losses:
