@@ -111,14 +111,14 @@ class TimeVAEDecoder(nn.Module):
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
                 sequence_length=self.sequence_length,
-                input_dims=self.input_dim,
+                input_dim=self.input_dim,
                 latent_dim=self.latent_dim,
                 trend_poly=self.trend_poly,
             )
         if self.custom_seasonality is not None and len(self.custom_seasonality) > 0:
             self.seasonal_layer = SeasonalLayer(
                 sequence_length=self.sequence_length,
-                input_dims=self.input_dim,
+                input_dim=self.input_dim,
                 latent_dim=self.latent_dim,
                 custom_seasonality=self.custom_seasonality,
             )
@@ -126,7 +126,7 @@ class TimeVAEDecoder(nn.Module):
         self.encoder_last_dense_dim = encoder_last_dense_dim
         self.level_model = LevelModel(
             latent_dim=self.latent_dim,
-            input_dims=self.input_dim,
+            input_dim=self.input_dim,
             sequence_length=self.sequence_length,
         )
 
@@ -136,7 +136,7 @@ class TimeVAEDecoder(nn.Module):
                 raise ValueError(msg)
             self.residual_conn = ResidualConnection(
                 sequence_length=self.sequence_length,
-                input_dims=self.input_dim,
+                input_dim=self.input_dim,
                 hidden_layer_sizes=hidden_layer_sizes,
                 latent_dim=latent_dim,
                 encoder_last_dense_dim=encoder_last_dense_dim,

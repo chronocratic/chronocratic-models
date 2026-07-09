@@ -1,6 +1,6 @@
 """Tests for BaseVariationalAutoencoder canonical parameter names.
 
-Validates that vae_base.py uses sequence_length, input_dims, reconstruction_weight
+Validates that vae_base.py uses sequence_length, input_dim, reconstruction_weight
 instead of seq_len, feat_dim, reconstruction_wt.
 """
 
@@ -11,15 +11,15 @@ from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoe
 
 
 class TestBaseVAECanonicalNames:
-    """BaseVariationalAutoencoder uses sequence_length, input_dims, reconstruction_weight."""
+    """BaseVariationalAutoencoder uses sequence_length, input_dim, reconstruction_weight."""
 
     def test_timevae_has_sequence_length(self) -> None:
         """Instance has self.sequence_length after rename."""
         model = TimeVAE(sequence_length=100, input_dim=1, latent_dim=10, reconstruction_weight=3.0)
         assert model.sequence_length == 100
 
-    def test_timevae_has_input_dims(self) -> None:
-        """Instance has self.input_dims after rename."""
+    def test_timevae_has_input_dim(self) -> None:
+        """Instance has self.input_dim after rename."""
         model = TimeVAE(sequence_length=100, input_dim=3, latent_dim=10)
         assert model.input_dim == 3
 
@@ -53,7 +53,7 @@ class TestFullModelInstantiation:
 
         model = TimeVAE(sequence_length=96, input_dim=2, latent_dim=8)
         model.eval()
-        x = torch.randn(4, 96, 2)  # (batch, sequence_length, input_dims)
+        x = torch.randn(4, 96, 2)  # (batch, sequence_length, input_dim)
         with torch.no_grad():
             output = model(x)
         assert output.shape == (4, 96, 2)

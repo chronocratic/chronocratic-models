@@ -39,6 +39,10 @@ Names that did NOT change: ``latent_dim`` (TimeVAE — stochastic bottleneck), `
 
 Pretrained checkpoints saved with old hyperparameter names will not reload cleanly. This is expected for an alpha release (a12 -> a13).
 
+### Notes
+
+- Migration breadcrumb comments (`# migration(a13):`) were left on 6 config dataclass fields to aid porting. These should be pruned a couple of minor versions after a13.
+
 ## v0.1.0a12 (2026-07-07)
 
 ### Changed

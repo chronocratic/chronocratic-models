@@ -38,7 +38,7 @@ class _DecompositionEncoder(nn.Module):
     def __init__(self, output_dim: int = 64) -> None:
         super().__init__()
         self.output_dim = output_dim
-        self.component_dims = output_dim  # Match CoST convention
+        self.component_dim = output_dim  # Match CoST convention
 
     def forward(
         self,

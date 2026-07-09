@@ -43,7 +43,7 @@ def batch_input() -> torch.Tensor:
 
 
 class TestSeries2VecVectorOutput:
-    """Series2Vec VECTOR returns (B, representation_dims)."""
+    """Series2Vec VECTOR returns (B, representation_dim)."""
 
     def test_vector_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()
@@ -62,7 +62,7 @@ class TestSeries2VecVectorOutput:
 
 
 class TestSeries2VecSequenceOutput:
-    """Series2Vec SEQUENCE returns (B, 1, representation_dims) with warning."""
+    """Series2Vec SEQUENCE returns (B, 1, representation_dim) with warning."""
 
     def test_sequence_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()

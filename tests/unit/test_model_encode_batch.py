@@ -59,7 +59,7 @@ class TestEncodeOutputShapes:
         assert result.shape == (4, 8)
 
     def test_timenet_encode_shape(self) -> None:
-        """TimeNet.encode() returns (B, hidden_dims)."""
+        """TimeNet.encode() returns (B, hidden_dim)."""
         model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2)
@@ -80,7 +80,7 @@ class TestEncodeOutputShapes:
         assert result.shape == (4, 128)
 
     def test_tstcc_encode_shape(self) -> None:
-        """TSTCC.encode() returns (B, output_dims) after pooling."""
+        """TSTCC.encode() returns (B, representation_dim) after pooling."""
         model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         data = torch.randn(4, 256, 3)
         result = model.encode(data, batch_size=2)
