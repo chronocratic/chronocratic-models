@@ -14,7 +14,7 @@ class RecurrentAutoEncoderModelParameters:
     """Configuration for the recurrent autoencoder model.
 
     Args:
-        input_dims: Number of input features (channels) per timestep.
+        input_dim: Number of input features (channels) per timestep.
         layers: Hidden sizes for each encoder RNN layer, e.g. ``(16, 8)``.
             The decoder uses the reversed order. Defaults to ``(16, 8)``
             matching the source Recurrent-Autoencoder (latent_dim=8).
@@ -27,7 +27,7 @@ class RecurrentAutoEncoderModelParameters:
         sync_dist: Whether to sync logged metrics across devices.
     """
 
-    input_dims: int
+    input_dim: int
     layers: tuple[int, ...] = (16, 8)
     recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM
     dropout: float | tuple[float, ...] = 0.2

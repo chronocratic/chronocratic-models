@@ -45,7 +45,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     latent sequence using a mirrored RNN stack followed by a linear projection.
 
     Args:
-        input_dims: Number of input features (channels) per timestep.
+        input_dim: Number of input features (channels) per timestep.
         layers: Hidden sizes for each encoder RNN layer, e.g. ``(64, 32)``.
             The decoder uses the reversed order.
         recurrent_cell_type: RNN variant — LSTM, GRU, or RNN.
@@ -63,7 +63,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
+        input_dim: int,
         layers: tuple[int, ...] = (16, 8),
         recurrent_cell_type: RecurrentCellType = RecurrentCellType.LSTM,
         dropout: float | tuple[float, ...] = 0.2,
@@ -75,7 +75,8 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         super().__init__()
         self.save_hyperparameters()
         recurrent_cell_type = RecurrentCellType(str(recurrent_cell_type).lower())
-        self.input_dims = input_dims
+        self._input_dim = input_dim
+        self._layers = layers
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.sync_dist = sync_dist
@@ -85,8 +86,8 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         inverse_dropout = dropout_tuple[::-1]
 
         rnn_cls = _RNN_CLASSES[recurrent_cell_type]
-        self._encoder = _build_encoder(rnn_cls, input_dims, layers, dropout_tuple)
-        self._decoder = _build_decoder(rnn_cls, input_dims, inverse_layers, inverse_dropout)
+        self._encoder = _build_encoder(rnn_cls, input_dim, layers, dropout_tuple)
+        self._decoder = _build_decoder(rnn_cls, input_dim, inverse_layers, inverse_dropout)
         self.loss_fn: nn.Module = _LOSS_FNS[loss]()
 
     @property
@@ -98,6 +99,11 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def decoder(self) -> nn.Module:
         """The decoder ``nn.Module``."""
         return self._decoder
+
+    @property
+    def representation_dim(self) -> int:
+        """Feature dim of ``encode()`` output (last layer size)."""
+        return self._layers[-1]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Encode ``x``, reverse the latent sequence, and reconstruct."""

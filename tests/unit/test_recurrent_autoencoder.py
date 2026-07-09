@@ -32,40 +32,40 @@ def rnn_type(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture
 def model(rnn_type: str) -> RecurrentAutoEncoder:
-    return RecurrentAutoEncoder(input_dims=3, layers=(8,), recurrent_cell_type=rnn_type)
+    return RecurrentAutoEncoder(input_dim=3, layers=(8,), recurrent_cell_type=rnn_type)
 
 
 class TestRecurrentAutoEncoderInstantiation:
     def test_instantiates_lstm(self) -> None:
-        m = RecurrentAutoEncoder(input_dims=5, layers=(16,))
+        m = RecurrentAutoEncoder(input_dim=5, layers=(16,))
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_gru(self) -> None:
         m = RecurrentAutoEncoder(
-            input_dims=5, layers=(16,), recurrent_cell_type=RecurrentCellType.GRU
+            input_dim=5, layers=(16,), recurrent_cell_type=RecurrentCellType.GRU
         )
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_rnn(self) -> None:
         m = RecurrentAutoEncoder(
-            input_dims=5, layers=(16,), recurrent_cell_type=RecurrentCellType.RNN
+            input_dim=5, layers=(16,), recurrent_cell_type=RecurrentCellType.RNN
         )
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_instantiates_multilayer(self) -> None:
-        m = RecurrentAutoEncoder(input_dims=5, layers=(64, 32, 16))
+        m = RecurrentAutoEncoder(input_dim=5, layers=(64, 32, 16))
         assert isinstance(m, RecurrentAutoEncoder)
 
     def test_encoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8,))
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8,))
         assert isinstance(m.encoder, nn.Module)
 
     def test_decoder_is_nn_module(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8,))
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8,))
         assert isinstance(m.decoder, nn.Module)
 
 
@@ -95,7 +95,7 @@ class TestEncoderOutputShape:
         assert out.shape[2] == 8
 
     def test_multilayer_encoder_output_dim(self) -> None:
-        m = RecurrentAutoEncoder(input_dims=5, layers=(64, 32))
+        m = RecurrentAutoEncoder(input_dim=5, layers=(64, 32))
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             out = m.encoder(x)
@@ -121,14 +121,14 @@ class TestTSRCCompatibility:
     """Verify the student interface contract: encoder returns (B, T, D)."""
 
     def test_encoder_output_is_3d(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=5, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=5, layers=(16,))
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
         assert r2.dim() == 3
 
     def test_last_timestep_indexing_works(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=5, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=5, layers=(16,))
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -136,7 +136,7 @@ class TestTSRCCompatibility:
         assert repr_vec.shape == (2, 16)
 
     def test_flip_then_decode_matches_input_shape(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=5, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=5, layers=(16,))
         x = torch.randn(2, 10, 5)
         with torch.no_grad():
             r2 = model.encoder(x)
@@ -146,7 +146,7 @@ class TestTSRCCompatibility:
 
 class TestLightningTraining:
     def _train(self, model: RecurrentAutoEncoder, n_steps: int = 3) -> list[float]:
-        data = torch.randn(n_steps * 4, 20, model.input_dims)
+        data = torch.randn(n_steps * 4, 20, model._input_dim)
         loader = DataLoader(_RawTensorDataset(data), batch_size=4)
 
         losses: list[float] = []
@@ -171,20 +171,20 @@ class TestLightningTraining:
         return losses
 
     def test_training_produces_finite_losses(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=3, layers=(8,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(8,))
         losses = self._train(model)
         assert len(losses) == 3
         for loss in losses:
             assert math.isfinite(loss), f"Non-finite loss: {loss}"
 
     def test_training_loss_is_scalar(self) -> None:
-        model_local = RecurrentAutoEncoder(input_dims=3, layers=(8,))
+        model_local = RecurrentAutoEncoder(input_dim=3, layers=(8,))
         batch = torch.randn(4, 20, 3)
         loss = model_local.training_step(batch, 0)
         assert loss.ndim == 0
 
     def test_mae_loss_trains(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=3, layers=(8,), loss=ReconstructionLoss.MAE)
+        model = RecurrentAutoEncoder(input_dim=3, layers=(8,), loss=ReconstructionLoss.MAE)
         losses = self._train(model)
         for loss in losses:
             assert math.isfinite(loss)
@@ -195,12 +195,12 @@ class TestOptimizerSelection:
         "optimizer", [OptimizerName.ADAM, OptimizerName.ADAMW, OptimizerName.RADAM]
     )
     def test_instantiates_with_optimizer(self, optimizer: OptimizerName) -> None:
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8,), optimizer=optimizer)
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8,), optimizer=optimizer)
         assert isinstance(m, RecurrentAutoEncoder)
 
     @pytest.mark.parametrize("optimizer", [OptimizerName.ADAMW, OptimizerName.RADAM])
     def test_non_default_optimizer_trains(self, optimizer: OptimizerName) -> None:
-        model = RecurrentAutoEncoder(input_dims=3, layers=(8,), optimizer=optimizer)
+        model = RecurrentAutoEncoder(input_dim=3, layers=(8,), optimizer=optimizer)
         data = torch.randn(12, 20, 3)
         loader = DataLoader(_RawTensorDataset(data), batch_size=4)
         trainer = pl.Trainer(
@@ -238,28 +238,28 @@ class TestDropoutLayers:
     def test_dropout_modules_inserted_between_layers(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=0.5)
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8, 4), dropout=0.5)
         assert any(isinstance(layer, nn.Dropout) for layer in m.encoder)
 
     def test_zero_dropout_inserts_no_dropout_modules(self) -> None:
         from torch import nn
 
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=0.0)
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8, 4), dropout=0.0)
         assert not any(isinstance(layer, nn.Dropout) for layer in m.encoder)
         assert not any(isinstance(layer, nn.Dropout) for layer in m.decoder)
 
     def test_mismatched_dropout_tuple_raises_at_construction(self) -> None:
         with pytest.raises(ValueError, match="Expected 2 dropout values"):
-            RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=(0.1,))
+            RecurrentAutoEncoder(input_dim=3, layers=(8, 4), dropout=(0.1,))
 
     def test_per_layer_dropout_tuple_accepted(self) -> None:
-        m = RecurrentAutoEncoder(input_dims=3, layers=(8, 4), dropout=(0.0, 0.3))
+        m = RecurrentAutoEncoder(input_dim=3, layers=(8, 4), dropout=(0.0, 0.3))
         assert isinstance(m, RecurrentAutoEncoder)
 
 
 class TestEncodeBatch:
     def test_encode_batch_returns_last_timestep(self) -> None:
-        model = RecurrentAutoEncoder(input_dims=3, layers=(8,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(8,))
         encoder = model._encoder
         batch_x = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, batch_x)
