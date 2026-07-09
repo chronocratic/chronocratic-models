@@ -45,14 +45,14 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def __init__(
         self,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         latent_dim: int,
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.reconstruction_weight = reconstruction_weight
         self.learning_rate = learning_rate
@@ -61,8 +61,8 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruct an input batch using the latent mean.
 
-        Expects ``x`` of shape ``(batch, sequence_length, input_dims)``.
-        The encoder transposes to ``(batch, input_dims, sequence_length)`` internally.
+        Expects ``x`` of shape ``(batch, sequence_length, input_dim)``.
+        The encoder transposes to ``(batch, input_dim, sequence_length)`` internally.
         """
         z_mean, _z_log_var, _z = self._encoder(x)
         return self._decoder(z_mean)

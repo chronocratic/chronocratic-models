@@ -20,7 +20,7 @@ class TimeVAEEncoder(nn.Module):
     def __init__(
         self,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
         conv_kernel_size: int = 3,
@@ -28,13 +28,13 @@ class TimeVAEEncoder(nn.Module):
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.hidden_layer_sizes = hidden_layer_sizes
         self.layers: nn.ModuleList = nn.ModuleList()
         self.layers.append(
             nn.Conv1d(
-                input_dims,
+                input_dim,
                 hidden_layer_sizes[0],
                 kernel_size=conv_kernel_size,
                 stride=conv_stride,
@@ -57,7 +57,7 @@ class TimeVAEEncoder(nn.Module):
 
         self.layers.append(nn.Flatten())
 
-        self.encoder_last_dense_dim = self._get_last_dense_dim(sequence_length, input_dims)
+        self.encoder_last_dense_dim = self._get_last_dense_dim(sequence_length, input_dim)
 
         self.encoder = nn.Sequential(*self.layers)
         del self.layers
@@ -74,10 +74,10 @@ class TimeVAEEncoder(nn.Module):
         z = self.sampling((z_mean, z_log_var))
         return z_mean, z_log_var, z
 
-    def _get_last_dense_dim(self, sequence_length: int, input_dims: int) -> int:
+    def _get_last_dense_dim(self, sequence_length: int, input_dim: int) -> int:
         with torch.no_grad():
             # device-ok: CPU test input for shape probing
-            x = torch.randn(1, input_dims, sequence_length)
+            x = torch.randn(1, input_dim, sequence_length)
             for conv in self.layers:
                 x = conv(x)
             return x.numel()
@@ -87,7 +87,7 @@ class TimeVAEDecoder(nn.Module):
     def __init__(
         self,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         hidden_layer_sizes: tuple[int, ...],
         latent_dim: int,
         trend_poly: int = 0,
@@ -100,7 +100,7 @@ class TimeVAEDecoder(nn.Module):
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.hidden_layer_sizes = hidden_layer_sizes
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
@@ -109,15 +109,15 @@ class TimeVAEDecoder(nn.Module):
         self.conv_stride = conv_stride
         if self.trend_poly > 0:
             self.trend_layer = TrendLayer(
-                self.sequence_length, self.input_dims, self.latent_dim, self.trend_poly
+                self.sequence_length, self.input_dim, self.latent_dim, self.trend_poly
             )
         if self.custom_seasonality is not None and len(self.custom_seasonality) > 0:
             self.seasonal_layer = SeasonalLayer(
-                self.sequence_length, self.input_dims, self.latent_dim, self.custom_seasonality
+                self.sequence_length, self.input_dim, self.latent_dim, self.custom_seasonality
             )
         self.use_residual_conn = use_residual_conn
         self.encoder_last_dense_dim = encoder_last_dense_dim
-        self.level_model = LevelModel(self.latent_dim, self.input_dims, self.sequence_length)
+        self.level_model = LevelModel(self.latent_dim, self.input_dim, self.sequence_length)
 
         if use_residual_conn:
             if encoder_last_dense_dim is None:
@@ -125,7 +125,7 @@ class TimeVAEDecoder(nn.Module):
                 raise ValueError(msg)
             self.residual_conn = ResidualConnection(
                 self.sequence_length,
-                self.input_dims,
+                self.input_dim,
                 hidden_layer_sizes,
                 latent_dim,
                 encoder_last_dense_dim,
@@ -157,7 +157,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
     Args:
         sequence_length: Length of each input time series sample.
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         latent_dim: Dimensionality of the latent space.
         reconstruction_weight: Weight applied to the reconstruction term
             of the VAE loss (the KL term is unweighted).
@@ -193,10 +193,19 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         """Return the TimeVAE decoder."""
         return self._decoder
 
+    @property
+    def representation_dim(self) -> int:
+        """Feature dim of the ``encode()`` output.
+
+        For TimeVAE this equals ``latent_dim``, the dimensionality of
+        the stochastic bottleneck (D-03, D-04).
+        """
+        return self.latent_dim
+
     def __init__(
         self,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         latent_dim: int = 8,
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
@@ -210,7 +219,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     ) -> None:
         super().__init__(
             sequence_length=sequence_length,
-            input_dims=input_dims,
+            input_dim=input_dim,
             latent_dim=latent_dim,
             reconstruction_weight=reconstruction_weight,
             learning_rate=learning_rate,
@@ -239,7 +248,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     def _build_encoder(self) -> TimeVAEEncoder:
         return TimeVAEEncoder(
             sequence_length=self.sequence_length,
-            input_dims=self.input_dims,
+            input_dim=self.input_dim,
             hidden_layer_sizes=self.hidden_layer_sizes,
             latent_dim=self.latent_dim,
             conv_kernel_size=self.conv_kernel_size,
@@ -261,7 +270,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
         Args:
             encoder: The TimeVAEEncoder module.
-            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dim)``.
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
@@ -280,7 +289,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     def _build_decoder(self) -> TimeVAEDecoder:
         return TimeVAEDecoder(
             sequence_length=self.sequence_length,
-            input_dims=self.input_dims,
+            input_dim=self.input_dim,
             hidden_layer_sizes=self.hidden_layer_sizes,
             latent_dim=self.latent_dim,
             trend_poly=self.trend_poly,
