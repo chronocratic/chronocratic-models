@@ -17,9 +17,9 @@ def _make_encoder(
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
 ) -> DisjoinEncoder:
     return DisjoinEncoder(
-        input_dims=3,
-        embedding_dims=8,
-        representation_dims=16,
+        input_dim=3,
+        embedding_dim=8,
+        representation_dim=16,
         kernel_size=4,
         normalization_layer_type=normalization_layer_type,
     )
@@ -73,12 +73,12 @@ def _make_model(
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
 ) -> Series2Vec:
     return Series2Vec(
-        input_dims=3,
-        embedding_dims=8,
-        representation_dims=16,
+        input_dim=3,
+        embedding_dim=8,
+        representation_dim=16,
         encoder_kernel_size=4,
         num_heads=2,
-        feedforward_dims=32,
+        feedforward_dim=32,
         normalization_layer_type=normalization_layer_type,
     )
 

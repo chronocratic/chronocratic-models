@@ -89,7 +89,7 @@ def tst_model() -> TST:
 @pytest.fixture(scope="module")
 def series2vec_model() -> Series2Vec:
     """Series2Vec (Tier C, Basic mixin)."""
-    return Series2Vec(input_dims=3, representation_dims=16)
+    return Series2Vec(input_dim=3, representation_dim=16)
 
 
 @pytest.fixture(scope="module")

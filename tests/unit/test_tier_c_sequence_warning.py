@@ -23,7 +23,7 @@ from chronocratic.models.utils.helpers import _warned_sequence_fallback
 
 @pytest.fixture
 def series2vec_model() -> Series2Vec:
-    return Series2Vec(representation_dims=32, input_dims=3)
+    return Series2Vec(representation_dim=32, input_dim=3)
 
 
 @pytest.fixture

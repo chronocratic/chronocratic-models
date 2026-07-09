@@ -86,7 +86,7 @@ class TestEncodeGradientAtBatchSize1:
 
     def test_encode_gradient_flows_at_batch_size_1(self) -> None:
         """model.encode() at batch_size=1 should produce non-zero finite gradients."""
-        model = Series2Vec(input_dims=1, embedding_dims=8, representation_dims=16)
+        model = Series2Vec(input_dim=1, embedding_dim=8, representation_dim=16)
         model.train()
 
         x = torch.randn(1, 32, 1, requires_grad=True)
@@ -105,7 +105,7 @@ class TestEncodeGradientAtBatchSize1:
 
     def test_encode_gradient_flows_at_batch_size_2(self) -> None:
         """Baseline: model.encode() at batch_size=2 should produce gradients."""
-        model = Series2Vec(input_dims=1, embedding_dims=8, representation_dims=16)
+        model = Series2Vec(input_dim=1, embedding_dim=8, representation_dim=16)
         model.train()
 
         x = torch.randn(2, 32, 1, requires_grad=True)
