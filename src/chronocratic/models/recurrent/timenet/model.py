@@ -108,19 +108,31 @@ class TimeNet(LightningModule, BasicEncodingMixin):
             if self._dropout_rate > 0:
                 encoder_layers.append(nn.Dropout(self._dropout_rate))
             encoder_layers.append(
-                GRUWrapper(input_size=self._hidden_dim, hidden_size=self._hidden_dim, batch_first=True)
+                GRUWrapper(
+                    input_size=self._hidden_dim,
+                    hidden_size=self._hidden_dim,
+                    batch_first=True,
+                )
             )
         return nn.Sequential(*encoder_layers)
 
     def _build_decoder(self) -> nn.Sequential:
         decoder_layers: list[nn.Module] = [
-            GRUWrapper(input_size=self._hidden_dim, hidden_size=self._hidden_dim, batch_first=True)
+            GRUWrapper(
+                input_size=self._hidden_dim,
+                hidden_size=self._hidden_dim,
+                batch_first=True,
+            )
         ]
         for i in range(1, self._depth):
             if i > 1 and self._dropout_rate > 0:
                 decoder_layers.append(nn.Dropout(self._dropout_rate))
             decoder_layers.append(
-                GRUWrapper(input_size=self._hidden_dim, hidden_size=self._hidden_dim, batch_first=True)
+                GRUWrapper(
+                    input_size=self._hidden_dim,
+                    hidden_size=self._hidden_dim,
+                    batch_first=True,
+                )
             )
         decoder_layers.append(nn.Linear(self._hidden_dim, self._input_dim))
         return nn.Sequential(*decoder_layers)

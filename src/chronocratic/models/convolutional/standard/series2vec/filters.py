@@ -43,13 +43,21 @@ def filter_frequencies(
     if training and torch.rand(()) < LOWPASS_PROBABILITY:  # device-ok: CPU scalar probability
         return torch.stack(
             [
-                lowpass_filter(data=sample, cutoff_frequency=lowpass_cutoff, sampling_rate=SAMPLING_RATE)
+                lowpass_filter(
+                    data=sample,
+                    cutoff_frequency=lowpass_cutoff,
+                    sampling_rate=SAMPLING_RATE,
+                )
                 for sample in fft_results
             ]
         )
     return torch.stack(
         [
-            highpass_filter(data=sample, cutoff_frequency=highpass_cutoff, sampling_rate=SAMPLING_RATE)
+            highpass_filter(
+                data=sample,
+                cutoff_frequency=highpass_cutoff,
+                sampling_rate=SAMPLING_RATE,
+            )
             for sample in fft_results
         ]
     )
@@ -60,7 +68,9 @@ def apply_fft(sample: torch.Tensor) -> torch.Tensor:
     return torch.fft.fft(sample)
 
 
-def lowpass_filter(*, data: torch.Tensor, cutoff_frequency: float, sampling_rate: int) -> torch.Tensor:
+def lowpass_filter(
+    *, data: torch.Tensor, cutoff_frequency: float, sampling_rate: int
+) -> torch.Tensor:
     """Apply a Butterworth low-pass filter to ``data``."""
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist
@@ -68,7 +78,9 @@ def lowpass_filter(*, data: torch.Tensor, cutoff_frequency: float, sampling_rate
     return _filter_on_device(b, a, data)
 
 
-def highpass_filter(*, data: torch.Tensor, cutoff_frequency: float, sampling_rate: int) -> torch.Tensor:
+def highpass_filter(
+    *, data: torch.Tensor, cutoff_frequency: float, sampling_rate: int
+) -> torch.Tensor:
     """Apply a Butterworth high-pass filter to ``data``."""
     nyquist = 0.5 * sampling_rate
     normal_cutoff = cutoff_frequency / nyquist

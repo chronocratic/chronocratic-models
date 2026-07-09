@@ -144,7 +144,10 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         self.kernel_sizes = kernel_sizes
         self.temporal_feature_decoders = nn.ModuleList(
-            [nn.Conv1d(representation_dim, representation_dim, k, padding=k - 1) for k in kernel_sizes]
+            [
+                nn.Conv1d(representation_dim, representation_dim, k, padding=k - 1)
+                for k in kernel_sizes
+            ]
         )
 
     def _process_not_nan_mask(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
