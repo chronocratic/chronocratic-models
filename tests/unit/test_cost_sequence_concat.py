@@ -2,8 +2,6 @@
 
 Verifies that CoST's _evaluate_with_feature_concatenation handles both
 VECTOR (last-step concat) and SEQUENCE (full-sequence concat) output shapes.
-
-TDD for plan 10-04, Task 2.
 """
 
 from __future__ import annotations

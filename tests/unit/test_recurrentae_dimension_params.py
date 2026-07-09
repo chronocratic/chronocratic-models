@@ -1,4 +1,4 @@
-"""Tests for RecurrentAE input_dim rename and representation_dim property (Phase 12, plan 8).
+"""Tests for RecurrentAE dimension params and representation_dim property.
 
 Verifies:
 - Config uses input_dim (singular), not input_dims.

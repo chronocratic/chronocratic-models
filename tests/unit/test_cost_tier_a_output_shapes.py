@@ -2,8 +2,6 @@
 
 Verifies that Tier A dilated models declare `supported_outputs` and return
 the correct tensor ranks for VECTOR (2-D) and SEQUENCE (3-D) output shapes.
-
-TDD for plan 10-06, Task 1 and Task 2.
 """
 
 from __future__ import annotations

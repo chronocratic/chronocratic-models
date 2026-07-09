@@ -3,8 +3,6 @@
 Verifies that the dilated mixin encode_batch() and encode() accept the keyword-only
 `output` parameter (EncodingOutputShape), derive encoding_window from it, and respect
 explicit encoding_window precedence.
-
-TDD for plan 10-04, Task 1.
 """
 
 from __future__ import annotations

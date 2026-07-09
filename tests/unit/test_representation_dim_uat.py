@@ -1,6 +1,6 @@
-"""Phase 12 UAT: Standardize representation_dim across all models.
+"""UAT: Standardize representation_dim across all models.
 
-Verifies that the dimension naming unification (phase 12) correctly:
+Verifies that dimension naming unification correctly:
 - Exposes representation_dim on all 10 models
 - Returns the encode() output feature dim (not flattened T*D)
 - Fixes TST to return hidden_dim (not hidden_dim * seq_len)
@@ -401,7 +401,7 @@ class TestRepresentationBackboneProtocol:
 
 
 class TestRepresentationBackboneDocstring:
-    """Plan 12: RepresentationBackbone docstring lists all 10 implementers."""
+    """RepresentationBackbone docstring lists all 10 implementers."""
 
     @pytest.fixture
     def docstring(self) -> str:
@@ -438,7 +438,7 @@ class TestRepresentationBackboneDocstring:
 
 
 class TestSupervisedInitDocstring:
-    """Plan 12: supervised package docstring example uses singular param names."""
+    """supervised package docstring example uses singular param names."""
 
     @pytest.fixture
     def docstring(self) -> str:
@@ -461,7 +461,7 @@ class TestSupervisedInitDocstring:
 
 
 class TestContributingMd:
-    """Plan 12: CONTRIBUTING.md uses singular canonical names."""
+    """CONTRIBUTING.md uses singular canonical names."""
 
     @pytest.fixture
     def content(self) -> str:
@@ -507,7 +507,7 @@ class TestContributingMd:
 
 
 class TestChangelog:
-    """Plan 12: CHANGELOG has v0.1.0a13 breaking rename entry."""
+    """CHANGELOG has breaking rename entry."""
 
     @pytest.fixture
     def content(self) -> str:
@@ -546,7 +546,7 @@ class TestChangelog:
 
 
 class TestTowncrierFragment:
-    """Plan 12: Towncrier fragment exists for this phase."""
+    """Towncrier fragment exists for the dimension parameter changes."""
 
     def test_fragment_exists(self) -> None:
         """changelog.d/12.changed.md should exist."""
@@ -571,7 +571,7 @@ class TestTowncrierFragment:
 
 
 class TestSharedTestFilesUseSingular:
-    """Plan 12: Shared test files should use singular param names."""
+    """Shared test files should use singular param names."""
 
     @pytest.mark.parametrize(
         "test_file",
