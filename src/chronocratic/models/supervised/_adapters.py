@@ -79,7 +79,7 @@ def series2vec_representations(backbone: Series2Vec, x: torch.Tensor) -> torch.T
         x: Input features of shape ``(B, seq, channels)``.
 
     Returns:
-        Concatenated representations of shape ``(B, 2*representation_dims)``.
+        Concatenated representations of shape ``(B, 2*representation_dim)``.
     """
     return backbone.network.encode(x)
 
