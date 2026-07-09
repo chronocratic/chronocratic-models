@@ -24,16 +24,15 @@ from chronocratic.models.layers import BandedFourierLayer
 
 class BaseTimeSeriesEncoder(nn.Module, ABC):
     """
-    Parameters
-
-    input_dim: Number of input dimensions.
-    output_dim: Number of output dimensions.
-    hidden_dim: Number of hidden dimensions.
-    feature_extractor_depth: the depth
-    of the feature extractor (the number of convolutional layers).
-    dropout_rate: the dropout rate.
-    conv_kernel_size: the size of the kernel for the convolutions.
-    mask_mode: the mode of masking to use.
+    Args:
+        input_dim: Number of input dimensions.
+        output_dim: Number of output dimensions.
+        hidden_dim: Number of hidden dimensions.
+        feature_extractor_depth: Depth of the feature extractor
+            (the number of convolutional layers).
+        dropout_rate: The dropout rate.
+        conv_kernel_size: Size of the kernel for the convolutions.
+        mask_mode: The mode of masking to use.
     """
 
     def __init__(
