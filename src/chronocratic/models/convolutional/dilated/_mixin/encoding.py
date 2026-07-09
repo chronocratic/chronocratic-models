@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 _logger = logging.getLogger(__name__)
-_EXPECTED_INPUT_DIMS = 3
+_EXPECTED_INPUT_RANK = 3
 
 
 class BaseEncodingMixin(ABC):
@@ -275,7 +275,7 @@ class BaseEncodingMixin(ABC):
         """
         encoder = self._get_encoder()
 
-        if data.ndim != _EXPECTED_INPUT_DIMS:
+        if data.ndim != _EXPECTED_INPUT_RANK:
             msg = "Input data must have shape (n_instance, n_timestamps, n_features)."
             raise ValueError(msg)
 
