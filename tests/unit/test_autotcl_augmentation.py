@@ -82,7 +82,7 @@ class TestAutoTCLNeuralNetworkAugmentationTrainStep:
     def test_train_step_returns_loss(self) -> None:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(
-                input_dim=1, output_dim=320, kernel_sizes=[3]
+                input_dim=1, representation_dim=320, kernel_sizes=[3]
             ),
             training_strategy=RIPTrainingStrategy(),
         )
@@ -142,7 +142,7 @@ class TestAutoTCLTrainingWithProducer:
     ) -> None:
         aug = AutoTCLNeuralNetworkAugmentation(
             params=AutoTCLNeuralNetworkAugmentationParameters(
-                input_dim=1, output_dim=320, kernel_sizes=[3]
+                input_dim=1, representation_dim=320, kernel_sizes=[3]
             ),
             training_strategy=RIPTrainingStrategy(),
         )
@@ -167,7 +167,7 @@ class TestAutoTCLSeededEquivalence:
     ) -> None:
         torch.manual_seed(42)
         aug_params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dim=1, output_dim=320, kernel_sizes=[3]
+            input_dim=1, representation_dim=320, kernel_sizes=[3]
         )
         model1 = AutoTCL(
             input_dim=1,

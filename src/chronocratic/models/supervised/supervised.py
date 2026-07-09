@@ -66,7 +66,9 @@ class FlattenLinearHead(nn.Module):
     Series2Vec reps are already ``(B, 2*rep)`` so the flatten is a no-op there.
 
     Args:
-        in_features: Flattened representation size (``backbone.representation_dim``).
+        in_features: Flattened representation size. For pooling backbones this
+            equals ``backbone.representation_dim``; for TST it equals
+            ``backbone.representation_dim * backbone.sequence_length``.
         num_outputs: Number of classes (classification) or targets (regression).
     """
 

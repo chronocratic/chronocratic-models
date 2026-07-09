@@ -52,7 +52,7 @@ class AutoTCLNeuralNetworkAugmentationParameters:
 
     Args:
         input_dim: Number of input features (channels).
-        output_dim: Number of output features produced by the encoder.
+        representation_dim: Number of output features produced by the encoder.
         kernel_sizes: DWT decomposition levels as kernel sizes. Empty
             list means the encoder selects levels automatically.
         hidden_dim: Number of hidden units in each encoder layer.
@@ -70,7 +70,7 @@ class AutoTCLNeuralNetworkAugmentationParameters:
     """
 
     input_dim: int
-    output_dim: int = 16
+    representation_dim: int = 16
     kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
     hidden_dim: int = 64
     feature_extractor_depth: int = 1

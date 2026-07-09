@@ -214,13 +214,13 @@ class TestAutoTCLNeuralNetworkAugmentation:
     """AutoTCLNeuralNetworkAugmentation constructor and augment behavior."""
 
     def test_constructor_accepts_dataclass(self) -> None:
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, output_dim=320)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, representation_dim=320)
         strategy = RIPTrainingStrategy()
         aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
         assert isinstance(aug, AutoTCLNeuralNetworkAugmentation)
 
     def test_has_trainable_params(self) -> None:
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, output_dim=320)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1, representation_dim=320)
         strategy = RIPTrainingStrategy()
         aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
         param_count = len(list(aug.parameters()))
@@ -228,7 +228,7 @@ class TestAutoTCLNeuralNetworkAugmentation:
 
     def test_produce_returns_training_views(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dim=1, output_dim=320, kernel_sizes=[3]
+            input_dim=1, representation_dim=320, kernel_sizes=[3]
         )
         strategy = RIPTrainingStrategy()
         aug = AutoTCLNeuralNetworkAugmentation(params=params, training_strategy=strategy)
