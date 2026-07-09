@@ -73,9 +73,9 @@ class TestTimeNetRepresentationDim:
         """representation_dim should equal the feature dim of encode() VECTOR output."""
         hidden = 48
         model = TimeNet(hidden_dim=hidden, depth=1, input_dim=1)
-        batch = torch.randn(2, 10, 1)  # (B, T, C)
-        encoded = model.encode(batch)
-        # encode VECTOR shape: (B, D)
+        data = torch.randn(2, 10, 1)  # (N, T, C)
+        encoded = model.encode(data, batch_size=2)
+        # encode VECTOR shape: (N, D)
         assert encoded.shape[-1] == model.representation_dim
 
 

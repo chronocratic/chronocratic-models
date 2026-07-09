@@ -37,8 +37,8 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     dropout between layers.
 
     Args:
-        input_dims: Number of input features (channels).
-        hidden_dims: Number of hidden units in each GRU layer.
+        input_dim: Number of input features (channels).
+        hidden_dim: Number of hidden units in each GRU layer.
         depth: Number of stacked GRU layers in encoder and decoder.
         dropout_rate: Dropout probability inserted between successive GRU
             layers. ``0`` disables dropout.
@@ -56,8 +56,8 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
-        hidden_dims: int = 64,
+        input_dim: int,
+        hidden_dim: int = 64,
         depth: int = 3,
         dropout_rate: float = 0.4,
         learning_rate: float = 5e-3,
@@ -65,8 +65,8 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
-        self._input_dims: int = input_dims
-        self._hidden_dims: int = hidden_dims
+        self._input_dim: int = input_dim
+        self._hidden_dim: int = hidden_dim
         self._depth: int = depth
         self._dropout_rate: float = dropout_rate
         self._encoder: nn.Module = self._build_encoder()
@@ -74,6 +74,15 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         self._learning_rate = learning_rate
         self._sync_dist = sync_dist
         self.loss_fn = nn.MSELoss()
+
+    @property
+    def representation_dim(self) -> int:
+        """Return the feature dim of the encode() output.
+
+        For TimeNet, encode() returns the last GRU hidden state, which
+        has width equal to hidden_dim.
+        """
+        return self._hidden_dim
 
     @property
     def encoder(self) -> nn.Module:
@@ -87,27 +96,27 @@ class TimeNet(LightningModule, BasicEncodingMixin):
 
     def _build_encoder(self) -> nn.Sequential:
         encoder_layers: list[nn.Module] = [
-            GRUWrapper(self._input_dims, self._hidden_dims, batch_first=True)
+            GRUWrapper(self._input_dim, self._hidden_dim, batch_first=True)
         ]
         for _ in range(1, self._depth):
             if self._dropout_rate > 0:
                 encoder_layers.append(nn.Dropout(self._dropout_rate))
             encoder_layers.append(
-                GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
+                GRUWrapper(self._hidden_dim, self._hidden_dim, batch_first=True)
             )
         return nn.Sequential(*encoder_layers)
 
     def _build_decoder(self) -> nn.Sequential:
         decoder_layers: list[nn.Module] = [
-            GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
+            GRUWrapper(self._hidden_dim, self._hidden_dim, batch_first=True)
         ]
         for i in range(1, self._depth):
             if i > 1 and self._dropout_rate > 0:
                 decoder_layers.append(nn.Dropout(self._dropout_rate))
             decoder_layers.append(
-                GRUWrapper(self._hidden_dims, self._hidden_dims, batch_first=True)
+                GRUWrapper(self._hidden_dim, self._hidden_dim, batch_first=True)
             )
-        decoder_layers.append(nn.Linear(self._hidden_dims, self._input_dims))
+        decoder_layers.append(nn.Linear(self._hidden_dim, self._input_dim))
         return nn.Sequential(*decoder_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
