@@ -23,7 +23,8 @@ from chronocratic.models.layers import BandedFourierLayer
 
 
 class BaseTimeSeriesEncoder(nn.Module, ABC):
-    """
+    """Base encoder for time series models.
+
     Args:
         input_dim: Number of input dimensions.
         output_dim: Number of output dimensions.
