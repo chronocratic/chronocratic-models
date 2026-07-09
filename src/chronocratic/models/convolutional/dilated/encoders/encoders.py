@@ -26,9 +26,9 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
     """
     Parameters
 
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
-    hidden_dims: Number of hidden dimensions.
+    input_dim: Number of input dimensions.
+    output_dim: Number of output dimensions.
+    hidden_dim: Number of hidden dimensions.
     feature_extractor_depth: the depth
     of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
@@ -38,9 +38,9 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
-        hidden_dims: int = 64,
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -50,10 +50,10 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
         self.mask_mode = mask_mode
 
-        self.input_fc_layer = nn.Linear(input_dims, hidden_dims)
+        self.input_fc_layer = nn.Linear(input_dim, hidden_dim)
         self.feature_extractor = Conv1dDilatedEncoder(
-            in_channels=hidden_dims,
-            channels=[hidden_dims] * feature_extractor_depth + [output_dims],
+            in_channels=hidden_dim,
+            channels=[hidden_dim] * feature_extractor_depth + [output_dim],
             kernel_size=conv_kernel_size,
         )
         self.dropout_layer = nn.Dropout(p=dropout_rate)
@@ -131,9 +131,9 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dim,
-            output_dims=representation_dim,
-            hidden_dims=hidden_dim,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -455,9 +455,9 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
             raise ValueError(msg)
 
         super().__init__(
-            input_dims=input_dim,
-            output_dims=representation_dim,
-            hidden_dims=hidden_dim,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -593,9 +593,9 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dim,
-            output_dims=representation_dim,
-            hidden_dims=hidden_dim,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
