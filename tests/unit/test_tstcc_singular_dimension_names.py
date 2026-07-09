@@ -10,7 +10,6 @@ representation_dim), and D-03 (property returns encode output).
 
 from __future__ import annotations
 
-import dataclasses
 import inspect
 
 import pytest

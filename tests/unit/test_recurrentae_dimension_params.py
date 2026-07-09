@@ -27,7 +27,7 @@ class TestConfigInputDimRename:
     def test_config_does_not_have_input_dims(self) -> None:
         """Old plural field name input_dims should not exist."""
         with pytest.raises(TypeError):
-            RecurrentAutoEncoderModelParameters(**{"input_dims": 3})  # noqa: PIE796
+            RecurrentAutoEncoderModelParameters(input_dims=3)
 
     def test_config_layers_preserved(self) -> None:
         """layers tuple field stays unchanged."""
@@ -51,7 +51,7 @@ class TestModelInputDimRename:
     def test_model_does_not_accept_input_dims(self) -> None:
         """Old plural param name input_dims should not be accepted."""
         with pytest.raises(TypeError):
-            RecurrentAutoEncoder(**{"input_dims": 3}, layers=(8,))  # noqa: PIE796
+            RecurrentAutoEncoder(input_dims=3, layers=(8,))
 
     def test_input_dim_stored_correctly(self) -> None:
         """Model stores input_dim value correctly."""

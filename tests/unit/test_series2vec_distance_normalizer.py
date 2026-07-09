@@ -7,13 +7,9 @@ representations — gradient through the normalizer itself is not needed. The
 critical gradient path is through encode() → representations.
 """
 
-import pytest
 import torch
 
-from chronocratic.models.convolutional.standard.series2vec.losses import (
-    _distance_normalizer,
-    pretraining_loss,
-)
+from chronocratic.models.convolutional.standard.series2vec.losses import _distance_normalizer
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 
 

@@ -23,14 +23,14 @@ class TestTSTCCEnumRemoved:
     def test_enum_import_removed(self) -> None:
         """TSTCCTrainingMode is no longer importable from tstcc.enums."""
         with pytest.raises(ImportError):
-            from chronocratic.models.convolutional.standard.tstcc.enums import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.standard.tstcc.enums import (  # noqa: F401
                 TSTCCTrainingMode,
             )
 
     def test_enum_not_in_barrel(self) -> None:
         """TSTCCTrainingMode is no longer in the tstcc package barrel."""
         with pytest.raises(ImportError):
-            from chronocratic.models.convolutional.standard.tstcc import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.standard.tstcc import (  # noqa: F401
                 TSTCCTrainingMode,
             )
 
@@ -58,7 +58,7 @@ class TestTSTCCModelCleaned:
         x = torch.randn(4, seq_len, 2)  # (B, T, C)
         labels = torch.randint(0, 3, (4,))
         batch = (x, labels)
-        loss = model._compute_loss(batch)  # noqa: SLF001
+        loss = model._compute_loss(batch)
         assert loss.ndim == 0
         assert torch.isfinite(loss)
 
@@ -81,8 +81,8 @@ class TestTSTCCSupervisedModule:
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # Verify module construction (head uses backbone.representation_dim)
-        assert module._head._fc.in_features == backbone.representation_dim  # noqa: SLF001
-        assert module._head._fc.out_features == 5  # noqa: SLF001
+        assert module._head._fc.in_features == backbone.representation_dim
+        assert module._head._fc.out_features == 5
 
     def test_finetuner_training_step(self) -> None:
         """training_step returns scalar loss."""

@@ -50,11 +50,11 @@ class TestTSTCCConstructor:
         model = TSTCC(
             input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16, augmentation=producer
         )
-        assert model._augmentation is producer  # noqa: SLF001
+        assert model._augmentation is producer
 
     def test_default_producer_is_role_pair(self) -> None:
         model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
-        assert isinstance(model._augmentation, RolePairProducer)  # noqa: SLF001
+        assert isinstance(model._augmentation, RolePairProducer)
 
 
 class TestTSTCCTraining:
@@ -66,7 +66,7 @@ class TestTSTCCTraining:
         labels = torch.zeros(4, dtype=torch.long)
         batch = (data, labels)
 
-        loss = model._compute_loss(batch)  # noqa: SLF001
+        loss = model._compute_loss(batch)
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
 

@@ -256,4 +256,4 @@ class TestNoModelParameters:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from chronocratic.models.config import ModelParameters  # noqa: F401, PLC0415
+            from chronocratic.models.config import ModelParameters  # noqa: F401

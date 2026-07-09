@@ -7,7 +7,6 @@ instead of seq_len, feat_dim, reconstruction_wt.
 from __future__ import annotations
 
 from chronocratic.models.generative.timevae.model import TimeVAE
-from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder
 
 
 class TestBaseVAECanonicalNames:

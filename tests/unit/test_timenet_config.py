@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import torch
 
-import pytest
-
 from chronocratic.models.recurrent.timenet.config import TimeNetModelParameters
 from chronocratic.models.recurrent.timenet.model import TimeNet
 

@@ -462,8 +462,8 @@ class TestFactoryFunctions:
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
         # TST factory: in_features = representation_dim * sequence_length
-        head = module._head  # noqa: SLF001
+        head = module._head
         assert isinstance(head, FlattenLinearHead)
-        fc = head._fc  # noqa: SLF001
+        fc = head._fc
         assert fc.in_features == backbone.representation_dim * backbone.sequence_length
         assert fc.out_features == 5

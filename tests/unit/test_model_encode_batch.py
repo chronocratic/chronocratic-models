@@ -15,7 +15,6 @@ from chronocratic.models.generative.timevae.model import TimeVAE
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
 
-
 MODELS = {
     "TimeVAE": TimeVAE(sequence_length=32, input_dim=3, latent_dim=8),
     "TimeNet": TimeNet(hidden_dim=16, depth=1, input_dim=3),

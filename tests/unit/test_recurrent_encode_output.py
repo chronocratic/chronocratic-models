@@ -6,13 +6,11 @@ to return both VECTOR (2-D) and SEQUENCE (3-D) representations.
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
-
 
 # ---------------------------------------------------------------------------
 # TimeNet

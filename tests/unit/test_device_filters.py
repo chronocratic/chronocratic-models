@@ -25,7 +25,7 @@ class TestFilterOnDeviceHelper:
     def filters_module(self) -> ModuleType:
         from chronocratic.models.convolutional.standard.series2vec import filters
 
-        return filters  # noqa: R502
+        return filters
 
     def test_filter_on_device_exists(self, filters_module: ModuleType) -> None:
         """_filter_on_device helper must exist."""

@@ -6,8 +6,6 @@ D-04 (latent_dim unchanged) for TimeVAEModelParameters and TimeVAE.__init__.
 
 from __future__ import annotations
 
-import pytest
-
 from chronocratic.models import TimeVAE, TimeVAEModelParameters
 
 

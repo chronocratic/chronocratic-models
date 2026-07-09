@@ -6,7 +6,6 @@ both VECTOR (2-D) and SEQUENCE (3-D) representations.
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC

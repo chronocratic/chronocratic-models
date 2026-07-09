@@ -7,19 +7,13 @@ _get_encoder_module + _prepare_inputs + _postprocess) to 2-hook
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import inspect
 
 import pytest
 import torch
 from torch import nn
 
 from chronocratic.models._mixin.encoding import BasicEncodingMixin
-
-if TYPE_CHECKING:
-    pass
-
-import inspect
-
 from chronocratic.models.enums.encoding import EncodingOutputShape
 
 

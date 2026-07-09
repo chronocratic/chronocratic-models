@@ -12,9 +12,10 @@ Verifies that dimension naming unification correctly:
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
+import re
 
+import pytest
 import torch
 
 from chronocratic.models.convolutional.dilated.autotcl.config import AutoTCLModelParameters
@@ -26,7 +27,6 @@ from chronocratic.models.convolutional.dilated.ts2vec.model import TS2Vec
 from chronocratic.models.convolutional.standard.mcl.config import MCLModelParameters
 from chronocratic.models.convolutional.standard.mcl.model import MCL
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
-from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
 from chronocratic.models.generative.timevae.config import TimeVAEModelParameters
 from chronocratic.models.generative.timevae.model import TimeVAE
@@ -34,11 +34,9 @@ from chronocratic.models.recurrent.recurrentae.config import RecurrentAutoEncode
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.config import TimeNetModelParameters
 from chronocratic.models.recurrent.timenet.model import TimeNet
-import pytest
-from chronocratic.models.supervised import RepresentationBackbone, make_tst_supervised
+from chronocratic.models.supervised import make_tst_supervised, RepresentationBackbone
 from chronocratic.models.transformer.tst.config import TSTModelParameters
 from chronocratic.models.transformer.tst.model import TST
-
 
 # ---------------------------------------------------------------------------
 # All 10 models expose representation_dim

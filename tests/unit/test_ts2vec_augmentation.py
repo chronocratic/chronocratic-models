@@ -84,7 +84,7 @@ class TestTS2VecConstructor:
         producer = CropShiftProducer()
         model = TS2Vec(input_dim=1, augmentation=producer)
 
-        assert model._augmentation is producer  # noqa: SLF001
+        assert model._augmentation is producer
 
     def test_accepts_full_overlap_pair_jitter(self) -> None:
         """TS2Vec constructor accepts FullOverlapProducer(Jitter(...))."""
@@ -92,13 +92,13 @@ class TestTS2VecConstructor:
         producer = FullOverlapProducer(aug=jitter)
         model = TS2Vec(input_dim=1, augmentation=producer)
 
-        assert model._augmentation is producer  # noqa: SLF001
+        assert model._augmentation is producer
 
     def test_default_is_crop_shift_producer(self) -> None:
         """TS2Vec default augmentation is CropShiftProducer."""
         model = TS2Vec(input_dim=1)
 
-        assert isinstance(model._augmentation, CropShiftProducer)  # noqa: SLF001
+        assert isinstance(model._augmentation, CropShiftProducer)
 
 
 # --------------------------------------------------------------------------- #
@@ -144,13 +144,13 @@ class TestTS2VecDimensionRename:
         """TS2Vec constructor accepts input_dim (singular)."""
         model = TS2Vec(input_dim=1)
 
-        assert model._encoder.input_fc_layer.in_features == 1  # noqa: SLF001
+        assert model._encoder.input_fc_layer.in_features == 1
 
     def test_accepts_singular_hidden_dim(self) -> None:
         """TS2Vec constructor accepts hidden_dim (singular)."""
         model = TS2Vec(input_dim=1, hidden_dim=128)
 
-        assert model._encoder.input_fc_layer.out_features == 128  # noqa: SLF001
+        assert model._encoder.input_fc_layer.out_features == 128
 
     def test_accepts_singular_representation_dim(self) -> None:
         """TS2Vec constructor accepts representation_dim (singular, formerly output_dims)."""
@@ -204,8 +204,8 @@ class TestTS2VecDeterminism:
         data = torch.randn(2, 50, 1)
 
         with torch.no_grad():
-            emb1_a, emb2_a = model1._encode_augmented_views(data)  # noqa: SLF001
-            emb1_b, emb2_b = model2._encode_augmented_views(data)  # noqa: SLF001
+            emb1_a, emb2_a = model1._encode_augmented_views(data)
+            emb1_b, emb2_b = model2._encode_augmented_views(data)
 
         torch.testing.assert_close(emb1_a, emb1_b)
         torch.testing.assert_close(emb2_a, emb2_b)

@@ -23,13 +23,12 @@ from chronocratic.models import (
     MCL,
     RecurrentAutoEncoder,
     Series2Vec,
+    TimeNet,
+    TimeVAE,
     TS2Vec,
     TST,
     TSTCC,
-    TimeNet,
-    TimeVAE,
 )
-
 
 # ---------------------------------------------------------------------------
 # Model factories — minimal configs that produce a working instance

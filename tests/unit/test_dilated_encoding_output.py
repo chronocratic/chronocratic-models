@@ -12,8 +12,8 @@ import inspect
 import pytest
 import torch
 
-from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.convolutional.dilated._mixin.encoding import BaseEncodingMixin
+from chronocratic.models.enums.encoding import EncodingOutputShape
 
 
 class _TestableEncodingModel(BaseEncodingMixin, torch.nn.Module):
@@ -35,9 +35,8 @@ class _TestableEncodingModel(BaseEncodingMixin, torch.nn.Module):
         if encoding_window == "full_series":
             # Return (B, 1, F) so encode_batch.squeeze(1) produces (B, F)
             return torch.ones(batch, 1, features, device=self.device)
-        else:
-            # encoding_window is None (SEQUENCE)
-            return torch.ones(batch, seq, features, device=self.device)
+        # encoding_window is None (SEQUENCE)
+        return torch.ones(batch, seq, features, device=self.device)
 
 
 @pytest.fixture

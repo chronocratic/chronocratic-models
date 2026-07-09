@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 
 def _utils_dir() -> Path:
     """Return the path to the models/utils/ package directory."""
@@ -65,7 +63,7 @@ class TestBarrelReExports:
         from chronocratic.models.utils import pad_tensor_with_nan  # noqa: F401
 
     def test_all_symbols_defined_in_barrel(self) -> None:
-        import chronocratic.models.utils as utils_module  # noqa: F401
+        import chronocratic.models.utils as utils_module
 
         expected_symbols = [
             "apply_slicing",

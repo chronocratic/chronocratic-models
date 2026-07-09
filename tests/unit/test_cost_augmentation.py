@@ -63,7 +63,7 @@ class TestCoSTProducerIntegration:
     def test_cost_default_is_independent_pair(self) -> None:
         model = CoST(input_dim=1, sequence_length=100)
         # Default augmentation should be an IndependentPair
-        pair = model._augmentation.produce(torch.randn(2, 100, 1))  # noqa: SLF001
+        pair = model._augmentation.produce(torch.randn(2, 100, 1))
         assert isinstance(pair, ViewPair)
         assert pair.first.shape == (2, 100, 1)
         assert pair.second.shape == (2, 100, 1)
@@ -71,7 +71,7 @@ class TestCoSTProducerIntegration:
     def test_cost_produce_returns_view_pair(self) -> None:
         model = CoST(input_dim=1, sequence_length=100)
         x = torch.randn(2, 100, 1)
-        pair = model._augmentation.produce(x)  # noqa: SLF001
+        pair = model._augmentation.produce(x)
         assert hasattr(pair, "first")
         assert hasattr(pair, "second")
 

@@ -130,17 +130,17 @@ class TestConfigAllExports:
     """Each config module exposes its class via __all__."""
 
     def test_ts2vec_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.ts2vec.config as mod
 
         assert "TS2VecModelParameters" in mod.__all__
 
     def test_cost_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.cost.config as mod
 
         assert "CoSTModelParameters" in mod.__all__
 
     def test_autotcl_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.autotcl.config as mod
 
         assert "AutoTCLModelParameters" in mod.__all__
 
@@ -150,6 +150,6 @@ class TestNoDilatedCNNConfig:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from chronocratic.models.convolutional.dilated.config import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.dilated.config import (  # noqa: F401
                 DilatedCNNModelParameters,
             )
