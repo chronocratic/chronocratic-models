@@ -35,7 +35,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     scored, and ``padding_masks`` marks valid (non-padded) timesteps.
 
     ``forward(x, padding_masks)`` returns transformer representations
-    of shape ``(batch, seq_len, hidden_dims)``, not the masked-reconstruction
+    of shape ``(batch, seq_len, hidden_dim)``, not the masked-reconstruction
     output. The reconstruction head is internal and used only during
     pretraining.
 
@@ -43,13 +43,13 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     from ``chronocratic.models.supervised``.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         sequence_length: Maximum sequence length supported by the positional
             encoding.
-        hidden_dims: Transformer model (token) dimensionality.
+        hidden_dim: Transformer model (token) dimensionality.
         num_heads: Number of attention heads.
         depth: Number of stacked transformer encoder layers.
-        feedforward_dims: Hidden dimensionality of the transformer
+        feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
         dropout_rate: Dropout probability used throughout the transformer.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
@@ -88,12 +88,12 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
+        input_dim: int,
         sequence_length: int,
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         num_heads: int = 8,
         depth: int = 3,
-        feedforward_dims: int = 256,
+        feedforward_dim: int = 256,
         dropout_rate: float = 0.1,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
@@ -121,12 +121,12 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         self._augmentation = augmentation
 
         self._encoder = TSTransformerEncoder(
-            input_dims=input_dims,
+            input_dim=input_dim,
             sequence_length=sequence_length,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
             num_heads=num_heads,
             depth=depth,
-            feedforward_dims=feedforward_dims,
+            feedforward_dim=feedforward_dim,
             dropout_rate=dropout_rate,
             pos_encoding=pos_encoding,
             activation=activation,
@@ -144,7 +144,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
-        """Return transformer representations of shape ``(batch, seq_len, hidden_dims)``."""
+        """Return transformer representations of shape ``(batch, seq_len, hidden_dim)``."""
         return self.get_representations(x, padding_masks)
 
     def get_representations(self, x: torch.Tensor, padding_masks: torch.Tensor) -> torch.Tensor:
@@ -257,12 +257,12 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
         Args:
             encoder: The TSTransformerEncoder module.
-            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dim)``.
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
             Representations of shape ``(B, D)`` for VECTOR
-            or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dims).
+            or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dim).
         """
         padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
         full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
@@ -280,10 +280,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     @property
     def representation_dim(self) -> int:
-        """Flattened representation size handed to a downstream head.
+        """Feature dim of the pooled encode() representation.
 
         Returns:
-            ``hidden_dims * sequence_length`` — the number of features after
-            flattening the ``(batch, seq_len, hidden_dims)`` representation.
+            ``hidden_dim`` — the feature dimension of the vector produced
+            by ``encode()`` with ``output=VECTOR``.
         """
-        return self._encoder.hidden_dims * self._encoder.sequence_length
+        return self._encoder.hidden_dim
