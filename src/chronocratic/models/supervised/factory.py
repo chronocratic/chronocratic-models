@@ -73,7 +73,7 @@ def make_tst_supervised(
     """
     _validate_task(task)
     head = FlattenLinearHead(
-        in_features=backbone.representation_dim * backbone.encoder.sequence_length,
+        in_features=backbone.representation_dim * backbone.sequence_length,
         num_outputs=num_outputs,
     )
     loss_fn = classification_loss if task == "classification" else regression_loss

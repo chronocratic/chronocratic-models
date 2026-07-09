@@ -120,6 +120,8 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
         self._augmentation = augmentation
 
+        self._sequence_length = sequence_length
+
         self._encoder = TSTransformerEncoder(
             input_dim=input_dim,
             sequence_length=sequence_length,
@@ -277,6 +279,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     def encoder(self) -> nn.Module:
         """Return the transformer encoder for inspection and checkpointing."""
         return self._encoder
+
+    @property
+    def sequence_length(self) -> int:
+        """Return the maximum sequence length supported by this model."""
+        return self._sequence_length
 
     @property
     def representation_dim(self) -> int:
