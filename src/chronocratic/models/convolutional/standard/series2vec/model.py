@@ -168,6 +168,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
                 f"supported: {type(self).supported_outputs}"
             )
             raise ValueError(msg)
+        assert isinstance(encoder, Series2VecNetwork)  # narrows Module -> Series2VecNetwork
         flat = encoder.encode(batch_x)  # (B, D) — D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR

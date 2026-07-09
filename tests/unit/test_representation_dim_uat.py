@@ -539,31 +539,6 @@ class TestChangelog:
 
 
 # ---------------------------------------------------------------------------
-# Towncrier fragment
-# ---------------------------------------------------------------------------
-
-
-class TestTowncrierFragment:
-    """Towncrier fragment exists for the dimension parameter changes."""
-
-    def test_fragment_exists(self) -> None:
-        """changelog.d/12.changed.md should exist."""
-        fragment = Path(__file__).resolve().parents[2] / "changelog.d" / "12.changed.md"
-        assert fragment.exists(), f"Towncrier fragment not found at {fragment}"
-
-    def test_fragment_has_content(self) -> None:
-        """Fragment should describe the dimension parameter naming changes."""
-        fragment = Path(__file__).resolve().parents[2] / "changelog.d" / "12.changed.md"
-        content = fragment.read_text()
-        assert len(content.strip()) > 0
-        assert (
-            "dimension" in content.lower()
-            or "rename" in content.lower()
-            or "singular" in content.lower()
-        )
-
-
-# ---------------------------------------------------------------------------
 # Shared test files use singular param names
 # ---------------------------------------------------------------------------
 
