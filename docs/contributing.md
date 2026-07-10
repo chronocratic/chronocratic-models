@@ -61,14 +61,14 @@ uv run sphinx-build -b html docs/ docs/_build/
 
 ## Protected Project Files
 
-Certain files are restricted to **core maintainers** and should not be modified by external contributors:
+Certain files affect every user of the project, so changes to them are **flagged for maintainer review** and should normally be left to core maintainers:
 
 - **`pyproject.toml`** — Build configuration, dependencies, and project metadata. Changes here affect all users and may introduce regressions.
-- **`.vscode/settings.json`** — Editor settings for linting, formatting, and type-checking. Shared configuration that ensures consistency across the team.
+- **`.vscode/`** — Editor settings for linting, formatting, and type-checking (e.g. `settings.json`). Shared configuration that ensures consistency across the team.
 
-These files are protected by an automated CI check (`protected-files-check.yml`) that flags PRs modifying them. If a change is **absolutely necessary** (e.g., a dependency fix required for the PR to work), include a clear explanation in the PR description and expect maintainer review.
+An automated CI check (`protected-files-check.yml`) posts an advisory comment on any PR that modifies these files. The comment is informational — it does not block the merge, but it makes the change explicit for reviewers. If a change is **absolutely necessary** (e.g., a dependency fix required for the PR to work), include a clear explanation in the PR description and expect maintainer review.
 
-Exceptions require explicit approval from a core maintainer. When in doubt, open an issue first.
+Non-maintainer changes to these files should have explicit sign-off from a core maintainer. When in doubt, open an issue first.
 
 ## Adding Changelog Fragments
 
