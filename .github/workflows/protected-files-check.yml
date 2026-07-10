@@ -8,18 +8,12 @@ on:
       - .vscode/**
 
 jobs:
-  check-protected-files:
+  check-pyproject:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-
-      - name: Detect changed protected files
-        id: changed
+      - name: Check pyproject.toml
         uses: actions/github-script@v9
         with:
           script: |
@@ -29,20 +23,56 @@ jobs:
               pull_number: context.issue.number
             });
 
-            const protectedPaths = ['pyproject.toml', '.vscode/settings.json'];
-            const modified = files.filter(f =>
-              protectedPaths.some(p => p === f.filename || f.filename.startsWith(p + '/'))
-            );
+            const target = 'pyproject.toml';
+            const changed = files.find(f => f.filename === target);
+            if (!changed) return;
 
-            if (modified.length > 0) {
-              const lines = modified.map(f =>
-                `- \`${f.filename}\` (${f.status})`
-              ).join('\n');
-              core.setOutput('count', modified.length);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: `⚠️ **Protected files modified**\n\nThis PR changes ${modified.length} file(s) that are restricted to core maintainers:\n\n${lines}\n\nPlease review carefully. See [Contributing](../blob/main/docs/contributing.md#protected-project-files) for policy.`
-              });
-            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `⚠️ **pyproject.toml** — Build Configuration\n\n` +
+                `This PR modifies \`pyproject.toml\` (${changed.status}), which controls ` +
+                `dependencies, build settings, and project metadata for all users.\n\n` +
+                `Core maintainers should verify:\n` +
+                `- New dependencies are necessary and pinned\n` +
+                `- Build/tool configurations don't break the CI pipeline\n` +
+                `- Changes are backward-compatible\n\n` +
+                `See [Contributing](../blob/main/docs/contributing.md#protected-project-files) for policy.`
+            });
+
+  check-vscode-settings:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check .vscode settings
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const targets = files.filter(f => f.filename.startsWith('.vscode/'));
+            if (targets.length === 0) return;
+
+            const lines = targets.map(f =>
+              `- \`${f.filename}\` (${f.status})`
+            ).join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `⚠️ **.vscode settings** — Editor Configuration\n\n` +
+                `This PR modifies ${targets.length} VS Code setting file(s), which controls ` +
+                `linting, formatting, and type-checking for the team:\n\n` +
+                `${lines}\n\n` +
+                `Core maintainers should verify:\n` +
+                `- Settings don't conflict with CI tooling (ruff, ty)\n` +
+                `- Changes benefit all contributors, not local preferences\n\n` +
+                `See [Contributing](../blob/main/docs/contributing.md#protected-project-files) for policy.`
+            });
