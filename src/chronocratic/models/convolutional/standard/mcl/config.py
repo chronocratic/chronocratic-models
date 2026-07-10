@@ -16,8 +16,9 @@ class MCLModelParameters:
     """Configuration for the MCL model.
 
     Args:
-        input_dims: Number of input features (channels) in the time series.
-        output_dims: Number of output features produced by the encoder.
+        input_dim: Number of input features (channels) in the time series.
+        representation_dim: Width of the vector encode() returns.
+            The representation size of the encoder output.
         alpha: Beta-distribution parameter controlling the MixUp
             interpolation coefficient.
         learning_rate: Base learning rate for the Adam optimizer.
@@ -27,7 +28,7 @@ class MCLModelParameters:
             in the FCN encoder.
         encoder_dilations: Tuple of dilation rates for each Conv1d block
             in the FCN encoder.
-        projection_dims: Hidden dimension of the projection head used
+        projection_dim: Hidden dimension of the projection head used
             for contrastive learning.
         sync_dist: Whether to synchronize metrics across distributed
             processes during logging.
@@ -36,13 +37,13 @@ class MCLModelParameters:
             batch_size=1 safety. ``BATCH`` uses BatchNorm1d.
     """
 
-    input_dims: int
-    output_dims: int = 128
+    input_dim: int
+    representation_dim: int = 128  # renamed from `output_dims` in the original codebase
     alpha: float = 1.0
     learning_rate: float = 1e-3
     encoder_channels: tuple[int, ...] = (128, 256, 128)
     encoder_kernels: tuple[int, ...] = (7, 5, 3)
     encoder_dilations: tuple[int, ...] = (2, 4, 8)
-    projection_dims: int = 128
+    projection_dim: int = 128
     sync_dist: bool = False
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL

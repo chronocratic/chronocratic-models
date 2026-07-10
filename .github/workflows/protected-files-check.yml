@@ -1,0 +1,140 @@
+name: Protected Files Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - pyproject.toml
+      - .vscode/**
+
+jobs:
+  check-pyproject:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check pyproject.toml
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- protected-files-check:pyproject -->';
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const changed = files.find(f => f.filename === 'pyproject.toml');
+
+            // One marker comment per PR, kept in sync with the current diff.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            const baseRef = context.payload.pull_request.base.ref;
+            const docUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}` +
+              `/blob/${baseRef}/docs/contributing.md#protected-project-files`;
+
+            let body;
+            if (changed) {
+              body = `${marker}\n` +
+                `⚠️ **pyproject.toml** — Build Configuration\n\n` +
+                `This PR modifies \`pyproject.toml\` (${changed.status}), which controls ` +
+                `dependencies, build settings, and project metadata for all users.\n\n` +
+                `Core maintainers should verify:\n` +
+                `- New dependencies are necessary and pinned\n` +
+                `- Build/tool configurations don't break the CI pipeline\n` +
+                `- Changes are backward-compatible\n\n` +
+                `See [Contributing](${docUrl}) for policy.`;
+            } else if (existing) {
+              // Rolled back since the last flag — clear the warning instead of leaving it stale.
+              body = `${marker}\n` +
+                `✅ \`pyproject.toml\` is no longer modified by this PR. Protected-file warning cleared.`;
+            } else {
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  check-vscode-settings:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check .vscode settings
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- protected-files-check:vscode -->';
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const targets = files.filter(f => f.filename.startsWith('.vscode/'));
+
+            // One marker comment per PR, kept in sync with the current diff.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            const baseRef = context.payload.pull_request.base.ref;
+            const docUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}` +
+              `/blob/${baseRef}/docs/contributing.md#protected-project-files`;
+
+            let body;
+            if (targets.length > 0) {
+              const lines = targets.map(f => `- \`${f.filename}\` (${f.status})`).join('\n');
+              body = `${marker}\n` +
+                `⚠️ **.vscode settings** — Editor Configuration\n\n` +
+                `This PR modifies ${targets.length} VS Code setting file(s), which controls ` +
+                `linting, formatting, and type-checking for the team:\n\n` +
+                `${lines}\n\n` +
+                `Core maintainers should verify:\n` +
+                `- Settings don't conflict with CI tooling (ruff, ty)\n` +
+                `- Changes benefit all contributors, not local preferences\n\n` +
+                `See [Contributing](${docUrl}) for policy.`;
+            } else if (existing) {
+              // Rolled back since the last flag — clear the warning instead of leaving it stale.
+              body = `${marker}\n` +
+                `✅ No \`.vscode/\` files are modified by this PR anymore. Protected-file warning cleared.`;
+            } else {
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }

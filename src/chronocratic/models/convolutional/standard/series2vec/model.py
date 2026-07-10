@@ -14,10 +14,10 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
     pretraining_loss,
 )
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
-from chronocratic.models.distances.soft_dtw import SoftDTW
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 # Minimum windows to split a singleton batch into: K<3 gives <2 unique pairwise
@@ -53,12 +53,12 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     architecture exactly.
 
     Args:
-        input_dims: Number of input features (channels).
-        embedding_dims: Token embedding dimensionality.
+        input_dim: Number of input features (channels).
+        embedding_dim: Token embedding dimensionality.
         num_heads: Number of attention heads in the transformer encoder.
-        feedforward_dims: Hidden dimensionality of the transformer
+        feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
-        representation_dims: Output dimensionality of the encoding
+        representation_dim: Output dimensionality of the encoding
             (temporal + frequency concatenated). Must be even.
         dropout_rate: Dropout probability applied throughout the
             network.
@@ -88,16 +88,16 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
-        embedding_dims: int = 16,
+        *,
+        input_dim: int,
+        embedding_dim: int = 16,
         num_heads: int = 8,
-        feedforward_dims: int = 256,
-        representation_dims: int = 320,
+        feedforward_dim: int = 256,
+        representation_dim: int = 320,
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
-        *,
         singleton_split_count: int = 3,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,
@@ -121,11 +121,11 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self._encoder_kernel_size = encoder_kernel_size
 
         self.network = Series2VecNetwork(
-            input_dims=input_dims,
-            embedding_dims=embedding_dims,
+            input_dim=input_dim,
+            embedding_dim=embedding_dim,
             num_heads=num_heads,
-            feedforward_dims=feedforward_dims,
-            representation_dims=representation_dims,
+            feedforward_dim=feedforward_dim,
+            representation_dim=representation_dim,
             dropout_rate=dropout_rate,
             encoder_kernel_size=encoder_kernel_size,
             normalization_layer_type=normalization_layer_type,
@@ -155,12 +155,12 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
 
         Args:
             encoder: The Series2VecNetwork module.
-            batch_x: Batch tensor of shape ``(B, seq_len, input_dims)``.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dim)``.
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
-            Representations of shape ``(B, representation_dims)`` for
-            VECTOR or ``(B, 1, representation_dims)`` for SEQUENCE.
+            Representations of shape ``(B, representation_dim)`` for
+            VECTOR or ``(B, 1, representation_dim)`` for SEQUENCE.
         """
         if output not in type(self).supported_outputs:
             msg = (
@@ -168,7 +168,8 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
                 f"supported: {type(self).supported_outputs}"
             )
             raise ValueError(msg)
-        flat = encoder.encode(batch_x)  # (B, D) — D=representation_dims
+        assert isinstance(encoder, Series2VecNetwork)  # noqa: S101  # narrows Module -> Series2VecNetwork
+        flat = encoder.encode(batch_x)  # (B, D) — D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
         _warn_sequence_fallback(type(self))
@@ -266,7 +267,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         """Flattened representation size (temporal + frequency concatenated).
 
         Returns:
-            ``representation_dims`` — the output dimension of
+            ``representation_dim`` — the output dimension of
             :meth:`Series2VecNetwork.encode`, matching the constructor parameter.
         """
         return self.network.representation_dim

@@ -18,7 +18,7 @@ class TestDisjoinEncoderGroupNorm:
 
     def test_temporal_cnn_uses_group_norm(self) -> None:
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         norm = encoder.temporal_CNN[1]
         assert isinstance(norm, torch.nn.GroupNorm)
@@ -27,7 +27,7 @@ class TestDisjoinEncoderGroupNorm:
 
     def test_spatial_cnn_uses_group_norm(self) -> None:
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         norm = encoder.spatial_CNN[1]
         assert isinstance(norm, torch.nn.GroupNorm)
@@ -36,7 +36,7 @@ class TestDisjoinEncoderGroupNorm:
 
     def test_rep_cnn_uses_group_norm(self) -> None:
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         norm = encoder.rep_CNN[1]
         assert isinstance(norm, torch.nn.GroupNorm)
@@ -45,7 +45,7 @@ class TestDisjoinEncoderGroupNorm:
 
     def test_no_batch_norm_in_encoder(self) -> None:
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         for module in encoder.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
@@ -53,7 +53,7 @@ class TestDisjoinEncoderGroupNorm:
     def test_forward_batch_size_one(self) -> None:
         """GroupNorm must work at batch_size=1 (unlike BatchNorm)."""
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         x = torch.randn(1, 3, 20)  # (batch, channels, time) — time must be >= kernel_size
         out = encoder(x)
@@ -65,7 +65,7 @@ class TestDisjoinEncoderGroupNorm:
     def test_gradient_flow_batch_size_one(self) -> None:
         """Verify gradients flow through GroupNorm at batch_size=1."""
         encoder = DisjoinEncoder(
-            input_dims=3, embedding_dims=16, representation_dims=32, kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, kernel_size=8
         )
         x = torch.randn(1, 3, 20, requires_grad=True)
         out = encoder(x)
@@ -86,36 +86,36 @@ class TestSeries2VecNetworkGroupNorm:
 
     def test_both_encoders_use_group_norm(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, encoder_kernel_size=8
         )
         assert isinstance(network.embed_layer.temporal_CNN[1], torch.nn.GroupNorm)
         assert isinstance(network.embed_layer_f.spatial_CNN[1], torch.nn.GroupNorm)
 
     def test_no_batch_norm_in_network(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, encoder_kernel_size=8
         )
         for module in network.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
 
     def test_encode_batch_size_one(self) -> None:
         network = Series2VecNetwork(
-            input_dims=3, embedding_dims=16, representation_dims=32, encoder_kernel_size=8
+            input_dim=3, embedding_dim=16, representation_dim=32, encoder_kernel_size=8
         )
         x = torch.randn(1, 20, 3)  # (batch, time, channels) — time must be >= kernel_size
         out = network.encode(x)
-        assert out.shape == (1, 32)  # (batch, representation_dims) — each branch contributes 16
+        assert out.shape == (1, 32)  # (batch, representation_dim) — each branch contributes 16
 
 
 class TestSeries2VecGroupNorm:
     """Series2Vec model defaults to GroupNorm internally (normalization_layer_type=CHANNEL)."""
 
     def test_default_model_uses_group_norm(self) -> None:
-        model = Series2Vec(input_dims=3)
+        model = Series2Vec(input_dim=3)
         assert isinstance(model.network.embed_layer.temporal_CNN[1], torch.nn.GroupNorm)
 
     def test_no_batch_norm_in_model(self) -> None:
-        model = Series2Vec(input_dims=3)
+        model = Series2Vec(input_dim=3)
         for module in model.network.modules():
             assert not isinstance(module, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d))
 
@@ -126,7 +126,7 @@ class TestSeries2VecGroupNorm:
         assert sig.parameters["normalization_layer_type"].default == NormalizationLayerType.CHANNEL
 
     def test_encode_batch_size_one(self) -> None:
-        model = Series2Vec(input_dims=3)
+        model = Series2Vec(input_dim=3)
         x = torch.randn(1, 50, 3)  # (batch, time, channels) — time >= kernel_size
         out = model.network.encode(x)
-        assert out.shape == (1, 320)  # (batch, representation_dims) — each branch contributes 160
+        assert out.shape == (1, 320)  # (batch, representation_dim) — each branch contributes 160

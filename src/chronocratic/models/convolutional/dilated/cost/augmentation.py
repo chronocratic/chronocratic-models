@@ -46,8 +46,8 @@ class CosTRandomFunctionAugmentation(Augmentation):
 
     def __init__(
         self,
-        params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None,
         *,
+        params: CosTRandomFunctionAugmentationParameters | dict[str, Any] | None = None,
         sigma: float | None = None,
     ) -> None:
         """Initialize the random-function augmentation.

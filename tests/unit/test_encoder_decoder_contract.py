@@ -33,44 +33,52 @@ from chronocratic.models.protocols import HasDecoder, HasEncoder
 # ---------------------------------------------------------------------------
 
 ENCODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
-    (MCL, {"input_dims": 1}, "MCL"),
-    (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
-    (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
-    (TS2Vec, {"input_dims": 1}, "TS2Vec"),
-    (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
-    (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
+    (MCL, {"input_dim": 1}, "MCL"),
+    (TST, {"input_dim": 1, "sequence_length": 100}, "TST"),
+    (
+        TSTCC,
+        {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16},
+        "TSTCC",
+    ),
+    (TS2Vec, {"input_dim": 1}, "TS2Vec"),
+    (AutoTCL, {"input_dim": 1, "kernel_sizes": (3,)}, "AutoTCL"),
+    (CoST, {"input_dim": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
     (
         Series2Vec,
         {
-            "input_dims": 1,
-            "embedding_dims": 64,
+            "input_dim": 1,
+            "embedding_dim": 64,
             "num_heads": 2,
-            "feedforward_dims": 128,
-            "representation_dims": 64,
+            "feedforward_dim": 128,
+            "representation_dim": 64,
             "dropout_rate": 0.1,
         },
         "Series2Vec",
     ),
-    (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
-    (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
-    (RecurrentAutoEncoder, {"input_dims": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
+    (TimeVAE, {"sequence_length": 100, "input_dim": 1, "latent_dim": 10}, "TimeVAE"),
+    (TimeNet, {"hidden_dim": 64, "depth": 1, "input_dim": 1}, "TimeNet"),
+    (RecurrentAutoEncoder, {"input_dim": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
 ]
 
 ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
-    (MCL, {"input_dims": 1}, "MCL"),
-    (TST, {"input_dims": 1, "sequence_length": 100}, "TST"),
-    (TSTCC, {"input_dims": 1, "conv_kernel_size": 5, "stride": 1, "output_dims": 16}, "TSTCC"),
-    (TS2Vec, {"input_dims": 1}, "TS2Vec"),
-    (AutoTCL, {"input_dims": 1, "kernel_sizes": (3,)}, "AutoTCL"),
-    (CoST, {"input_dims": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
+    (MCL, {"input_dim": 1}, "MCL"),
+    (TST, {"input_dim": 1, "sequence_length": 100}, "TST"),
+    (
+        TSTCC,
+        {"input_dim": 1, "conv_kernel_size": 5, "stride": 1, "representation_dim": 16},
+        "TSTCC",
+    ),
+    (TS2Vec, {"input_dim": 1}, "TS2Vec"),
+    (AutoTCL, {"input_dim": 1, "kernel_sizes": (3,)}, "AutoTCL"),
+    (CoST, {"input_dim": 1, "sequence_length": 100, "kernel_sizes": (3,)}, "CoST"),
     (
         Series2Vec,
         {
-            "input_dims": 1,
-            "embedding_dims": 64,
+            "input_dim": 1,
+            "embedding_dim": 64,
             "num_heads": 2,
-            "feedforward_dims": 128,
-            "representation_dims": 64,
+            "feedforward_dim": 128,
+            "representation_dim": 64,
             "dropout_rate": 0.1,
         },
         "Series2Vec",
@@ -78,9 +86,9 @@ ENCODER_ONLY_MODEL_SPECS: list[tuple[type, dict, str]] = [
 ]
 
 DECODER_MODEL_SPECS: list[tuple[type, dict, str]] = [
-    (TimeVAE, {"sequence_length": 100, "input_dims": 1, "latent_dim": 10}, "TimeVAE"),
-    (TimeNet, {"hidden_dims": 64, "depth": 1, "input_dims": 1}, "TimeNet"),
-    (RecurrentAutoEncoder, {"input_dims": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
+    (TimeVAE, {"sequence_length": 100, "input_dim": 1, "latent_dim": 10}, "TimeVAE"),
+    (TimeNet, {"hidden_dim": 64, "depth": 1, "input_dim": 1}, "TimeNet"),
+    (RecurrentAutoEncoder, {"input_dim": 1, "layers": (64,)}, "RecurrentAutoEncoder"),
 ]
 
 

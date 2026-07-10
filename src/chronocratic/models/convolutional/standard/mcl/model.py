@@ -20,14 +20,14 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
     repo https://github.com/Wickstrom/MixupContrastiveLearning.
 
     Args:
-        input_dims: Number of input feature channels.
-        output_dims: Dimension of the flat encoder output.
+        input_dim: Number of input feature channels.
+        representation_dim: Dimension of the flat encoder output.
         alpha: Beta-distribution parameter for MixUp interpolation.
         learning_rate: Base learning rate for the Adam optimizer.
         encoder_channels: Tuple of channel counts for each Conv1d block.
         encoder_kernels: Tuple of kernel sizes for each Conv1d block.
         encoder_dilations: Tuple of dilation rates for each Conv1d block.
-        projection_dims: Hidden dimension of the projection head.
+        projection_dim: Hidden dimension of the projection head.
         sync_dist: Whether to synchronize metrics across processes.
         normalization_layer_type: Normalization strategy for encoder and
             projection head. Use ``CHANNEL`` for GroupNorm (batch_size=1
@@ -40,20 +40,23 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int = 128,
+        *,
+        input_dim: int,
+        representation_dim: int = 128,
         alpha: float = 1.0,
         learning_rate: float = 1e-3,
         encoder_channels: tuple[int, ...] = (128, 256, 128),
         encoder_kernels: tuple[int, ...] = (7, 5, 3),
         encoder_dilations: tuple[int, ...] = (2, 4, 8),
-        projection_dims: int = 128,
+        projection_dim: int = 128,
         sync_dist: bool = False,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
+        self._input_dim = input_dim
+        self._representation_dim = representation_dim
+        self._projection_dim = projection_dim
         self._alpha = alpha
         self._learning_rate = learning_rate
         self._sync_dist = sync_dist
@@ -61,24 +64,29 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         self.criterion = MixUpLoss()
 
         self._encoder = FCNEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
             encoder_channels=encoder_channels,
             encoder_kernels=encoder_kernels,
             encoder_dilations=encoder_dilations,
             normalization_layer_type=normalization_layer_type,
         )
         proj_norm = (
-            nn.GroupNorm(num_groups=1, num_channels=projection_dims)
+            nn.GroupNorm(num_groups=1, num_channels=projection_dim)
             if normalization_layer_type == NormalizationLayerType.CHANNEL
-            else nn.BatchNorm1d(projection_dims)
+            else nn.BatchNorm1d(projection_dim)
         )
         self.proj_head = nn.Sequential(
-            nn.Linear(output_dims, projection_dims),
+            nn.Linear(representation_dim, projection_dim),
             proj_norm,
             nn.ReLU(),
-            nn.Linear(projection_dims, projection_dims),
+            nn.Linear(projection_dim, projection_dim),
         )
+
+    @property
+    def representation_dim(self) -> int:
+        """Return the feature dim of encode()'s output."""
+        return self._representation_dim
 
     @property
     def encoder(self) -> nn.Module:
@@ -104,7 +112,7 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         if output not in type(self).supported_outputs:
             msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
             raise ValueError(msg)
-        flat = encoder(batch_x)  # (B, D) - D=latent_dim
+        flat = encoder(batch_x)  # (B, D) - D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
         _warn_sequence_fallback(type(self))

@@ -23,17 +23,17 @@ from chronocratic.models.utils.helpers import _warned_sequence_fallback
 
 @pytest.fixture
 def series2vec_model() -> Series2Vec:
-    return Series2Vec(representation_dims=32, input_dims=3)
+    return Series2Vec(representation_dim=32, input_dim=3)
 
 
 @pytest.fixture
 def mcl_model() -> MCL:
-    return MCL(input_dims=3, output_dims=64)
+    return MCL(input_dim=3, representation_dim=64)
 
 
 @pytest.fixture
 def timevae_model() -> TimeVAE:
-    return TimeVAE(sequence_length=32, input_dims=3, latent_dim=8)
+    return TimeVAE(sequence_length=32, input_dim=3, latent_dim=8)
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def batch_input() -> torch.Tensor:
 
 
 class TestSeries2VecVectorOutput:
-    """Series2Vec VECTOR returns (B, representation_dims)."""
+    """Series2Vec VECTOR returns (B, representation_dim)."""
 
     def test_vector_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()
@@ -62,7 +62,7 @@ class TestSeries2VecVectorOutput:
 
 
 class TestSeries2VecSequenceOutput:
-    """Series2Vec SEQUENCE returns (B, 1, representation_dims) with warning."""
+    """Series2Vec SEQUENCE returns (B, 1, representation_dim) with warning."""
 
     def test_sequence_shape(self, series2vec_model: Series2Vec, batch_input: torch.Tensor) -> None:
         encoder = series2vec_model._get_encoder()
@@ -97,7 +97,7 @@ class TestSeries2VecSupportedOutputs:
 
 
 class TestMCLVectorOutput:
-    """MCL VECTOR returns (B, output_dims)."""
+    """MCL VECTOR returns (B, representation_dim)."""
 
     def test_vector_shape(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()
@@ -111,7 +111,7 @@ class TestMCLVectorOutput:
 
 
 class TestMCLSequenceOutput:
-    """MCL SEQUENCE returns (B, 1, output_dims) with warning."""
+    """MCL SEQUENCE returns (B, 1, representation_dim) with warning."""
 
     def test_sequence_shape(self, mcl_model: MCL, batch_input: torch.Tensor) -> None:
         encoder = mcl_model._get_encoder()

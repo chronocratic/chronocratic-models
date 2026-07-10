@@ -11,8 +11,6 @@ import ast
 import enum
 from pathlib import Path
 
-import pytest
-
 
 class TestEncodingOutputShapeValues:
     """Enum members have the expected string values."""

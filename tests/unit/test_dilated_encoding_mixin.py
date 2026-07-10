@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import inspect
 
-import pytest
-
 from chronocratic.models.convolutional.dilated._mixin.encoding import BaseEncodingMixin
 
 

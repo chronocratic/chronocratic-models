@@ -6,13 +6,11 @@ to return both VECTOR (2-D) and SEQUENCE (3-D) representations.
 
 from __future__ import annotations
 
-import pytest
 import torch
 
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
-
 
 # ---------------------------------------------------------------------------
 # TimeNet
@@ -40,7 +38,7 @@ class TestTimeNetVectorOutput:
 
     def test_vector_shape(self) -> None:
         """VECTOR produces 2-D tensor via last-step slice."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -48,7 +46,7 @@ class TestTimeNetVectorOutput:
 
     def test_vector_ndim(self) -> None:
         """VECTOR output is exactly 2-D."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -60,7 +58,7 @@ class TestTimeNetSequenceOutput:
 
     def test_sequence_shape(self) -> None:
         """SEQUENCE produces 3-D tensor from full encoder output."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -68,7 +66,7 @@ class TestTimeNetSequenceOutput:
 
     def test_sequence_ndim(self) -> None:
         """SEQUENCE output is exactly 3-D."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -76,7 +74,7 @@ class TestTimeNetSequenceOutput:
 
     def test_sequence_length_matches_input(self) -> None:
         """SEQUENCE temporal dimension matches input temporal dimension."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(3, 25, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -88,7 +86,7 @@ class TestTimeNetGradientFlow:
 
     def test_vector_gradient_flows(self) -> None:
         """Gradients flow back through VECTOR encoding path."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -98,7 +96,7 @@ class TestTimeNetGradientFlow:
 
     def test_sequence_gradient_flows(self) -> None:
         """Gradients flow back through SEQUENCE encoding path."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -112,7 +110,7 @@ class TestTimeNetEncodeIntegration:
 
     def test_encode_sequence_via_mixin(self) -> None:
         """encode() mixin passes SEQUENCE through to _encode_batch."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         data = torch.randn(4, 20, 3)
         result = model.encode(
             data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
@@ -121,7 +119,7 @@ class TestTimeNetEncodeIntegration:
 
     def test_encode_vector_via_mixin(self) -> None:
         """encode() mixin passes VECTOR through to _encode_batch."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)
@@ -153,7 +151,7 @@ class TestRecurrentAEVectorOutput:
 
     def test_vector_shape(self) -> None:
         """VECTOR produces 2-D tensor via last-step slice."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -161,7 +159,7 @@ class TestRecurrentAEVectorOutput:
 
     def test_vector_ndim(self) -> None:
         """VECTOR output is exactly 2-D."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -173,7 +171,7 @@ class TestRecurrentAESequenceOutput:
 
     def test_sequence_shape(self) -> None:
         """SEQUENCE produces 3-D tensor from full encoder output."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(4, 20, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -181,7 +179,7 @@ class TestRecurrentAESequenceOutput:
 
     def test_sequence_ndim(self) -> None:
         """SEQUENCE output is exactly 3-D."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -189,7 +187,7 @@ class TestRecurrentAESequenceOutput:
 
     def test_sequence_length_matches_input(self) -> None:
         """SEQUENCE temporal dimension matches input temporal dimension."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(3, 25, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -201,7 +199,7 @@ class TestRecurrentAEGradientFlow:
 
     def test_vector_gradient_flows(self) -> None:
         """Gradients flow back through VECTOR encoding path."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.VECTOR)
@@ -211,7 +209,7 @@ class TestRecurrentAEGradientFlow:
 
     def test_sequence_gradient_flows(self) -> None:
         """Gradients flow back through SEQUENCE encoding path."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         encoder = model._get_encoder()
         data = torch.randn(2, 10, 3, requires_grad=True)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
@@ -225,7 +223,7 @@ class TestRecurrentAEEncodeIntegration:
 
     def test_encode_sequence_via_mixin(self) -> None:
         """encode() mixin passes SEQUENCE through to _encode_batch."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         data = torch.randn(4, 20, 3)
         result = model.encode(
             data, batch_size=2, num_workers=0, output=EncodingOutputShape.SEQUENCE
@@ -234,7 +232,7 @@ class TestRecurrentAEEncodeIntegration:
 
     def test_encode_vector_via_mixin(self) -> None:
         """encode() mixin passes VECTOR through to _encode_batch."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2, num_workers=0, output=EncodingOutputShape.VECTOR)
         assert result.shape == (4, 16)

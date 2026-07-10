@@ -12,14 +12,14 @@ _EXPECTED_CHANNEL_COUNT = 2
 class TCCEncoder(nn.Module):
     """Three-block Conv1D encoder backbone for TS-TCC.
 
-    Returns the convolutional feature map ``(B, output_dims, L')`` used for
-    contrastive learning and downstream representation extraction.
+    Returns the convolutional feature map ``(B, representation_dim, L')`` used
+    for contrastive learning and downstream representation extraction.
 
     Args:
-        input_dims: Number of input features (channels).
+        input_dim: Number of input features (channels).
         conv_kernel_size: Kernel size for the first convolution block.
         stride: Stride for the first convolution block.
-        output_dims: Number of output channels from the encoder.
+        representation_dim: Number of output channels from the encoder.
         dropout_rate: Dropout rate applied after the first conv block.
         encoder_channels: Channel counts for the first two conv blocks.
             Must have exactly 2 elements.
@@ -33,18 +33,18 @@ class TCCEncoder(nn.Module):
 
     def __init__(
         self,
-        input_dims: int,
+        *,
+        input_dim: int,
         conv_kernel_size: int,
         stride: int,
-        output_dims: int = 128,
+        representation_dim: int = 128,
         dropout_rate: float = 0.35,
         encoder_channels: tuple[int, ...] = (32, 64),
         encoder_inner_kernels: tuple[int, ...] = (8, 8),
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        self.output_dims = output_dims
+        self.representation_dim = representation_dim
 
         if len(encoder_channels) != _EXPECTED_CHANNEL_COUNT:
             msg = (
@@ -70,14 +70,14 @@ class TCCEncoder(nn.Module):
             else nn.BatchNorm1d(encoder_channels[1])
         )
         _norm3 = (
-            nn.GroupNorm(num_groups=1, num_channels=output_dims)
+            nn.GroupNorm(num_groups=1, num_channels=representation_dim)
             if normalization_layer_type == NormalizationLayerType.CHANNEL
-            else nn.BatchNorm1d(output_dims)
+            else nn.BatchNorm1d(representation_dim)
         )
 
         self.conv_block1 = nn.Sequential(
             nn.Conv1d(
-                input_dims,
+                input_dim,
                 encoder_channels[0],
                 kernel_size=conv_kernel_size,
                 stride=stride,
@@ -105,7 +105,7 @@ class TCCEncoder(nn.Module):
         self.conv_block3 = nn.Sequential(
             nn.Conv1d(
                 encoder_channels[1],
-                output_dims,
+                representation_dim,
                 kernel_size=encoder_inner_kernels[1],
                 stride=1,
                 bias=False,
@@ -120,10 +120,10 @@ class TCCEncoder(nn.Module):
         """Encode a batch and return the convolutional feature map.
 
         Args:
-            x: ``(batch, seq_len, input_dims)`` — input data in (B,T,C) layout
+            x: ``(batch, seq_len, input_dim)`` — input data in (B,T,C) layout
 
         Returns:
-            features: ``(batch, output_dims, reduced_seq_len)``
+            features: ``(batch, representation_dim, reduced_seq_len)``
         """
         x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
         x = self.conv_block1(x)

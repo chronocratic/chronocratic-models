@@ -32,6 +32,7 @@ class RIPTrainingStrategy(AugmentationTrainingStrategy):
 
     def __init__(
         self,
+        *,
         consistency_weight: float = 0.001,
         regularization_weight: float = 0.003,
         regularization_threshold: float = 0.4,
@@ -102,7 +103,7 @@ class AdversarialTrainingStrategy(AugmentationTrainingStrategy):
     ``_augmentation_loss_neural_network_augmentation_adversarial``.
     """
 
-    def __init__(self, training_ratio_step: int = 1) -> None:
+    def __init__(self, *, training_ratio_step: int = 1) -> None:
         """Initialize the adversarial training strategy.
 
         Args:

@@ -23,24 +23,25 @@ from chronocratic.models.layers import BandedFourierLayer
 
 
 class BaseTimeSeriesEncoder(nn.Module, ABC):
-    """
-    Parameters
+    """Base encoder for time series models.
 
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
-    hidden_dims: Number of hidden dimensions.
-    feature_extractor_depth: the depth
-    of the feature extractor (the number of convolutional layers).
-    dropout_rate: the dropout rate.
-    conv_kernel_size: the size of the kernel for the convolutions.
-    mask_mode: the mode of masking to use.
+    Args:
+        input_dim: Number of input dimensions.
+        output_dim: Number of output dimensions.
+        hidden_dim: Number of hidden dimensions.
+        feature_extractor_depth: Depth of the feature extractor
+            (the number of convolutional layers).
+        dropout_rate: The dropout rate.
+        conv_kernel_size: Size of the kernel for the convolutions.
+        mask_mode: The mode of masking to use.
     """
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
-        hidden_dims: int = 64,
+        *,
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -50,10 +51,10 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
         self.mask_mode = mask_mode
 
-        self.input_fc_layer = nn.Linear(input_dims, hidden_dims)
+        self.input_fc_layer = nn.Linear(input_dim, hidden_dim)
         self.feature_extractor = Conv1dDilatedEncoder(
-            in_channels=hidden_dims,
-            channels=[hidden_dims] * feature_extractor_depth + [output_dims],
+            in_channels=hidden_dim,
+            channels=[hidden_dim] * feature_extractor_depth + [output_dim],
             kernel_size=conv_kernel_size,
         )
         self.dropout_layer = nn.Dropout(p=dropout_rate)
@@ -109,10 +110,10 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     Parameters
     ----------
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
+    input_dim: Number of input dimensions.
+    representation_dim: Number of output dimensions (the feature dim of encode() output).
     kernel_sizes: Tuple of kernel sizes for the convolutions.
-    hidden_dims: Number of hidden dimensions.
+    hidden_dim: Number of hidden dimensions.
     feature_extractor_depth: the depth of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
     conv_kernel_size: the size of the kernel for the convolutions.
@@ -121,19 +122,20 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
+        *,
+        input_dim: int,
+        representation_dim: int,
         kernel_sizes: tuple[int, ...],
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -142,7 +144,10 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         self.kernel_sizes = kernel_sizes
         self.temporal_feature_decoders = nn.ModuleList(
-            [nn.Conv1d(output_dims, output_dims, k, padding=k - 1) for k in kernel_sizes]
+            [
+                nn.Conv1d(representation_dim, representation_dim, k, padding=k - 1)
+                for k in kernel_sizes
+            ]
         )
 
     def _process_not_nan_mask(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -192,12 +197,13 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
         Args:
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: If ``True``, return the raw TCN output
-                ``(batch, time, output_dims)`` before trend decoding.
+                ``(batch, time, representation_dim)`` before trend decoding.
             mask_mode: Masking strategy applied to the input.
 
         Returns:
-            Trend tensor of shape ``(batch, time, output_dims)``, or the raw
-            TCN output of the same shape when ``return_tcn_output`` is ``True``.
+            Trend tensor of shape ``(batch, time, representation_dim)``, or the
+            raw TCN output of the same shape when ``return_tcn_output`` is
+            ``True``.
         """
         x = self._common_forward(x=x, mask_mode=mask_mode)
 
@@ -219,10 +225,11 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
+        *,
+        input_dim: int,
+        representation_dim: int,
         kernel_sizes: tuple[int, ...],
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
@@ -231,7 +238,6 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         gumbel_bias: float = 0.001,
         zeta: float = 1.0,
         gamma_zeta: float = 0.05,
-        *,
         hard_mask: bool = True,
     ) -> None:
 
@@ -243,10 +249,10 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         self.hard_mask = hard_mask
 
         self.augmentation_network = AutoTCLTimeSeriesEncoder(
-            input_dims=input_dims,
-            output_dims=output_dims,
+            input_dim=input_dim,
+            representation_dim=representation_dim,
             kernel_sizes=kernel_sizes,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -254,12 +260,12 @@ class AutoTCLAugmentationTimeSeriesEncoder(nn.Module):
         )
 
         self.factor_augmentation_network = nn.Sequential(
-            nn.Linear(output_dims, num_augmentation_channels), nn.Sigmoid()
+            nn.Linear(representation_dim, num_augmentation_channels), nn.Sigmoid()
         )
         self.augmentation_projector = nn.Sequential(
-            nn.Linear(output_dims, output_dims),
+            nn.Linear(representation_dim, representation_dim),
             nn.ReLU(),
-            nn.Linear(output_dims, num_augmentation_channels),
+            nn.Linear(representation_dim, num_augmentation_channels),
             nn.Sigmoid(),
         )
 
@@ -414,15 +420,15 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
     A class to encode time series data using a Convolutional Sparse Transformer implemented based on the CoST paper: https://github.com/salesforce/CoST.
 
     Parameters
-    input_dims : int
+    input_dim : int
         Number of input dimensions.
-    output_dims : int
-        Number of output dimensions.
+    representation_dim : int
+        Number of output dimensions (the feature dim of encode() output).
     kernel_sizes : tuple[int, ...]
         List of kernel sizes for the convolutions.
     length : int
         Length of the input sequence.
-    hidden_dims : int, optional
+    hidden_dim : int, optional
         Number of hidden dimensions (default is 64).
     feature_extractor_depth : int, optional
         Depth of the feature extractor (number of convolutional layers, default is 10).
@@ -438,25 +444,26 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
+        *,
+        input_dim: int,
+        representation_dim: int,
         kernel_sizes: tuple[int, ...],
         length: int,
-        hidden_dims: int = 64,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
         num_bands: int = 1,
     ) -> None:
-        if output_dims % 2 != 0:
-            msg = f"output_dims must be even for CoST, got {output_dims}"
+        if representation_dim % 2 != 0:
+            msg = f"representation_dim must be even for CoST, got {representation_dim}"
             raise ValueError(msg)
 
         super().__init__(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -465,17 +472,20 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
         self.kernel_sizes = kernel_sizes
 
-        self.component_dims = output_dims // 2
+        self.component_dim = representation_dim // 2
 
         self.temporal_feature_decoders = nn.ModuleList(
-            [nn.Conv1d(output_dims, output_dims // 2, k, padding=k - 1) for k in kernel_sizes]
+            [
+                nn.Conv1d(representation_dim, self.component_dim, k, padding=k - 1)
+                for k in kernel_sizes
+            ]
         )
 
         self.seasonal_feature_decoders = nn.ModuleList(
             [
                 BandedFourierLayer(
-                    in_channels=output_dims,
-                    out_channels=self.component_dims,
+                    in_channels=representation_dim,
+                    out_channels=self.component_dim,
                     band=b,
                     num_bands=num_bands,
                     length=length,
@@ -535,13 +545,13 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         Args:
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: If ``True``, return the raw TCN output
-                ``(batch, time, output_dims)`` before component decoding.
+                ``(batch, time, representation_dim)`` before component decoding.
             mask_mode: Masking strategy applied to the input.
 
         Returns:
             A 2-tuple ``(trend, season)`` where both tensors have shape
-            ``(batch, time, component_dims)``, or the raw TCN output of shape
-            ``(batch, time, output_dims)`` when ``return_tcn_output`` is ``True``.
+            ``(batch, time, component_dim)``, or the raw TCN output of shape
+            ``(batch, time, representation_dim)`` when ``return_tcn_output`` is ``True``.
         """
         x = self._common_forward(x=x, mask_mode=mask_mode)
 
@@ -566,12 +576,12 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
 class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
     """
-    A class to encode time series data using a Convolutional Sparse Transformer based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
+    A class to encode time series data using a Dilated Convolutional Neural Network based on the implementation of the TS2Vec paper: https://github.com/zhihanyue/ts2vec.
 
     Parameters
-    input_dims: Number of input dimensions.
-    output_dims: Number of output dimensions.
-    hidden_dims: Number of hidden dimensions.
+    input_dim: Number of input dimensions.
+    representation_dim: Number of output dimensions (the feature dim of encode() output).
+    hidden_dim: Number of hidden dimensions.
     feature_extractor_depth: the depth of the feature extractor (the number of convolutional layers).
     dropout_rate: the dropout rate.
     conv_kernel_size: the size of the kernel for the convolutions.
@@ -580,18 +590,19 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
 
     def __init__(
         self,
-        input_dims: int,
-        output_dims: int,
-        hidden_dims: int = 64,
+        *,
+        input_dim: int,
+        representation_dim: int,
+        hidden_dim: int = 64,
         feature_extractor_depth: int = 10,
         dropout_rate: float = 0.1,
         conv_kernel_size: int = 3,
         mask_mode: MaskMode = MaskMode.BINOMIAL,
     ) -> None:
         super().__init__(
-            input_dims=input_dims,
-            output_dims=output_dims,
-            hidden_dims=hidden_dims,
+            input_dim=input_dim,
+            output_dim=representation_dim,
+            hidden_dim=hidden_dim,
             feature_extractor_depth=feature_extractor_depth,
             dropout_rate=dropout_rate,
             conv_kernel_size=conv_kernel_size,
@@ -627,7 +638,7 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
             mask_mode: Masking strategy applied to the input.
 
         Returns:
-            Encoded tensor of shape ``(batch, time, output_dims)``.
+            Encoded tensor of shape ``(batch, time, representation_dim)``.
         """
         x = self._common_forward(x=x, mask_mode=mask_mode)
 

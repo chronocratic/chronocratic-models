@@ -22,7 +22,7 @@ class BandedFourierLayer(nn.Module):
     """
 
     def __init__(
-        self, in_channels: int, out_channels: int, band: int, num_bands: int, length: int = 201
+        self, *, in_channels: int, out_channels: int, band: int, num_bands: int, length: int = 201
     ) -> None:
         super().__init__()
 
@@ -94,23 +94,23 @@ class BandedFourierLayer(nn.Module):
 
 class TrendLayer(nn.Module):
     def __init__(
-        self, sequence_length: int, input_dims: int, latent_dim: int, trend_poly: int
+        self, *, sequence_length: int, input_dim: int, latent_dim: int, trend_poly: int
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.trend_poly = trend_poly
-        self.trend_dense1 = nn.Linear(self.latent_dim, self.input_dims * self.trend_poly)
+        self.trend_dense1 = nn.Linear(self.latent_dim, self.input_dim * self.trend_poly)
         self.trend_dense2 = nn.Linear(
-            self.input_dims * self.trend_poly, self.input_dims * self.trend_poly
+            self.input_dim * self.trend_poly, self.input_dim * self.trend_poly
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Return polynomial trend values for each latent vector."""
         trend_params = F.relu(self.trend_dense1(z))
         trend_params = self.trend_dense2(trend_params)
-        trend_params = trend_params.view(-1, self.input_dims, self.trend_poly)
+        trend_params = trend_params.view(-1, self.input_dim, self.trend_poly)
 
         lin_space = (
             torch.arange(0, float(self.sequence_length), 1, device=z.device) / self.sequence_length
@@ -125,19 +125,20 @@ class TrendLayer(nn.Module):
 class SeasonalLayer(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         latent_dim: int,
         custom_seasonality: tuple[Seasonality, ...],
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.custom_seasonality = custom_seasonality
 
         self.dense_layers = nn.ModuleList(
             [
-                nn.Linear(latent_dim, input_dims * num_seasons)
+                nn.Linear(latent_dim, input_dim * num_seasons)
                 for num_seasons, len_per_season in custom_seasonality
             ]
         )
@@ -157,13 +158,13 @@ class SeasonalLayer(nn.Module):
         """Return additive seasonal values for each latent vector."""
         batch_size = z.shape[0]
         ones_tensor = torch.ones(  # device-ok: device= in multi-line call
-            (batch_size, self.input_dims, self.sequence_length), dtype=torch.int32, device=z.device
+            (batch_size, self.input_dim, self.sequence_length), dtype=torch.int32, device=z.device
         )
 
         seasonal_components: list[torch.Tensor] = []
         for i, (num_seasons, len_per_season) in enumerate(self.custom_seasonality):
             season_params = self.dense_layers[i](z)
-            season_params = season_params.view(-1, self.input_dims, num_seasons)
+            season_params = season_params.view(-1, self.input_dim, num_seasons)
 
             season_indexes_over_time = self._get_season_indexes_over_seq(
                 num_seasons, len_per_season
@@ -182,24 +183,24 @@ class SeasonalLayer(nn.Module):
 
     def compute_output_shape(self, input_shape: tuple[int, ...]) -> tuple[int, int, int]:
         """Return the output shape for Keras-compatible callers."""
-        return (input_shape[0], self.sequence_length, self.input_dims)
+        return (input_shape[0], self.sequence_length, self.input_dim)
 
 
 class LevelModel(nn.Module):
-    def __init__(self, latent_dim: int, input_dims: int, sequence_length: int) -> None:
+    def __init__(self, *, latent_dim: int, input_dim: int, sequence_length: int) -> None:
         super().__init__()
         self.latent_dim = latent_dim
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.sequence_length = sequence_length
-        self.level_dense1 = nn.Linear(self.latent_dim, self.input_dims)
-        self.level_dense2 = nn.Linear(self.input_dims, self.input_dims)
+        self.level_dense1 = nn.Linear(self.latent_dim, self.input_dim)
+        self.level_dense2 = nn.Linear(self.input_dim, self.input_dim)
         self.relu = nn.ReLU()
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Return the level component for each latent vector."""
         level_params = self.relu(self.level_dense1(z))
         level_params = self.level_dense2(level_params)
-        level_params = level_params.view(-1, 1, self.input_dims)
+        level_params = level_params.view(-1, 1, self.input_dim)
 
         ones_tensor = torch.ones((1, self.sequence_length, 1), dtype=torch.float32, device=z.device)
         level_vals = level_params * ones_tensor
@@ -209,15 +210,16 @@ class LevelModel(nn.Module):
 class ResidualConnection(nn.Module):
     def __init__(
         self,
+        *,
         sequence_length: int,
-        input_dims: int,
+        input_dim: int,
         hidden_layer_sizes: Sequence[int],
         latent_dim: int,
         encoder_last_dense_dim: int,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
-        self.input_dims = input_dims
+        self.input_dim = input_dim
         self.hidden_layer_sizes = hidden_layer_sizes
 
         self.dense = nn.Linear(latent_dim, encoder_last_dense_dim)
@@ -234,7 +236,7 @@ class ResidualConnection(nn.Module):
 
         self.deconv_layers.append(
             nn.ConvTranspose1d(
-                in_channels, input_dims, kernel_size=3, stride=2, padding=1, output_padding=1
+                in_channels, input_dim, kernel_size=3, stride=2, padding=1, output_padding=1
             )
         )
 
@@ -243,7 +245,7 @@ class ResidualConnection(nn.Module):
             length_in = (length_in - 1) * 2 - 2 * 1 + 3 + 1
         length_final = length_in
 
-        self.final_dense = nn.Linear(input_dims * length_final, sequence_length * input_dims)
+        self.final_dense = nn.Linear(input_dim * length_final, sequence_length * input_dim)
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Return the residual decoder branch for each latent vector."""
@@ -258,5 +260,5 @@ class ResidualConnection(nn.Module):
 
         x = x.flatten(1)
         x = self.final_dense(x)
-        residuals = x.view(-1, self.sequence_length, self.input_dims)
+        residuals = x.view(-1, self.sequence_length, self.input_dim)
         return residuals

@@ -17,13 +17,13 @@ class TSTCCModelParameters:
     """Configuration for the TS-TCC model.
 
     Args:
-        input_dims: Number of input features (dimensions) in the time
+        input_dim: Number of input features (dimensions) in the time
             series.
         conv_kernel_size: Convolutional kernel size used in the TCC encoder.
             Defaults to ``8`` matching the source TS-TCC implementation.
         stride: Convolutional stride used in the TCC encoder.
             Defaults to ``1`` matching the source TS-TCC implementation.
-        output_dims: Number of channels produced by the final encoder
+        representation_dim: Number of channels produced by the final encoder
             block (also used as the temporal-contrast input dim).
         encoder_channels: Tuple of channel counts for the first two
             encoder convolution blocks.
@@ -52,10 +52,10 @@ class TSTCCModelParameters:
             at batch_size=1. ``BATCH`` uses BatchNorm1d.
     """
 
-    input_dims: int
+    input_dim: int
     conv_kernel_size: int = 8
     stride: int = 1
-    output_dims: int = 128
+    representation_dim: int = 128  # renamed from `output_dims` in the original codebase
     encoder_channels: tuple[int, ...] = (32, 64)
     encoder_inner_kernels: tuple[int, ...] = (8, 8)
     dropout_rate: float = 0.35
@@ -72,8 +72,8 @@ class TSTCCModelParameters:
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""
-        if self.input_dims <= 0:
-            msg = f"input_dims must be positive, got {self.input_dims}"
+        if self.input_dim <= 0:
+            msg = f"input_dim must be positive, got {self.input_dim}"
             raise ValueError(msg)
         if self.conv_kernel_size <= 0:
             msg = f"conv_kernel_size must be positive, got {self.conv_kernel_size}"
@@ -81,8 +81,8 @@ class TSTCCModelParameters:
         if self.stride <= 0:
             msg = f"stride must be positive, got {self.stride}"
             raise ValueError(msg)
-        if self.output_dims <= 0:
-            msg = f"output_dims must be positive, got {self.output_dims}"
+        if self.representation_dim <= 0:
+            msg = f"representation_dim must be positive, got {self.representation_dim}"
             raise ValueError(msg)
         if not 0.0 <= self.dropout_rate < 1.0:
             msg = f"dropout_rate must be in [0, 1), got {self.dropout_rate}"

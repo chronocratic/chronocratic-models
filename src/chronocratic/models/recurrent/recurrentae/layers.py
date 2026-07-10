@@ -53,9 +53,9 @@ class _RNNLayer(nn.Module):
 
 
 def _build_encoder(
-    rnn_cls: type, input_dims: int, layers: tuple[int, ...], dropout: tuple[float, ...]
+    *, rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
-    encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(input_dims, layers[0], batch_first=True))]
+    encoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(input_dim, layers[0], batch_first=True))]
     for i in range(1, len(layers)):
         encoder_layers.append(_RNNLayer(rnn_cls(layers[i - 1], layers[i], batch_first=True)))
         if dropout[i] > 0:
@@ -64,12 +64,12 @@ def _build_encoder(
 
 
 def _build_decoder(
-    rnn_cls: type, input_dims: int, layers: tuple[int, ...], dropout: tuple[float, ...]
+    *, rnn_cls: type, input_dim: int, layers: tuple[int, ...], dropout: tuple[float, ...]
 ) -> nn.Sequential:
     decoder_layers: list[nn.Module] = [_RNNLayer(rnn_cls(layers[0], layers[0], batch_first=True))]
     for i in range(1, len(layers)):
         if i > 1 and dropout[i] > 0:
             decoder_layers.append(nn.Dropout(dropout[i]))
         decoder_layers.append(_RNNLayer(rnn_cls(layers[i - 1], layers[i], batch_first=True)))
-    decoder_layers.append(nn.Linear(layers[-1], input_dims))
+    decoder_layers.append(nn.Linear(layers[-1], input_dim))
     return nn.Sequential(*decoder_layers)

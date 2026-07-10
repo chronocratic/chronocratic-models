@@ -20,11 +20,9 @@ from torch import nn
 
 from chronocratic.models._mixin.encoding import BasicEncodingMixin
 from chronocratic.models.convolutional.dilated._mixin.encoding import (
-    BaseEncodingMixin,
     DecompositionEncodingMixin,
     PoolingEncodingMixin,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal test models

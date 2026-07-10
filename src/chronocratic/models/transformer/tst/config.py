@@ -16,14 +16,14 @@ class TSTModelParameters:
     """Configuration for the TST model.
 
     Args:
-        input_dims: Number of input features (channels) in the time
+        input_dim: Number of input features (channels) in the time
             series.
         sequence_length: Maximum sequence length supported by the positional
             encoding.
-        hidden_dims: Transformer model (token) dimensionality.
+        hidden_dim: Transformer model (token) dimensionality.
         num_heads: Number of attention heads.
         depth: Number of stacked transformer encoder layers.
-        feedforward_dims: Hidden dimensionality of the transformer
+        feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
         dropout_rate: Dropout probability used throughout the transformer.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
@@ -52,12 +52,12 @@ class TSTModelParameters:
             distributed processes.
     """
 
-    input_dims: int
+    input_dim: int
     sequence_length: int
-    hidden_dims: int = 64
+    hidden_dim: int = 64
     num_heads: int = 8
     depth: int = 3
-    feedforward_dims: int = 256
+    feedforward_dim: int = 256
     dropout_rate: float = 0.1
     pos_encoding: str = "fixed"
     activation: str = "gelu"

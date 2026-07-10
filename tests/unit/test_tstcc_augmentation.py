@@ -26,7 +26,7 @@ class TestDefaultTSTCCPair:
 
     def test_produce_returns_view_pair(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
-        x = random_data(batch=2, seq_length=50, input_dims=3, layout="NTC")
+        x = random_data(batch=2, seq_length=50, input_dim=3, layout="NTC")
         result = producer.produce(x)
 
         assert isinstance(result, ViewPair)
@@ -37,7 +37,7 @@ class TestDefaultTSTCCPair:
     def test_satisfies_protocol(self, random_data: Callable[..., torch.Tensor]) -> None:
         producer = _default_tstcc_pair()
         assert hasattr(producer, "produce")
-        x = random_data(batch=4, seq_length=100, input_dims=1, layout="NTC")
+        x = random_data(batch=4, seq_length=100, input_dim=1, layout="NTC")
         result = producer.produce(x)
         assert isinstance(result, ViewPair)
 
@@ -48,25 +48,25 @@ class TestTSTCCConstructor:
     def test_accepts_default_tstcc_pair(self) -> None:
         producer = _default_tstcc_pair()
         model = TSTCC(
-            input_dims=1, conv_kernel_size=5, stride=1, output_dims=16, augmentation=producer
+            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16, augmentation=producer
         )
-        assert model._augmentation is producer  # noqa: SLF001
+        assert model._augmentation is producer
 
     def test_default_producer_is_role_pair(self) -> None:
-        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
-        assert isinstance(model._augmentation, RolePairProducer)  # noqa: SLF001
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
+        assert isinstance(model._augmentation, RolePairProducer)
 
 
 class TestTSTCCTraining:
     """TSTCC training with new producer contract."""
 
     def test_compute_loss_uses_produce_first_second(self) -> None:
-        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
         data = torch.randn(4, 100, 1)  # (B, T, C)
         labels = torch.zeros(4, dtype=torch.long)
         batch = (data, labels)
 
-        loss = model._compute_loss(batch)  # noqa: SLF001
+        loss = model._compute_loss(batch)
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
 
@@ -74,13 +74,13 @@ class TestTSTCCTraining:
     def test_trains_with_finite_loss(
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
-        model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+        model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
 
         losses = train_steps(
             model,
             batch_size=2,
             seq_length=100,
-            input_dims=1,
+            input_dim=1,
             num_steps=1,
             layout="NTC",
             with_labels=True,
@@ -113,13 +113,13 @@ class TestDeterminism:
 
         for _run in range(2):
             torch.manual_seed(12345)
-            model = TSTCC(input_dims=1, conv_kernel_size=5, stride=1, output_dims=16)
+            model = TSTCC(input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16)
 
             losses = train_steps(
                 model,
                 batch_size=2,
                 seq_length=100,
-                input_dims=1,
+                input_dim=1,
                 num_steps=1,
                 seed=12345,
                 layout="NTC",

@@ -57,7 +57,7 @@ class TestTS2VecConfigDefaults:
     """TS2VecModelParameters field defaults match model init."""
 
     def test_own_field_defaults(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
+        params = TS2VecModelParameters(input_dim=1)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
         assert params.max_train_length is None
@@ -65,9 +65,9 @@ class TestTS2VecConfigDefaults:
         assert params.sync_dist is False
 
     def test_encoder_field_defaults(self) -> None:
-        params = TS2VecModelParameters(input_dims=1)
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
+        params = TS2VecModelParameters(input_dim=1)
+        assert params.hidden_dim == 64
+        assert params.representation_dim == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
@@ -77,19 +77,19 @@ class TestCoSTConfigDefaults:
     """CoSTModelParameters field defaults match model init."""
 
     def test_required_fields(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.input_dims == 1
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
+        assert params.input_dim == 1
         assert params.sequence_length == 100
 
     def test_max_train_length_is_int(self) -> None:
         """CoST max_train_length defaults to 201, not None."""
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
         assert params.max_train_length == 201
 
     def test_other_defaults(self) -> None:
-        params = CoSTModelParameters(input_dims=1, sequence_length=100)
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
+        params = CoSTModelParameters(input_dim=1, sequence_length=100)
+        assert params.hidden_dim == 64
+        assert params.representation_dim == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.mask_mode == MaskMode.BINOMIAL
@@ -105,7 +105,7 @@ class TestAutoTCLConfigDefaults:
     """AutoTCLModelParameters field defaults match model init."""
 
     def test_own_field_defaults(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
@@ -113,15 +113,15 @@ class TestAutoTCLConfigDefaults:
         assert params.sync_dist is False
 
     def test_encoder_field_defaults(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
-        assert params.hidden_dims == 64
-        assert params.output_dims == 320
+        params = AutoTCLModelParameters(input_dim=1)
+        assert params.hidden_dim == 64
+        assert params.representation_dim == 320
         assert params.depth == 10
         assert params.dropout_rate == 0.1
         assert params.conv_kernel_size == 3
 
     def test_training_field_defaults(self) -> None:
-        params = AutoTCLModelParameters(input_dims=1)
+        params = AutoTCLModelParameters(input_dim=1)
         assert params.meta_learning_rate == 1e-2
         assert params.local_loss_weight == 0.1
 
@@ -130,17 +130,17 @@ class TestConfigAllExports:
     """Each config module exposes its class via __all__."""
 
     def test_ts2vec_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.ts2vec.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.ts2vec.config as mod
 
         assert "TS2VecModelParameters" in mod.__all__
 
     def test_cost_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.cost.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.cost.config as mod
 
         assert "CoSTModelParameters" in mod.__all__
 
     def test_autotcl_config_all(self) -> None:
-        import chronocratic.models.convolutional.dilated.autotcl.config as mod  # noqa: PLC0415
+        import chronocratic.models.convolutional.dilated.autotcl.config as mod
 
         assert "AutoTCLModelParameters" in mod.__all__
 
@@ -150,6 +150,6 @@ class TestNoDilatedCNNConfig:
 
     def test_import_fails(self) -> None:
         with pytest.raises(ImportError):
-            from chronocratic.models.convolutional.dilated.config import (  # noqa: F401, PLC0415
+            from chronocratic.models.convolutional.dilated.config import (  # noqa: F401
                 DilatedCNNModelParameters,
             )

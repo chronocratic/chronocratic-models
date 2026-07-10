@@ -13,7 +13,7 @@ Usage::
 
     from chronocratic.models.supervised import make_tst_supervised
 
-    backbone = TST(input_dims=1, sequence_length=100, hidden_dims=32, num_heads=4, depth=2)
+    backbone = TST(input_dim=1, sequence_length=100, hidden_dim=32, num_heads=4, depth=2)
     module = make_tst_supervised(backbone, num_outputs=5, task='classification')
 """
 

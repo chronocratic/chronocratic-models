@@ -15,13 +15,12 @@ from chronocratic.models.generative.timevae.model import TimeVAE
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
 
-
 MODELS = {
-    "TimeVAE": TimeVAE(sequence_length=32, input_dims=3, latent_dim=8),
-    "TimeNet": TimeNet(hidden_dims=16, depth=1, input_dims=3),
-    "RecurrentAutoEncoder": RecurrentAutoEncoder(input_dims=3, layers=(16,)),
-    "MCL": MCL(input_dims=3),
-    "TSTCC": TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16),
+    "TimeVAE": TimeVAE(sequence_length=32, input_dim=3, latent_dim=8),
+    "TimeNet": TimeNet(hidden_dim=16, depth=1, input_dim=3),
+    "RecurrentAutoEncoder": RecurrentAutoEncoder(input_dim=3, layers=(16,)),
+    "MCL": MCL(input_dim=3),
+    "TSTCC": TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16),
 }
 
 
@@ -53,35 +52,35 @@ class TestEncodeOutputShapes:
 
     def test_timevae_encode_shape(self) -> None:
         """TimeVAE.encode() returns (B, latent_dim)."""
-        model = TimeVAE(sequence_length=32, input_dims=3, latent_dim=8)
+        model = TimeVAE(sequence_length=32, input_dim=3, latent_dim=8)
         data = torch.randn(4, 32, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 8)
 
     def test_timenet_encode_shape(self) -> None:
-        """TimeNet.encode() returns (B, hidden_dims)."""
-        model = TimeNet(hidden_dims=16, depth=1, input_dims=3)
+        """TimeNet.encode() returns (B, hidden_dim)."""
+        model = TimeNet(hidden_dim=16, depth=1, input_dim=3)
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 16)
 
     def test_recurrentae_encode_shape(self) -> None:
         """RecurrentAutoEncoder.encode() returns (B, last_layer_dim)."""
-        model = RecurrentAutoEncoder(input_dims=3, layers=(16,))
+        model = RecurrentAutoEncoder(input_dim=3, layers=(16,))
         data = torch.randn(4, 20, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 16)
 
     def test_mcl_encode_shape(self) -> None:
-        """MCL.encode() returns (B, output_dims) with VECTOR default."""
-        model = MCL(input_dims=3, output_dims=128)
+        """MCL.encode() returns (B, representation_dim) with VECTOR default."""
+        model = MCL(input_dim=3, representation_dim=128)
         data = torch.randn(4, 50, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 128)
 
     def test_tstcc_encode_shape(self) -> None:
-        """TSTCC.encode() returns (B, output_dims) after pooling."""
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4, output_dims=16)
+        """TSTCC.encode() returns (B, representation_dim) after pooling."""
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4, representation_dim=16)
         data = torch.randn(4, 256, 3)
         result = model.encode(data, batch_size=2)
         assert result.shape == (4, 16)

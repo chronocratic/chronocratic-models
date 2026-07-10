@@ -24,7 +24,7 @@ class _Residual(nn.Module):
 
 
 class _PreNorm(nn.Module):
-    def __init__(self, dim: int, fn: nn.Module) -> None:
+    def __init__(self, *, dim: int, fn: nn.Module) -> None:
         super().__init__()
         self.norm = nn.LayerNorm(dim)
         self.fn = fn
@@ -34,7 +34,7 @@ class _PreNorm(nn.Module):
 
 
 class _FeedForward(nn.Module):
-    def __init__(self, dim: int, hidden_dim: int, dropout: float = 0.0) -> None:
+    def __init__(self, *, dim: int, hidden_dim: int, dropout: float = 0.0) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(dim, hidden_dim),
@@ -49,7 +49,7 @@ class _FeedForward(nn.Module):
 
 
 class _Attention(nn.Module):
-    def __init__(self, dim: int, heads: int = 8, dropout: float = 0.0) -> None:
+    def __init__(self, *, dim: int, heads: int = 8, dropout: float = 0.0) -> None:
         super().__init__()
         self.heads = heads
         self.scale = dim**-0.5
@@ -72,14 +72,21 @@ class _Attention(nn.Module):
 
 
 class _Transformer(nn.Module):
-    def __init__(self, dim: int, depth: int, heads: int, mlp_dim: int, dropout: float) -> None:
+    def __init__(self, *, dim: int, depth: int, heads: int, mlp_dim: int, dropout: float) -> None:
         super().__init__()
         self.layers = nn.ModuleList(
             [
                 nn.ModuleList(
                     [
-                        _Residual(_PreNorm(dim, _Attention(dim, heads=heads, dropout=dropout))),
-                        _Residual(_PreNorm(dim, _FeedForward(dim, mlp_dim, dropout=dropout))),
+                        _Residual(
+                            _PreNorm(dim=dim, fn=_Attention(dim=dim, heads=heads, dropout=dropout))
+                        ),
+                        _Residual(
+                            _PreNorm(
+                                dim=dim,
+                                fn=_FeedForward(dim=dim, hidden_dim=mlp_dim, dropout=dropout),
+                            )
+                        ),
                     ]
                 )
                 for _ in range(depth)
@@ -96,6 +103,7 @@ class _Transformer(nn.Module):
 class _SeqTransformer(nn.Module):
     def __init__(
         self,
+        *,
         patch_size: int,
         dim: int,
         depth: int,
@@ -107,7 +115,9 @@ class _SeqTransformer(nn.Module):
         super().__init__()
         self.patch_to_embedding = nn.Linear(channels * patch_size, dim)
         self.c_token = nn.Parameter(torch.randn(1, 1, dim))
-        self.transformer = _Transformer(dim, depth, heads, mlp_dim, dropout)
+        self.transformer = _Transformer(
+            dim=dim, depth=depth, heads=heads, mlp_dim=mlp_dim, dropout=dropout
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.patch_to_embedding(x)
@@ -141,10 +151,10 @@ class TemporalContrast(nn.Module):
 
     def __init__(
         self,
+        *,
         num_channels: int,
         hidden_dim: int,
         timesteps: int,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()

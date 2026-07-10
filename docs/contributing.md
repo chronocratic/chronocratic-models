@@ -59,6 +59,17 @@ uv sync --extra docs
 uv run sphinx-build -b html docs/ docs/_build/
 ```
 
+## Protected Project Files
+
+Certain files affect every user of the project, so changes to them are **flagged for maintainer review** and should normally be left to core maintainers:
+
+- **`pyproject.toml`** — Build configuration, dependencies, and project metadata. Changes here affect all users and may introduce regressions.
+- **`.vscode/`** — Editor settings for linting, formatting, and type-checking (e.g. `settings.json`). Shared configuration that ensures consistency across the team.
+
+An automated CI check (`protected-files-check.yml`) posts an advisory comment on any PR that modifies these files. The comment is informational — it does not block the merge, but it makes the change explicit for reviewers. If a change is **absolutely necessary** (e.g., a dependency fix required for the PR to work), include a clear explanation in the PR description and expect maintainer review.
+
+Non-maintainer changes to these files should have explicit sign-off from a core maintainer. When in doubt, open an issue first.
+
 ## Adding Changelog Fragments
 
 The project uses [towncrier](https://towncrier.readthedocs.io/) for managing changelog entries. Each PR should include a changelog fragment in the `changelog.d/` directory.
@@ -96,19 +107,21 @@ Use these exact names. Do not invent alternatives.
 
 | Canonical Name | Description | Do NOT Use |
 |---|---|---|
-| `input_dims` | Number of input features/channels | `feat_dim`, `n_in`, `input_channels` |
-| `hidden_dims` | Hidden representation size | `d_model` |
+| `input_dim` | Number of input features/channels | `feat_dim`, `n_in`, `input_channels`, `input_dims` |
+| `hidden_dim` | Hidden representation size | `d_model`, `hidden_dims` |
+| `feedforward_dim` | FFN intermediate dimension | `dim_feedforward`, `feedforward_dims` |
+| `representation_dim` | Feature dim of ``encode()`` output | `output_dims`, `representation_dims`, `encoding_output_dim` |
 | `depth` | Number of layers | `num_layers` |
 | `dropout_rate` | Dropout probability | `dropout` |
 | `num_heads` | Attention head count | `n_heads` |
-| `feedforward_dims` | FFN intermediate dimension | `dim_feedforward` |
 | `sequence_length` | Temporal dimension | `max_seq_len`, `seq_len` |
 | `conv_kernel_size` | Convolution kernel size | `kernel_size` |
 | `weight_decay` | L2 regularization | `l2_reg` |
-| `output_dims` | Output/embedding dimension | `final_out_channels` |
 | `reconstruction_weight` | VAE reconstruction term | `reconstruction_wt` |
 
-Model-specific names are acceptable only when genuinely unique to that model (e.g., `latent_dim` for TimeVAE, `embedding_dims` for Series2Vec).
+Model-specific names are acceptable only when genuinely unique to that model (e.g., `latent_dim` for TimeVAE, `embedding_dim` for Series2Vec).
+
+All dimension parameters use **singular** form (``*_dim``), never plural (``*_dims``). Every dimension is a scalar ``int`` — the ecosystem convention (PyTorch: ``embedding_dim``, ``d_model``, ``dim_feedforward``) matches this pattern.
 
 ### Config-to-Model Contract
 
@@ -129,13 +142,13 @@ class MyModelParameters:
     """Configuration for the MyModel model.
 
     Args:
-        input_dims: Number of input features (channels).
-        hidden_dims: Hidden representation dimensionality.
+        input_dim: Number of input features (channels).
+        hidden_dim: Hidden representation dimensionality.
         dropout_rate: Dropout probability applied after each layer.
     """
 
-    input_dims: int
-    hidden_dims: int = 64
+    input_dim: int
+    hidden_dim: int = 64
     dropout_rate: float = 0.1
 ```
 
@@ -145,21 +158,21 @@ class MyModel(pl.LightningModule, BasicEncodingMixin):
     """Short description of the model.
 
     Args:
-        input_dims: Number of input features (channels).
-        hidden_dims: Hidden representation dimensionality.
+        input_dim: Number of input features (channels).
+        hidden_dim: Hidden representation dimensionality.
         dropout_rate: Dropout probability applied after each layer.
     """
 
     def __init__(
         self,
-        input_dims: int,
-        hidden_dims: int = 64,
+        input_dim: int,
+        hidden_dim: int = 64,
         dropout_rate: float = 0.1,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
-        self._input_dims = input_dims
-        self._hidden_dims = hidden_dims
+        self._input_dim = input_dim
+        self._hidden_dim = hidden_dim
         self._dropout_rate = dropout_rate
 ```
 
@@ -222,14 +235,58 @@ nn.Conv1d(256, 128, kernel_size=3),
 
 **Out of scope for extraction:** optimizer types, gradient clipping norms, LayerNorm epsilon values, structural invariants (e.g., fixed MaxPool kernel sizes that are part of the architecture definition).
 
+### Keyword-Only Signatures
+
+ALL Python functions with multiple parameters must use keyword-only signatures (``def func(*, param1, param2, ...)``).
+This applies to model ``__init__`` methods, encoder constructors, network layers, helpers, factories,
+loss functions, augmentation classes, adapters, and shared utilities.
+
+Config dataclasses always use ``@dataclass(kw_only=True)``.
+
+**Do:**
+```python
+# Multi-param: keyword-only after bare *
+def __init__(
+    self,
+    *,
+    input_dim: int,
+    hidden_dim: int = 64,
+    depth: int = 2,
+) -> None:
+    ...
+
+# Factory: keyword-only
+def make_model(*, input_dim: int, hidden_dim: int = 32) -> Model:
+    ...
+```
+
+**Acceptable exception:** Single-param methods with an obvious positional input (e.g., ``forward(x)``,
+``encode(x)``, ``produce(x)``) may keep that argument positional:
+```python
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    ...
+```
+
+**Don't:**
+```python
+# Positional multi-param — forbidden
+def __init__(self, input_dim: int, hidden_dim: int = 64):
+    ...
+```
+
 ### `self._{name}` Attribute Storage
 
 Store all hyperparameters as private attributes with the `self._{name}` prefix in model `__init__`.
 
 ```python
-def __init__(self, input_dims: int, hidden_dims: int = 64):
-    self._input_dims = input_dims
-    self._hidden_dims = hidden_dims
+def __init__(
+    self,
+    *,
+    input_dim: int,
+    hidden_dim: int = 64,
+) -> None:
+    self._input_dim = input_dim
+    self._hidden_dim = hidden_dim
 ```
 
 Public attributes are reserved for computed values (e.g., `self.criterion`, `self.loss_fn`) and submodules (`self._encoder`, `self._decoder`).
@@ -274,7 +331,7 @@ Conv1d-based encoders must transpose `(B, T, C)` to `(B, C, T)` as the **first l
 
 ```python
 def forward(self, x: torch.Tensor) -> torch.Tensor:
-    """Encode (B, T, C) input into (B, output_dims) representation."""
+    """Encode (B, T, C) input into (B, representation_dim) representation."""
     x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
     return self.layers(x)
 ```

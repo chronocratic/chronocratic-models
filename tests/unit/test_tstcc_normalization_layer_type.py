@@ -19,20 +19,24 @@ class TestTCCEncoderNormDefault:
     """TCCEncoder defaults to CHANNEL (GroupNorm)."""
 
     def test_default_norm_is_channel(self) -> None:
-        encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=4)
+        encoder = TCCEncoder(input_dim=3, conv_kernel_size=8, stride=4)
         assert isinstance(encoder.conv_block1[1], nn.GroupNorm)
         assert isinstance(encoder.conv_block2[1], nn.GroupNorm)
         assert isinstance(encoder.conv_block3[1], nn.GroupNorm)
 
     def test_default_group_norm_groups(self) -> None:
-        encoder = TCCEncoder(input_dims=3, conv_kernel_size=8, stride=4)
+        encoder = TCCEncoder(input_dim=3, conv_kernel_size=8, stride=4)
         assert encoder.conv_block1[1].num_groups == 1
         assert encoder.conv_block2[1].num_groups == 1
         assert encoder.conv_block3[1].num_groups == 1
 
     def test_default_group_norm_channels(self) -> None:
         encoder = TCCEncoder(
-            input_dims=3, conv_kernel_size=8, stride=4, encoder_channels=(32, 64), output_dims=128
+            input_dim=3,
+            conv_kernel_size=8,
+            stride=4,
+            encoder_channels=(32, 64),
+            representation_dim=128,
         )
         assert encoder.conv_block1[1].num_channels == 32
         assert encoder.conv_block2[1].num_channels == 64
@@ -44,7 +48,7 @@ class TestTCCEncoderNormExplicit:
 
     def test_explicit_channel(self) -> None:
         encoder = TCCEncoder(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.CHANNEL,
@@ -55,7 +59,7 @@ class TestTCCEncoderNormExplicit:
 
     def test_explicit_batch(self) -> None:
         encoder = TCCEncoder(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.BATCH,
@@ -70,7 +74,7 @@ class TestTCCEncoderGradientFlow:
 
     def test_gradient_flows_with_group_norm(self) -> None:
         encoder = TCCEncoder(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.CHANNEL,
@@ -137,13 +141,13 @@ class TestTSTCCNormDefault:
     """TSTCC defaults to CHANNEL and passes to sub-modules."""
 
     def test_default_uses_group_norm_in_encoder(self) -> None:
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4)
         assert isinstance(model._encoder.conv_block1[1], nn.GroupNorm)
         assert isinstance(model._encoder.conv_block2[1], nn.GroupNorm)
         assert isinstance(model._encoder.conv_block3[1], nn.GroupNorm)
 
     def test_default_uses_layer_norm_in_tc(self) -> None:
-        model = TSTCC(input_dims=3, conv_kernel_size=8, stride=4)
+        model = TSTCC(input_dim=3, conv_kernel_size=8, stride=4)
         assert isinstance(model._tc_model.projection_head[1], nn.LayerNorm)
 
 
@@ -152,7 +156,7 @@ class TestTSTCCNormExplicit:
 
     def test_explicit_channel(self) -> None:
         model = TSTCC(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.CHANNEL,
@@ -162,7 +166,7 @@ class TestTSTCCNormExplicit:
 
     def test_explicit_batch(self) -> None:
         model = TSTCC(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.BATCH,
@@ -176,7 +180,7 @@ class TestTSTCCNormGradientFlow:
 
     def test_gradient_flows_at_batch_size_1(self) -> None:
         model = TSTCC(
-            input_dims=3,
+            input_dim=3,
             conv_kernel_size=8,
             stride=4,
             normalization_layer_type=NormalizationLayerType.CHANNEL,

@@ -57,21 +57,21 @@ class TestCoSTProducerIntegration:
     def test_cost_accepts_independent_pair(self) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPairProducer(aug=aug)
-        model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
+        model = CoST(input_dim=1, sequence_length=100, augmentation=producer)
         assert isinstance(model, CoST)
 
     def test_cost_default_is_independent_pair(self) -> None:
-        model = CoST(input_dims=1, sequence_length=100)
+        model = CoST(input_dim=1, sequence_length=100)
         # Default augmentation should be an IndependentPair
-        pair = model._augmentation.produce(torch.randn(2, 100, 1))  # noqa: SLF001
+        pair = model._augmentation.produce(torch.randn(2, 100, 1))
         assert isinstance(pair, ViewPair)
         assert pair.first.shape == (2, 100, 1)
         assert pair.second.shape == (2, 100, 1)
 
     def test_cost_produce_returns_view_pair(self) -> None:
-        model = CoST(input_dims=1, sequence_length=100)
+        model = CoST(input_dim=1, sequence_length=100)
         x = torch.randn(2, 100, 1)
-        pair = model._augmentation.produce(x)  # noqa: SLF001
+        pair = model._augmentation.produce(x)
         assert hasattr(pair, "first")
         assert hasattr(pair, "second")
 
@@ -84,15 +84,15 @@ class TestCoSTTrainingWithProducer:
     ) -> None:
         aug = CosTRandomFunctionAugmentation()
         producer = IndependentPairProducer(aug=aug)
-        model = CoST(input_dims=1, sequence_length=100, augmentation=producer)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        model = CoST(input_dim=1, sequence_length=100, augmentation=producer)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
     def test_cost_trains_5_steps_with_default_augmentation(
         self, train_steps: Callable[..., list[torch.Tensor]], finite_losses: Callable[..., None]
     ) -> None:
-        model = CoST(input_dims=1, sequence_length=100)
-        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dims=1, num_steps=5)
+        model = CoST(input_dim=1, sequence_length=100)
+        losses = train_steps(model=model, batch_size=4, seq_length=100, input_dim=1, num_steps=5)
         finite_losses(losses, expected_min=5)
 
 
@@ -103,15 +103,15 @@ class TestCoSTSeededEquivalence:
         self, train_steps: Callable[..., list[torch.Tensor]]
     ) -> None:
         torch.manual_seed(42)
-        model1 = CoST(input_dims=1, sequence_length=100)
+        model1 = CoST(input_dim=1, sequence_length=100)
         torch.manual_seed(42)
-        model2 = CoST(input_dims=1, sequence_length=100)
+        model2 = CoST(input_dim=1, sequence_length=100)
 
         losses1 = train_steps(
-            model=model1, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model1, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
         losses2 = train_steps(
-            model=model2, batch_size=4, seq_length=100, input_dims=1, num_steps=5, seed=123
+            model=model2, batch_size=4, seq_length=100, input_dim=1, num_steps=5, seed=123
         )
 
         assert len(losses1) == len(losses2) == 5

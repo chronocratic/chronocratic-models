@@ -17,7 +17,7 @@ class TestTSTFinetuningModule:
 
     def test_classification_output_shape(self) -> None:
         """make_tst_supervised classification produces (B, num_outputs) output."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -28,7 +28,7 @@ class TestTSTFinetuningModule:
 
     def test_regression_output_shape(self) -> None:
         """make_tst_supervised regression produces (B, num_outputs) output."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=2, task="regression", freeze_backbone=False
         )
@@ -39,7 +39,7 @@ class TestTSTFinetuningModule:
 
     def test_training_step_returns_scalar(self) -> None:
         """training_step returns a finite scalar loss."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -54,7 +54,7 @@ class TestTSTFinetuningModule:
 
     def test_freeze_backbone_prevents_grads(self) -> None:
         """freeze_backbone=True: backbone params don't receive gradients."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=True
         )
@@ -70,7 +70,7 @@ class TestTSTFinetuningModule:
 
     def test_unfrozen_backbone_receives_grads(self) -> None:
         """freeze_backbone=False: backbone params receive gradients."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
@@ -83,3 +83,18 @@ class TestTSTFinetuningModule:
         loss.backward()
         grad_count = sum(1 for p in backbone.parameters() if p.grad is not None)
         assert grad_count > 0
+
+    def test_head_in_features_is_representation_dim_times_sequence_length(self) -> None:
+        """Head in_features == representation_dim * sequence_length (D-06)."""
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
+        module = make_tst_supervised(
+            backbone, num_outputs=5, task="classification", freeze_backbone=False
+        )
+        expected = backbone.representation_dim * backbone.encoder.sequence_length
+        assert module._head._fc.in_features == expected
+        assert backbone.representation_dim == 8  # hidden_dim, not flattened
+
+    def test_representation_dim_is_hidden_dim(self) -> None:
+        """representation_dim returns hidden_dim per D-03."""
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
+        assert backbone.representation_dim == 8

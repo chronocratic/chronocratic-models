@@ -59,7 +59,7 @@ class TestFilterOnDeviceHelper:
         from chronocratic.models.convolutional.standard.series2vec.filters import lowpass_filter
 
         data = torch.randn(128)
-        result = lowpass_filter(data, cutoff_frequency=40.0, sampling_rate=128)
+        result = lowpass_filter(data=data, cutoff_frequency=40.0, sampling_rate=128)
         assert result.device.type == "cpu"
 
 
@@ -143,7 +143,7 @@ class TestContrastiveLossNoNumpyRoundTrip:
 
         a = torch.randn(4, 16, 8)
         b = torch.randn(4, 16, 8)
-        loss = temporal_contrastive_loss(a, b)
+        loss = temporal_contrastive_loss(instance_1=a, instance_2=b)
         assert loss.device.type == "cpu"
         assert torch.isfinite(loss)
 
@@ -153,6 +153,6 @@ class TestContrastiveLossNoNumpyRoundTrip:
 
         a = torch.randn(4, 16, 8)
         b = torch.randn(4, 16, 8)
-        loss = instance_contrastive_loss(a, b)
+        loss = instance_contrastive_loss(instance_1=a, instance_2=b)
         assert loss.device.type == "cpu"
         assert torch.isfinite(loss)

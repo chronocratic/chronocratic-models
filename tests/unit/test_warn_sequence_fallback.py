@@ -66,7 +66,7 @@ class TestWarnSequenceFallback:
 
     def test_helpers_not_exported_from_barrel(self) -> None:
         """helpers.py is internal — _warn_sequence_fallback must NOT be importable from barrel."""
-        from chronocratic.models.utils import __all__ as barrel_all  # noqa: F401
+        from chronocratic.models.utils import __all__ as barrel_all
 
         # Barrel __all__ must not leak internal helpers
         assert "_warn_sequence_fallback" not in barrel_all

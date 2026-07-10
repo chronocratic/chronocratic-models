@@ -23,14 +23,9 @@ class TestTSTRepresentationDim:
     """Verify TST.representation_dim matches the flattened output."""
 
     def test_representation_dim_matches_forward(self) -> None:
-        """Flattened output size equals model.representation_dim."""
+        """Flattened output size equals model.representation_dim * sequence_length."""
         model = TST(
-            input_dims=2,
-            sequence_length=10,
-            hidden_dims=8,
-            num_heads=2,
-            depth=1,
-            feedforward_dims=16,
+            input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=16
         )
         x = torch.randn(2, 10, 2)
         padding_masks = torch.ones(2, 10, dtype=torch.bool)
@@ -38,16 +33,16 @@ class TestTSTRepresentationDim:
         # Zero padding (all valid here), then flatten
         reps_masked = reps * padding_masks.unsqueeze(-1)
         flat = reps_masked.reshape(reps_masked.shape[0], -1)
-        assert flat.shape[1] == model.representation_dim
+        assert flat.shape[1] == model.representation_dim * model.encoder.sequence_length
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = hidden_dims * sequence_length."""
-        model = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
-        assert model.representation_dim == 8 * 10
+        """representation_dim = hidden_dim (not hidden_dim * sequence_length)."""
+        model = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
+        assert model.representation_dim == 8
 
     def test_satisfies_protocol(self) -> None:
         """TST is an instance of RepresentationBackbone."""
-        model = TST(input_dims=2, sequence_length=5, hidden_dims=4, num_heads=1, depth=1)
+        model = TST(input_dim=2, sequence_length=5, hidden_dim=4, num_heads=1, depth=1)
         assert isinstance(model, RepresentationBackbone)
 
 
@@ -57,11 +52,11 @@ class TestSeries2VecRepresentationDim:
     def test_representation_dim_matches_forward(self) -> None:
         """Network.encode output dim equals model.representation_dim."""
         model = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         x = torch.randn(2, 20, 2)
@@ -69,30 +64,29 @@ class TestSeries2VecRepresentationDim:
         assert reps.shape[1] == model.representation_dim
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = representation_dims (output matches constructor param)."""
+        """representation_dim equals the constructor param value."""
         model = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         assert model.representation_dim == 4
 
 
 class TestTSTCCRepresentationDim:
-    """Verify TSTCC.representation_dim equals output_dims after global average pooling."""
+    """Verify TSTCC.representation_dim equals representation_dim after global average pooling."""
 
-    def test_representation_dim_equals_output_dims(self) -> None:
-        """representation_dim returns the encoder's output_dims."""
-        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
-        # Per design spec: representation_dim == output_dims (pooling makes it length-independent)
-        assert model.representation_dim == model._encoder.output_dims
+    def test_representation_dim_equals_encoder_value(self) -> None:
+        """representation_dim returns the encoder's representation_dim."""
+        model = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
+        assert model.representation_dim == model._encoder.representation_dim
 
     def test_representation_dim_value(self) -> None:
-        """representation_dim = output_dims."""
-        model = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        """representation_dim equals constructor param value."""
+        model = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         assert model.representation_dim == 16
 
 
@@ -101,7 +95,7 @@ class TestFactoriesWithRealBackbones:
 
     def test_tst_factory_works(self) -> None:
         """make_tst_supervised with a real TST backbone."""
-        backbone = TST(input_dims=2, sequence_length=10, hidden_dims=8, num_heads=2, depth=1)
+        backbone = TST(input_dim=2, sequence_length=10, hidden_dim=8, num_heads=2, depth=1)
         module = make_tst_supervised(
             backbone, num_outputs=3, task="classification", freeze_backbone=False
         )
@@ -113,11 +107,11 @@ class TestFactoriesWithRealBackbones:
     def test_series2vec_factory_works(self) -> None:
         """make_series2vec_supervised with a real Series2Vec backbone."""
         backbone = Series2Vec(
-            input_dims=2,
-            embedding_dims=8,
+            input_dim=2,
+            embedding_dim=8,
             num_heads=2,
-            feedforward_dims=16,
-            representation_dims=4,
+            feedforward_dim=16,
+            representation_dim=4,
             dropout_rate=0.1,
         )
         module = make_series2vec_supervised(
@@ -129,10 +123,9 @@ class TestFactoriesWithRealBackbones:
 
     def test_tstcc_factory_works(self) -> None:
         """make_tstcc_supervised with a real TSTCC backbone."""
-        backbone = TSTCC(input_dims=2, conv_kernel_size=8, stride=4, output_dims=16)
+        backbone = TSTCC(input_dim=2, conv_kernel_size=8, stride=4, representation_dim=16)
         module = make_tstcc_supervised(
             backbone, num_outputs=5, task="classification", freeze_backbone=False
         )
-        # Verify module construction works (head uses backbone.representation_dim)
         assert module._head._fc.in_features == backbone.representation_dim
         assert module._head._fc.out_features == 5

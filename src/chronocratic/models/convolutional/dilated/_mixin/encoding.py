@@ -2,6 +2,7 @@ __all__ = ["BaseEncodingMixin", "DecompositionEncodingMixin", "PoolingEncodingMi
 
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
+import enum
 import logging
 from typing import override, TYPE_CHECKING
 
@@ -22,7 +23,14 @@ from chronocratic.models.utils import (
     process_sliding_window,
 )
 
-_encoding_window_unset = object()
+
+class _EncodingWindowSentinel(enum.Enum):
+    """Sentinel for an unset ``encoding_window`` (distinct from a genuine ``None``)."""
+
+    UNSET = enum.auto()
+
+
+_encoding_window_unset = _EncodingWindowSentinel.UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,7 +38,7 @@ if TYPE_CHECKING:
     from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 _logger = logging.getLogger(__name__)
-_EXPECTED_INPUT_DIMS = 3
+_EXPECTED_INPUT_DIM = 3
 
 
 class BaseEncodingMixin(ABC):
@@ -194,7 +202,7 @@ class BaseEncodingMixin(ABC):
         *,
         mask: "MaskMode | None" = None,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
-        encoding_window: object = _encoding_window_unset,
+        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
     ) -> torch.Tensor:
         """Encode one batch in a single forward pass (no sliding window).
 
@@ -238,7 +246,7 @@ class BaseEncodingMixin(ABC):
         batch_size: int,
         num_workers: int,
         mask: "MaskMode | None" = None,
-        encoding_window: object = _encoding_window_unset,
+        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
         *,
         causal: bool = False,
         sliding_length: int | None = None,
@@ -275,7 +283,7 @@ class BaseEncodingMixin(ABC):
         """
         encoder = self._get_encoder()
 
-        if data.ndim != _EXPECTED_INPUT_DIMS:
+        if data.ndim != _EXPECTED_INPUT_DIM:
             msg = "Input data must have shape (n_instance, n_timestamps, n_features)."
             raise ValueError(msg)
 
@@ -449,6 +457,7 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         else:
             # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
             output_tensor = concat_last_step_features(
-                output_trend_tensor, output_seasonality_tensor
+                trend_embeddings=output_trend_tensor,
+                seasonality_embeddings=output_seasonality_tensor,
             )
         return output_tensor

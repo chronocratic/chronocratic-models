@@ -28,7 +28,7 @@ class MaskMode(Enum):
 
 
 def generate_continuous_mask(
-    batch_size: int, seq_length: int, n_segments: int = 5, segment_length: float = 0.1
+    *, batch_size: int, seq_length: int, n_segments: int = 5, segment_length: float = 0.1
 ) -> torch.Tensor:
     """
     Generate a continuous mask.
@@ -63,7 +63,7 @@ def generate_continuous_mask(
 
 
 def generate_binomial_mask(
-    batch_size: int, seq_length: int, probability: float = 0.5
+    *, batch_size: int, seq_length: int, probability: float = 0.5
 ) -> torch.Tensor:
     """
     Generate a binomial mask.
@@ -80,7 +80,7 @@ def generate_binomial_mask(
     return torch.from_numpy(samples).to(torch.bool)
 
 
-def generate_all_true_mask(batch_size: int, seq_length: int) -> torch.Tensor:
+def generate_all_true_mask(*, batch_size: int, seq_length: int) -> torch.Tensor:
     """
     Generate a mask where all elements are True.
 
@@ -94,7 +94,7 @@ def generate_all_true_mask(batch_size: int, seq_length: int) -> torch.Tensor:
     return torch.full((batch_size, seq_length), True, dtype=torch.bool)  ## noqa: FBT003
 
 
-def generate_all_false_mask(batch_size: int, seq_length: int) -> torch.Tensor:
+def generate_all_false_mask(*, batch_size: int, seq_length: int) -> torch.Tensor:
     """
     Generate a mask where all elements are False.
 
@@ -108,7 +108,7 @@ def generate_all_false_mask(batch_size: int, seq_length: int) -> torch.Tensor:
     return torch.full((batch_size, seq_length), False, dtype=torch.bool)  # noqa: FBT003
 
 
-def generate_mask_last_mask(batch_size: int, seq_length: int) -> torch.Tensor:
+def generate_mask_last_mask(*, batch_size: int, seq_length: int) -> torch.Tensor:
     """
     Generate a mask where all elements are True except for the last element.
 
@@ -176,7 +176,7 @@ def generate_mask(x: torch.Tensor, mask_mode: MaskMode) -> torch.Tensor:
         Boolean mask tensor of shape ``(batch, time)`` on the same device as ``x``.
     """
     mask_function = get_mask_function(mask_mode)
-    return mask_function(x.size(0), x.size(1)).to(x.device)
+    return mask_function(batch_size=x.size(0), seq_length=x.size(1)).to(x.device)
 
 
 def generate_not_nan_mask(x: torch.Tensor) -> torch.Tensor:

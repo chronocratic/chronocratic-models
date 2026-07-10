@@ -2,8 +2,6 @@
 
 Verifies that Tier A dilated models declare `supported_outputs` and return
 the correct tensor ranks for VECTOR (2-D) and SEQUENCE (3-D) output shapes.
-
-TDD for plan 10-06, Task 1 and Task 2.
 """
 
 from __future__ import annotations
@@ -36,7 +34,7 @@ class TestCoSTVectorShape:
 
     @pytest.fixture
     def model(self) -> CoST:
-        return CoST(input_dims=3, sequence_length=50)
+        return CoST(input_dim=3, sequence_length=50)
 
     def test_vector_returns_2d_tensor(self, model: CoST) -> None:
         x = torch.randn(2, 50, 3)
@@ -61,7 +59,7 @@ class TestCoSTSequenceShape:
 
     @pytest.fixture
     def model(self) -> CoST:
-        return CoST(input_dims=3, sequence_length=50)
+        return CoST(input_dim=3, sequence_length=50)
 
     def test_sequence_returns_3d_tensor(self, model: CoST) -> None:
         x = torch.randn(2, 50, 3)
@@ -88,7 +86,7 @@ class TestCoSTEncodeBatch:
 
     @pytest.fixture
     def model(self) -> CoST:
-        return CoST(input_dims=3, sequence_length=50)
+        return CoST(input_dim=3, sequence_length=50)
 
     def test_encode_batch_vector_is_2d(self, model: CoST) -> None:
         x = torch.randn(2, 50, 3)

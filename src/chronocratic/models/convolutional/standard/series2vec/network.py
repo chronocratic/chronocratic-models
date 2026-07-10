@@ -22,17 +22,17 @@ class Series2VecNetwork(nn.Module):
     regression use :class:`SupervisedModule` from
     ``chronocratic.models.supervised``.
 
-    The ``representation_dims`` parameter controls the **output dimension** of
+    The ``representation_dim`` parameter controls the **output dimension** of
     :meth:`encode` (temporal + frequency concatenated). Internally, each branch
-    encodes to ``representation_dims // 2`` features, so the parameter must be
+    encodes to ``representation_dim // 2`` features, so the parameter must be
     even.
 
     Args:
-        input_dims: Number of input features (channels).
-        embedding_dims: Token embedding dimensionality for the conv encoders.
+        input_dim: Number of input features (channels).
+        embedding_dim: Token embedding dimensionality for the conv encoders.
         num_heads: Number of attention heads in the cross-attention layer.
-        feedforward_dims: Hidden dimensionality of the feed-forward network.
-        representation_dims: Output dimensionality of :meth:`encode`
+        feedforward_dim: Hidden dimensionality of the feed-forward network.
+        representation_dim: Output dimensionality of :meth:`encode`
             (temporal + frequency concatenated). Must be even.
         dropout_rate: Dropout probability applied in attention and FFN.
         encoder_kernel_size: Kernel size for the convolutional tokenizer.
@@ -43,54 +43,54 @@ class Series2VecNetwork(nn.Module):
 
     def __init__(
         self,
-        input_dims: int,
-        embedding_dims: int = 16,
+        *,
+        input_dim: int,
+        embedding_dim: int = 16,
         num_heads: int = 8,
-        feedforward_dims: int = 256,
-        representation_dims: int = 320,
+        feedforward_dim: int = 256,
+        representation_dim: int = 320,
         dropout_rate: float = 0.01,
         encoder_kernel_size: int = 8,
-        *,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
-        if representation_dims % 2 != 0:
-            msg = f"representation_dims must be even, got {representation_dims}"
+        if representation_dim % 2 != 0:
+            msg = f"representation_dim must be even, got {representation_dim}"
             raise ValueError(msg)
 
-        branch_dims = representation_dims // 2
-        if branch_dims % num_heads != 0:
+        branch_dim = representation_dim // 2
+        if branch_dim % num_heads != 0:
             msg = (
-                f"representation_dims // 2 ({branch_dims}) must be divisible by "
+                f"representation_dim // 2 ({branch_dim}) must be divisible by "
                 f"num_heads ({num_heads}) for MultiheadAttention"
             )
             raise ValueError(msg)
-        self._branch_representation_dim = branch_dims
+        self._branch_representation_dim = branch_dim
 
         self.embed_layer = DisjoinEncoder(
-            input_dims=input_dims,
-            embedding_dims=embedding_dims,
-            representation_dims=branch_dims,
+            input_dim=input_dim,
+            embedding_dim=embedding_dim,
+            representation_dim=branch_dim,
             kernel_size=encoder_kernel_size,
             normalization_layer_type=normalization_layer_type,
         )
         self.embed_layer_f = DisjoinEncoder(
-            input_dims=input_dims,
-            embedding_dims=embedding_dims,
-            representation_dims=branch_dims,
+            input_dim=input_dim,
+            embedding_dim=embedding_dim,
+            representation_dim=branch_dim,
             kernel_size=encoder_kernel_size,
             normalization_layer_type=normalization_layer_type,
         )
 
-        self.layer_norm = nn.LayerNorm(branch_dims, eps=1e-5)
-        self.layer_norm_2 = nn.LayerNorm(branch_dims, eps=1e-5)
-        self.attention_layer = nn.MultiheadAttention(branch_dims, num_heads, dropout_rate)
+        self.layer_norm = nn.LayerNorm(branch_dim, eps=1e-5)
+        self.layer_norm_2 = nn.LayerNorm(branch_dim, eps=1e-5)
+        self.attention_layer = nn.MultiheadAttention(branch_dim, num_heads, dropout_rate)
 
         self.feed_forward = nn.Sequential(
-            nn.Linear(branch_dims, feedforward_dims),
+            nn.Linear(branch_dim, feedforward_dim),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(feedforward_dims, branch_dims),
+            nn.Linear(feedforward_dim, branch_dim),
             nn.Dropout(dropout_rate),
         )
 
@@ -121,7 +121,7 @@ class Series2VecNetwork(nn.Module):
         return self.gap_f(out_f).squeeze(-1)
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        """Return ``(batch, representation_dims)`` temporal + frequency concat."""
+        """Return ``(batch, representation_dim)`` temporal + frequency concat."""
         temporal_representation = self._temporal_representation(x)
         frequency_representation = self._frequency_representation(x)
         return torch.cat((temporal_representation, frequency_representation), dim=1)
@@ -158,7 +158,7 @@ class Series2VecNetwork(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Return representations of shape ``(batch, representation_dims)``."""
+        """Return representations of shape ``(batch, representation_dim)``."""
         return self.encode(x)
 
     @property

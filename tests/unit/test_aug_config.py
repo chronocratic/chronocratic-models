@@ -76,27 +76,27 @@ class TestAutoTCLNeuralNetworkAugmentationParameters:
     """AutoTCLNeuralNetworkAugmentationParameters defaults and fields."""
 
     def test_default_encoder_kwargs(self) -> None:
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
         assert params.encoder_kwargs is None
 
     def test_encoder_kwargs_not_none(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
+            input_dim=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
         assert params.encoder_kwargs == {"kernel_sizes": [3, 5]}
 
     def test_input_dims_is_int(self) -> None:
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
-        assert isinstance(params.input_dims, int)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
+        assert isinstance(params.input_dim, int)
 
     def test_encoder_kwargs_is_dict(self) -> None:
         params = AutoTCLNeuralNetworkAugmentationParameters(
-            input_dims=1, encoder_kwargs={"kernel_sizes": [3, 5]}
+            input_dim=1, encoder_kwargs={"kernel_sizes": [3, 5]}
         )
         assert isinstance(params.encoder_kwargs, dict)
 
     def test_encoder_kwargs_none_by_default(self) -> None:
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
         assert params.encoder_kwargs is None
 
 
@@ -198,6 +198,6 @@ class TestBarrelExports:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        params = AutoTCLNeuralNetworkAugmentationParameters(input_dims=1)
-        assert params.input_dims == 1
+        params = AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
+        assert params.input_dim == 1
         assert params.encoder_kwargs is None

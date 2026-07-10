@@ -12,6 +12,7 @@ class Conv1dSamePad(nn.Module):
 
     def __init__(
         self,
+        *,
         in_channels: int,
         out_channels: int,
         kernel_size: int,
@@ -46,13 +47,13 @@ class Conv1dSamePadMultiBlock(nn.Module):
 
     def __init__(
         self,
+        *,
         in_channels: int,
         out_channels: int,
         kernel_size: int,
         dilation: int,
         stride: int = 1,
         num_blocks: int = 2,
-        *,
         is_final: bool = False,
         activation_fn: Callable[[torch.Tensor], torch.Tensor] = F.gelu,
     ) -> None:
