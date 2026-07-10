@@ -1,0 +1,48 @@
+name: Protected Files Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - pyproject.toml
+      - .vscode/**
+
+jobs:
+  check-protected-files:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Detect changed protected files
+        id: changed
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const protectedPaths = ['pyproject.toml', '.vscode/settings.json'];
+            const modified = files.filter(f =>
+              protectedPaths.some(p => p === f.filename || f.filename.startsWith(p + '/'))
+            );
+
+            if (modified.length > 0) {
+              const lines = modified.map(f =>
+                `- \`${f.filename}\` (${f.status})`
+              ).join('\n');
+              core.setOutput('count', modified.length);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `⚠️ **Protected files modified**\n\nThis PR changes ${modified.length} file(s) that are restricted to core maintainers:\n\n${lines}\n\nPlease review carefully. See [Contributing](../blob/main/docs/contributing.md#protected-project-files) for policy.`
+              });
+            }
