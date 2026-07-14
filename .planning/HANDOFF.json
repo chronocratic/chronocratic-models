@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-07-14T15:39:00",
+  "phase": "13",
+  "phase_name": "model-bug-fixes",
+  "phase_dir": ".planning/phases/13-model-bug-fixes",
+  "plan": 1,
+  "task": 0,
+  "total_tasks": 0,
+  "status": "paused",
+  "completed_tasks": [],
+  "remaining_tasks": [
+    {"id": 1, "name": "Failing tests for generate_not_nan_mask, zero_fill_padding, masked_reconstruction_loss", "status": "not_started"},
+    {"id": 2, "name": "Implement in utils.py", "status": "not_started"},
+    {"id": 3, "name": "Barrel exports in __init__.py", "status": "not_started"},
+    {"id": 4, "name": "Update internal callers and remove from masking.py", "status": "not_started"}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Clean cut migration for generate_not_nan_mask - no backward compat", "rationale": "User rejected shim approach", "phase": "13"},
+    {"decision": "All 3 NaN helpers live in utils.py, exported via barrel __init__.py", "rationale": "Avoid circular imports when non-dilated models use them", "phase": "13"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Execute Plan 1 (13-01) - create shared NaN helpers via TDD",
+  "context_notes": "Phase 13 planning complete. 6 plans created. Plan 1 went through 3 plan-checker rounds - all blockers fixed. Working tree clean. Ready to execute."
+}
