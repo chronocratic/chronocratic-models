@@ -49,42 +49,19 @@ print(representations.shape)
 
 ## Models
 
-### Convolutional (Dilated)
+The package ships with self-supervised time-series models across these architectures:
 
-| Model | Description |
-|-------|-------------|
-| **TS2Vec** | Multi-scale hierarchical representation learning via dilated convolutions with hierarchical clustering. Code source: [zhihanyue/ts2vec](https://github.com/zhihanyue/ts2vec) |
-| **CoST** | Decomposition-based contrastive self-supervised learning with trend-seasonal decomposition and contrastive objectives. Code source: [salesforce/CoST](https://github.com/salesforce/CoST) |
-| **AutoTCL** | Automatic temporal contrastive learning with a trainable augmentation module for self-supervised time-series encoding. Code source: [AslanDing/AutoTCL](https://github.com/AslanDing/AutoTCL) |
+| Category | Import |
+|----------|--------|
+| Convolutional (Dilated) | `TS2Vec`, `CoST`, `AutoTCL` |
+| Convolutional (Standard) | `Series2Vec`, `TSTCC`, `MCL` |
+| Transformer | `TST` |
+| Recurrent | `TimeNet`, `RecurrentAutoEncoder` |
+| Generative | `TimeVAE` |
 
-### Convolutional (Standard)
+For details (original papers, encoder architecture, default hyperparameters), see the [API reference](https://chronocratic-models.readthedocs.io/en/latest/) and the `ModelParameters` dataclass for each model. The list above is maintained by the exports in `chronocratic.models`; adding a model is just extending `__init__.py`.
 
-| Model | Description |
-|-------|-------------|
-| **Series2Vec** | Self-supervised pretraining via contrastive learning on augmented time-series segments. |
-| **TSTCC** | Temporal and contextual contrastive pretraining for time-series representation learning. |
-| **MCL** | Fully convolutional encoder designed for Mixup Contrastive Learning objectives. |
-
-### Transformer
-
-| Model | Description |
-|-------|-------------|
-| **TST** | Time Series Transformer with masked-reconstruction-based self-supervised pretraining. |
-
-### Recurrent
-
-| Model | Description |
-|-------|-------------|
-| **TimeNet** | Recurrent encoder-decoder architecture for time-series representation learning. |
-| **RecurrentAutoEncoder** | Recurrent autoencoder for time-series representation learning. Code source: [time-series-foundation-models/time-series-autoencoder](https://github.com/time-series-foundation-models/time-series-autoencoder) |
-
-### Generative
-
-| Model | Description |
-|-------|-------------|
-| **TimeVAE** | Variational autoencoder for time-series data with latent representation encoding and generation. |
-
-> **Important:** These models are provided as training-ready implementations. No pre-trained weights are included — you must train them on your own data before using them for inference.
+> **Important:** No pre-trained weights are included — train on your own data before inference.
 
 ## Features
 
