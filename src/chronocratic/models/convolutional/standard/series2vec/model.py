@@ -16,7 +16,7 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -243,6 +243,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec pretraining loss for one batch."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
         train_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             "train_loss",
@@ -259,6 +260,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec validation loss for one batch."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
         val_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             "val_loss",
