@@ -26,6 +26,9 @@ class TSTModelParameters:
         feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
         dropout_rate: Dropout probability used throughout the transformer.
+        masking_ratio: Fraction of input elements zeroed during
+            masked-reconstruction pretraining. Each element is masked
+            independently (Bernoulli). ``0.15`` matches the upstream default.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
             ``'learnable'``) passed to the encoder.
         activation: Activation function name passed to the transformer
@@ -59,6 +62,7 @@ class TSTModelParameters:
     depth: int = 3
     feedforward_dim: int = 256
     dropout_rate: float = 0.1
+    masking_ratio: float = 0.15
     pos_encoding: str = "fixed"
     activation: str = "gelu"
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH
