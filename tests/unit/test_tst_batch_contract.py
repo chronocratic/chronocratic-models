@@ -17,7 +17,7 @@ from chronocratic.models.transformer.tst.model import TST
 def tst_model() -> TST:
     """Create a small TST model for testing."""
     return TST(
-        input_dim=3, sequence_length=16, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=32
+        input_dim=3, sequence_length=32, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=32
     )
 
 

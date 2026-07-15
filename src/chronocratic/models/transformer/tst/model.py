@@ -13,6 +13,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
+from chronocratic.models.utils import extract_features_from_batch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -194,13 +195,14 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         padding_masks = torch.ones(x.shape[:2], dtype=torch.bool, device=x.device)
         return masked_x, x, ~keep, padding_masks
 
-    def _compute_loss(self, batch: tuple) -> torch.Tensor:
-        x, targets, target_masks, padding_masks, _ = batch
-        predictions = self.reconstruct(x, padding_masks)
-        combined_mask = target_masks * padding_masks.unsqueeze(-1)
-        per_element_loss = self._loss_fn(predictions, targets, combined_mask)
-
-        mean_loss = torch.sum(per_element_loss) / len(per_element_loss)
+    def _compute_loss(self, batch: torch.Tensor | tuple | list) -> torch.Tensor:
+        x = extract_features_from_batch(batch)
+        masked_x, targets, target_masks, padding_masks = self._make_masked_inputs(x)
+        predictions = self.reconstruct(masked_x, padding_masks)
+        combined_mask = target_masks & padding_masks.unsqueeze(-1)
+        if not combined_mask.any():
+            return x.new_zeros((), requires_grad=True)
+        mean_loss = self._loss_fn(predictions, targets, combined_mask)
 
         # output-layer-only L2 (global L2 is handled via weight_decay in the optimizer)
         if self.training and self._weight_decay and not self._global_reg:
@@ -214,7 +216,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Training & validation steps
     # ------------------------------------------------------------------
 
-    def training_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor | tuple | list, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction training loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
@@ -227,7 +229,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         )
         return loss
 
-    def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor | tuple | list, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction validation loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
