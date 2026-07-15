@@ -14,18 +14,7 @@ import torch
 import warnings
 
 from chronocratic.models import TimeVAE
-
-
-def _timevae_encoder_output_length(seq_len: int, num_layers: int, stride: int) -> int:
-    """Compute encoder spatial output after N Conv1d(k=3, s=stride, pad=1) layers.
-
-    Conv1d output formula: L_out = (L_in - 1) // stride + 1
-    Applied N times (one per encoder conv layer).
-    """
-    L = seq_len
-    for _ in range(num_layers):
-        L = (L - 1) // stride + 1
-    return L
+from chronocratic.models.generative.timevae.model import _timevae_encoder_output_length
 
 
 # ---------------------------------------------------------------------------
