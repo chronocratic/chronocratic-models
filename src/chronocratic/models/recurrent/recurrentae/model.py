@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from lightning.pytorch import LightningModule
 import torch
 from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
@@ -20,7 +21,11 @@ from chronocratic.models.recurrent.recurrentae.layers import (
     _prepare_dropout,
     _RNN_CLASSES,
 )
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    masked_reconstruction_loss,
+    zero_fill_padding,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -137,10 +142,27 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         )
         raise ValueError(msg)
 
+    def _compute_masked_loss(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute reconstruction loss with NaN-padded timestep masking.
+
+        Args:
+            x: Raw input tensor (B, T, C) that may contain NaN timesteps.
+
+        Returns:
+            Scalar loss tensor with padded timesteps excluded.
+        """
+        x_filled, keep_mask = zero_fill_padding(x)
+        output = self(x_filled)
+        if isinstance(self.loss_fn, nn.MSELoss):
+            per_element = F.mse_loss(output, x_filled, reduction="none")
+        else:
+            per_element = F.l1_loss(output, x_filled, reduction="none")
+        return masked_reconstruction_loss(per_element, keep_mask)
+
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""
         x = extract_features_from_batch(batch)
-        loss = self.loss_fn(self(x), x)
+        loss = self._compute_masked_loss(x)
         self.log(
             "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
         )
@@ -149,7 +171,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a validation batch."""
         x = extract_features_from_batch(batch)
-        loss = self.loss_fn(self(x), x)
+        loss = self._compute_masked_loss(x)
         self.log(
             "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self.sync_dist
         )

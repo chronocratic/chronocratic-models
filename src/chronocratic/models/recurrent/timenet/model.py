@@ -10,7 +10,11 @@ from torch import nn
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    masked_reconstruction_loss,
+    zero_fill_padding,
+)
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
@@ -113,8 +117,8 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         decoder_layers: list[nn.Module] = [
             GRUWrapper(input_size=self._hidden_dim, hidden_size=self._hidden_dim, batch_first=True)
         ]
-        for i in range(1, self._depth):
-            if i > 1 and self._dropout_rate > 0:
+        for _ in range(1, self._depth):
+            if self._dropout_rate > 0:
                 decoder_layers.append(nn.Dropout(self._dropout_rate))
             decoder_layers.append(
                 GRUWrapper(
@@ -149,11 +153,24 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         msg = f"TimeNet does not support output={output}; supported: {type(self).supported_outputs}"
         raise ValueError(msg)
 
+    def _compute_masked_loss(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute reconstruction loss with NaN-padded timestep masking.
+
+        Args:
+            x: Raw input tensor (B, T, C) that may contain NaN timesteps.
+
+        Returns:
+            Scalar loss tensor with padded timesteps excluded.
+        """
+        x_filled, keep_mask = zero_fill_padding(x)
+        output = self(x_filled)
+        per_element = (output - x_filled) ** 2
+        return masked_reconstruction_loss(per_element, keep_mask)
+
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""
         x = extract_features_from_batch(batch)
-        output = self(x)
-        loss = self.loss_fn(output, x)
+        loss = self._compute_masked_loss(x)
         self.log(
             "train_loss",
             loss,
@@ -168,8 +185,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the validation reconstruction loss."""
         x = extract_features_from_batch(batch)
-        output = self(x)
-        loss = self.loss_fn(output, x)
+        loss = self._compute_masked_loss(x)
         self.log(
             "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )

@@ -1,7 +1,7 @@
-__all__ = ["MaskMode", "generate_mask", "generate_not_nan_mask"]
+__all__ = ["MaskMode", "generate_mask"]
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 
 import numpy as np
 import torch
@@ -9,7 +9,7 @@ import torch
 _rng = np.random.default_rng()
 
 
-class MaskMode(Enum):
+class MaskMode(StrEnum):
     """Masking strategies applied to time series encoder inputs.
 
     Attributes:
@@ -177,16 +177,3 @@ def generate_mask(x: torch.Tensor, mask_mode: MaskMode) -> torch.Tensor:
     """
     mask_function = get_mask_function(mask_mode)
     return mask_function(batch_size=x.size(0), seq_length=x.size(1)).to(x.device)
-
-
-def generate_not_nan_mask(x: torch.Tensor) -> torch.Tensor:
-    """Return a boolean mask marking time steps that contain no NaN values.
-
-    Args:
-        x: Input tensor of shape ``(batch, time, channels)``.
-
-    Returns:
-        Boolean tensor of shape ``(batch, time)`` where ``True`` indicates
-        that all channels at that time step are finite.
-    """
-    return ~x.isnan().any(dim=-1)

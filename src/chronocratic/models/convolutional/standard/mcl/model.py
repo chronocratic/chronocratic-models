@@ -9,7 +9,7 @@ from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
@@ -109,14 +109,14 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
-        if output not in type(self).supported_outputs:
-            msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
-            raise ValueError(msg)
         flat = encoder(batch_x)  # (B, D) - D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        _warn_sequence_fallback(type(self))
-        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         """Run one contrastive training step.
@@ -128,6 +128,7 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             Use ``batch_size >= 2`` for meaningful contrastive training.
         """
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
 
         x_1 = x
         x_2 = x[torch.randperm(len(x))]  # device-ok: CPU permutation index

@@ -10,10 +10,10 @@ Shape semantics
 
 from __future__ import annotations
 
-import enum
+from enum import StrEnum
 
 
-class EncodingOutputShape(enum.Enum):
+class EncodingOutputShape(StrEnum):
     """Requested shape of an encoder's output representation.
 
     Attributes:

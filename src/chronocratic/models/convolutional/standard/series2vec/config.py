@@ -31,7 +31,19 @@ class Series2VecModelParameters:
             head used for pretraining. Defaults to 320.
         dropout_rate: Dropout probability applied throughout the
             network. Defaults to 0.01.
-        encoder_kernel_size: Kernel size of the convolutional tokenizer.
+        temporal_kernel_size: Kernel width of the temporal 2D
+            convolution in the DisjoinEncoder. Defaults to 8.
+        spatial_kernel_size: Kernel height of the spatial 2D
+            convolution in the DisjoinEncoder. Defaults to ``None``,
+            which resolves to ``input_dim`` (full spatial pooling).
+            Must satisfy ``input_dim >= spatial_kernel_size``.
+        representation_kernel_size: Kernel width of the 1D
+            representation convolution in the DisjoinEncoder. Defaults
+            to 3.
+        sequence_length: Input sequence length. Used at init time for
+            auto-clamping ``temporal_kernel_size`` when the sequence is
+            too short for the default kernel chain. Defaults to
+            ``None`` (no auto-clamp).
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
             used as the temporal target.
@@ -55,7 +67,10 @@ class Series2VecModelParameters:
     feedforward_dim: int = 256
     representation_dim: int = 320  # renamed from `representation_dims` in the original codebase
     dropout_rate: float = 0.01
-    encoder_kernel_size: int = 8
+    temporal_kernel_size: int = 8
+    spatial_kernel_size: int | None = None
+    representation_kernel_size: int = 3
+    sequence_length: int | None = None
     learning_rate: float = 1e-3
     soft_dtw_gamma: float = 0.1
     sync_dist: bool = False

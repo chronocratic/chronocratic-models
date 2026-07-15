@@ -25,7 +25,11 @@ from chronocratic.models.convolutional.dilated.autotcl.losses import (
 from chronocratic.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils import extract_features_from_batch, process_sample_length
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    process_sample_length,
+    zero_fill_padding,
+)
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
@@ -175,6 +179,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         2. Uniform encoder training (all augmentation types).
         """
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
         opts = self.optimizers()
@@ -272,6 +277,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Compute validation contrastive loss using the averaged encoder."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
 
         view = self._augmentation.produce(x)
         aug_x = view.view

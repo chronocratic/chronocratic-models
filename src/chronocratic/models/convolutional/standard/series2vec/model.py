@@ -16,7 +16,7 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -62,7 +62,16 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             (temporal + frequency concatenated). Must be even.
         dropout_rate: Dropout probability applied throughout the
             network.
-        encoder_kernel_size: Kernel size of the convolutional tokenizer.
+        temporal_kernel_size: Kernel width of the temporal 2D convolution
+            in the DisjoinEncoder. Defaults to 8. Auto-clamped when
+            ``sequence_length`` is too short.
+        spatial_kernel_size: Kernel height of the spatial 2D convolution.
+            Defaults to ``None``, resolving to ``input_dim``.
+        representation_kernel_size: Kernel width of the 1D representation
+            convolution. Defaults to 3.
+        sequence_length: Input sequence length. Used for auto-clamping
+            ``temporal_kernel_size`` when the sequence is too short.
+            Defaults to ``None`` (no auto-clamp).
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
             used as the temporal target.
@@ -95,7 +104,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         feedforward_dim: int = 256,
         representation_dim: int = 320,
         dropout_rate: float = 0.01,
-        encoder_kernel_size: int = 8,
+        temporal_kernel_size: int = 8,
+        spatial_kernel_size: int | None = None,
+        representation_kernel_size: int = 3,
+        sequence_length: int | None = None,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
         singleton_split_count: int = 3,
@@ -118,7 +130,6 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self._optimizer_name = optimizer_name
         self._weight_decay = weight_decay
         self._singleton_split_count = singleton_split_count
-        self._encoder_kernel_size = encoder_kernel_size
 
         self.network = Series2VecNetwork(
             input_dim=input_dim,
@@ -127,7 +138,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             feedforward_dim=feedforward_dim,
             representation_dim=representation_dim,
             dropout_rate=dropout_rate,
-            encoder_kernel_size=encoder_kernel_size,
+            temporal_kernel_size=temporal_kernel_size,
+            spatial_kernel_size=spatial_kernel_size,
+            representation_kernel_size=representation_kernel_size,
+            sequence_length=sequence_length,
             normalization_layer_type=normalization_layer_type,
         )
 
@@ -162,18 +176,18 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             Representations of shape ``(B, representation_dim)`` for
             VECTOR or ``(B, 1, representation_dim)`` for SEQUENCE.
         """
-        if output not in type(self).supported_outputs:
-            msg = (
-                f"Series2Vec does not support output={output}; "
-                f"supported: {type(self).supported_outputs}"
-            )
-            raise ValueError(msg)
         assert isinstance(encoder, Series2VecNetwork)  # noqa: S101  # narrows Module -> Series2VecNetwork
         flat = encoder.encode(batch_x)  # (B, D) — D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        _warn_sequence_fallback(type(self))
-        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = (
+            f"Series2Vec does not support output={output}; "
+            f"supported: {type(self).supported_outputs}"
+        )
+        raise ValueError(msg)
 
     def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
         # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)
@@ -200,7 +214,9 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             return x
         k = self._singleton_split_count
         window_len = x.size(1) // k
-        if window_len < self._encoder_kernel_size:
+        # Use the (possibly clamped) temporal kernel from the encoder
+        actual_kernel = self.network.embed_layer.temporal_kernel_size
+        if window_len < actual_kernel:
             return x
         return x[0, : k * window_len].reshape(k, window_len, x.size(2))
 
@@ -227,6 +243,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec pretraining loss for one batch."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
         train_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             "train_loss",
@@ -243,6 +260,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec validation loss for one batch."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
         val_loss, temporal_loss, frequency_loss = self._calculate_loss(x)
         self.log(
             "val_loss",
