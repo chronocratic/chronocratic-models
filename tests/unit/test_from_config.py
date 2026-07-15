@@ -67,7 +67,10 @@ class TestModelInstantiation:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
         config = TSTCCModelParameters(
-            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16,
+            input_dim=1,
+            conv_kernel_size=5,
+            stride=1,
+            representation_dim=16,
             augmentation=_default_tstcc_pair(),
         )
         model = TSTCC(**vars(config))
