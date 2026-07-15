@@ -158,7 +158,7 @@ class TestTSTCCTemporalContrastNoCrash:
         x = torch.randn(2, 22, 200)
         # Encoder output should be 4, timesteps clamped to 3 -> 4 > 3, safe
         with torch.no_grad():
-            features = model._encoder(x.transpose(1, 2))  # (B, C, T) -> (B, rep, L')
+            features = model._encoder(x)  # TCCEncoder expects (B, T, C), outputs (B, rep, L')
         actual_seq_len = features.shape[-1]
         assert actual_seq_len > model.temporal_contrast_timesteps, (
             f"Encoder output seq_len ({actual_seq_len}) must be > "
