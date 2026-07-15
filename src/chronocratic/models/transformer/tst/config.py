@@ -45,12 +45,14 @@ class TSTModelParameters:
             milestone internally).
         lr_factor: Multiplicative decay factor applied at each
             ``lr_step`` milestone.
-        weight_decay: L2 regularization coefficient. Applied to the output
-            layer only when ``global_reg=False``, or to all parameters
-            (via optimizer weight decay) when ``global_reg=True``.
-        global_reg: Whether ``weight_decay`` is applied globally as
-            weight decay (``True``) or only to the output layer
-            (``False``).
+        weight_decay: L2 regularization coefficient. Inactive at the
+            default ``0.0``. When positive, applied to all parameters via
+            optimizer weight decay if ``global_reg=True``, or added to the
+            training loss as an L2 penalty on the output layer alone if
+            ``global_reg=False``.
+        global_reg: Selects where a positive ``weight_decay`` is applied:
+            globally via the optimizer (``True``) or to the output layer
+            only (``False``). No effect when ``weight_decay=0.0``.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
     """
