@@ -11,6 +11,13 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a15 (2026-07-15)
+
+### Fixed
+
+- fix(models): align __init__ params with config across all models: Full param-audit: 10 models scanned in parallel,  signatures now match  config dataclasses exactly. ([#73](https://github.com/chronocratic/chronocratic-models/issues/73))
+
+
 ## v0.1.0a14 (2026-07-15)
 
 ### Fixed
