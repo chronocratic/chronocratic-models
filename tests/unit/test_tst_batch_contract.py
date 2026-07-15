@@ -169,3 +169,80 @@ class TestMakeMaskedInputs:
         x = torch.randn(4, 16, 3)
         result = model._make_masked_inputs(x)
         assert len(result) == 4
+
+
+class TestBatchFormats:
+    """_compute_loss accepts any batch format via extract_features_from_batch."""
+
+    def test_bare_tensor(self, tst_model: TST) -> None:
+        """_compute_loss(torch.randn(4, 32, 3)) returns a finite scalar."""
+        x = torch.randn(4, 32, 3)
+        loss = tst_model._compute_loss(x)
+        assert loss.ndim == 0
+        assert torch.isfinite(loss)
+
+    def test_two_tuple(self, tst_model: TST) -> None:
+        """_compute_loss((X, y)) returns a finite scalar; y is ignored."""
+        x = torch.randn(4, 32, 3)
+        y = torch.randint(0, 5, (4,))
+        loss = tst_model._compute_loss((x, y))
+        assert loss.ndim == 0
+        assert torch.isfinite(loss)
+
+    def test_two_tuple_matches_bare(self, tst_model: TST) -> None:
+        """Seeded RNG: same loss for bare X and (X, y) tuple."""
+        torch.manual_seed(42)
+        x = torch.randn(4, 32, 3)
+        y = torch.randint(0, 5, (4,))
+
+        torch.manual_seed(42)
+        loss_bare = tst_model._compute_loss(x)
+
+        torch.manual_seed(42)
+        loss_tuple = tst_model._compute_loss((x, y))
+
+        assert torch.allclose(loss_bare, loss_tuple)
+
+    def test_batch_size_one(self, tst_model: TST) -> None:
+        """(1, 32, 3) input produces a finite scalar."""
+        x = torch.randn(1, 32, 3)
+        loss = tst_model._compute_loss(x)
+        assert loss.ndim == 0
+        assert torch.isfinite(loss)
+
+
+class TestEmptyMaskGuard:
+    """Empty mask returns zero scalar with gradient path (NaN defense)."""
+
+    def test_empty_mask_returns_zero_not_nan(self, tst_model: TST) -> None:
+        """Force empty mask by setting _masking_ratio=0 so nothing is masked.
+        Assert loss == 0, isfinite, and requires_grad."""
+        original_ratio = tst_model._masking_ratio
+        try:
+            tst_model._masking_ratio = 0.0
+            x = torch.randn(2, 4, 3, requires_grad=True)
+            loss = tst_model._compute_loss(x)
+            assert loss == 0.0, f"Expected zero loss for empty mask, got {loss.item()}"
+            assert torch.isfinite(loss)
+            assert loss.requires_grad
+        finally:
+            tst_model._masking_ratio = original_ratio
+
+
+class TestGradientFlow:
+    """Loss backward populates non-zero encoder gradients."""
+
+    def test_loss_backward_populates_grads(self, tst_model: TST) -> None:
+        """_compute_loss -> backward -> encoder params have non-None, non-zero grads."""
+        tst_model.train()
+        x = torch.randn(4, 16, 3, requires_grad=True)
+        loss = tst_model._compute_loss(x)
+        loss.backward()
+
+        has_grad = False
+        for _name, param in tst_model._encoder.named_parameters():
+            if param.grad is not None and param.grad.abs().sum() > 0:
+                has_grad = True
+                break
+
+        assert has_grad, "No encoder parameter received non-zero gradients"
