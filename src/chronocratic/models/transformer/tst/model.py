@@ -13,6 +13,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -24,15 +25,18 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     """PyTorch Lightning module for TST.
 
     Representation-learning model trained with a masked-reconstruction
-    pretraining objective. The same model supports both random-mask
-    imputation and structured-mask transduction pretraining — the
-    masking strategy is configured upstream in the dataloader and is
-    transparent to the model.
+    pretraining objective. Input masking is generated INTERNALLY from
+    ``masking_ratio`` (Bernoulli, independent per element); the dataloader
+    supplies no masks.
 
-    Batch format expected from the DataLoader:
-        ``(X, targets, target_masks, padding_masks, IDs)``
-    where ``target_masks`` marks the positions whose reconstruction is
-    scored, and ``padding_masks`` marks valid (non-padded) timesteps.
+    Accepts any batch format handled by ``extract_features_from_batch``:
+    a bare ``(B, T, F)`` tensor, or a tuple/list whose first element is
+    that tensor (e.g. ``(X, y)`` from UEA/UCR loaders). Labels are ignored.
+
+    Padded timesteps must arrive as NaN (see ``pad_tensor_with_nan``); that
+    is the only signal separating padding from genuine zeros. They are
+    excluded from attention, from the reconstruction loss, and from VECTOR
+    pooling. A sample with no valid timesteps raises ``ValueError``.
 
     ``forward(x, padding_masks)`` returns transformer representations
     of shape ``(batch, seq_len, hidden_dim)``, not the masked-reconstruction
@@ -52,6 +56,10 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
         dropout_rate: Dropout probability used throughout the transformer.
+        masking_ratio: Fraction of input elements zeroed during
+            masked-reconstruction pretraining. Each element is masked
+            independently (Bernoulli). Must be in the open interval
+            ``(0.0, 1.0)``. Default ``0.15`` matches the upstream default.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
             ``'learnable'``) passed to the encoder.
         activation: Activation function name passed to the transformer
@@ -68,12 +76,14 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             milestone internally).
         lr_factor: Multiplicative decay factor applied at each
             ``lr_step`` milestone.
-        weight_decay: L2 regularization coefficient. Applied to the output
-            layer only when ``global_reg=False``, or to all parameters
-            (via optimizer weight decay) when ``global_reg=True``.
-        global_reg: Whether ``weight_decay`` is applied globally as
-            weight decay (``True``) or only to the output layer
-            (``False``).
+        weight_decay: L2 regularization coefficient. Must be non-negative.
+            Inactive at the default ``0.0``. When positive, applied to all
+            parameters via optimizer weight decay if ``global_reg=True``, or
+            added to the training loss as an L2 penalty on the output layer
+            alone if ``global_reg=False``.
+        global_reg: Selects where a positive ``weight_decay`` is applied:
+            globally via the optimizer (``True``) or to the output layer
+            only (``False``). No effect when ``weight_decay=0.0``.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
         augmentation: Optional custom augmentation function.
@@ -96,6 +106,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         depth: int = 3,
         feedforward_dim: int = 256,
         dropout_rate: float = 0.1,
+        masking_ratio: float = 0.15,
         pos_encoding: str = "fixed",
         activation: str = "gelu",
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH,
@@ -111,6 +122,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
 
+        # torch.optim rejects a negative weight_decay; mirror that on the
+        # global_reg=False path, which never reaches the optimizer.
+        if weight_decay < 0.0:
+            msg = f"weight_decay must be non-negative, got {weight_decay}."
+            raise ValueError(msg)
         self._weight_decay = weight_decay
         self._global_reg = global_reg
         self._learning_rate = learning_rate
@@ -119,6 +135,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
 
         self._augmentation = augmentation
+
+        if masking_ratio <= 0.0 or masking_ratio >= 1.0:
+            msg = f"masking_ratio must be in the open interval (0.0, 1.0), got {masking_ratio}."
+            raise ValueError(msg)
+        self._masking_ratio = masking_ratio
 
         self._sequence_length = sequence_length
 
@@ -135,7 +156,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             normalization_layer_type=normalization_layer_type,
             freeze=freeze,
         )
-        self._loss_fn: nn.Module = MaskedMSELoss(reduction="none")
+        self._loss_fn: nn.Module = MaskedMSELoss(reduction="mean")
 
         if freeze:
             for name, param in self._encoder.named_parameters():
@@ -165,19 +186,67 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Loss
     # ------------------------------------------------------------------
 
-    def _compute_loss(self, batch: tuple) -> torch.Tensor:
-        x, targets, target_masks, padding_masks, _ = batch
-        predictions = self.reconstruct(x, padding_masks)
-        combined_mask = target_masks * padding_masks.unsqueeze(-1)
-        per_element_loss = self._loss_fn(predictions, targets, combined_mask)
+    @staticmethod
+    def _split_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Zero-fill NaN-padded timesteps and recover the real padding mask.
 
-        mean_loss = torch.sum(per_element_loss) / len(per_element_loss)
+        Padding reaches the model as NaN (see ``pad_tensor_with_nan``), which is
+        the only signal distinguishing padded timesteps from genuine zeros. It
+        must be resolved before the trunk runs, so attention can be told to skip
+        those positions rather than pooling them into real ones.
+
+        Args:
+            x: Batch of shape ``(B, T, F)``, NaN at padded timesteps.
+
+        Returns:
+            ``(x_filled, padding_masks)`` where ``padding_masks`` is ``(B, T)``
+            with ``True`` at valid timesteps.
+
+        Raises:
+            ValueError: If any sample has no valid timesteps. Such a row makes
+                attention pool over nothing and yields NaN, which BatchNorm then
+                spreads across the whole batch.
+        """
+        x_filled, padding_masks = zero_fill_padding(x)
+        if not padding_masks.any(dim=1).all():
+            bad = (~padding_masks.any(dim=1)).nonzero().flatten().tolist()
+            msg = f"Samples {bad} are entirely NaN (no valid timesteps); cannot build a mask."
+            raise ValueError(msg)
+        return x_filled, padding_masks
+
+    def _make_masked_inputs(
+        self, x: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Bernoulli-mask x in place of upstream's collate_unsuperv.
+
+        Args:
+            x: Batch of shape ``(B, T, F)``.
+
+        Returns:
+            ``(masked_x, targets, target_masks, padding_masks)`` where
+            ``target_masks`` is ``(B, T, F)`` with ``True`` at scored positions
+            and ``padding_masks`` is ``(B, T)`` with ``True`` at valid timesteps.
+        """
+        x_filled, padding_masks = self._split_padding(x)
+        # ponytail: Bernoulli mask; upstream also offers geometric (lm=3). Add if repr quality lags.
+        keep = torch.rand(x_filled.shape, device=x.device) >= self._masking_ratio
+        masked_x = x_filled * keep
+        return masked_x, x_filled, ~keep, padding_masks
+
+    def _compute_loss(self, batch: torch.Tensor | tuple | list) -> torch.Tensor:
+        x = extract_features_from_batch(batch)
+        masked_x, targets, target_masks, padding_masks = self._make_masked_inputs(x)
+        predictions = self.reconstruct(masked_x, padding_masks)
+        combined_mask = target_masks & padding_masks.unsqueeze(-1)
+        if not combined_mask.any():
+            return x.new_zeros((), requires_grad=True)
+        mean_loss = self._loss_fn(predictions, targets, combined_mask)
 
         # output-layer-only L2 (global L2 is handled via weight_decay in the optimizer)
         if self.training and self._weight_decay and not self._global_reg:
-            for name, param in self._encoder.named_parameters():
-                if name == "output_layer.weight":
-                    mean_loss = mean_loss + self._weight_decay * torch.sum(torch.square(param))
+            mean_loss = mean_loss + self._weight_decay * torch.sum(
+                torch.square(self._encoder.output_layer.weight)
+            )
 
         return mean_loss
 
@@ -185,7 +254,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Training & validation steps
     # ------------------------------------------------------------------
 
-    def training_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor | tuple | list, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction training loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
@@ -198,7 +267,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         )
         return loss
 
-    def validation_step(self, batch: tuple, _batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor | tuple | list, _batch_idx: int) -> torch.Tensor:
         """Compute and log the masked-reconstruction validation loss for one batch."""
         loss = self._compute_loss(batch)
         self.log(
@@ -266,11 +335,13 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             Representations of shape ``(B, D)`` for VECTOR
             or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dim).
         """
-        padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
+        x_filled, padding_masks = self._split_padding(batch_x)
         assert isinstance(encoder, TSTransformerEncoder)  # noqa: S101  # narrows Module -> TSTransformerEncoder
-        full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
+        full_sequence = encoder.encode_representations(x_filled, padding_masks)  # (B, T, D)
         if output == EncodingOutputShape.VECTOR:
-            return full_sequence.mean(dim=1)  # (B, D) - mean over T
+            # Mean over real timesteps only; padded ones would drag the average.
+            keep = padding_masks.unsqueeze(-1).to(full_sequence.dtype)  # (B, T, 1)
+            return (full_sequence * keep).sum(dim=1) / keep.sum(dim=1)  # (B, D)
         if output == EncodingOutputShape.SEQUENCE:
             return full_sequence  # (B, T, D)
         msg = f"TST does not support output={output}; supported: {type(self).supported_outputs}"

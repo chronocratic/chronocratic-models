@@ -26,6 +26,9 @@ class TSTModelParameters:
         feedforward_dim: Hidden dimensionality of the transformer
             feed-forward block.
         dropout_rate: Dropout probability used throughout the transformer.
+        masking_ratio: Fraction of input elements zeroed during
+            masked-reconstruction pretraining. Each element is masked
+            independently (Bernoulli). ``0.15`` matches the upstream default.
         pos_encoding: Positional-encoding type (e.g. ``'fixed'`` or
             ``'learnable'``) passed to the encoder.
         activation: Activation function name passed to the transformer
@@ -42,12 +45,14 @@ class TSTModelParameters:
             milestone internally).
         lr_factor: Multiplicative decay factor applied at each
             ``lr_step`` milestone.
-        weight_decay: L2 regularization coefficient. Applied to the output
-            layer only when ``global_reg=False``, or to all parameters
-            (via optimizer weight decay) when ``global_reg=True``.
-        global_reg: Whether ``weight_decay`` is applied globally as
-            weight decay (``True``) or only to the output layer
-            (``False``).
+        weight_decay: L2 regularization coefficient. Must be non-negative.
+            Inactive at the default ``0.0``. When positive, applied to all
+            parameters via optimizer weight decay if ``global_reg=True``, or
+            added to the training loss as an L2 penalty on the output layer
+            alone if ``global_reg=False``.
+        global_reg: Selects where a positive ``weight_decay`` is applied:
+            globally via the optimizer (``True``) or to the output layer
+            only (``False``). No effect when ``weight_decay=0.0``.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
     """
@@ -59,6 +64,7 @@ class TSTModelParameters:
     depth: int = 3
     feedforward_dim: int = 256
     dropout_rate: float = 0.1
+    masking_ratio: float = 0.15
     pos_encoding: str = "fixed"
     activation: str = "gelu"
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.BATCH
