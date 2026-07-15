@@ -1,5 +1,6 @@
-__all__ = ["TSTCC"]
+__all__ = ["TSTCC", "_tstcc_encoder_output_length"]
 
+import warnings
 from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
@@ -13,12 +14,56 @@ from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
     from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
+
+
+# ---------------------------------------------------------------------------
+# Encoder output length computation
+# ---------------------------------------------------------------------------
+
+
+def _tstcc_encoder_output_length(seq_len: int) -> int:
+    """Compute the output sequence length of TCCEncoder for a given input length.
+
+    TCCEncoder has 3 MaxPool1d(kernel_size=2, stride=2, padding=1) stages.
+    Each stage: output = input // 2 + 1.
+
+    Args:
+        seq_len: Input sequence length.
+
+    Returns:
+        Output sequence length after three pooling stages.
+    """
+
+    def pool(L: int) -> int:
+        return L // 2 + 1
+
+    return pool(pool(pool(seq_len)))
+
+
+def _clamp_timesteps(temporal_contrast_timesteps: int, seq_len: int) -> int:
+    """Auto-clamp temporal contrast timesteps based on encoder output.
+
+    TemporalContrast.forward requires encoder_output_seq_len > timesteps.
+    If the encoder shrinks the sequence too much, clamp timesteps to
+    max(1, encoder_output_seq_len - 1).
+
+    Args:
+        temporal_contrast_timesteps: Original timesteps from config.
+        seq_len: Input sequence length.
+
+    Returns:
+        Clamped timesteps value.
+    """
+    encoder_out = _tstcc_encoder_output_length(seq_len)
+    if encoder_out <= temporal_contrast_timesteps:
+        return max(1, encoder_out - 1)
+    return temporal_contrast_timesteps
 
 
 class TSTCC(pl.LightningModule, BasicEncodingMixin):
@@ -97,6 +142,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         sync_dist: bool = False,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
+        sequence_length: int | None = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -107,6 +153,26 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._contextual_loss_weight = contextual_loss_weight
         self._weight_decay = weight_decay
         self._sync_dist = sync_dist
+
+        # Auto-clamp timesteps if sequence_length is provided
+        self._original_timesteps = temporal_contrast_timesteps
+        if sequence_length is not None:
+            clamped = _clamp_timesteps(temporal_contrast_timesteps, sequence_length)
+            if clamped != temporal_contrast_timesteps:
+                warnings.warn(
+                    f"TSTCC: encoder output length ({_tstcc_encoder_output_length(sequence_length)}) "
+                    f"is <= temporal_contrast_timesteps ({temporal_contrast_timesteps}). "
+                    f"Clamping timesteps to {clamped}.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            temporal_contrast_timesteps = clamped
+
+        self.temporal_contrast_timesteps = temporal_contrast_timesteps
+        self._timesteps_warned = sequence_length is None
+        # Store for potential runtime _tc_model reconstruction
+        self._tc_hidden_dim = temporal_contrast_hidden_dim
+        self._tc_normalization_layer_type = normalization_layer_type
 
         if augmentation is None:
             from chronocratic.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
@@ -156,6 +222,30 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         pretraining only. For downstream supervised tasks, use SupervisedModule.
         """
         data = extract_features_from_batch(batch).float()
+
+        # NaN defense: zero-fill padded timesteps before augmentation
+        data, _ = zero_fill_padding(data)
+
+        # Runtime timesteps clamping (when sequence_length not provided at init)
+        if not self._timesteps_warned:
+            seq_len = data.shape[1]
+            clamped = _clamp_timesteps(self.temporal_contrast_timesteps, seq_len)
+            if clamped != self.temporal_contrast_timesteps:
+                warnings.warn(
+                    f"TSTCC: encoder output length ({_tstcc_encoder_output_length(seq_len)}) "
+                    f"is <= temporal_contrast_timesteps ({self.temporal_contrast_timesteps}). "
+                    f"Clamping timesteps to {clamped}.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                self.temporal_contrast_timesteps = clamped
+                self._tc_model = TemporalContrast(
+                    num_channels=self._encoder.representation_dim,
+                    hidden_dim=self._tc_hidden_dim,
+                    timesteps=clamped,
+                    normalization_layer_type=self._tc_normalization_layer_type,
+                )
+            self._timesteps_warned = True
 
         pair = self._augmentation.produce(data)
         aug1, aug2 = pair.first, pair.second
