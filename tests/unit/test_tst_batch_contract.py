@@ -82,6 +82,39 @@ class TestMaskingRatio:
                 masking_ratio=-0.1,
             )
 
+    def test_negative_weight_decay_raises_value_error(self) -> None:
+        """weight_decay=-0.05 raises ValueError on the global_reg=False path.
+
+        torch.optim rejects a negative weight_decay, so global_reg=True already
+        fails loudly. Without this guard the global_reg=False path would instead
+        subtract the L2 penalty from the loss, inflating output_layer.weight
+        while train_loss reads lower.
+        """
+        with pytest.raises(ValueError, match="weight_decay"):
+            TST(
+                input_dim=3,
+                sequence_length=16,
+                hidden_dim=8,
+                num_heads=2,
+                depth=1,
+                feedforward_dim=32,
+                weight_decay=-0.05,
+                global_reg=False,
+            )
+
+    def test_zero_weight_decay_is_accepted(self) -> None:
+        """The default weight_decay=0.0 stays valid; the guard rejects only < 0."""
+        model = TST(
+            input_dim=3,
+            sequence_length=16,
+            hidden_dim=8,
+            num_heads=2,
+            depth=1,
+            feedforward_dim=32,
+            weight_decay=0.0,
+        )
+        assert model._weight_decay == 0.0
+
     def test_masking_ratio_above_one_raises_value_error(self) -> None:
         """masking_ratio=1.5 raises ValueError (D-03)."""
         with pytest.raises(ValueError, match="masking_ratio"):

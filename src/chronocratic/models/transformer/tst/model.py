@@ -71,11 +71,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             milestone internally).
         lr_factor: Multiplicative decay factor applied at each
             ``lr_step`` milestone.
-        weight_decay: L2 regularization coefficient. Inactive at the
-            default ``0.0``. When positive, applied to all parameters via
-            optimizer weight decay if ``global_reg=True``, or added to the
-            training loss as an L2 penalty on the output layer alone if
-            ``global_reg=False``.
+        weight_decay: L2 regularization coefficient. Must be non-negative.
+            Inactive at the default ``0.0``. When positive, applied to all
+            parameters via optimizer weight decay if ``global_reg=True``, or
+            added to the training loss as an L2 penalty on the output layer
+            alone if ``global_reg=False``.
         global_reg: Selects where a positive ``weight_decay`` is applied:
             globally via the optimizer (``True``) or to the output layer
             only (``False``). No effect when ``weight_decay=0.0``.
@@ -117,6 +117,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
 
+        # torch.optim rejects a negative weight_decay; mirror that on the
+        # global_reg=False path, which never reaches the optimizer.
+        if weight_decay < 0.0:
+            msg = f"weight_decay must be non-negative, got {weight_decay}."
+            raise ValueError(msg)
         self._weight_decay = weight_decay
         self._global_reg = global_reg
         self._learning_rate = learning_rate
