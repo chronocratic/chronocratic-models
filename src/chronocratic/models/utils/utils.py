@@ -7,6 +7,7 @@ __all__ = [
     "integer_pooling",
     "masked_reconstruction_loss",
     "multiscale_pooling",
+    "pad_tensor_with_nan",
     "process_sample_length",
     "process_sliding_window",
     "zero_fill_padding",
