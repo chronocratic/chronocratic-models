@@ -57,6 +57,7 @@ class TestTS2VecModelParameters:
         result = vars(params)
         expected_keys = {
             "input_dim",
+            "augmentation",
             "hidden_dim",
             "representation_dim",
             "depth",
@@ -71,7 +72,7 @@ class TestTS2VecModelParameters:
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(TS2VecModelParameters)) == 11
+        assert len(fields(TS2VecModelParameters)) == 12
 
 
 class TestCoSTModelParameters:
@@ -169,11 +170,12 @@ class TestCoSTModelParameters:
             "momentum",
             "temperature",
             "sync_dist",
+            "augmentation",
         }
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(CoSTModelParameters)) == 16
+        assert len(fields(CoSTModelParameters)) == 17
 
 
 class TestAutoTCLModelParameters:
@@ -244,11 +246,12 @@ class TestAutoTCLModelParameters:
             "local_loss_weight",
             "info_nce_loss_temperature",
             "sync_dist",
+            "augmentation",
         }
         assert set(result.keys()) == expected_keys
 
     def test_field_count(self) -> None:
-        assert len(fields(AutoTCLModelParameters)) == 14
+        assert len(fields(AutoTCLModelParameters)) == 15
 
 
 class TestNoModelParameters:

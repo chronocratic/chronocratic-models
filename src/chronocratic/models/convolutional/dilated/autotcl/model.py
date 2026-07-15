@@ -73,7 +73,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         self,
         *,
         input_dim: int,
-        kernel_sizes: tuple[int, ...] = (3, 5, 7),
+        kernel_sizes: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128),
         augmentation: AugmentationProducer[SingleView] | None = None,
         hidden_dim: int = 64,
         representation_dim: int = 320,

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 __all__ = ["Series2Vec"]
 
+from typing import TYPE_CHECKING
+
 import lightning.pytorch as pl
 import torch
 from torch import nn
@@ -19,6 +21,9 @@ from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
+
+if TYPE_CHECKING:
+    from chronocratic.models.convolutional.standard.series2vec.config import OptimizerName
 
 # Minimum windows to split a singleton batch into: K<3 gives <2 unique pairwise
 # distances, which _distance_normalizer detaches (no min-max range), so no gradient.
@@ -113,7 +118,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         singleton_split_count: int = 3,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,
-        optimizer_name: str = "RAdam",
+        optimizer_name: OptimizerName = "RAdam",
         weight_decay: float = 0.0,
     ) -> None:
         super().__init__()

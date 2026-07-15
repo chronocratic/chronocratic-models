@@ -30,12 +30,14 @@ class TestModelInstantiation:
 
     def test_ts2vec_instantiation_returns_instance(self) -> None:
         config = TS2VecModelParameters(input_dim=1)
-        model = TS2Vec(**vars(config), augmentation=None)
+        model = TS2Vec(**vars(config))
         assert isinstance(model, TS2Vec)
 
     def test_cost_instantiation_returns_instance(self) -> None:
-        config = CoSTModelParameters(input_dim=1, sequence_length=100)
-        model = CoST(**vars(config), augmentation=IndependentPairProducer(aug=None))
+        config = CoSTModelParameters(
+            input_dim=1, sequence_length=100, augmentation=IndependentPairProducer(aug=None)
+        )
+        model = CoST(**vars(config))
         assert isinstance(model, CoST)
 
     def test_autotcl_instantiation_returns_instance(self) -> None:
@@ -44,13 +46,13 @@ class TestModelInstantiation:
             AutoTCLNeuralNetworkAugmentationParameters,
         )
 
-        config = AutoTCLModelParameters(input_dim=1)
-        model = AutoTCL(
-            **vars(config),
+        config = AutoTCLModelParameters(
+            input_dim=1,
             augmentation=AutoTCLNeuralNetworkAugmentation(
                 params=AutoTCLNeuralNetworkAugmentationParameters(input_dim=1)
             ),
         )
+        model = AutoTCL(**vars(config))
         assert isinstance(model, AutoTCL)
 
     def test_tst_instantiation_from_config(self) -> None:
@@ -65,9 +67,13 @@ class TestModelInstantiation:
         from chronocratic.models.convolutional.standard.tstcc.config import TSTCCModelParameters
 
         config = TSTCCModelParameters(
-            input_dim=1, conv_kernel_size=5, stride=1, representation_dim=16
+            input_dim=1,
+            conv_kernel_size=5,
+            stride=1,
+            representation_dim=16,
+            augmentation=_default_tstcc_pair(),
         )
-        model = TSTCC(**vars(config), augmentation=_default_tstcc_pair())
+        model = TSTCC(**vars(config))
         assert isinstance(model, TSTCC)
 
 

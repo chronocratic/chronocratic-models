@@ -9,6 +9,7 @@ __all__ = ["TS2VecModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.augmentation.base import AlignedPair, AugmentationProducer
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
@@ -30,6 +31,8 @@ class TS2VecModelParameters:
         temporal_unit: Token-level temporal unit index.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
+        augmentation: Custom augmentation producer. Defaults to
+            ``None``, which uses CropShiftProducer at model init.
     """
 
     input_dim: int
@@ -43,3 +46,4 @@ class TS2VecModelParameters:
     max_train_length: int | None = None  # Source repo uses 3000; None here for dataset flexibility.
     temporal_unit: int = 0
     sync_dist: bool = False
+    augmentation: AugmentationProducer[AlignedPair] | None = None
