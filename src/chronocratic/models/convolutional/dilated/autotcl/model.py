@@ -273,6 +273,7 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Compute validation contrastive loss using the averaged encoder."""
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
 
         view = self._augmentation.produce(x)
         aug_x = view.view
