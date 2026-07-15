@@ -38,5 +38,5 @@ def test_generate_not_nan_mask_partial_channel() -> None:
     x = torch.randn(2, 10, 3)
     x[0, 5, 0] = float("nan")  # only channel 0 of timestep 5 is NaN
     mask = generate_not_nan_mask(x)
-    assert mask[0, 5] is False
-    assert mask[1, 5] is True  # other sample unaffected
+    assert mask[0, 5].item() is False
+    assert mask[1, 5].item() is True  # other sample unaffected
