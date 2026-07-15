@@ -26,7 +26,7 @@ class TestSeries2VecLossBatchSize1:
             input_dim=3,
             embedding_dim=8,
             representation_dim=16,
-            encoder_kernel_size=4,
+            temporal_kernel_size=4,
             num_heads=2,
             feedforward_dim=32,
         )
@@ -69,7 +69,7 @@ class TestSeries2VecLossBatchSize1:
             input_dim=3,
             embedding_dim=8,
             representation_dim=16,
-            encoder_kernel_size=4,
+            temporal_kernel_size=4,
             num_heads=2,
             feedforward_dim=32,
             singleton_split_count=16,

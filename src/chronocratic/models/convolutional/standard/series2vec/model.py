@@ -62,7 +62,16 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             (temporal + frequency concatenated). Must be even.
         dropout_rate: Dropout probability applied throughout the
             network.
-        encoder_kernel_size: Kernel size of the convolutional tokenizer.
+        temporal_kernel_size: Kernel width of the temporal 2D convolution
+            in the DisjoinEncoder. Defaults to 8. Auto-clamped when
+            ``sequence_length`` is too short.
+        spatial_kernel_size: Kernel height of the spatial 2D convolution.
+            Defaults to ``None``, resolving to ``input_dim``.
+        representation_kernel_size: Kernel width of the 1D representation
+            convolution. Defaults to 3.
+        sequence_length: Input sequence length. Used for auto-clamping
+            ``temporal_kernel_size`` when the sequence is too short.
+            Defaults to ``None`` (no auto-clamp).
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
             used as the temporal target.
@@ -95,7 +104,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         feedforward_dim: int = 256,
         representation_dim: int = 320,
         dropout_rate: float = 0.01,
-        encoder_kernel_size: int = 8,
+        temporal_kernel_size: int = 8,
+        spatial_kernel_size: int | None = None,
+        representation_kernel_size: int = 3,
+        sequence_length: int | None = None,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
         singleton_split_count: int = 3,
@@ -118,7 +130,6 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self._optimizer_name = optimizer_name
         self._weight_decay = weight_decay
         self._singleton_split_count = singleton_split_count
-        self._encoder_kernel_size = encoder_kernel_size
 
         self.network = Series2VecNetwork(
             input_dim=input_dim,
@@ -127,7 +138,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             feedforward_dim=feedforward_dim,
             representation_dim=representation_dim,
             dropout_rate=dropout_rate,
-            encoder_kernel_size=encoder_kernel_size,
+            temporal_kernel_size=temporal_kernel_size,
+            spatial_kernel_size=spatial_kernel_size,
+            representation_kernel_size=representation_kernel_size,
+            sequence_length=sequence_length,
             normalization_layer_type=normalization_layer_type,
         )
 
@@ -200,7 +214,9 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             return x
         k = self._singleton_split_count
         window_len = x.size(1) // k
-        if window_len < self._encoder_kernel_size:
+        # Use the (possibly clamped) temporal kernel from the encoder
+        actual_kernel = self.network.embed_layer.temporal_kernel_size
+        if window_len < actual_kernel:
             return x
         return x[0, : k * window_len].reshape(k, window_len, x.size(2))
 
