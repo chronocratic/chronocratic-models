@@ -118,7 +118,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
             GRUWrapper(input_size=self._hidden_dim, hidden_size=self._hidden_dim, batch_first=True)
         ]
         for i in range(1, self._depth):
-            if i > 1 and self._dropout_rate > 0:
+            if self._dropout_rate > 0:
                 decoder_layers.append(nn.Dropout(self._dropout_rate))
             decoder_layers.append(
                 GRUWrapper(
