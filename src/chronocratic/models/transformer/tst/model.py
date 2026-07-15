@@ -32,8 +32,6 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     Accepts any batch format handled by ``extract_features_from_batch``:
     a bare ``(B, T, F)`` tensor, or a tuple/list whose first element is
     that tensor (e.g. ``(X, y)`` from UEA/UCR loaders). Labels are ignored.
-    Input masking for the reconstruction objective is generated internally
-    from ``masking_ratio``; the dataloader supplies no masks.
 
     ``forward(x, padding_masks)`` returns transformer representations
     of shape ``(batch, seq_len, hidden_dim)``, not the masked-reconstruction
