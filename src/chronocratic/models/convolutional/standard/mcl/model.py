@@ -9,7 +9,7 @@ from chronocratic.models.convolutional.standard.mcl.encoder import FCNEncoder
 from chronocratic.models.convolutional.standard.mcl.losses import MixUpLoss
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 
@@ -128,6 +128,7 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
             Use ``batch_size >= 2`` for meaningful contrastive training.
         """
         x = extract_features_from_batch(batch)
+        x, _ = zero_fill_padding(x)
 
         x_1 = x
         x_2 = x[torch.randperm(len(x))]  # device-ok: CPU permutation index
