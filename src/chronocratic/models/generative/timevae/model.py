@@ -1,7 +1,9 @@
+import warnings
+
 import torch
 from torch import nn
 
-__all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder"]
+__all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder", "_timevae_encoder_output_length"]
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
@@ -14,6 +16,26 @@ from chronocratic.models.layers.general import (
     TrendLayer,
 )
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
+
+
+def _timevae_encoder_output_length(seq_len: int, num_layers: int, stride: int) -> int:
+    """Compute the encoder spatial output after N Conv1d(k=3, s=stride, pad=1) layers.
+
+    Conv1d output formula: L_out = (L_in - 1) // stride + 1
+    Applied N times (one per encoder conv layer).
+
+    Args:
+        seq_len: Input sequence length.
+        num_layers: Number of Conv1d layers in the encoder.
+        stride: Stride of each Conv1d layer.
+
+    Returns:
+        Output spatial dimension after all encoder conv layers.
+    """
+    L = seq_len
+    for _ in range(num_layers):
+        L = (L - 1) // stride + 1
+    return L
 
 
 class TimeVAEEncoder(nn.Module):
@@ -246,6 +268,33 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         self.trend_poly = trend_poly
         self.custom_seasonality = custom_seasonality
         self.use_residual_conn = use_residual_conn
+
+        # Auto-clamp conv_stride when encoder output spatial dim < 2 (D-10)
+        num_encoder_layers = len(self.hidden_layer_sizes)
+        encoder_out = _timevae_encoder_output_length(
+            self.sequence_length, num_encoder_layers, self.conv_stride
+        )
+        if encoder_out < 2:
+            # Try reducing stride to 1
+            encoder_out_stride1 = _timevae_encoder_output_length(
+                self.sequence_length, num_encoder_layers, 1
+            )
+            if encoder_out_stride1 < 2:
+                msg = (
+                    f"TimeVAE: sequence_length={self.sequence_length} with "
+                    f"{num_encoder_layers} encoder layers produces encoder output "
+                    f"{encoder_out_stride1} < 2 even with stride=1. "
+                    f"Cannot prevent degenerate latent encoding."
+                )
+                raise ValueError(msg)
+            original_stride = self.conv_stride
+            self.conv_stride = 1
+            warnings.warn(
+                f"TimeVAE: encoder output ({encoder_out}) < 2 with conv_stride={original_stride}. "
+                f"Auto-clamped conv_stride to 1 (output={encoder_out_stride1}).",
+                UserWarning,
+                stacklevel=2,
+            )
 
         self._encoder = self._build_encoder()
         self._decoder = self._build_decoder()
