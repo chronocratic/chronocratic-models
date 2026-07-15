@@ -205,9 +205,7 @@ def test_nan_padded_training_step_autotcl() -> None:
     """AutoTCL: NaN-padded batch -> finite training loss via Trainer."""
     import lightning.pytorch as pl
 
-    model = AutoTCL(
-        input_dim=3, hidden_dim=16, representation_dim=32, depth=2, max_train_length=32
-    )
+    model = AutoTCL(input_dim=3, hidden_dim=16, representation_dim=32, depth=2, max_train_length=32)
     x = _nan_padded()
     dataloader = DataLoader(TensorDataset(x), batch_size=x.shape[0])
 

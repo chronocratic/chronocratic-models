@@ -154,7 +154,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         else:
             reconst_loss = torch.sum(err)
 
-        # Per-axis reconstruction term (mean over channels, sum over B×T)
+        # Per-axis reconstruction term (mean over channels, sum over B, T)
         # KL and per-axis terms operate over reduced dimensions, not timesteps,
         # so they remain unmasked (consistent with the original implementation).
         x_r = torch.mean(x, dim=2)  # (B, T)

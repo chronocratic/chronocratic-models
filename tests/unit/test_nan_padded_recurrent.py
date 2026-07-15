@@ -20,6 +20,7 @@ from chronocratic.models.recurrent.timenet.model import TimeNet
 # Fixtures
 # --------------------------------------------------------------------------- #
 
+
 @pytest.fixture
 def recurrentae() -> RecurrentAutoEncoder:
     """Small RecurrentAE for fast testing."""
@@ -35,6 +36,7 @@ def timenet() -> TimeNet:
 # --------------------------------------------------------------------------- #
 # RecurrentAE — NaN-padded tests
 # --------------------------------------------------------------------------- #
+
 
 @pytest.mark.parametrize("loss", ["mse", "mae"])
 def test_recurrentae_nan_padded_training(loss: str) -> None:
@@ -80,6 +82,7 @@ def test_recurrentae_no_nan() -> None:
 # --------------------------------------------------------------------------- #
 # TimeNet — NaN-padded tests
 # --------------------------------------------------------------------------- #
+
 
 def test_timenet_nan_padded_validation() -> None:
     """NaN-padded batch -> validation_step produces finite loss."""

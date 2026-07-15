@@ -83,15 +83,7 @@ def _make_nan_padded_batch(
 class TestEncoderOutputLengthFormula:
     """Verify the pool(L) = L//2+1 three-stage compose matches known values."""
 
-    @pytest.mark.parametrize(
-        "seq_len,expected",
-        [
-            (22, 4),
-            (32, 5),
-            (8, 2),
-            (50, 8),
-        ],
-    )
+    @pytest.mark.parametrize("seq_len,expected", [(22, 4), (32, 5), (8, 2), (50, 8)])
     def test_pool_compose_known_values(self, seq_len: int, expected: int) -> None:
         """pool(pool(pool(T))) matches verified empirical values."""
         assert _ref_encoder_output_length(seq_len) == expected, (
@@ -205,9 +197,5 @@ class TestTSTCCNaNDefense:
         batch = _make_nan_padded_batch(seq_len=22, channels=200, batch_size=2, pad_timesteps=5)
 
         loss = model._compute_loss(batch)
-        assert torch.isfinite(loss), (
-            f"Loss is not finite for NaN-padded batch: {loss.item()}"
-        )
-        assert math.isfinite(loss.item()), (
-            f"Loss.item() is not finite: {loss.item()}"
-        )
+        assert torch.isfinite(loss), f"Loss is not finite for NaN-padded batch: {loss.item()}"
+        assert math.isfinite(loss.item()), f"Loss.item() is not finite: {loss.item()}"

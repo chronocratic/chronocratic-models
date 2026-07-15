@@ -25,7 +25,11 @@ from chronocratic.models.convolutional.dilated.autotcl.losses import (
 from chronocratic.models.convolutional.dilated.encoders.encoders import AutoTCLTimeSeriesEncoder
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 from chronocratic.models.enums.encoding import EncodingOutputShape
-from chronocratic.models.utils import extract_features_from_batch, process_sample_length, zero_fill_padding
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    process_sample_length,
+    zero_fill_padding,
+)
 
 
 class AutoTCL(pl.LightningModule, PoolingEncodingMixin):

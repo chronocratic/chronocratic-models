@@ -1,7 +1,7 @@
 __all__ = ["TSTCC", "_tstcc_encoder_output_length"]
 
-import warnings
 from typing import cast, TYPE_CHECKING
+import warnings
 
 import lightning.pytorch as pl
 import torch
@@ -40,8 +40,8 @@ def _tstcc_encoder_output_length(seq_len: int) -> int:
         Output sequence length after three pooling stages.
     """
 
-    def pool(L: int) -> int:
-        return L // 2 + 1
+    def pool(length: int) -> int:
+        return length // 2 + 1
 
     return pool(pool(pool(seq_len)))
 
@@ -155,14 +155,16 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
 
         # Auto-clamp timesteps if sequence_length is provided
-        self._original_timesteps = temporal_contrast_timesteps  # ponytail: stored for future checkpoint inspection; unused now
+        self._original_timesteps = temporal_contrast_timesteps
         if sequence_length is not None:
             clamped = _clamp_timesteps(temporal_contrast_timesteps, sequence_length)
             if clamped != temporal_contrast_timesteps:
                 warnings.warn(
-                    f"TSTCC: encoder output length ({_tstcc_encoder_output_length(sequence_length)}) "
-                    f"is <= temporal_contrast_timesteps ({temporal_contrast_timesteps}). "
-                    f"Clamping timesteps to {clamped}.",
+                    f"TSTCC: encoder output length "
+                    f"({_tstcc_encoder_output_length(sequence_length)}) is "
+                    f"<= temporal_contrast_timesteps "
+                    f"({temporal_contrast_timesteps}). Clamping timesteps "
+                    f"to {clamped}.",
                     UserWarning,
                     stacklevel=2,
                 )

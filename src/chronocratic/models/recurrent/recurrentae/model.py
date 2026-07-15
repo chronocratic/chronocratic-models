@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from lightning.pytorch import LightningModule
 import torch
 from torch import nn
+from torch.nn import functional as F  # noqa: N812
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
@@ -25,7 +26,6 @@ from chronocratic.models.utils import (
     masked_reconstruction_loss,
     zero_fill_padding,
 )
-from torch.nn import functional as F
 
 if TYPE_CHECKING:
     from collections.abc import Callable

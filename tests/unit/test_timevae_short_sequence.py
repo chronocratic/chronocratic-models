@@ -30,10 +30,10 @@ class TestEncoderOutputLengthFormula:
         [
             (32, 3, 2, 4),  # 32->16->8->4
             (22, 3, 2, 3),  # 22->11->6->3
-            (8, 3, 2, 1),   # 8->4->2->1
+            (8, 3, 2, 1),  # 8->4->2->1
             (100, 3, 2, 13),  # 100->50->25->13
             (32, 3, 1, 32),  # stride=1 preserves length
-            (8, 3, 1, 8),    # stride=1 preserves length
+            (8, 3, 1, 8),  # stride=1 preserves length
         ],
     )
     def test_formula_values(
@@ -49,6 +49,7 @@ class TestEncoderOutputLengthFormula:
         from chronocratic.models.generative.timevae.model import (
             _timevae_encoder_output_length as exported,
         )
+
         assert exported(32, 3, 2) == 4
         assert exported(8, 3, 2) == 1
 
@@ -123,9 +124,7 @@ class TestTimeVAEForwardOnShortSequence:
 
         assert x.grad is not None, "Gradient did not flow back to input"
         assert torch.isfinite(x.grad).all(), "Gradient contains NaN or Inf"
-        assert not torch.all(x.grad == 0), (
-            "Gradient is all zeros (degenerate encoder)"
-        )
+        assert not torch.all(x.grad == 0), "Gradient is all zeros (degenerate encoder)"
 
 
 # ---------------------------------------------------------------------------

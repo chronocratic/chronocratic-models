@@ -17,6 +17,9 @@ from chronocratic.models.layers.general import (
 )
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
+# Minimum encoder output length for valid latent encoding.
+_MIN_VALID_ENCODER_OUTPUT = 2
+
 
 def _timevae_encoder_output_length(seq_len: int, num_layers: int, stride: int) -> int:
     """Compute the encoder spatial output after N Conv1d(k=3, s=stride, pad=1) layers.
@@ -32,10 +35,10 @@ def _timevae_encoder_output_length(seq_len: int, num_layers: int, stride: int) -
     Returns:
         Output spatial dimension after all encoder conv layers.
     """
-    L = seq_len
+    out_len = seq_len
     for _ in range(num_layers):
-        L = (L - 1) // stride + 1
-    return L
+        out_len = (out_len - 1) // stride + 1
+    return out_len
 
 
 class TimeVAEEncoder(nn.Module):
@@ -274,12 +277,12 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         encoder_out = _timevae_encoder_output_length(
             self.sequence_length, num_encoder_layers, self.conv_stride
         )
-        if encoder_out < 2:
+        if encoder_out < _MIN_VALID_ENCODER_OUTPUT:
             # Try reducing stride to 1
             encoder_out_stride1 = _timevae_encoder_output_length(
                 self.sequence_length, num_encoder_layers, 1
             )
-            if encoder_out_stride1 < 2:
+            if encoder_out_stride1 < _MIN_VALID_ENCODER_OUTPUT:
                 msg = (
                     f"TimeVAE: sequence_length={self.sequence_length} with "
                     f"{num_encoder_layers} encoder layers produces encoder output "
