@@ -11,6 +11,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
+from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.transformer.tst.config import TSTModelParameters
 from chronocratic.models.transformer.tst.model import TST
 
@@ -141,6 +142,94 @@ class TestMaskingRatio:
         model = TST(**vars(config))
         assert isinstance(model, TST)
         assert model._masking_ratio == 0.15
+
+
+class TestPaddingMask:
+    """Padding masks are derived from NaN, not fabricated as all-ones."""
+
+    VALID = 7
+
+    @pytest.fixture
+    def model(self) -> TST:
+        """Create a small TST model for testing."""
+        return TST(
+            input_dim=2, sequence_length=12, hidden_dim=16, num_heads=2, depth=1, feedforward_dim=32
+        )
+
+    @pytest.fixture
+    def padded_x(self) -> torch.Tensor:
+        """A batch whose first sample is NaN-padded from t=VALID onward."""
+        torch.manual_seed(0)
+        x = torch.randn(2, 12, 2)
+        x[0, self.VALID :, :] = float("nan")
+        return x
+
+    def test_padding_mask_marks_nan_timesteps(self, model: TST, padded_x: torch.Tensor) -> None:
+        """padding_masks is False exactly at NaN timesteps."""
+        _filled, padding_masks = model._split_padding(padded_x)
+        assert padding_masks[0, : self.VALID].all()
+        assert not padding_masks[0, self.VALID :].any()
+        assert padding_masks[1].all()
+
+    def test_all_finite_batch_yields_all_true_mask(self, model: TST) -> None:
+        """Unpadded data produces an all-True mask."""
+        _filled, padding_masks = model._split_padding(torch.randn(2, 12, 2))
+        assert padding_masks.all()
+
+    def test_nan_never_reaches_the_trunk(self, model: TST, padded_x: torch.Tensor) -> None:
+        """Zero-filling happens before masking, so no NaN enters the encoder."""
+        masked_x, targets, _target_masks, _padding = model._make_masked_inputs(padded_x)
+        assert not masked_x.isnan().any()
+        assert not targets.isnan().any()
+
+    def test_padded_timesteps_are_not_scored(self, model: TST, padded_x: torch.Tensor) -> None:
+        """The reconstruction loss ignores padded timesteps."""
+        _masked_x, _targets, target_masks, padding_masks = model._make_masked_inputs(padded_x)
+        combined = target_masks & padding_masks.unsqueeze(-1)
+        assert combined[0, self.VALID :, :].sum() == 0
+
+    def test_padding_does_not_leak_into_real_timesteps(
+        self, model: TST, padded_x: torch.Tensor
+    ) -> None:
+        """Real timesteps differ from the old all-ones behaviour; unpadded samples do not.
+
+        Guards the regression directly: with an all-ones mask the trunk attends over
+        padding and pools it into real positions. The unpadded sample is the control --
+        it must be bit-identical either way.
+        """
+        model.eval()
+        filled, real_mask = model._split_padding(padded_x)
+        all_ones = torch.ones_like(real_mask)
+        with torch.no_grad():
+            new = model._encoder.encode_representations(filled, real_mask)
+            old = model._encoder.encode_representations(filled, all_ones)
+        assert not torch.allclose(new[0, : self.VALID], old[0, : self.VALID])
+        assert torch.equal(new[1], old[1])
+
+    def test_vector_output_pools_only_real_timesteps(
+        self, model: TST, padded_x: torch.Tensor
+    ) -> None:
+        """VECTOR pooling averages over real timesteps, not padded ones."""
+        model.eval()
+        with torch.no_grad():
+            sequence = model._encode_batch(
+                model._encoder, padded_x, output=EncodingOutputShape.SEQUENCE
+            )
+            vector = model._encode_batch(
+                model._encoder, padded_x, output=EncodingOutputShape.VECTOR
+            )
+        assert torch.allclose(vector[0], sequence[0, : self.VALID].mean(dim=0), atol=1e-6)
+
+    def test_fully_nan_sample_raises_value_error(self, model: TST) -> None:
+        """A sample with no valid timesteps raises instead of NaN-ing the batch.
+
+        Such a row leaves attention pooling over nothing, which yields NaN that
+        train-mode BatchNorm then spreads across every sample in the batch.
+        """
+        x = torch.randn(3, 12, 2)
+        x[2, :, :] = float("nan")
+        with pytest.raises(ValueError, match="entirely NaN"):
+            model._compute_loss(x)
 
 
 class TestMakeMaskedInputs:

@@ -13,7 +13,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -32,6 +32,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     Accepts any batch format handled by ``extract_features_from_batch``:
     a bare ``(B, T, F)`` tensor, or a tuple/list whose first element is
     that tensor (e.g. ``(X, y)`` from UEA/UCR loaders). Labels are ignored.
+
+    Padded timesteps must arrive as NaN (see ``pad_tensor_with_nan``); that
+    is the only signal separating padding from genuine zeros. They are
+    excluded from attention, from the reconstruction loss, and from VECTOR
+    pooling. A sample with no valid timesteps raises ``ValueError``.
 
     ``forward(x, padding_masks)`` returns transformer representations
     of shape ``(batch, seq_len, hidden_dim)``, not the masked-reconstruction
@@ -181,6 +186,34 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # Loss
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _split_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Zero-fill NaN-padded timesteps and recover the real padding mask.
+
+        Padding reaches the model as NaN (see ``pad_tensor_with_nan``), which is
+        the only signal distinguishing padded timesteps from genuine zeros. It
+        must be resolved before the trunk runs, so attention can be told to skip
+        those positions rather than pooling them into real ones.
+
+        Args:
+            x: Batch of shape ``(B, T, F)``, NaN at padded timesteps.
+
+        Returns:
+            ``(x_filled, padding_masks)`` where ``padding_masks`` is ``(B, T)``
+            with ``True`` at valid timesteps.
+
+        Raises:
+            ValueError: If any sample has no valid timesteps. Such a row makes
+                attention pool over nothing and yields NaN, which BatchNorm then
+                spreads across the whole batch.
+        """
+        x_filled, padding_masks = zero_fill_padding(x)
+        if not padding_masks.any(dim=1).all():
+            bad = (~padding_masks.any(dim=1)).nonzero().flatten().tolist()
+            msg = f"Samples {bad} are entirely NaN (no valid timesteps); cannot build a mask."
+            raise ValueError(msg)
+        return x_filled, padding_masks
+
     def _make_masked_inputs(
         self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -194,11 +227,11 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             ``target_masks`` is ``(B, T, F)`` with ``True`` at scored positions
             and ``padding_masks`` is ``(B, T)`` with ``True`` at valid timesteps.
         """
+        x_filled, padding_masks = self._split_padding(x)
         # ponytail: Bernoulli mask; upstream also offers geometric (lm=3). Add if repr quality lags.
-        keep = torch.rand(x.shape, device=x.device) >= self._masking_ratio
-        masked_x = x * keep
-        padding_masks = torch.ones(x.shape[:2], dtype=torch.bool, device=x.device)
-        return masked_x, x, ~keep, padding_masks
+        keep = torch.rand(x_filled.shape, device=x.device) >= self._masking_ratio
+        masked_x = x_filled * keep
+        return masked_x, x_filled, ~keep, padding_masks
 
     def _compute_loss(self, batch: torch.Tensor | tuple | list) -> torch.Tensor:
         x = extract_features_from_batch(batch)
@@ -302,11 +335,13 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             Representations of shape ``(B, D)`` for VECTOR
             or ``(B, T, D)`` for SEQUENCE (B=batch, T=seq_len, D=hidden_dim).
         """
-        padding_masks = torch.ones(batch_x.shape[:2], dtype=torch.bool, device=batch_x.device)
+        x_filled, padding_masks = self._split_padding(batch_x)
         assert isinstance(encoder, TSTransformerEncoder)  # noqa: S101  # narrows Module -> TSTransformerEncoder
-        full_sequence = encoder.encode_representations(batch_x, padding_masks)  # (B, T, D)
+        full_sequence = encoder.encode_representations(x_filled, padding_masks)  # (B, T, D)
         if output == EncodingOutputShape.VECTOR:
-            return full_sequence.mean(dim=1)  # (B, D) - mean over T
+            # Mean over real timesteps only; padded ones would drag the average.
+            keep = padding_masks.unsqueeze(-1).to(full_sequence.dtype)  # (B, T, 1)
+            return (full_sequence * keep).sum(dim=1) / keep.sum(dim=1)  # (B, D)
         if output == EncodingOutputShape.SEQUENCE:
             return full_sequence  # (B, T, D)
         msg = f"TST does not support output={output}; supported: {type(self).supported_outputs}"
