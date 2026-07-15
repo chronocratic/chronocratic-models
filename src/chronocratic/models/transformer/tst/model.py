@@ -145,7 +145,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             normalization_layer_type=normalization_layer_type,
             freeze=freeze,
         )
-        self._loss_fn: nn.Module = MaskedMSELoss(reduction="none")
+        self._loss_fn: nn.Module = MaskedMSELoss(reduction="mean")
 
         if freeze:
             for name, param in self._encoder.named_parameters():
@@ -174,6 +174,25 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     # ------------------------------------------------------------------
     # Loss
     # ------------------------------------------------------------------
+
+    def _make_masked_inputs(
+        self, x: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Bernoulli-mask x in place of upstream's collate_unsuperv.
+
+        Args:
+            x: Batch of shape ``(B, T, F)``.
+
+        Returns:
+            ``(masked_x, targets, target_masks, padding_masks)`` where
+            ``target_masks`` is ``(B, T, F)`` with ``True`` at scored positions
+            and ``padding_masks`` is ``(B, T)`` with ``True`` at valid timesteps.
+        """
+        # ponytail: Bernoulli mask; upstream also offers geometric (lm=3). Add if repr quality lags.
+        keep = torch.rand(x.shape, device=x.device) >= self._masking_ratio
+        masked_x = x * keep
+        padding_masks = torch.ones(x.shape[:2], dtype=torch.bool, device=x.device)
+        return masked_x, x, ~keep, padding_masks
 
     def _compute_loss(self, batch: tuple) -> torch.Tensor:
         x, targets, target_masks, padding_masks, _ = batch
