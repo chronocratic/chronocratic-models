@@ -155,7 +155,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
 
         # Auto-clamp timesteps if sequence_length is provided
-        self._original_timesteps = temporal_contrast_timesteps
+        self._original_timesteps = temporal_contrast_timesteps  # ponytail: stored for future checkpoint inspection; unused now
         if sequence_length is not None:
             clamped = _clamp_timesteps(temporal_contrast_timesteps, sequence_length)
             if clamped != temporal_contrast_timesteps:
@@ -169,7 +169,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             temporal_contrast_timesteps = clamped
 
         self.temporal_contrast_timesteps = temporal_contrast_timesteps
-        self._timesteps_warned = sequence_length is None
+        self._timesteps_warned = sequence_length is not None
         # Store for potential runtime _tc_model reconstruction
         self._tc_hidden_dim = temporal_contrast_hidden_dim
         self._tc_normalization_layer_type = normalization_layer_type
