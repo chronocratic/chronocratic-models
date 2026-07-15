@@ -11,6 +11,14 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a14 (2026-07-15)
+
+### Fixed
+
+- fix: NaN defense, StrEnum enums, and explicit output shape checks: Bug fixes and consistency improvements across all 10 models, plus 13 new test files covering NaN handling, short sequences, and encoding output shapes. ([#69](https://github.com/chronocratic/chronocratic-models/issues/69))
+- fix(models): repair TST batch contract — model-internal Bernoulli masking: Fix TST's hardcoded 5-tuple batch unpack that crashed on UEA/UCR  inputs with `ValueError: not enough values to unpack (expected 5, got 2)`. TST now accepts **any batch format** via `extract_features_from_batch` (matching 9/10 other models) and generates its own Bernoulli input mask internally — masking is the training objective, not a dataloader detail. ([#70](https://github.com/chronocratic/chronocratic-models/issues/70))
+
+
 ## v0.1.0a13 (2026-07-10)
 
 ### Changed
