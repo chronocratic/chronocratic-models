@@ -14,10 +14,10 @@ Mapping to nn modules
 
 from __future__ import annotations
 
-import enum
+from enum import StrEnum
 
 
-class NormalizationLayerType(enum.StrEnum):
+class NormalizationLayerType(StrEnum):
     """Type of normalization layer to instantiate.
 
     Attributes:

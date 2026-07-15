@@ -1,7 +1,7 @@
 __all__ = ["MaskMode", "generate_mask"]
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 
 import numpy as np
 import torch
@@ -9,7 +9,7 @@ import torch
 _rng = np.random.default_rng()
 
 
-class MaskMode(Enum):
+class MaskMode(StrEnum):
     """Masking strategies applied to time series encoder inputs.
 
     Attributes:
