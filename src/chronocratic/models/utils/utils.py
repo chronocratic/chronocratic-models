@@ -3,10 +3,13 @@ __all__ = [
     "concat_last_step_features",
     "extract_features_from_batch",
     "full_series_pooling",
+    "generate_not_nan_mask",
     "integer_pooling",
+    "masked_reconstruction_loss",
     "multiscale_pooling",
     "process_sample_length",
     "process_sliding_window",
+    "zero_fill_padding",
 ]
 
 
@@ -218,3 +221,52 @@ def pad_tensor_with_nan(
         tensor = torch.cat((tensor, right_padding), dim=axis)
 
     return tensor
+
+
+def generate_not_nan_mask(x: torch.Tensor) -> torch.Tensor:
+    """Return a boolean mask marking time steps that contain no NaN values.
+
+    Args:
+        x: Input tensor of shape ``(batch, time, channels)``.
+
+    Returns:
+        Boolean tensor of shape ``(batch, time)`` where ``True`` indicates
+        that all channels at that time step are finite.
+    """
+    return ~x.isnan().any(dim=-1)
+
+
+def zero_fill_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Zero-fill NaN (padded) timesteps and return the keep-mask.
+
+    Args:
+        x: Input batch, shape ``(B, T, C)``.
+
+    Returns:
+        Tuple ``(x_filled, keep_mask)`` where ``x_filled`` is ``x`` with NaN
+        set to 0 and ``keep_mask`` is a ``(B, T)`` bool tensor.
+    """
+    keep_mask = generate_not_nan_mask(x)  # (B, T) bool
+    x_filled = torch.nan_to_num(x, nan=0.0)
+    return x_filled, keep_mask
+
+
+def masked_reconstruction_loss(
+    per_element: torch.Tensor, keep_mask: torch.Tensor
+) -> torch.Tensor:
+    """Compute the mean of a per-element loss over non-padded timesteps.
+
+    Args:
+        per_element: Per-element loss values, shape ``(B, T, C)``.
+        keep_mask: Boolean mask of shape ``(B, T)`` where ``True`` indicates
+            non-padded (real) timesteps.
+
+    Returns:
+        Scalar tensor containing the masked mean loss. When all timesteps are
+        masked out (all-NaN batch), the denominator is clamped to 1.0 to
+        prevent division by zero.
+    """
+    m = keep_mask.unsqueeze(-1).to(per_element.dtype)  # (B, T, 1)
+    total = (per_element * m).sum()
+    denom = m.expand_as(per_element).sum().clamp_min(1.0)
+    return total / denom

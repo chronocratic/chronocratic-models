@@ -15,10 +15,10 @@ from torch import nn
 
 from chronocratic.models.convolutional.dilated.encoders.masking import (
     generate_mask,
-    generate_not_nan_mask,
     MaskMode,
 )
 from chronocratic.models.convolutional.dilated.layers import Conv1dDilatedEncoder
+from chronocratic.models.utils import generate_not_nan_mask
 from chronocratic.models.layers import BandedFourierLayer
 
 
