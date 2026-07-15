@@ -7,7 +7,11 @@ import numpy as np
 import torch
 from torch import nn
 
-from chronocratic.models.utils import extract_features_from_batch
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    masked_reconstruction_loss,
+    zero_fill_padding,
+)
 
 
 class Sampling(nn.Module):
@@ -72,11 +76,14 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self, batch: torch.Tensor | tuple[torch.Tensor, ...] | list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = extract_features_from_batch(batch)
+        x, keep_mask = zero_fill_padding(x)  # (B, T, C), (B, T)
         z_mean, z_log_var, z = self._encoder(x)
         # Use sampled z during training, z_mean during validation for deterministic metrics.
         latent = z if self.training else z_mean
         reconstruction = self._decoder(latent)
-        loss, recon_loss, kl_loss = self.loss_function(x, reconstruction, z_mean, z_log_var)
+        loss, recon_loss, kl_loss = self.loss_function(
+            x, reconstruction, z_mean, z_log_var, keep_mask=keep_mask
+        )
         return loss, recon_loss, kl_loss
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
@@ -136,25 +143,52 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def _build_decoder(self) -> nn.Module:
         raise NotImplementedError
 
-    def _get_reconstruction_loss(self, x: torch.Tensor, x_recons: torch.Tensor) -> torch.Tensor:
-        def get_reconst_loss_by_axis(
-            x: torch.Tensor, x_recons: torch.Tensor, dim: int
-        ) -> torch.Tensor:
-            x_r = torch.mean(x, dim=dim)
-            x_c_r = torch.mean(x_recons, dim=dim)
-            err = torch.pow(x_r - x_c_r, 2)
-            return torch.sum(err)
+    def _get_reconstruction_loss(
+        self, x: torch.Tensor, x_recons: torch.Tensor, keep_mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        err = torch.pow(x - x_recons, 2)  # (B, T, C)
 
-        err = torch.pow(x - x_recons, 2)
-        reconst_loss = torch.sum(err)
-        reconst_loss += get_reconst_loss_by_axis(x, x_recons, dim=2)  # by time axis
+        # Per-element reconstruction loss (masked if keep_mask provided)
+        if keep_mask is not None:
+            reconst_loss = masked_reconstruction_loss(err, keep_mask)
+        else:
+            reconst_loss = torch.sum(err)
+
+        # Per-axis reconstruction term (mean over channels, sum over B×T)
+        # KL and per-axis terms operate over reduced dimensions, not timesteps,
+        # so they remain unmasked (consistent with the original implementation).
+        x_r = torch.mean(x, dim=2)  # (B, T)
+        x_c_r = torch.mean(x_recons, dim=2)  # (B, T)
+        axis_err = torch.pow(x_r - x_c_r, 2)  # (B, T)
+        reconst_loss += torch.sum(axis_err)
+
         return reconst_loss
 
     def loss_function(
-        self, x: torch.Tensor, x_recons: torch.Tensor, z_mean: torch.Tensor, z_log_var: torch.Tensor
+        self,
+        x: torch.Tensor,
+        x_recons: torch.Tensor,
+        z_mean: torch.Tensor,
+        z_log_var: torch.Tensor,
+        *,
+        keep_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Return total, reconstruction, and KL losses for a batch."""
-        reconstruction_loss = self._get_reconstruction_loss(x, x_recons)
+        """Return total, reconstruction, and KL losses for a batch.
+
+        Args:
+            x: Original input, shape ``(B, T, C)``.
+            x_recons: Reconstruction, shape ``(B, T, C)``.
+            z_mean: Latent mean, shape ``(B, latent_dim)``.
+            z_log_var: Latent log-variance, shape ``(B, latent_dim)``.
+            keep_mask: Boolean mask of shape ``(B, T)`` where ``True``
+                indicates non-padded (real) timesteps. When ``None``,
+                all timesteps are included (backward compatible).
+
+        Returns:
+            Tuple ``(total_loss, reconstruction_loss, kl_loss)``.
+            KL loss is always unmasked (operates over latent dimensions).
+        """
+        reconstruction_loss = self._get_reconstruction_loss(x, x_recons, keep_mask=keep_mask)
         kl_loss = -0.5 * torch.sum(1 + z_log_var - z_mean.pow(2) - z_log_var.exp())
         total_loss = self.reconstruction_weight * reconstruction_loss + kl_loss
         return total_loss, reconstruction_loss, kl_loss
