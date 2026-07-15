@@ -6,8 +6,10 @@ the config dataclass in sync with the model init so that
 ``TST(**vars(config))`` continues to work.
 """
 
+from lightning.pytorch import Trainer
 import pytest
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 
 from chronocratic.models.transformer.tst.config import TSTModelParameters
 from chronocratic.models.transformer.tst.model import TST
@@ -246,3 +248,41 @@ class TestGradientFlow:
                 break
 
         assert has_grad, "No encoder parameter received non-zero gradients"
+
+
+class TestTrainingIntegration:
+    """End-to-end Lightning Trainer integration with (X, y) batch format."""
+
+    def test_lightning_trainer_two_batch_fit(self) -> None:
+        """Trainer(fast_dev_run=True) over a DataLoader of (X, y) 2-tuples completes.
+
+        This reproduces the exact path that raised the original
+        ``ValueError: not enough values to unpack (expected 5, got 2)``.
+        """
+        model = TST(
+            input_dim=3, sequence_length=16, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=32
+        )
+        x = torch.randn(8, 16, 3)
+        y = torch.randint(0, 5, (8,))
+        dataset = TensorDataset(x, y)
+        dataloader = DataLoader(dataset, batch_size=4)
+
+        trainer = Trainer(fast_dev_run=True, enable_progress_bar=False, logger=False)
+        # Must not raise ValueError from 5-tuple unpack
+        trainer.fit(model, dataloader)
+
+    def test_trainer_logs_train_loss(self) -> None:
+        """After fit, train_loss was logged via trainer.callback_metrics."""
+        model = TST(
+            input_dim=3, sequence_length=16, hidden_dim=8, num_heads=2, depth=1, feedforward_dim=32
+        )
+        x = torch.randn(8, 16, 3)
+        y = torch.randint(0, 5, (8,))
+        dataset = TensorDataset(x, y)
+        dataloader = DataLoader(dataset, batch_size=4)
+
+        trainer = Trainer(fast_dev_run=True, enable_progress_bar=False, logger=False)
+        trainer.fit(model, dataloader)
+
+        assert "train_loss" in trainer.callback_metrics, "train_loss was not logged during training"
+        assert torch.isfinite(trainer.callback_metrics["train_loss"])
