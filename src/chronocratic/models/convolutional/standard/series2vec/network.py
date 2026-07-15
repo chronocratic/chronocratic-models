@@ -35,7 +35,12 @@ class Series2VecNetwork(nn.Module):
         representation_dim: Output dimensionality of :meth:`encode`
             (temporal + frequency concatenated). Must be even.
         dropout_rate: Dropout probability applied in attention and FFN.
-        encoder_kernel_size: Kernel size for the convolutional tokenizer.
+        temporal_kernel_size: Kernel width for the temporal 2D convolution.
+        spatial_kernel_size: Kernel height for the spatial 2D convolution.
+            Defaults to ``input_dim`` (full spatial pooling).
+        representation_kernel_size: Kernel width for the 1D representation
+            convolution. Defaults to 3.
+        sequence_length: Input sequence length for auto-clamping.
         normalization_layer_type: Normalization strategy for the
             DisjoinEncoder instances. ``CHANNEL`` (default) uses GroupNorm
             for batch_size=1 safety. ``BATCH`` uses BatchNorm.
@@ -50,7 +55,10 @@ class Series2VecNetwork(nn.Module):
         feedforward_dim: int = 256,
         representation_dim: int = 320,
         dropout_rate: float = 0.01,
-        encoder_kernel_size: int = 8,
+        temporal_kernel_size: int = 8,
+        spatial_kernel_size: int | None = None,
+        representation_kernel_size: int = 3,
+        sequence_length: int | None = None,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
     ) -> None:
         super().__init__()
@@ -71,14 +79,20 @@ class Series2VecNetwork(nn.Module):
             input_dim=input_dim,
             embedding_dim=embedding_dim,
             representation_dim=branch_dim,
-            kernel_size=encoder_kernel_size,
+            temporal_kernel_size=temporal_kernel_size,
+            spatial_kernel_size=spatial_kernel_size,
+            representation_kernel_size=representation_kernel_size,
+            sequence_length=sequence_length,
             normalization_layer_type=normalization_layer_type,
         )
         self.embed_layer_f = DisjoinEncoder(
             input_dim=input_dim,
             embedding_dim=embedding_dim,
             representation_dim=branch_dim,
-            kernel_size=encoder_kernel_size,
+            temporal_kernel_size=temporal_kernel_size,
+            spatial_kernel_size=spatial_kernel_size,
+            representation_kernel_size=representation_kernel_size,
+            sequence_length=sequence_length,
             normalization_layer_type=normalization_layer_type,
         )
 

@@ -20,7 +20,7 @@ def _make_encoder(
         input_dim=3,
         embedding_dim=8,
         representation_dim=16,
-        kernel_size=4,
+        temporal_kernel_size=4,
         normalization_layer_type=normalization_layer_type,
     )
 
@@ -76,7 +76,7 @@ def _make_model(
         input_dim=3,
         embedding_dim=8,
         representation_dim=16,
-        encoder_kernel_size=4,
+        temporal_kernel_size=4,
         num_heads=2,
         feedforward_dim=32,
         normalization_layer_type=normalization_layer_type,
