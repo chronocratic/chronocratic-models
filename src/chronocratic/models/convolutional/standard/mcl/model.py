@@ -109,14 +109,14 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
-        if output not in type(self).supported_outputs:
-            msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
-            raise ValueError(msg)
         flat = encoder(batch_x)  # (B, D) - D=representation_dim
         if output == EncodingOutputShape.VECTOR:
             return flat  # (B, D) — VECTOR
-        _warn_sequence_fallback(type(self))
-        return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        if output == EncodingOutputShape.SEQUENCE:
+            _warn_sequence_fallback(type(self))
+            return flat.unsqueeze(1)  # (B, 1, D) — SEQUENCE (fake temporal axis)
+        msg = f"MCL does not support output={output}; supported: {type(self).supported_outputs}"
+        raise ValueError(msg)
 
     def _step(self, batch: torch.Tensor) -> torch.Tensor:
         """Run one contrastive training step.
