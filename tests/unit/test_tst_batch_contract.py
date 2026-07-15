@@ -286,3 +286,32 @@ class TestTrainingIntegration:
 
         assert "train_loss" in trainer.callback_metrics, "train_loss was not logged during training"
         assert torch.isfinite(trainer.callback_metrics["train_loss"])
+
+
+class TestClassDocstring:
+    """Verify TST class docstring reflects current batch contract."""
+
+    def test_docstring_mentions_extract_features_from_batch(self) -> None:
+        """Class docstring references extract_features_from_batch."""
+        doc = TST.__doc__
+        assert "extract_features_from_batch" in doc, (
+            "Class docstring should mention extract_features_from_batch"
+        )
+
+    def test_docstring_does_not_mention_5_tuple_batch(self) -> None:
+        """Class docstring no longer claims 5-tuple batch format."""
+        doc = TST.__doc__
+        assert "Batch format expected from the DataLoader" not in doc, (
+            "Old 5-tuple batch format text should be removed"
+        )
+        assert "padding_masks, IDs" not in doc, "Old 5-tuple unpack reference should be removed"
+
+    def test_docstring_mentions_internal_masking(self) -> None:
+        """Class docstring states masking is generated internally."""
+        doc = TST.__doc__
+        assert "internally" in doc, "Class docstring should state masking is generated internally"
+
+    def test_docstring_mentions_masking_ratio_arg(self) -> None:
+        """masking_ratio appears in the Args section of the docstring."""
+        doc = TST.__doc__
+        assert "masking_ratio" in doc, "Class docstring Args should mention masking_ratio"
