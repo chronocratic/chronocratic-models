@@ -63,10 +63,7 @@ class DisjoinEncoder(nn.Module):
         # Resolve spatial_kernel_size: None means "use input_dim" (D-03)
         resolved_spatial = input_dim if spatial_kernel_size is None else spatial_kernel_size
         if input_dim < resolved_spatial:
-            msg = (
-                f"input_dim ({input_dim}) must be >= spatial_kernel_size "
-                f"({resolved_spatial})"
-            )
+            msg = f"input_dim ({input_dim}) must be >= spatial_kernel_size ({resolved_spatial})"
             raise ValueError(msg)
 
         # Auto-clamp temporal_kernel_size for short sequences (D-02)
@@ -119,9 +116,7 @@ class DisjoinEncoder(nn.Module):
         )
 
         self.rep_CNN = nn.Sequential(
-            nn.Conv1d(
-                embedding_dim, representation_dim, kernel_size=representation_kernel_size
-            ),
+            nn.Conv1d(embedding_dim, representation_dim, kernel_size=representation_kernel_size),
             _rep_norm,
             nn.GELU(),
         )

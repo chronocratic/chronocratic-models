@@ -358,9 +358,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             return features.mean(dim=-1)  # (B, C) — VECTOR
         if output == EncodingOutputShape.SEQUENCE:
             return features.transpose(1, 2)  # (B, L', C) — SEQUENCE
-        msg = (
-            f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
-        )
+        msg = f"TSTCC does not support output={output}; supported: {type(self).supported_outputs}"
         raise ValueError(msg)
 
     @property

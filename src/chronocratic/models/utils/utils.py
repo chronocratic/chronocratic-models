@@ -252,9 +252,7 @@ def zero_fill_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     return x_filled, keep_mask
 
 
-def masked_reconstruction_loss(
-    per_element: torch.Tensor, keep_mask: torch.Tensor
-) -> torch.Tensor:
+def masked_reconstruction_loss(per_element: torch.Tensor, keep_mask: torch.Tensor) -> torch.Tensor:
     """Compute the mean of a per-element loss over non-padded timesteps.
 
     Args:
