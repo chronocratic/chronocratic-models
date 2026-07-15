@@ -9,6 +9,7 @@ __all__ = ["TSTCCModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.enums.layers import NormalizationLayerType
 
 
@@ -43,6 +44,10 @@ class TSTCCModelParameters:
             the self-supervised objective.
         contextual_loss_weight: Weight of the contextual NT-Xent loss term
             in the self-supervised objective.
+        sequence_length: Input sequence length. Used at init time for
+            auto-clamping ``temporal_contrast_timesteps`` when the sequence
+            is too short for the default timesteps. Defaults to
+            ``None`` (no auto-clamp).
         weight_decay: Weight decay for the Adam optimizers.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
@@ -50,6 +55,8 @@ class TSTCCModelParameters:
             TemporalContrast. ``CHANNEL`` (default) uses GroupNorm for
             encoder conv blocks and LayerNorm for the projection head — safe
             at batch_size=1. ``BATCH`` uses BatchNorm1d.
+        augmentation: Custom augmentation producer. Defaults to
+            ``None``, which uses standard TSTCC pair augmentation at model init.
     """
 
     input_dim: int
@@ -63,12 +70,14 @@ class TSTCCModelParameters:
     temporal_contrast_timesteps: int = 6
     temperature: float = 0.2
     use_cosine_similarity: bool = True
+    sequence_length: int | None = None
     learning_rate: float = 3e-4
     temporal_loss_weight: float = 1.0
     contextual_loss_weight: float = 0.7
     weight_decay: float = 0.0003
     sync_dist: bool = False
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
+    augmentation: AugmentationProducer[ViewPair] | None = None
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""

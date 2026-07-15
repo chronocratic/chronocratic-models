@@ -9,6 +9,7 @@ __all__ = ["AutoTCLModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.augmentation.base import AugmentationProducer, SingleView
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
@@ -37,6 +38,8 @@ class AutoTCLModelParameters:
             source AutoTCL implementation.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
+        augmentation: Custom augmentation producer. Defaults to
+            ``None``, which uses AutoTCLNeuralNetworkAugmentation at model init.
     """
 
     input_dim: int
@@ -53,3 +56,4 @@ class AutoTCLModelParameters:
     meta_learning_rate: float = 1e-2
     local_loss_weight: float = 0.1
     sync_dist: bool = False
+    augmentation: AugmentationProducer[SingleView] | None = None

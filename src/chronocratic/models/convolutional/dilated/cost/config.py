@@ -9,6 +9,7 @@ __all__ = ["CoSTModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 
 
@@ -40,6 +41,8 @@ class CoSTModelParameters:
         temperature: Temperature scaling for the contrastive loss.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
+        augmentation: Custom augmentation producer. Defaults to
+            ``None``, which uses CosTRandomFunctionAugmentation at model init.
     """
 
     input_dim: int
@@ -58,3 +61,4 @@ class CoSTModelParameters:
     momentum: float = 0.999
     temperature: float = 0.07
     sync_dist: bool = False
+    augmentation: AugmentationProducer[ViewPair] | None = None

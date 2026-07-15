@@ -6,6 +6,7 @@ backbone used during masked-reconstruction pretraining.
 
 __all__ = ["TSTModelParameters"]
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from chronocratic.models.enums.layers import NormalizationLayerType
@@ -55,6 +56,8 @@ class TSTModelParameters:
             only (``False``). No effect when ``weight_decay=0.0``.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
+        augmentation: Optional custom augmentation function. Defaults to
+            ``None`` (no augmentation applied).
     """
 
     input_dim: int
@@ -75,3 +78,4 @@ class TSTModelParameters:
     weight_decay: float = 0.0
     global_reg: bool = False
     sync_dist: bool = False
+    augmentation: Callable | None = None

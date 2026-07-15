@@ -246,7 +246,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         latent_dim: int = 8,
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
-        hidden_layer_sizes: tuple[int, ...] | None = None,
+        hidden_layer_sizes: tuple[int, ...] = (50, 100, 200),
         conv_kernel_size: int = 3,
         conv_stride: int = 2,
         trend_poly: int = 0,
@@ -261,9 +261,6 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             learning_rate=learning_rate,
         )
         self.save_hyperparameters()
-
-        if hidden_layer_sizes is None:
-            hidden_layer_sizes = (50, 100, 200)
 
         self.hidden_layer_sizes = hidden_layer_sizes
         self.conv_kernel_size = conv_kernel_size
