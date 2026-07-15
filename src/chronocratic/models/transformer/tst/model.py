@@ -25,15 +25,15 @@ class TST(pl.LightningModule, BasicEncodingMixin):
     """PyTorch Lightning module for TST.
 
     Representation-learning model trained with a masked-reconstruction
-    pretraining objective. The same model supports both random-mask
-    imputation and structured-mask transduction pretraining — the
-    masking strategy is configured upstream in the dataloader and is
-    transparent to the model.
+    pretraining objective. Input masking is generated INTERNALLY from
+    ``masking_ratio`` (Bernoulli, independent per element); the dataloader
+    supplies no masks.
 
-    Batch format expected from the DataLoader:
-        ``(X, targets, target_masks, padding_masks, IDs)``
-    where ``target_masks`` marks the positions whose reconstruction is
-    scored, and ``padding_masks`` marks valid (non-padded) timesteps.
+    Accepts any batch format handled by ``extract_features_from_batch``:
+    a bare ``(B, T, F)`` tensor, or a tuple/list whose first element is
+    that tensor (e.g. ``(X, y)`` from UEA/UCR loaders). Labels are ignored.
+    Input masking for the reconstruction objective is generated internally
+    from ``masking_ratio``; the dataloader supplies no masks.
 
     ``forward(x, padding_masks)`` returns transformer representations
     of shape ``(batch, seq_len, hidden_dim)``, not the masked-reconstruction
