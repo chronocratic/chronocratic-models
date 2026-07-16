@@ -5,7 +5,8 @@ __all__ = [
     "full_series_pooling",
     "generate_not_nan_mask",
     "integer_pooling",
-    "masked_reconstruction_loss",
+    "masked_reconstruction_loss_mean",
+    "masked_reconstruction_loss_sum",
     "multiscale_pooling",
     "pad_tensor_with_nan",
     "process_sample_length",
@@ -252,7 +253,9 @@ def zero_fill_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     return x_filled, keep_mask
 
 
-def masked_reconstruction_loss(per_element: torch.Tensor, keep_mask: torch.Tensor) -> torch.Tensor:
+def masked_reconstruction_loss_mean(
+    per_element: torch.Tensor, keep_mask: torch.Tensor
+) -> torch.Tensor:
     """Compute the mean of a per-element loss over non-padded timesteps.
 
     Args:
@@ -269,3 +272,26 @@ def masked_reconstruction_loss(per_element: torch.Tensor, keep_mask: torch.Tenso
     total = (per_element * m).sum()
     denom = m.expand_as(per_element).sum().clamp_min(1.0)
     return total / denom
+
+
+def masked_reconstruction_loss_sum(
+    per_element: torch.Tensor, keep_mask: torch.Tensor
+) -> torch.Tensor:
+    """Compute the sum of a per-element loss over non-padded timesteps.
+
+    Semantically equivalent to ``torch.sum(per_element * keep_mask)`` but
+    avoids creating a full-sized boolean tensor by using the same
+    unsqueeze-and-multiply pattern. Matches the TensorFlow ``reduce_sum``
+    semantics used by the original TimeVAE implementation.
+
+    Args:
+        per_element: Per-element loss values, shape ``(B, T, C)``.
+        keep_mask: Boolean mask of shape ``(B, T)`` where ``True`` indicates
+            non-padded (real) timesteps.
+
+    Returns:
+        Scalar tensor containing the masked sum loss. Returns ``0.0`` when
+        all timesteps are masked out.
+    """
+    m = keep_mask.unsqueeze(-1).to(per_element.dtype)  # (B, T, 1)
+    return (per_element * m).sum()
