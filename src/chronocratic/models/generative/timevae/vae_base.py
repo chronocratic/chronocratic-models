@@ -101,7 +101,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.log("val_kl_loss", kl_loss, on_epoch=True)
         return loss
 
-    def configure_optimizers(self):
+    def configure_optimizers(self):  # noqa: ANN201 (Lightning expects this signature: https://lightning.ai/docs/pytorch/stable/common/optimization.html)
         """Return Adam optimizer with ReduceLROnPlateau scheduler.
 
         Matches the original TF training pipeline, which always adds
@@ -113,21 +113,22 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         (default ``epsilon=1e-7``), instead of PyTorch's own default of
         ``eps=1e-8``.
         """
-        optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.learning_rate, eps=1e-7
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, eps=1e-7)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, factor=0.5, patience=30, mode="min"
         )
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer,
-                    factor=0.5,
-                    patience=30,
-                    mode="min",
-                ),
-                "monitor": "train_loss_epoch",
-            },
+
+        lr_scheduler_config_dict = {
+            "name": "ReduceLROnPlateau",
+            "scheduler": lr_scheduler,
+            "monitor": "train_loss_epoch",
+            "interval": "epoch",
+            "frequency": 1,
+            "reduce_on_plateau": True,
+            "strict": True,
         }
+
+        return [optimizer], [lr_scheduler_config_dict]
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Return reconstructions for a NumPy input batch."""
