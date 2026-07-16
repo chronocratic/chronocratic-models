@@ -16,11 +16,7 @@ class _DummyVAE(BaseVariationalAutoencoder):
     """Minimal subclass so that _get_reconstruction_loss can be called."""
 
     def __init__(self, *, sequence_length: int, input_dim: int) -> None:
-        super().__init__(
-            sequence_length=sequence_length,
-            input_dim=input_dim,
-            latent_dim=4,
-        )
+        super().__init__(sequence_length=sequence_length, input_dim=input_dim, latent_dim=4)
         self._encoder = torch.nn.Identity()
         self._decoder = torch.nn.Identity()
 

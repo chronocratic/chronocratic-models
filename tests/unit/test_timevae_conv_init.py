@@ -46,10 +46,7 @@ class TestConvInit:
     def test_decoder_residual_convtranspose_bias_is_zero(self) -> None:
         """Decoder ConvTranspose1d bias is initialized to zero."""
         model = TimeVAE(
-            sequence_length=16,
-            input_dim=1,
-            hidden_layer_sizes=(50, 100),
-            use_residual_conn=True,
+            sequence_length=16, input_dim=1, hidden_layer_sizes=(50, 100), use_residual_conn=True
         )
         residual = model._decoder.residual_conn
         for deconv in residual.deconv_layers:
@@ -58,10 +55,7 @@ class TestConvInit:
     def test_decoder_residual_convtranspose_weights_xavier(self) -> None:
         """Decoder ConvTranspose1d weights use XavierUniform."""
         model = TimeVAE(
-            sequence_length=16,
-            input_dim=1,
-            hidden_layer_sizes=(50, 100),
-            use_residual_conn=True,
+            sequence_length=16, input_dim=1, hidden_layer_sizes=(50, 100), use_residual_conn=True
         )
         deconv = model._decoder.residual_conn.deconv_layers[0]
         fan_in = deconv.in_channels * deconv.kernel_size[0]
