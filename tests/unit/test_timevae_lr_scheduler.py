@@ -12,21 +12,24 @@ from chronocratic.models.generative.timevae import TimeVAE
 
 
 class TestReduceLROnPlateau:
-    """configure_optimizers must return scheduler dict, not bare optimizer."""
+    """configure_optimizers must return scheduler list, not bare optimizer."""
 
-    def test_returns_dict_with_scheduler(self) -> None:
-        """Result is a dict containing 'optimizer' and 'lr_scheduler'."""
+    def test_returns_list_with_scheduler(self) -> None:
+        """Result is a tuple of ([optimizer], [lr_scheduler_config])."""
         model = TimeVAE(sequence_length=16, input_dim=1)
         result = model.configure_optimizers()
-        assert isinstance(result, dict)
-        assert "optimizer" in result
-        assert "lr_scheduler" in result
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        assert isinstance(result[0], list)
+        assert isinstance(result[1], list)
+        assert len(result[0]) == 1
+        assert len(result[1]) == 1
 
     def test_optimizer_is_adam(self) -> None:
         """Optimizer is Adam with eps=1e-7 (Keras parity)."""
         model = TimeVAE(sequence_length=16, input_dim=1)
         result = model.configure_optimizers()
-        opt = result["optimizer"]
+        opt = result[0][0]
         assert isinstance(opt, torch.optim.Adam)
         assert opt.defaults["eps"] == 1e-7
 
@@ -34,24 +37,24 @@ class TestReduceLROnPlateau:
         """LR scheduler is ReduceLROnPlateau with correct params."""
         model = TimeVAE(sequence_length=16, input_dim=1)
         result = model.configure_optimizers()
-        sched_cfg = result["lr_scheduler"]["scheduler"]
-        assert isinstance(sched_cfg, torch.optim.lr_scheduler.ReduceLROnPlateau)
-        assert sched_cfg.factor == 0.5
-        assert sched_cfg.patience == 30
-        assert sched_cfg.mode == "min"
+        sched_cfg = result[1][0]
+        assert isinstance(sched_cfg["scheduler"], torch.optim.lr_scheduler.ReduceLROnPlateau)
+        assert sched_cfg["scheduler"].factor == 0.5
+        assert sched_cfg["scheduler"].patience == 30
+        assert sched_cfg["scheduler"].mode == "min"
 
     def test_scheduler_monitors_train_loss_epoch(self) -> None:
         """Scheduler monitors the epoch-level aggregated metric."""
         model = TimeVAE(sequence_length=16, input_dim=1)
         result = model.configure_optimizers()
-        assert result["lr_scheduler"]["monitor"] == "train_loss_epoch"
+        assert result[1][0]["monitor"] == "train_loss_epoch"
 
     def test_lr_changes_on_plateau_step(self) -> None:
         """ReduceLROnPlateau steps can be called without error."""
         model = TimeVAE(sequence_length=16, input_dim=1)
         result = model.configure_optimizers()
-        opt = result["optimizer"]
-        sched_cfg = result["lr_scheduler"]["scheduler"]
+        opt = result[0][0]
+        sched_cfg = result[1][0]["scheduler"]
         initial_lr = opt.param_groups[0]["lr"]
 
         # Simulate no improvement: patience=30, reduction fires at step 31.
