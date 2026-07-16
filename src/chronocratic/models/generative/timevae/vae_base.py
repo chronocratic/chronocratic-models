@@ -9,7 +9,7 @@ from torch import nn
 
 from chronocratic.models.utils import (
     extract_features_from_batch,
-    masked_reconstruction_loss,
+    masked_reconstruction_loss_sum,
     zero_fill_padding,
 )
 
@@ -150,7 +150,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
 
         # Per-element reconstruction loss (masked if keep_mask provided)
         if keep_mask is not None:
-            reconst_loss = masked_reconstruction_loss(err, keep_mask)
+            reconst_loss = masked_reconstruction_loss_sum(err, keep_mask)
         else:
             reconst_loss = torch.sum(err)
 

@@ -12,7 +12,7 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import (
     extract_features_from_batch,
-    masked_reconstruction_loss,
+    masked_reconstruction_loss_mean,
     zero_fill_padding,
 )
 
@@ -165,7 +165,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         x_filled, keep_mask = zero_fill_padding(x)
         output = self(x_filled)
         per_element = (output - x_filled) ** 2
-        return masked_reconstruction_loss(per_element, keep_mask)
+        return masked_reconstruction_loss_mean(per_element, keep_mask)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the training reconstruction loss."""

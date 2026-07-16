@@ -23,7 +23,7 @@ from chronocratic.models.recurrent.recurrentae.layers import (
 )
 from chronocratic.models.utils import (
     extract_features_from_batch,
-    masked_reconstruction_loss,
+    masked_reconstruction_loss_mean,
     zero_fill_padding,
 )
 
@@ -157,7 +157,7 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
             per_element = F.mse_loss(output, x_filled, reduction="none")
         else:
             per_element = F.l1_loss(output, x_filled, reduction="none")
-        return masked_reconstruction_loss(per_element, keep_mask)
+        return masked_reconstruction_loss_mean(per_element, keep_mask)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log reconstruction loss for a training batch."""
