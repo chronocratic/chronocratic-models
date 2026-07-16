@@ -131,11 +131,19 @@ class Series2VecNetwork(nn.Module):
     def _frequency_representation(self, x: torch.Tensor) -> torch.Tensor:
         x = self._to_channels_first(x)
         x_f = self._real_fft(x)
+        # Clamp FFT coefficients to float32-safe range. Extreme adversarial
+        # inputs can produce very large FFT coefficients that overflow Conv2d
+        # → inf → GroupNorm inf/inf = NaN.
+        x_f = x_f.clamp(-1e4, 1e4)
         out_f = self.embed_layer_f(x_f)
         return self.gap_f(out_f).squeeze(-1)
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         """Return ``(batch, representation_dim)`` temporal + frequency concat."""
+        # Sanitize input: replace NaN/Inf with 0. Training path uses
+        # zero_fill_padding() which calls nan_to_num, but the encode() path
+        # (used by attacks, probes, and feature extraction) has no such guard.
+        x = torch.nan_to_num(x, nan=0.0, posinf=1e4, neginf=-1e4)
         temporal_representation = self._temporal_representation(x)
         frequency_representation = self._frequency_representation(x)
         return torch.cat((temporal_representation, frequency_representation), dim=1)
@@ -156,6 +164,7 @@ class Series2VecNetwork(nn.Module):
         out = self.layer_norm_2(out)
 
         x_f = self._real_fft(x_channels_first)
+        x_f = x_f.clamp(-1e4, 1e4)
         x_f = self.embed_layer_f(x_f)
         x_f = self.gap_f(x_f)
         x_f = x_f.permute(2, 0, 1)
