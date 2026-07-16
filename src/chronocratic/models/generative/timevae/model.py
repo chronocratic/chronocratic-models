@@ -300,11 +300,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         self._decoder = self._build_decoder()
 
         for layer in self.modules():
-            if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform_(layer.weight)
-                if layer.bias is not None:
-                    nn.init.zeros_(layer.bias)
-            elif isinstance(layer, (nn.Conv1d, nn.ConvTranspose1d)):
+            if isinstance(layer, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
                 nn.init.xavier_uniform_(layer.weight)
                 if layer.bias is not None:
                     nn.init.zeros_(layer.bias)
