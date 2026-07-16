@@ -12,15 +12,22 @@ def _lower_triangular_pair_indices(batch_size: int, device: torch.device) -> tor
 
 
 def _distance_normalizer(distance: torch.Tensor) -> torch.Tensor:
-    """Normalize distances to ``[0, 1]`` without changing device placement."""
-    if distance.numel() <= 1:
-        return distance.detach()
+    """Normalize distances to ``[0, 1]`` — matches upstream Series2Vec.
+
+    Single-element tensors return ``distance / distance`` (scalar 1.0).
+    Zero-range tensors return the raw distance (upstream behavior for
+    degenerate cases).
+    """
+    if distance.numel() == 0:
+        return distance
+    if distance.numel() == 1:
+        return torch.ones_like(distance)
 
     min_val = torch.min(distance)
     max_val = torch.max(distance)
     denominator = max_val - min_val
     if torch.isclose(denominator, torch.zeros_like(denominator)):
-        return distance.detach()
+        return distance
     return (distance - min_val) / denominator
 
 

@@ -229,7 +229,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         x = self._ensure_pairable_batch(x)
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
-        filtered_frequency_data = filter_frequencies(x.detach(), training=self.training)
+        filtered_frequency_data = filter_frequencies(x.detach())
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         result = pretraining_loss(
             temporal_distances=temporal_distances,
@@ -240,7 +240,9 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         # Fallback for series too short to split (window_len < kernel): pretraining_loss
         # returns new_tensor(0.0), disconnected from the graph, which crashes backward().
         # temporal_distances.sum() * 0.0 produces zero with a grad_fn reaching the encoder.
-        if not result[0].requires_grad:
+        # Only apply during training — validation runs under torch.no_grad() so
+        # requires_grad is always False there, and we want the actual loss value.
+        if self.training and not result[0].requires_grad:
             dummy = temporal_distances.sum() * 0.0
             result = (dummy, dummy, dummy)
         return result
@@ -261,6 +263,10 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         self.log("train_temporal_loss", temporal_loss, on_epoch=True, sync_dist=self._sync_dist)
         self.log("train_frequency_loss", frequency_loss, on_epoch=True, sync_dist=self._sync_dist)
         return train_loss
+
+    def on_after_backward(self) -> None:
+        """Clip gradients — matches upstream ``max_norm=4.0``."""
+        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=4.0)
 
     def validation_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:
         """Compute and log the Series2Vec validation loss for one batch."""

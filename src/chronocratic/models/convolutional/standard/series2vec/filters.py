@@ -32,15 +32,14 @@ SAMPLING_RATE = 128
 
 
 def filter_frequencies(
-    data: torch.Tensor,
-    lowpass_cutoff: float = 40.0,
-    highpass_cutoff: float = 0.5,
-    *,
-    training: bool = True,
+    data: torch.Tensor, lowpass_cutoff: float = 40.0, highpass_cutoff: float = 0.5
 ) -> torch.Tensor:
-    """Randomly apply low-pass or high-pass filtering to FFT-transformed samples."""
+    """Randomly apply low-pass or high-pass filtering to FFT-transformed samples.
+
+    Matches upstream Series2Vec: 50/50 Bernoulli, always active (train + val).
+    """
     fft_results = torch.stack([apply_fft(sample) for sample in data])
-    if training and torch.rand(()) < LOWPASS_PROBABILITY:  # device-ok: CPU scalar probability
+    if torch.rand(()) < LOWPASS_PROBABILITY:  # device-ok: CPU scalar probability
         return torch.stack(
             [
                 lowpass_filter(
