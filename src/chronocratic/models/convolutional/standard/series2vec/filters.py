@@ -32,9 +32,7 @@ SAMPLING_RATE = 128
 
 
 def filter_frequencies(
-    data: torch.Tensor,
-    lowpass_cutoff: float = 40.0,
-    highpass_cutoff: float = 0.5,
+    data: torch.Tensor, lowpass_cutoff: float = 40.0, highpass_cutoff: float = 0.5
 ) -> torch.Tensor:
     """Randomly apply low-pass or high-pass filtering to FFT-transformed samples.
 

@@ -128,10 +128,16 @@ class TestGradientClipping:
         loss.backward()
 
         # Verify gradients exist
-        total_norm = sum(p.grad.data.norm(2).item() ** 2 for p in model.parameters() if p.grad is not None) ** 0.5
+        total_norm = (
+            sum(p.grad.data.norm(2).item() ** 2 for p in model.parameters() if p.grad is not None)
+            ** 0.5
+        )
         assert total_norm > 0, "No gradients computed — test setup broken"
 
         # on_after_backward calls torch.nn.utils.clip_grad_norm_; verify it works
         model.on_after_backward()
-        clipped_norm = sum(p.grad.data.norm(2).item() ** 2 for p in model.parameters() if p.grad is not None) ** 0.5
+        clipped_norm = (
+            sum(p.grad.data.norm(2).item() ** 2 for p in model.parameters() if p.grad is not None)
+            ** 0.5
+        )
         assert clipped_norm <= 4.0 + 1e-4, f"Grad norm {clipped_norm} exceeds max 4.0"
