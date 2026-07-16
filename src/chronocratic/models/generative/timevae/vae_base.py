@@ -101,9 +101,33 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.log("val_kl_loss", kl_loss, on_epoch=True)
         return loss
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        """Return the Adam optimizer used to train the VAE."""
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+    def configure_optimizers(self):
+        """Return Adam optimizer with ReduceLROnPlateau scheduler.
+
+        Matches the original TF training pipeline, which always adds
+        ``ReduceLROnPlateau(factor=0.5, patience=30)``. The scheduler
+        monitors ``train_loss_epoch`` (Lightning's epoch-level aggregated
+        metric from ``self.log``) and halves the LR when improvement stalls.
+
+        Additionally, PyTorch Adam uses ``eps=1e-7`` to match Keras Adam
+        (default ``epsilon=1e-7``), instead of PyTorch's own default of
+        ``eps=1e-8``.
+        """
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=self.learning_rate, eps=1e-7
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer,
+                    factor=0.5,
+                    patience=30,
+                    mode="min",
+                ),
+                "monitor": "train_loss_epoch",
+            },
+        }
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Return reconstructions for a NumPy input batch."""
