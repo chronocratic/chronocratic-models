@@ -78,9 +78,8 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         x = extract_features_from_batch(batch)
         x, keep_mask = zero_fill_padding(x)  # (B, T, C), (B, T)
         z_mean, z_log_var, z = self._encoder(x)
-        # Use sampled z during training, z_mean during validation for deterministic metrics.
-        latent = z if self.training else z_mean
-        reconstruction = self._decoder(latent)
+        # Original TF always feeds sampled z to decoder in both train and test.
+        reconstruction = self._decoder(z)
         loss, recon_loss, kl_loss = self.loss_function(
             x, reconstruction, z_mean, z_log_var, keep_mask=keep_mask
         )
