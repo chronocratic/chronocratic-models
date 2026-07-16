@@ -67,5 +67,5 @@ def test_series2vec_filters_preserve_device(device: str) -> None:
     from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
 
     x = torch.randn(2, 128, device=device)
-    out = filter_frequencies(x, training=True)
+    out = filter_frequencies(x)
     assert out.device.type == device
