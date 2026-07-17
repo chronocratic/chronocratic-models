@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 import torch
 
+from chronocratic.models.convolutional.standard.mcl.model import MCL
 from chronocratic.models.generative.timevae.model import TimeVAE
 
 
@@ -34,6 +35,19 @@ def timevae() -> TimeVAE:
         hidden_layer_sizes=(16, 32),
         conv_kernel_size=3,
         conv_stride=2,
+    )
+
+
+@pytest.fixture
+def mcl() -> MCL:
+    """Small MCL for fast testing."""
+    return MCL(
+        input_dim=3,
+        representation_dim=8,
+        encoder_channels=(16, 32),
+        encoder_kernels=(3, 3),
+        encoder_dilations=(1, 1),
+        projection_dim=8,
     )
 
 
@@ -97,3 +111,22 @@ def test_timevae_predict_nan_padded(timevae: TimeVAE) -> None:
     x_np = x.numpy()
     out = timevae.predict(x_np)
     assert np.isfinite(out).all(), "TimeVAE predict() contains NaN/Inf"
+
+
+# --------------------------------------------------------------------------- #
+# MCL — encode() NaN tests
+# --------------------------------------------------------------------------- #
+
+
+def test_mcl_encode_nan_padded_vector(mcl: MCL) -> None:
+    """MCL encode() on NaN-padded input returns finite VECTOR."""
+    data = _make_nan_padded((4, 32, 3))
+    reps = mcl.encode(data, batch_size=4)
+    assert torch.isfinite(reps).all(), "MCL encode() VECTOR contains NaN/Inf"
+
+
+def test_mcl_encode_batch_nan_padded(mcl: MCL) -> None:
+    """MCL encode_batch() on NaN-padded input returns finite output."""
+    batch_x = _make_nan_padded((4, 32, 3))
+    reps = mcl.encode_batch(batch_x)
+    assert torch.isfinite(reps).all(), "MCL encode_batch() contains NaN/Inf"
