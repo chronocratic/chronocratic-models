@@ -353,6 +353,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         - ``C``: encoder output channels (``representation_dim``)
         - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
+        # Match _step(): encoder trained on zero-filled input.
+        # ponytail: zero-fill only. Masked pooling over the conv-downsampled L'
+        # axis would need a downsampled keep_mask — out of scope, see spec §4.6.
+        batch_x, _ = zero_fill_padding(batch_x)
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
             return features.mean(dim=-1)  # (B, C) — VECTOR
