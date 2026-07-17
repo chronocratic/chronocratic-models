@@ -349,3 +349,52 @@ def test_sequence_output_nan_padded(
     reps = model.encode(data, batch_size=2, output=EncodingOutputShape.SEQUENCE)
     assert torch.isfinite(reps).all(), f"{model_fixture} encode() SEQUENCE contains NaN/Inf"
     assert reps.ndim == 3, f"{model_fixture} SEQUENCE should be 3-D, got {reps.ndim}-D"
+
+
+# --------------------------------------------------------------------------- #
+# Guard-placement regression — the NaN guard belongs in _encode_batch, never
+# in BasicEncodingMixin. TST derives its padding mask from x.isnan(), so a
+# nan_to_num applied above _encode_batch yields an all-True mask and silently
+# pools padding into the VECTOR representation. The output stays finite, so
+# every isfinite assertion in this file passes while the numbers are wrong.
+# These two tests are the only thing standing between that refactor and main.
+# --------------------------------------------------------------------------- #
+
+_VALID = 20
+
+
+def _tst_padded_batch() -> torch.Tensor:
+    """A (2, 32, 3) batch whose first sample is NaN-padded from t=_VALID onward."""
+    x = torch.randn(2, 32, 3)
+    x[0, _VALID:, :] = float("nan")
+    return x
+
+
+def test_encode_batch_preserves_nan_for_mask_derivation(tst: TST) -> None:
+    """encode_batch() must hand NaN to _encode_batch intact.
+
+    Fails if a NaN guard is added to BasicEncodingMixin.encode_batch().
+    """
+    x = _tst_padded_batch()
+    tst.eval()
+    with torch.no_grad():
+        vector = tst.encode_batch(x)
+        sequence = tst.encode_batch(x, output=EncodingOutputShape.SEQUENCE)
+    # VECTOR is the mean over real timesteps only ...
+    assert torch.allclose(vector[0], sequence[0, :_VALID].mean(dim=0), atol=1e-6)
+    # ... and is NOT the mean over all timesteps (guards against a vacuous test
+    # should _VALID ever reach sequence_length).
+    assert not torch.allclose(vector[0], sequence[0].mean(dim=0), atol=1e-6)
+
+
+def test_encode_preserves_nan_for_mask_derivation(tst: TST) -> None:
+    """encode() must hand NaN to _encode_batch intact.
+
+    Fails if a NaN guard is added to either BasicEncodingMixin.encode() or
+    .encode_batch(); the sibling test localizes which.
+    """
+    x = _tst_padded_batch()
+    vector = tst.encode(x, batch_size=2)
+    sequence = tst.encode(x, batch_size=2, output=EncodingOutputShape.SEQUENCE)
+    assert torch.allclose(vector[0], sequence[0, :_VALID].mean(dim=0), atol=1e-6)
+    assert not torch.allclose(vector[0], sequence[0].mean(dim=0), atol=1e-6)
