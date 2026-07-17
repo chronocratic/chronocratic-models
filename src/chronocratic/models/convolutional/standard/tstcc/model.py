@@ -366,7 +366,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         - ``B``: batch size
         - ``C``: encoder output channels (``representation_dim``)
-        - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
+        - ``L'``: the encoder's downsampled sequence length. Deliberately not
+          restated as a formula here: it depends on ``conv_kernel_size``,
+          ``stride``, both ``encoder_inner_kernels`` and three pooling stages,
+          and every restatement of that geometry has drifted from the encoder.
+          This line previously read ``L' = seq_len // stride``, which is off by
+          ~8x (seq_len=32, stride=1 gives L'=6, not 32). Call
+          :func:`_tstcc_encoder_output_length`, which probes the encoder.
         """
         # ponytail: zero-fill only. Padding contaminates the WHOLE feature map, not
         # just its receptive field: GroupNorm(1, C) reduces over (C, L'), so padded

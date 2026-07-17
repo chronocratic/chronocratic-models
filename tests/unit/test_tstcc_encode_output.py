@@ -57,9 +57,11 @@ class TestTSTCCSequenceOutput:
         encoder = model._get_encoder()
         data = torch.randn(4, 256, 3)
         result = model._encode_batch(encoder, data, output=EncodingOutputShape.SEQUENCE)
-        # conv with kernel=8, stride=4: L' = (256 - 8) // 4 + 1 = 63
-        # then two inner blocks with kernel=8, stride=1: L'' = 63 - 8 + 1 = 56
-        # (exact length depends on encoder internals; assert ndim and last dim)
+        # L' here is 10, not the 56 this comment used to derive: the arithmetic
+        # omitted the conv padding and all three MaxPool1d stages. Use
+        # _tstcc_encoder_output_length to get it; do not re-derive it by hand.
+        # This test only pins ndim and the channel dim, which is why the wrong
+        # comment never failed anything.
         assert result.ndim == 3
         assert result.shape[0] == 4  # batch
         assert result.shape[2] == 16  # representation_dim
