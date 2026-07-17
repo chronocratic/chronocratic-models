@@ -353,6 +353,15 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         - ``C``: encoder output channels (``representation_dim``)
         - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
         """
+        # ponytail: zero-fill only. Padding contaminates the WHOLE feature map, not
+        # just its receptive field: GroupNorm(1, C) reduces over (C, L'), so padded
+        # values enter the norm statistics and shift every output position (measured
+        # 66/66 at seq_len=512, valid=300; 31/66 with the norms stripped). Masking
+        # this pooling would therefore not help — the values are already contaminated
+        # upstream. Real fix is masked normalization across all 3 blocks, which
+        # changes the encoder and invalidates trained checkpoints. Training pools
+        # nothing and contaminates identically, so this is a representation-quality
+        # ceiling, not a correctness bug.
         batch_x, _ = zero_fill_padding(batch_x)
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
