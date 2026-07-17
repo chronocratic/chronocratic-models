@@ -109,7 +109,6 @@ class MCL(pl.LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return flat representation for VECTOR, unsqueeze for SEQUENCE."""
-        # Match _step(): encoder trained on zero-filled input.
         batch_x, _ = zero_fill_padding(batch_x)
         flat = encoder(batch_x)  # (B, D) - D=representation_dim
         if output == EncodingOutputShape.VECTOR:

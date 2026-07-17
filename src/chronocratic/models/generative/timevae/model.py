@@ -339,9 +339,6 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             Representations of shape ``(B, D)`` for VECTOR or
             ``(B, 1, D)`` for SEQUENCE (B=batch, D=latent_dim).
         """
-        # Match _step(): the encoder is trained on zero-filled input, so encode()
-        # must feed it zero-filled input too. NaN marks padded timesteps and would
-        # otherwise propagate through Conv1d into every latent dim.
         batch_x, _ = zero_fill_padding(batch_x)
         z_mean = encoder(batch_x)[0]  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
