@@ -75,6 +75,10 @@ For details (original papers, encoder architecture, default hyperparameters), se
 
 For full API reference, guides, and examples, visit [chronocratic-models.readthedocs.io](https://chronocratic-models.readthedocs.io/).
 
+## Contributing
+
+For development setup, linting, testing, and coding standards, see [docs/contributing.md](docs/contributing.md).
+
 ## License
 
 This project is licensed under the BSD 3-Clause License — see the [LICENSE](LICENSE) file for details.

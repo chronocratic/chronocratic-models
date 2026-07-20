@@ -15,6 +15,34 @@ cd chronocratic-models
 uv sync
 ```
 
+## Pre-commit Hooks
+
+The project uses [pre-commit](https://pre-commit.com/) to run linting, formatting, and type checking automatically before each commit. This eliminates the need to run ruff and ty manually — changes are fixed and verified as you commit.
+
+**One-time setup:**
+
+```bash
+# Install pre-commit as a uv tool (once per machine)
+uv tool install pre-commit
+
+# Install git hooks into the repository (once per clone)
+pre-commit install
+```
+
+After installation, the hooks run automatically on every `git commit`:
+
+- **ruff-check** — auto-fix linting issues
+- **ruff-format** — format code
+- **ty** — type checking (read-only, blocks commit on errors)
+
+The pre-commit configuration lives in [.pre-commit-config.yaml](.pre-commit-config.yaml).
+
+**Run manually (all files):**
+
+```bash
+pre-commit run --all-files
+```
+
 ## Running Tests
 
 ```bash
