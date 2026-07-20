@@ -27,7 +27,7 @@ permissions:
 jobs:
   fragment:
     name: Changelog fragment
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # Skip release-prep PRs two ways: the `skip-changelog` label (may be missing
     # if the PR was opened by hand) AND the `release-prep/*` head branch, which is
     # always present in the event payload regardless of labelling.
@@ -35,7 +35,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'skip-changelog') &&
       !startsWith(github.event.pull_request.head.ref, 'release-prep/')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           # For same-repo PRs check out the head branch so we can commit + push
           # a fragment. For forks this ref is still readable for the check step.

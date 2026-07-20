@@ -25,13 +25,13 @@ permissions:
 jobs:
   prep:
     name: Build changelog and open PR
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # FF_MERGE_TOKEN (PAT, in the `ff_merge` environment) acts as a real user, so
     # it can open the PR — the GITHUB_TOKEN is blocked by the repo's "Allow GitHub
     # Actions to create and approve pull requests" policy being off.
     environment: ff_merge
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           ref: dev
           fetch-depth: 0
