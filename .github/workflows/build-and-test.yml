@@ -14,12 +14,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
       - name: Install dependencies
         run: uv sync --all-extras
       - name: Run tests
@@ -32,19 +30,21 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Ruff check
+        uses: astral-sh/ruff-action@v4
+        with:
+          args: "check src/"
+      - name: Ruff format check
+        uses: astral-sh/ruff-action@v4
+        with:
+          args: "format --check src/ tests/"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
       - name: Install dependencies
-        run: uv sync --all-extras
-      - name: Run ruff check
-        run: uv run ruff check src/
-      - name: Run ruff format check
-        run: uv run ruff format --check src/ tests/
-      - name: Run ty check
+        run: uv sync
+      - name: Ty check
         run: uv run ty check src/
 
   build:
@@ -55,12 +55,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
       - name: Build package
         run: uv build
       - name: Validate with twine
@@ -74,12 +72,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
       - name: Install dependencies
         run: uv sync --extra docs
       - name: Build docs

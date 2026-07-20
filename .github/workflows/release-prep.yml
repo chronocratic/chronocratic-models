@@ -37,13 +37,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.FF_MERGE_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.12"
-
-      - name: Install uv
-        run: pip install uv
       - name: Install dependencies
         run: uv sync --no-install-project
 
