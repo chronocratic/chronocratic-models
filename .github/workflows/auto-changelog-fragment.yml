@@ -27,7 +27,7 @@ permissions:
 jobs:
   fragment:
     name: Changelog fragment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Skip release-prep PRs two ways: the `skip-changelog` label (may be missing
     # if the PR was opened by hand) AND the `release-prep/*` head branch, which is
     # always present in the event payload regardless of labelling.
