@@ -157,7 +157,6 @@ Config dataclasses and model `__init__` signatures must mirror each other exactl
 
 - Every config field must have a matching `__init__` parameter with the **same name** and **same default value**.
 - Use `@dataclass(kw_only=True)` on all config classes.
-- **Not all config classes are kw_only.** Some older configs may still have positional parameters. Verify and fix if you encounter issues.
 - Defaults must be declared in **both** the config dataclass and the model `__init__`. This allows partial config instantiation.
 - Verify with `Model(**vars(ModelParameters(...)))` — it must not raise.
 - Use `save_hyperparameters(ignore=["augmentation"])` in Lightning modules. Non-callable config values should not be ignored.
@@ -269,11 +268,6 @@ nn.Conv1d(256, 128, kernel_size=3),
 ALL Python functions with multiple parameters must use keyword-only signatures (``def func(*, param1, param2, ...)``).
 This applies to model ``__init__`` methods, encoder constructors, network layers, helpers, factories,
 loss functions, augmentation classes, adapters, and shared utilities.
-
-**Current violations** (to be fixed):
-- Loss functions in `autotcl/losses.py`: `local_info_nce_loss`, `info_nce_loss`, `l1_out_loss`, `maximum_mean_discrepancy_with_gaussian_kernel_loss`
-- Helper functions in `chronocratic/models/normalization.py`: `_normalize`, `_denormalize`
-- Some augmentation method signatures in `augmentation/primitives.py`
 
 Config dataclasses always use ``@dataclass(kw_only=True)``.
 
@@ -538,10 +532,6 @@ If a kernel has no MPS equivalent (e.g., SoftDTW's CUDA kernel), falling back to
 loader = DataLoader(dataset, pin_memory=not gradient_enabled)
 ```
 
-**Current implementation:**
-- `BaseEncodingMixin` (dilated models) uses `pin_memory=data.device.type == 'cpu'`, which guards against GPU-resident data but does not check `gradient_enabled`.
-- `BasicEncodingMixin.encode()` currently sets `pin_memory=True` unconditionally. If you encounter pinning errors with `gradient_enabled=True`, file an issue or fix the guard.
-
 ### Lint Guard
 
 Run `bash scripts/check_device.sh` to detect bare tensor constructors (`torch.eye`, `torch.zeros`, `torch.ones`, `torch.arange`, etc.) without `device=` in model source files. Legitimate exceptions are annotated with `# device-ok`.
@@ -578,7 +568,3 @@ Every model that processes variable-length batches should include tests for:
 - Clean-input regression (no NaN present)
 
 See `tests/unit/test_encode_nan_guard.py` and `tests/unit/test_dilated_nan_encode.py` for examples.
-
-## Lint Guard
-
-`scripts/check_device.sh` uses `grep` to find violations. It has a known false negative: it filters lines containing `.to(` but does not catch `torch.eye(...).to(device)` when the constructor and `.to()` are on the same line. Check manually or add `# device-violation` until fixed.
