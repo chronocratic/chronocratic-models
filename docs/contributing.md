@@ -111,7 +111,7 @@ Fragment types: `added`, `changed`, `deprecated`, `removed`, `fixed`, `security`
 
 ```bash
 # Verify fragments before merging
-uv run towncrier check --compare-with origin/dev
+uv run towncrier check --compare-with origin/main
 ```
 
 See [`changelog.d/README.md`](../changelog.d/README.md) for detailed fragment instructions.
@@ -157,6 +157,7 @@ Config dataclasses and model `__init__` signatures must mirror each other exactl
 
 - Every config field must have a matching `__init__` parameter with the **same name** and **same default value**.
 - Use `@dataclass(kw_only=True)` on all config classes.
+- **Not all config classes are kw_only.** Some older configs may still have positional parameters. Verify and fix if you encounter issues.
 - Defaults must be declared in **both** the config dataclass and the model `__init__`. This allows partial config instantiation.
 - Verify with `Model(**vars(ModelParameters(...)))` — it must not raise.
 - Use `save_hyperparameters(ignore=["augmentation"])` in Lightning modules. Non-callable config values should not be ignored.
@@ -268,6 +269,11 @@ nn.Conv1d(256, 128, kernel_size=3),
 ALL Python functions with multiple parameters must use keyword-only signatures (``def func(*, param1, param2, ...)``).
 This applies to model ``__init__`` methods, encoder constructors, network layers, helpers, factories,
 loss functions, augmentation classes, adapters, and shared utilities.
+
+**Current violations** (to be fixed):
+- Loss functions in `autotcl/losses.py`: `local_info_nce_loss`, `info_nce_loss`, `l1_out_loss`, `maximum_mean_discrepancy_with_gaussian_kernel_loss`
+- Helper functions in `chronocratic/models/normalization.py`: `_normalize`, `_denormalize`
+- Some augmentation method signatures in `augmentation/primitives.py`
 
 Config dataclasses always use ``@dataclass(kw_only=True)``.
 
@@ -400,14 +406,18 @@ Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as
 |---|---|---|---|
 | TS2Vec | Yes | Yes | Both via pooling |
 | CoST | Yes | Yes | Both via feature concatenation |
-| MCL | Yes | No | VECTOR only |
+| MCL | Yes | Yes | SEQUENCE via fallback (unsqueeze to `B,1,D`) |
 | TimeNet | Yes | Yes | Both supported |
 | TST | Yes | Yes | Both supported |
 | TimeVAE | Yes | No | VECTOR only |
 | AutoTCL | Yes | Yes | Both via pooling |
-| TSTCC | Yes | No | VECTOR only |
+| TSTCC | Yes | Yes | SEQUENCE via `_warn_sequence_fallback` + `unsqueeze(1)` |
 | Series2Vec | Yes | Yes | Both supported |
 | RecurrentAutoEncoder | Yes | Yes | Both supported |
+
+> Models that list `SEQUENCE=Yes` but are not natively sequence-producing (MCL, TSTCC)
+> issue a `_warn_sequence_fallback` and return `(B, 1, D)` by unsqueezing the vector.
+> `supported_outputs` is the authoritative declaration; check that attribute on the model class.
 
 #### Encoding Mixin Architecture
 
@@ -419,6 +429,40 @@ Two mixin families serve different encoder topologies:
 
 All encoders implement `HasEncoder` protocol (`chronocratic.models.protocols`). The `.encoder` property returns an `nn.Module` for representation extraction, checkpointing, or fine-tuning. Decoder-bearing models implement `HasDecoder` and `HasEncoderDecoder`.
 
+## Augmentation Architecture
+
+Augmentation follows a three-layer design: **primitives** → **view sets** → **producers**.
+
+### Primitives
+
+Individual augmentation operations (Scaling, Permutation, etc.) live in `augmentation/primitives.py`. Each takes a `(B, T, C)` tensor and returns an augmented tensor of the same shape.
+
+### View Sets
+
+- `SingleView` — one augmented copy of the input
+- `ViewPair` — two independent augmented views
+- `AlignedPair` — two views with shared augmentation parameters
+
+### Producers
+
+- `SingleViewProducer` — wraps a single augmentation
+- `IndependentPairProducer` — two independent augmentation pipelines
+- `RolePairProducer` — different augmentations for first/second views
+- `FullOverlapProducer` — two views with identical augmentation applied twice
+
+### Custom Augmentation
+
+Models accept `augmentation: AugmentationProducer[ViewType] | None = None` in `__init__`. When `None`, a default producer is created. To use a custom augmentation:
+
+```python
+model = AutoTCL(
+    input_dim=3,
+    augmentation=SingleViewProducer(aug=ScalingParameters()),
+)
+```
+
+See `augmentation/base.py` and `augmentation/producers.py` for full API.
+
 #### Implementation Rules
 
 - `supported_outputs` is a class-level `frozenset`. Override in model subclasses to declare capabilities.
@@ -427,6 +471,7 @@ All encoders implement `HasEncoder` protocol (`chronocratic.models.protocols`). 
 - When `encoding_window` is not explicitly provided, `output` drives the pooling strategy: VECTOR → `"full_series"`, SEQUENCE → `None`.
 - Never hardcode shape logic outside the mixin. Use `EncodingOutputShape` enum values, not string literals.
 - `encode_batch()` is gradient-preserving and DataLoader-free. Use for adversarial loops and single-batch encoding.
+- **NaN protection**: Always call `zero_fill_padding()` before encoder forward pass in inference paths. See NaN Handling section for details.
 
 #### Testing Encoder Output Shapes
 
@@ -493,6 +538,47 @@ If a kernel has no MPS equivalent (e.g., SoftDTW's CUDA kernel), falling back to
 loader = DataLoader(dataset, pin_memory=not gradient_enabled)
 ```
 
+**Current implementation:**
+- `BaseEncodingMixin` (dilated models) uses `pin_memory=data.device.type == 'cpu'`, which guards against GPU-resident data but does not check `gradient_enabled`.
+- `BasicEncodingMixin.encode()` currently sets `pin_memory=True` unconditionally. If you encounter pinning errors with `gradient_enabled=True`, file an issue or fix the guard.
+
 ### Lint Guard
 
 Run `bash scripts/check_device.sh` to detect bare tensor constructors (`torch.eye`, `torch.zeros`, `torch.ones`, `torch.arange`, etc.) without `device=` in model source files. Legitimate exceptions are annotated with `# device-ok`.
+
+## NaN Handling
+
+Time series data may contain trailing NaN values for padding variable-length sequences within a batch. All models must handle this gracefully — training and inference paths must never produce NaN representations.
+
+### Core Utilities
+
+- `zero_fill_padding()` — replaces NaN with zero and returns a keep-mask for loss weighting.
+- `generate_not_nan_mask()` — produces a boolean mask identifying valid (non-NaN) timesteps.
+- `masked_reconstruction_loss_mean()` — computes mean loss only over non-NaN entries.
+
+### Rules
+
+1. **Training path** — call `zero_fill_padding()` in `training_step` before any encoder that cannot handle NaN (e.g., Conv1d, Fourier layers).
+2. **Inference path** — call `zero_fill_padding()` in the encoding mixin (`encode()` / `encode_batch()`) before the encoder forward pass.
+3. **Encoder `_process_not_nan_mask`** — always zero out NaN *before* masking. Multiplication (`x * 0.0`) on NaN yields NaN, not zero. Use `torch.nan_to_num(x, nan=0.0)` first, or use boolean indexing (`modified_x[~not_nan_mask] = 0`).
+4. **Reconstruction models** — always apply NaN masking in loss computation to avoid training on padding artifacts.
+
+### Implementation Status
+
+- `BasicEncodingMixin` models: NaN guard lives in each model's `_encode_batch()` method.
+- `PoolingEncodingMixin` (TS2Vec, AutoTCL): NaN guard in `_evaluate_with_pooling`.
+- `DecompositionEncodingMixin` (CoST): NaN guard in `_evaluate_with_feature_concatenation`.
+- `AutoTCLTimeSeriesEncoder._process_not_nan_mask`: uses `torch.nan_to_num` + multiplication pattern.
+
+### Testing
+
+Every model that processes variable-length batches should include tests for:
+- Trailing-NaN batch (partial padding)
+- All-NaN sample (entirely padding)
+- Clean-input regression (no NaN present)
+
+See `tests/unit/test_encode_nan_guard.py` and `tests/unit/test_dilated_nan_encode.py` for examples.
+
+## Lint Guard
+
+`scripts/check_device.sh` uses `grep` to find violations. It has a known false negative: it filters lines containing `.to(` but does not catch `torch.eye(...).to(device)` when the constructor and `.to()` are on the same line. Check manually or add `# device-violation` until fixed.
