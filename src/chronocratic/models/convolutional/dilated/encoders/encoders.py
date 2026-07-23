@@ -150,8 +150,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
     def _process_not_nan_mask(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         not_nan_mask = generate_not_nan_mask(x=x)
         nan_mask_as_float = not_nan_mask.float()
-        modified_x = x.clone()
-        modified_x = modified_x * nan_mask_as_float.unsqueeze(2)
+        modified_x = torch.nan_to_num(x, nan=0.0) * nan_mask_as_float.unsqueeze(2)
 
         return modified_x, not_nan_mask
 
