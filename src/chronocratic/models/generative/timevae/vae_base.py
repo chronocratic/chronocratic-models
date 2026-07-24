@@ -67,8 +67,10 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         """Reconstruct an input batch using the latent mean.
 
         Expects ``x`` of shape ``(batch, sequence_length, input_dim)``.
+        NaN-padded timesteps are zero-filled first, matching ``_step``.
         The encoder transposes to ``(batch, input_dim, sequence_length)`` internally.
         """
+        x, _ = zero_fill_padding(x)
         z_mean, _z_log_var, _z = self._encoder(x)
         return self._decoder(z_mean)
 
@@ -136,6 +138,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.eval()
         with torch.inference_mode():
             x_t = torch.FloatTensor(x).to(next(self.parameters()).device)
+            x_t, _ = zero_fill_padding(x_t)
             z_mean, _z_log_var, _z = self._encoder(x_t)
             x_decoded = self._decoder(z_mean)
         self.train(was_training)

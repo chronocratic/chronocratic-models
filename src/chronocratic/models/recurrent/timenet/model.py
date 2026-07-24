@@ -145,6 +145,7 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
         """Return last-step vector or full sequence from the encoder."""
+        batch_x, _ = zero_fill_padding(batch_x)
         encoded = encoder(batch_x)  # (B, T, D) - T=time steps, D=hidden dim
         if output == EncodingOutputShape.VECTOR:
             return encoded[:, -1, :]  # (B, D) - last time step

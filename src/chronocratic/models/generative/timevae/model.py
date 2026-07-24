@@ -15,6 +15,7 @@ from chronocratic.models.layers.general import (
     SeasonalLayer,
     TrendLayer,
 )
+from chronocratic.models.utils import zero_fill_padding
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 # Minimum encoder output length for valid latent encoding.
@@ -330,13 +331,15 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
 
         Args:
             encoder: The TimeVAEEncoder module.
-            batch_x: Batch tensor of shape ``(B, seq_len, input_dim)``.
+            batch_x: Batch tensor of shape ``(B, seq_len, input_dim)``. NaN-padded
+                timesteps are zero-filled before encoding, matching ``_step``.
             output: Requested output shape. Defaults to VECTOR (2-D).
 
         Returns:
             Representations of shape ``(B, D)`` for VECTOR or
             ``(B, 1, D)`` for SEQUENCE (B=batch, D=latent_dim).
         """
+        batch_x, _ = zero_fill_padding(batch_x)
         z_mean = encoder(batch_x)[0]  # (B, D) - D=latent_dim
         if output == EncodingOutputShape.VECTOR:
             return z_mean  # (B, D) — VECTOR

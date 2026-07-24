@@ -6,7 +6,7 @@ below the default, and handles NaN-padded inputs without producing infinite
 losses.
 
 Covers:
-- Encoder output length formula: pool(pool(pool(T))) with pool(L) = L//2+1
+- Encoder output length: probed against the live encoder across stride/kernel configs
 - Auto-clamp of temporal_contrast_timesteps at init and at runtime
 - Forward pass on InsectWingbeat shape (seq_len=22, channels=200)
 - TemporalContrast.forward with clamped timesteps
@@ -23,25 +23,8 @@ import pytest
 import torch
 
 from chronocratic.models import TSTCC
-
-
-# ---------------------------------------------------------------------------
-# Reference formula (verified against empirical MaxPool1d(k=2,s=2,pad=1))
-# ---------------------------------------------------------------------------
-
-
-def _ref_encoder_output_length(seq_len: int) -> int:
-    """Compute encoder output length using the pool compose formula.
-
-    TCCEncoder has 3 MaxPool1d(kernel_size=2, stride=2, padding=1) stages.
-    Each stage: output = L // 2 + 1 (verified empirically against PyTorch).
-    """
-
-    def pool(L: int) -> int:
-        return L // 2 + 1
-
-    return pool(pool(pool(seq_len)))
-
+from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
+from chronocratic.models.convolutional.standard.tstcc.model import _tstcc_encoder_output_length
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -81,15 +64,79 @@ def _make_nan_padded_batch(
 
 
 class TestEncoderOutputLengthFormula:
-    """Verify the pool(L) = L//2+1 three-stage compose matches known values."""
+    """The length _clamp_timesteps trusts must equal what the encoder produces.
 
-    @pytest.mark.parametrize("seq_len,expected", [(22, 4), (32, 5), (8, 2), (50, 8)])
-    def test_pool_compose_known_values(self, seq_len: int, expected: int) -> None:
-        """pool(pool(pool(T))) matches verified empirical values."""
-        assert _ref_encoder_output_length(seq_len) == expected, (
-            f"Encoder output length for T={seq_len} should be {expected}, "
-            f"got {_ref_encoder_output_length(seq_len)}"
+    Asserted against the live encoder, never against a restatement of its
+    geometry. The previous version of this test checked a pool-only reference
+    formula -- a copy of the same misconception as the code under test -- so it
+    passed while the real function was wrong in 40 of 48 configs, ignoring
+    stride entirely and overestimating L' by 3x at stride=4.
+    """
+
+    @pytest.mark.parametrize("seq_len", [8, 22, 32, 50, 128])
+    @pytest.mark.parametrize("stride", [1, 2, 4])
+    @pytest.mark.parametrize("inner_kernels", [(8, 8), (3, 3)])
+    def test_matches_real_encoder_output(
+        self, seq_len: int, stride: int, inner_kernels: tuple[int, int]
+    ) -> None:
+        """_tstcc_encoder_output_length equals the encoder's actual output length."""
+        encoder = TCCEncoder(
+            input_dim=3,
+            conv_kernel_size=8,
+            stride=stride,
+            representation_dim=8,
+            dropout_rate=0.0,
+            encoder_channels=(8, 16),
+            encoder_inner_kernels=inner_kernels,
+        ).eval()
+        with torch.no_grad():
+            real = encoder(torch.zeros(1, seq_len, 3)).shape[-1]
+        assert _tstcc_encoder_output_length(encoder, seq_len, 3) == real
+
+    def test_probe_restores_encoder_training_mode(self) -> None:
+        """Probing must not leave the encoder in eval() -- it runs during __init__."""
+        encoder = TCCEncoder(
+            input_dim=3,
+            conv_kernel_size=8,
+            stride=1,
+            representation_dim=8,
+            dropout_rate=0.0,
+            encoder_channels=(8, 16),
+            encoder_inner_kernels=(8, 8),
         )
+        assert encoder.training
+        _tstcc_encoder_output_length(encoder, 32, 3)
+        assert encoder.training, "probe leaked eval() state onto the encoder"
+
+
+class TestClampTimestepsGuard:
+    """The clamp must actually prevent TemporalContrast's seq_len > timestep error."""
+
+    def test_stride_config_is_clamped_not_crashed(self) -> None:
+        """stride=4 shrinks L' 3x; the guard must catch it rather than raise.
+
+        Regression: the old pool-only length formula returned 17 here (ignoring
+        stride), so the clamp declined to fire and _compute_loss raised
+        "seq_len (6) must be > timestep (12)" -- the exact error it guards.
+        """
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("always")
+            model = TSTCC(
+                input_dim=3,
+                sequence_length=128,
+                representation_dim=8,
+                encoder_channels=(8, 16),
+                encoder_inner_kernels=(8, 8),
+                temporal_contrast_hidden_dim=8,
+                temporal_contrast_timesteps=12,
+                conv_kernel_size=8,
+                stride=4,
+            )
+        with torch.no_grad():
+            real = model._encoder(torch.zeros(1, 128, 3)).shape[-1]
+        assert real > model.temporal_contrast_timesteps
+        batch = (torch.randn(4, 128, 3), torch.zeros(4, dtype=torch.long))
+        assert torch.isfinite(model._compute_loss(batch))
 
 
 # ---------------------------------------------------------------------------
@@ -101,14 +148,20 @@ class TestTSTCCAutoClampTimesteps:
     """Creating TSTCC with InsectWingbeat params should clamp timesteps and warn."""
 
     def test_tstcc_clamps_timesteps_at_init(self) -> None:
-        """temporal_contrast_timesteps clamped from 6 to 3 for seq_len=22."""
+        """temporal_contrast_timesteps clamped from 6 to 4 for seq_len=22.
+
+        The encoder's real output length for seq_len=22 is 5, so 4 is the
+        largest valid value (TemporalContrast needs L' > timesteps). This
+        previously asserted 3, because the pool-only length formula reported
+        L'=4 and the clamp discarded a timestep of capacity it did not need to.
+        """
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             model = _make_tstcc_insect(sequence_length=22)
 
         assert hasattr(model, "temporal_contrast_timesteps")
-        assert model.temporal_contrast_timesteps == 3, (
-            f"Expected timesteps clamped to 3 for seq_len=22, "
+        assert model.temporal_contrast_timesteps == 4, (
+            f"Expected timesteps clamped to 4 for seq_len=22, "
             f"got {model.temporal_contrast_timesteps}"
         )
         assert len(w) == 1

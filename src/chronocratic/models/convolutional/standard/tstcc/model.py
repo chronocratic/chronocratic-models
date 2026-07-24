@@ -27,26 +27,37 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-def _tstcc_encoder_output_length(seq_len: int) -> int:
-    """Compute the output sequence length of TCCEncoder for a given input length.
+def _tstcc_encoder_output_length(encoder: "TCCEncoder", seq_len: int, input_dim: int) -> int:
+    """Return TCCEncoder's output sequence length by probing it with a dummy batch.
 
-    TCCEncoder has 3 MaxPool1d(kernel_size=2, stride=2, padding=1) stages.
-    Each stage: output = input // 2 + 1.
+    Probed rather than derived. ``L'`` depends on ``conv_kernel_size``, ``stride``,
+    both ``encoder_inner_kernels`` and three pooling stages; any formula restating
+    that geometry drifts the moment the encoder changes. The previous formula
+    modelled only the pools, so its answer did not depend on ``stride`` at all --
+    it overestimated ``L'`` by 3x at ``stride=4``, which let bad configs past
+    :func:`_clamp_timesteps` into the very ``ValueError`` that guard exists to
+    prevent.
 
     Args:
+        encoder: The encoder to probe.
         seq_len: Input sequence length.
+        input_dim: Number of input features (channels).
 
     Returns:
-        Output sequence length after three pooling stages.
+        Output sequence length ``L'`` the encoder actually produces.
     """
+    was_training = encoder.training
+    encoder.eval()  # eval() so BatchNorm1d tolerates the batch-of-1 probe
+    try:
+        with torch.no_grad():
+            device = next(encoder.parameters()).device
+            probe = torch.zeros(1, seq_len, input_dim, device=device)
+            return int(encoder(probe).shape[-1])
+    finally:
+        encoder.train(was_training)
 
-    def pool(length: int) -> int:
-        return length // 2 + 1
 
-    return pool(pool(pool(seq_len)))
-
-
-def _clamp_timesteps(temporal_contrast_timesteps: int, seq_len: int) -> int:
+def _clamp_timesteps(temporal_contrast_timesteps: int, encoder_out: int) -> int:
     """Auto-clamp temporal contrast timesteps based on encoder output.
 
     TemporalContrast.forward requires encoder_output_seq_len > timesteps.
@@ -55,12 +66,12 @@ def _clamp_timesteps(temporal_contrast_timesteps: int, seq_len: int) -> int:
 
     Args:
         temporal_contrast_timesteps: Original timesteps from config.
-        seq_len: Input sequence length.
+        encoder_out: The encoder's real output length ``L'``, from
+            :func:`_tstcc_encoder_output_length`.
 
     Returns:
         Clamped timesteps value.
     """
-    encoder_out = _tstcc_encoder_output_length(seq_len)
     if encoder_out <= temporal_contrast_timesteps:
         return max(1, encoder_out - 1)
     return temporal_contrast_timesteps
@@ -154,14 +165,27 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._weight_decay = weight_decay
         self._sync_dist = sync_dist
 
+        # Built before the clamp below, which probes it for its real output length.
+        self._encoder = TCCEncoder(
+            input_dim=input_dim,
+            conv_kernel_size=conv_kernel_size,
+            stride=stride,
+            representation_dim=representation_dim,
+            encoder_channels=encoder_channels,
+            encoder_inner_kernels=encoder_inner_kernels,
+            dropout_rate=dropout_rate,
+            normalization_layer_type=normalization_layer_type,
+        )
+
         # Auto-clamp timesteps if sequence_length is provided
         self._original_timesteps = temporal_contrast_timesteps
         if sequence_length is not None:
-            clamped = _clamp_timesteps(temporal_contrast_timesteps, sequence_length)
+            encoder_out = _tstcc_encoder_output_length(self._encoder, sequence_length, input_dim)
+            clamped = _clamp_timesteps(temporal_contrast_timesteps, encoder_out)
             if clamped != temporal_contrast_timesteps:
                 warnings.warn(
                     f"TSTCC: encoder output length "
-                    f"({_tstcc_encoder_output_length(sequence_length)}) is "
+                    f"({encoder_out}) is "
                     f"<= temporal_contrast_timesteps "
                     f"({temporal_contrast_timesteps}). Clamping timesteps "
                     f"to {clamped}.",
@@ -185,16 +209,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         else:
             self._augmentation = augmentation
 
-        self._encoder = TCCEncoder(
-            input_dim=input_dim,
-            conv_kernel_size=conv_kernel_size,
-            stride=stride,
-            representation_dim=representation_dim,
-            encoder_channels=encoder_channels,
-            encoder_inner_kernels=encoder_inner_kernels,
-            dropout_rate=dropout_rate,
-            normalization_layer_type=normalization_layer_type,
-        )
         self._tc_model = TemporalContrast(
             num_channels=representation_dim,
             hidden_dim=temporal_contrast_hidden_dim,
@@ -231,10 +245,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         # Runtime timesteps clamping (when sequence_length not provided at init)
         if not self._timesteps_warned:
             seq_len = data.shape[1]
-            clamped = _clamp_timesteps(self.temporal_contrast_timesteps, seq_len)
+            encoder_out = _tstcc_encoder_output_length(self._encoder, seq_len, data.shape[2])
+            clamped = _clamp_timesteps(self.temporal_contrast_timesteps, encoder_out)
             if clamped != self.temporal_contrast_timesteps:
                 warnings.warn(
-                    f"TSTCC: encoder output length ({_tstcc_encoder_output_length(seq_len)}) "
+                    f"TSTCC: encoder output length ({encoder_out}) "
                     f"is <= temporal_contrast_timesteps ({self.temporal_contrast_timesteps}). "
                     f"Clamping timesteps to {clamped}.",
                     UserWarning,
@@ -351,8 +366,24 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         - ``B``: batch size
         - ``C``: encoder output channels (``representation_dim``)
-        - ``L'``: conv-downsampled sequence length (``L' = seq_len // stride``)
+        - ``L'``: the encoder's downsampled sequence length. Deliberately not
+          restated as a formula here: it depends on ``conv_kernel_size``,
+          ``stride``, both ``encoder_inner_kernels`` and three pooling stages,
+          and every restatement of that geometry has drifted from the encoder.
+          This line previously read ``L' = seq_len // stride``, which is off by
+          ~8x (seq_len=32, stride=1 gives L'=6, not 32). Call
+          :func:`_tstcc_encoder_output_length`, which probes the encoder.
         """
+        # ponytail: zero-fill only. Padding contaminates the WHOLE feature map, not
+        # just its receptive field: GroupNorm(1, C) reduces over (C, L'), so padded
+        # values enter the norm statistics and shift every output position (measured
+        # 66/66 at seq_len=512, valid=300; 31/66 with the norms stripped). Masking
+        # this pooling would therefore not help — the values are already contaminated
+        # upstream. Real fix is masked normalization across all 3 blocks, which
+        # changes the encoder and invalidates trained checkpoints. Training pools
+        # nothing and contaminates identically, so this is a representation-quality
+        # ceiling, not a correctness bug.
+        batch_x, _ = zero_fill_padding(batch_x)
         features = encoder(batch_x.float())  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
             return features.mean(dim=-1)  # (B, C) — VECTOR

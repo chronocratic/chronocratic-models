@@ -21,6 +21,7 @@ from chronocratic.models.utils import (
     integer_pooling,
     multiscale_pooling,
     process_sliding_window,
+    zero_fill_padding,
 )
 
 
@@ -378,8 +379,11 @@ class PoolingEncodingMixin(BaseEncodingMixin):
         Returns:
             The output tensor after applying the specified pooling strategy.
         """
+        # Zero-fill NaN padding to prevent NaN propagation through encoders
+        # that rely on _process_not_nan_mask multiplication (NaN * 0 = NaN).
+        input_clean, _ = zero_fill_padding(input_tensor)
         output_tensor = self._get_encoder()(
-            x=input_tensor.to(self.device, non_blocking=True), mask_mode=mask
+            x=input_clean.to(self.device, non_blocking=True), mask_mode=mask
         )
 
         if encoding_window == "full_series":
@@ -447,8 +451,10 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
             )
             raise ValueError(msg)
 
+        # Zero-fill NaN padding to prevent NaN propagation through encoders
+        input_clean, _ = zero_fill_padding(input_tensor)
         output_trend_tensor, output_seasonality_tensor = self._get_encoder()(
-            x=input_tensor.to(self.device, non_blocking=True), mask_mode=None
+            x=input_clean.to(self.device, non_blocking=True), mask_mode=None
         )
 
         if encoding_window is None:
