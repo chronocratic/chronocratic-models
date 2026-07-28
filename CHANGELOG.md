@@ -11,6 +11,16 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a16 (2026-07-28)
+
+### Fixed
+
+- fix(models): Series2Vec pretraining alignment and NaN defense: Align Series2Vec pretraining with upstream (Navidfoumani/Series2Vec) and add NaN safeguards to the encode path. ([#76](https://github.com/chronocratic/chronocratic-models/issues/76))
+- fix(models): TimeVAE training collapse — 6 fixes restoring TensorFlow parity: TimeVAE did not learn (val_loss stalled ~160 for 300 epochs) and produced 100% NaN encodes downstream. Five root causes found by cloning and comparing against both the original TensorFlow codebase ([abudesai/timeVAE](https://github.com/abudesai/timeVAE)) and the independent PyTorch port ([wangyz1999/timeVAE-pytorch](https://github.com/wangyz1999/timeVAE-pytorch)). ([#77](https://github.com/chronocratic/chronocratic-models/issues/77))
+- fix(models): align encode() NaN handling with training across 5 models: Align `encode()` and `encode_batch()` NaN handling with the training path for all 5 remaining `BasicEncodingMixin` models. Training already called `zero_fill_padding` via `_step` / `_compute_masked_loss`; inference did not, producing NaN representations for padded series. **TL;DR: Added `zero_fill_padding` guards to `TimeVAE`, `MCL`, `TSTCC`, `TimeNet`, and `RecurrentAE` encoding paths (and `TimeVAE.forward`/`.predict`) so `encode()` on NaN-padded input returns finite vectors instead of NaN. Guard placed in each model's `_encode_batch`, not the mixin, to preserve TST's NaN-derived padding masks.** ([#79](https://github.com/chronocratic/chronocratic-models/issues/79))
+- Add slicing to CoST ([#81](https://github.com/chronocratic/chronocratic-models/issues/81))
+
+
 ## v0.1.0a15 (2026-07-15)
 
 ### Fixed
