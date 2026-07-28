@@ -12,6 +12,11 @@ import pytest
 import torch
 from torch import nn
 
+from chronocratic.models.convolutional.dilated._mixin.encoding import (
+    DecompositionEncodingMixin,
+    PoolingEncodingMixin,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -113,31 +118,37 @@ class TestMixinHierarchy:
 # ---------------------------------------------------------------------------
 
 
+class _PoolingTestModel(PoolingEncodingMixin, nn.Module):  # type: ignore[misc]
+    """Minimal pooling-based model for testing."""
+
+    device: torch.device
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._averaged_encoder = _DummyEncoder(output_dim=64)
+        self.device = torch.device("cpu")
+
+
+class _DecompositionTestModel(DecompositionEncodingMixin, nn.Module):  # type: ignore[misc]
+    """Minimal decomposition-based model for testing."""
+
+    device: torch.device
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.query_encoder = _DecompositionEncoder(output_dim=64)
+        self.device = torch.device("cpu")
+
+
 @pytest.fixture
-def pooling_model() -> nn.Module:
+def pooling_model() -> _PoolingTestModel:
     """Create a minimal pooling-based model for testing."""
-    from chronocratic.models.convolutional.dilated._mixin.encoding import PoolingEncodingMixin
-
-    class _PoolingTestModel(PoolingEncodingMixin, nn.Module):
-        def __init__(self) -> None:
-            super().__init__()
-            self._averaged_encoder = _DummyEncoder(output_dim=64)
-            self.device = torch.device("cpu")
-
     return _PoolingTestModel()
 
 
 @pytest.fixture
-def decomposition_model() -> nn.Module:
+def decomposition_model() -> _DecompositionTestModel:
     """Create a minimal decomposition-based model for testing."""
-    from chronocratic.models.convolutional.dilated._mixin.encoding import DecompositionEncodingMixin
-
-    class _DecompositionTestModel(DecompositionEncodingMixin, nn.Module):
-        def __init__(self) -> None:
-            super().__init__()
-            self.query_encoder = _DecompositionEncoder(output_dim=64)
-            self.device = torch.device("cpu")
-
     return _DecompositionTestModel()
 
 
@@ -149,27 +160,69 @@ def decomposition_model() -> nn.Module:
 class TestPolymorphicDispatch:
     """Verify _get_eval_method and _get_encoder return correct implementations."""
 
-    def test_pooling_get_eval_method_returns_pooling(self, pooling_model: nn.Module) -> None:
+    def test_pooling_get_eval_method_returns_pooling(
+        self, pooling_model: _PoolingTestModel
+    ) -> None:
         method = pooling_model._get_eval_method()
         assert method == pooling_model._evaluate_with_pooling
 
     def test_decomposition_get_eval_method_returns_concat(
-        self, decomposition_model: nn.Module
+        self, decomposition_model: _DecompositionTestModel
     ) -> None:
         method = decomposition_model._get_eval_method()
         assert method == decomposition_model._evaluate_with_feature_concatenation
 
-    def test_pooling_get_slice_returns_real_slice(self, pooling_model: nn.Module) -> None:
+    def test_pooling_get_slice_returns_real_slice(self, pooling_model: _PoolingTestModel) -> None:
         s = pooling_model._get_slice(sliding_padding=10, sliding_length=20)
         assert s == slice(10, 30)
 
-    def test_decomposition_get_slice_returns_none(self, decomposition_model: nn.Module) -> None:
+    def test_decomposition_get_slice_returns_real_slice(
+        self, decomposition_model: _DecompositionTestModel
+    ) -> None:
         s = decomposition_model._get_slice(sliding_padding=10, sliding_length=20)
-        assert s is None
+        assert s == slice(10, 30)
 
-    def test_pooling_get_encoder_returns_averaged_encoder(self, pooling_model: nn.Module) -> None:
+    def test_pooling_get_encoder_returns_averaged_encoder(
+        self, pooling_model: _PoolingTestModel
+    ) -> None:
         encoder = pooling_model._get_encoder()
         assert encoder is pooling_model._averaged_encoder
+
+
+# ---------------------------------------------------------------------------
+# Sliding-window SEQUENCE shape tests (over-emit regression)
+# ---------------------------------------------------------------------------
+
+
+class TestSlidingSequenceShape:
+    """Sliding SEQUENCE encode must preserve the time axis for both mixins.
+
+    Regression for the CoST over-emit bug: DecompositionEncodingMixin ignored the
+    per-window slice, so concatenation produced (sliding_padding + sliding_length)*T
+    timesteps instead of T.
+    """
+
+    @pytest.mark.parametrize("model_fixture", ["pooling_model", "decomposition_model"])
+    def test_sliding_sequence_preserves_time_length(
+        self, model_fixture: str, request: "pytest.FixtureRequest"
+    ) -> None:
+        model = request.getfixturevalue(model_fixture)
+        num_samples, time_len, channels = 2, 8, 3
+        data = torch.randn(num_samples, time_len, channels)
+
+        out = model._compute_sliding_representations(
+            input_tensor=data,
+            sliding_length=1,
+            sliding_padding=3,
+            causal=True,
+            mask=None,
+            encoding_window=None,  # SEQUENCE
+            num_samples=num_samples,
+            batch_size=num_samples,  # >= num_samples avoids the buffering path
+        )
+
+        assert out.shape[0] == num_samples
+        assert out.shape[1] == time_len
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +233,7 @@ class TestPolymorphicDispatch:
 class TestEncodeBehavior:
     """Verify encode() does not mutate instance state and uses polymorphic dispatch."""
 
-    def test_encode_no_state_mutation(self, pooling_model: nn.Module) -> None:
+    def test_encode_no_state_mutation(self, pooling_model: _PoolingTestModel) -> None:
         """encode() should not set self._encoder or self._eval_method."""
         data = torch.randn(2, 10, 3)
         # Ensure these attrs don't exist before encode
@@ -199,7 +252,7 @@ class TestEncodeBehavior:
             "_eval_method" not in pooling_model.__dict__
         ), "encode() should not set self._eval_method instance attribute"
 
-    def test_encode_uses_polymorphic_dispatch(self, pooling_model: nn.Module) -> None:
+    def test_encode_uses_polymorphic_dispatch(self, pooling_model: _PoolingTestModel) -> None:
         """encode() delegates to encode_batch() which calls _get_eval_method()."""
         encode_source = inspect.getsource(pooling_model.encode)
         assert "_get_encoder()" in encode_source or "self._get_encoder" in encode_source
@@ -247,21 +300,25 @@ class TestBugFixes:
 class TestDecompositionValidation:
     """Verify _evaluate_with_feature_concatenation raises for invalid encoding_window."""
 
-    def test_invalid_encoding_window_raises(self, decomposition_model: nn.Module) -> None:
+    def test_invalid_encoding_window_raises(
+        self, decomposition_model: _DecompositionTestModel
+    ) -> None:
         data = torch.randn(2, 10, 3)
         with pytest.raises(ValueError, match="encoding_window"):
             decomposition_model._evaluate_with_feature_concatenation(
                 input_tensor=data, mask=None, slicing=None, encoding_window="multiscale"
             )
 
-    def test_none_encoding_window_ok(self, decomposition_model: nn.Module) -> None:
+    def test_none_encoding_window_ok(self, decomposition_model: _DecompositionTestModel) -> None:
         data = torch.randn(2, 10, 3)
         result = decomposition_model._evaluate_with_feature_concatenation(
             input_tensor=data, mask=None, slicing=None, encoding_window=None
         )
         assert isinstance(result, torch.Tensor)
 
-    def test_full_series_encoding_window_ok(self, decomposition_model: nn.Module) -> None:
+    def test_full_series_encoding_window_ok(
+        self, decomposition_model: _DecompositionTestModel
+    ) -> None:
         data = torch.randn(2, 10, 3)
         result = decomposition_model._evaluate_with_feature_concatenation(
             input_tensor=data, mask=None, slicing=None, encoding_window="full_series"

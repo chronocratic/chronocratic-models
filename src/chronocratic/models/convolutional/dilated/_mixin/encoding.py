@@ -411,6 +411,10 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
     query_encoder: nn.Module
 
     @override
+    def _get_slice(self, sliding_padding: int, sliding_length: int) -> slice | None:
+        return slice(sliding_padding, sliding_padding + sliding_length)
+
+    @override
     def _get_encoder(self) -> nn.Module:
         return self.query_encoder
 
@@ -422,7 +426,7 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         self,
         input_tensor: torch.Tensor,
         mask: "MaskMode | None" = None,  # noqa: ARG002
-        slicing: slice | None = None,  # noqa: ARG002
+        slicing: slice | None = None,
         encoding_window: str | int | None = None,
     ) -> torch.Tensor:
         """Evaluate the model with feature concatenation (trend + seasonality).
@@ -430,7 +434,10 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         Args:
             input_tensor: Input tensor of shape (batch, seq_len, features).
             mask: Unused for decomposition models.
-            slicing: Unused for decomposition models.
+            slicing: Per-window slice applied to the SEQUENCE output. Supplied by
+                the sliding-window loop (``slice(sliding_padding, sliding_padding +
+                sliding_length)``) so each window contributes only its target
+                timesteps; ``None`` for single-forward encoding (a no-op).
             encoding_window: Must be ``None`` or ``'full_series'``.
                 When ``None``, full-sequence concatenation is performed
                 (SEQUENCE output). When ``'full_series'``, last-step
@@ -460,6 +467,9 @@ class DecompositionEncodingMixin(BaseEncodingMixin):
         if encoding_window is None:
             # SEQUENCE: concatenate full sequences along feature dim -> (B, L, 2D)
             output_tensor = torch.cat([output_trend_tensor, output_seasonality_tensor], dim=-1)
+            # Apply the per-window slice so sliding inference emits only the target
+            # timesteps (no-op when slicing is None for single-forward encoding).
+            output_tensor = apply_slicing(tensor=output_tensor, slicing=slicing)
         else:
             # VECTOR: last-step concat -> (B, 1, 2D), squeezed by encode_batch to (B, 2D)
             output_tensor = concat_last_step_features(
