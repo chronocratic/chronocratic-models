@@ -203,7 +203,7 @@ class BaseEncodingMixin(ABC):
         *,
         mask: "MaskMode | None" = None,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
-        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
+        encoding_window: str | int | _EncodingWindowSentinel | None = _encoding_window_unset,
     ) -> torch.Tensor:
         """Encode one batch in a single forward pass (no sliding window).
 
@@ -247,7 +247,7 @@ class BaseEncodingMixin(ABC):
         batch_size: int,
         num_workers: int,
         mask: "MaskMode | None" = None,
-        encoding_window: str | int | None | _EncodingWindowSentinel = _encoding_window_unset,
+        encoding_window: str | int | _EncodingWindowSentinel | None = _encoding_window_unset,
         *,
         causal: bool = False,
         sliding_length: int | None = None,
