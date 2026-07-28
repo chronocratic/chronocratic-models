@@ -120,3 +120,6 @@ showcontent = true
 directory = "security"
 name = "Security"
 showcontent = true
+
+[tool.ty.src]
+exclude = ["tests/"]
