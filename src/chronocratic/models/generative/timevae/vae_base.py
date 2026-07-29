@@ -10,6 +10,7 @@ from torch import nn
 from chronocratic.models.utils import (
     extract_features_from_batch,
     masked_reconstruction_loss_sum,
+    process_sample_length,
     zero_fill_padding,
 )
 
@@ -54,6 +55,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         latent_dim: int,
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
+        max_train_length: int | None = None,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -61,6 +63,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.latent_dim = latent_dim
         self.reconstruction_weight = reconstruction_weight
         self.learning_rate = learning_rate
+        self.max_train_length = max_train_length
         self.sampling = Sampling()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -78,6 +81,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self, batch: torch.Tensor | tuple[torch.Tensor, ...] | list[torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = extract_features_from_batch(batch)
+        x = process_sample_length(sample=x, max_sample_length=self.max_train_length)
         x, keep_mask = zero_fill_padding(x)  # (B, T, C), (B, T)
         z_mean, z_log_var, z = self._encoder(x)
         # Original TF always feeds sampled z to decoder in both train and test.

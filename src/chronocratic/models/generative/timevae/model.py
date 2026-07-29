@@ -211,6 +211,9 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             disables the seasonal branch.
         use_residual_conn: Whether to include the residual ConvTranspose
             branch in the decoder.
+        max_train_length: Maximum sequence length used during training; longer
+            batches are randomly cropped to this length. ``None`` means no
+            cap, which will fail on inputs longer than ``sequence_length``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/abudesai/timeVAE under MIT License.
@@ -253,6 +256,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         trend_poly: int = 0,
         custom_seasonality: tuple[tuple[int, int], ...] | None = None,
         use_residual_conn: bool = True,
+        max_train_length: int | None = None,
     ) -> None:
         super().__init__(
             sequence_length=sequence_length,
@@ -260,6 +264,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             latent_dim=latent_dim,
             reconstruction_weight=reconstruction_weight,
             learning_rate=learning_rate,
+            max_train_length=max_train_length,
         )
         self.save_hyperparameters()
 

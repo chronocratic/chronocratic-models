@@ -35,6 +35,9 @@ class TimeVAEModelParameters:
             disables the seasonal branch.
         use_residual_conn: Whether to include the residual ConvTranspose
             branch in the decoder.
+        max_train_length: Maximum sequence length used during training; longer
+            batches are randomly cropped to this length. ``None`` means no
+            cap, which will fail on inputs longer than ``sequence_length``.
     """
 
     sequence_length: int
@@ -48,3 +51,4 @@ class TimeVAEModelParameters:
     trend_poly: int = 0
     custom_seasonality: tuple[tuple[int, int], ...] | None = None
     use_residual_conn: bool = True
+    max_train_length: int | None = None
