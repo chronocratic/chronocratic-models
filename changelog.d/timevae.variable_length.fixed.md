@@ -1,0 +1,1 @@
+``TimeVAE.encode()`` now accepts inputs of any length. The encoder resamples the temporal axis to a fixed width via ``AdaptiveAvgPool1d`` before the latent projection; inputs of exactly ``sequence_length`` are unaffected. This layer has no counterpart in the reference TimeVAE implementation and is required because one pretrained model must encode multiple forecast window lengths.
