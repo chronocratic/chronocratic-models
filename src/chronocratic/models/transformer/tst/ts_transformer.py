@@ -50,7 +50,8 @@ class FixedPositionalEncoding(nn.Module):
     Args:
         hidden_dim: the embed dim (required).
         dropout_rate: the dropout value (default=0.1).
-        sequence_length: the max. length of the incoming sequence (default=1024).
+        sequence_length: retained for API compatibility; no longer caps input length.
+        scale_factor: multiplicative scale applied to the encoding (default=1.0).
     """  # noqa: D205
 
     def __init__(
@@ -58,38 +59,35 @@ class FixedPositionalEncoding(nn.Module):
         *,
         hidden_dim: int,
         dropout_rate: float = 0.1,
-        sequence_length: int = 1024,
+        sequence_length: int = 1024,  # noqa: ARG002
         scale_factor: float = 1.0,
     ) -> None:
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_rate)
-
-        # positional encoding
-        # device-ok: __init__ buffer
-        pe = torch.zeros(sequence_length, hidden_dim)
-        # device-ok: __init__ buffer
-        position = torch.arange(0, sequence_length, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            # device-ok: __init__ buffer
-            torch.arange(0, hidden_dim, 2).float() * (-math.log(10000.0) / hidden_dim)
-        )
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = scale_factor * pe.unsqueeze(0).transpose(0, 1)
-        self.pe: torch.Tensor
-        self.register_buffer(
-            "pe", pe
-        )  # this stores the variable in the state_dict (used for non-trainable variables)
+        self.hidden_dim = hidden_dim
+        self.scale_factor = scale_factor
 
     def forward(self, x: Tensor) -> Tensor:
-        r"""Inputs of forward function
+        r"""Inputs of forward function.
+
         Args:
             x: the sequence fed to the positional encoder model (required).
+
         Shape:
             x: [sequence length, batch size, embed dim]
             output: [sequence length, batch size, embed dim].
-        """  # noqa: D205
-        x = x + self.pe[: x.size(0), :]
+        """
+        seq_len = x.size(0)
+        position = torch.arange(seq_len, device=x.device, dtype=x.dtype).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, self.hidden_dim, 2, device=x.device, dtype=x.dtype)
+            * (-math.log(10000.0) / self.hidden_dim)
+        )
+        pe = torch.zeros(seq_len, self.hidden_dim, device=x.device, dtype=x.dtype)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(1)
+        x = x + self.scale_factor * pe
         return self.dropout(x)
 
 
