@@ -5,6 +5,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - pyproject.toml
+      - ruff.toml
+      - .pre-commit-config.yaml
       - .vscode/**
 
 jobs:
@@ -53,6 +55,132 @@ jobs:
               // Rolled back since the last flag — clear the warning instead of leaving it stale.
               body = `${marker}\n` +
                 `✅ \`pyproject.toml\` is no longer modified by this PR. Protected-file warning cleared.`;
+            } else {
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  check-ruff:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check ruff.toml
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- protected-files-check:ruff -->';
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const changed = files.find(f => f.filename === 'ruff.toml');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            const baseRef = context.payload.pull_request.base.ref;
+            const docUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}` +
+              `/blob/${baseRef}/docs/contributing.md#protected-project-files`;
+
+            let body;
+            if (changed) {
+              body = `${marker}\n` +
+                `⚠️ **ruff.toml** — Linter Configuration\n\n` +
+                `This PR modifies \`ruff.toml\` (${changed.status}), which controls ` +
+                `ruff linting and formatting rules for all contributors.\n\n` +
+                `Core maintainers should verify:\n` +
+                `- Rule changes don't conflict with CI or pre-commit hooks\n` +
+                `- New ignores don't mask legitimate issues\n` +
+                `- Changes are backward-compatible\n\n` +
+                `See [Contributing](${docUrl}) for policy.`;
+            } else if (existing) {
+              body = `${marker}\n` +
+                `✅ \`ruff.toml\` is no longer modified by this PR. Protected-file warning cleared.`;
+            } else {
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  check-pre-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check .pre-commit-config.yaml
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- protected-files-check:pre-commit -->';
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const changed = files.find(f => f.filename === '.pre-commit-config.yaml');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            const baseRef = context.payload.pull_request.base.ref;
+            const docUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}` +
+              `/blob/${baseRef}/docs/contributing.md#protected-project-files`;
+
+            let body;
+            if (changed) {
+              body = `${marker}\n` +
+                `⚠️ **.pre-commit-config.yaml** — Pre-commit Hooks\n\n` +
+                `This PR modifies \`.pre-commit-config.yaml\` (${changed.status}), which controls ` +
+                `pre-commit hooks run by all contributors locally and in CI.\n\n` +
+                `Core maintainers should verify:\n` +
+                `- New hooks don't conflict with existing tooling (ruff, ty)\n` +
+                `- Hook versions are pinned and compatible\n` +
+                `- Changes don't break the developer workflow\n\n` +
+                `See [Contributing](${docUrl}) for policy.`;
+            } else if (existing) {
+              body = `${marker}\n` +
+                `✅ \`.pre-commit-config.yaml\` is no longer modified by this PR. Protected-file warning cleared.`;
             } else {
               return;
             }
