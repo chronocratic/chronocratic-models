@@ -43,6 +43,25 @@ def _timevae_encoder_output_length(seq_len: int, num_layers: int, stride: int) -
 
 
 class TimeVAEEncoder(nn.Module):
+    """Conv1d encoder producing a fixed-width latent regardless of input length.
+
+    The conv stack is length-agnostic, but ``nn.Flatten`` followed by
+    ``nn.Linear`` is not. An ``nn.AdaptiveAvgPool1d`` resamples the temporal
+    axis to ``pooled_length`` — the conv output at ``sequence_length`` — so the
+    flattened width is constant. Inputs of exactly ``sequence_length`` pass
+    through the pool unchanged.
+
+    Args:
+        sequence_length: Nominal input length. Sets ``pooled_length`` and hence
+            the latent projection width. Inputs of other lengths are resampled
+            to it, not rejected.
+        input_dim: Number of input features (channels).
+        hidden_layer_sizes: Output channel sizes of the successive Conv1d blocks.
+        latent_dim: Dimensionality of the latent space.
+        conv_kernel_size: Kernel size for the encoder Conv1d layers.
+        conv_stride: Stride for the encoder Conv1d layers.
+    """
+
     def __init__(
         self,
         *,
@@ -81,6 +100,17 @@ class TimeVAEEncoder(nn.Module):
                 )
             )
             self.layers.append(nn.ReLU())
+
+        # Resample the temporal axis to a fixed width so the flattened size — and therefore
+        # z_mean / z_log_var — is independent of input length. The target is the conv-stack
+        # output at the nominal sequence_length, which makes this layer an exact identity for
+        # inputs of that length (16 -> 16, one element per bin) and leaves training behaviour
+        # bit-identical. Shorter inputs (e.g. a 96-step forecast window -> 12) are upsampled;
+        # that is expected and adds no information. See spec §4.1-§4.3.
+        self.pooled_length = _timevae_encoder_output_length(
+            sequence_length, len(hidden_layer_sizes), conv_stride
+        )
+        self.layers.append(nn.AdaptiveAvgPool1d(self.pooled_length))
 
         self.layers.append(nn.Flatten())
 
@@ -193,7 +223,9 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
     followed by a latent Gaussian representation.
 
     Args:
-        sequence_length: Length of each input time series sample.
+        sequence_length: Nominal input length. Determines the training crop
+            target and the encoder's fixed pooled width. ``encode()`` accepts
+            inputs of any length; they are resampled to this scale.
         input_dim: Number of input features (channels).
         latent_dim: Dimensionality of the latent space.
         reconstruction_weight: Weight applied to the reconstruction term
