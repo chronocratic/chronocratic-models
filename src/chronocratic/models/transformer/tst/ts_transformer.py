@@ -112,7 +112,16 @@ class LearnablePositionalEncoding(nn.Module):
             x: [sequence length, batch size, embed dim]
             output: [sequence length, batch size, embed dim].
         """  # noqa: D205
-        x = x + self.pe[: x.size(0), :]
+        seq_len = x.size(0)
+        if seq_len > self.pe.size(0):
+            msg = (
+                f"LearnablePositionalEncoding was built for sequence_length={self.pe.size(0)} "
+                f"but received an input of length {seq_len}. Learned position embeddings cannot be "
+                f"extrapolated; either construct the model with a larger sequence_length or set "
+                f"max_train_length to cap the input."
+            )
+            raise ValueError(msg)
+        x = x + self.pe[:seq_len, :]
         return self.dropout(x)
 
 
