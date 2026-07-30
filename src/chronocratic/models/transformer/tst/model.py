@@ -13,7 +13,11 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.transformer.tst.loss import MaskedMSELoss
 from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEncoder
-from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    process_sample_length,
+    zero_fill_padding,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -87,6 +91,9 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
         augmentation: Optional custom augmentation function.
+        max_train_length: Maximum sequence length used during training; longer
+            batches are randomly cropped to this length. ``None`` means no
+            cap, which will fail on inputs longer than ``sequence_length``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
@@ -118,6 +125,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         global_reg: bool = False,
         sync_dist: bool = False,
         augmentation: Callable | None = None,
+        max_train_length: int | None = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -142,6 +150,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         self._masking_ratio = masking_ratio
 
         self._sequence_length = sequence_length
+        self._max_train_length = max_train_length
 
         self._encoder = TSTransformerEncoder(
             input_dim=input_dim,
@@ -235,6 +244,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
 
     def _compute_loss(self, batch: torch.Tensor | tuple | list) -> torch.Tensor:
         x = extract_features_from_batch(batch)
+        x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
         masked_x, targets, target_masks, padding_masks = self._make_masked_inputs(x)
         predictions = self.reconstruct(masked_x, padding_masks)
         combined_mask = target_masks & padding_masks.unsqueeze(-1)

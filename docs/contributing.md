@@ -236,7 +236,7 @@ Source **reference repository code**, not papers. Papers omit implementation det
 
 1. Clone the original implementation's repository.
 2. Check actual constructor defaults and CLI argument defaults.
-3. Document any deliberate divergence in `.planning/audits/`.
+3. Document any deliberate divergence where readers of the code will find it: a comment at the diverging line, the config field's docstring, and a changelog fragment.
 
 ### Hardcoded Constant Extraction
 
@@ -262,6 +262,25 @@ nn.Conv1d(256, 128, kernel_size=3),
 ```
 
 **Out of scope for extraction:** optimizer types, gradient clipping norms, LayerNorm epsilon values, structural invariants (e.g., fixed MaxPool kernel sizes that are part of the architecture definition).
+
+### Runtime-Derived Dimensions
+
+A subtler variant of hardcoding, and one you will usually **inherit rather than write**: a value is not a literal, but is computed once in `__init__` from a constructor argument and baked into a weight tensor's shape. The literal is absent; the rigidity is identical.
+
+```python
+# Upstream pattern — the flattened width is frozen at construction.
+self.layers.append(nn.Flatten())
+self.encoder_last_dense_dim = self._get_last_dense_dim(sequence_length, input_dim)
+self.z_mean = nn.Linear(self.encoder_last_dense_dim, latent_dim)
+```
+
+This compiles, trains, and passes every test that uses the nominal length. It fails the first time a caller passes anything else — which, in this codebase, is the encode path. Reference implementations are written for a single fixed length and have no reason to avoid this; expect it, and patch it during the port. [Input Length Robustness](#input-length-robustness) covers how.
+
+Things to know when you patch:
+
+1. **Weight shapes that depend on `input_dim`, `hidden_dim`, `latent_dim`, or `depth` are fine.** Those are fixed properties of the data or the architecture. A shape that depends on `sequence_length` is the one to remove, because temporal length varies per call.
+2. **Shape probes are not a fix.** A probe like `_get_last_dense_dim` that pushes a dummy tensor through the stack still runs once, at construction, against one length. It is a convenient way to *compute* a fixed dimension — keep it — but it does not make anything length-agnostic on its own. Insert the resampling layer *before* the probe and the probe starts reporting a constant for free.
+3. **Do not call a shape probe from `forward()`** to recompute dimensions at runtime. That allocates new, untrained weights per input length and the resulting representation is noise. Same reason `nn.LazyLinear` is not the answer: it sizes to whichever length arrives first and then fails on every other one, turning a deterministic crash into an order-dependent one.
 
 ### Keyword-Only Signatures
 
@@ -568,3 +587,117 @@ Every model that processes variable-length batches should include tests for:
 - Clean-input regression (no NaN present)
 
 See `tests/unit/test_encode_nan_guard.py` and `tests/unit/test_dilated_nan_encode.py` for examples.
+
+## Input Length Robustness
+
+Reference implementations are written for one fixed input length. This library runs them at several. **Assume every model you port is fixed-length until you have proven otherwise, and budget for patching it** — this is expected porting work, not a defect in the upstream code.
+
+### Why lengths vary
+
+Three distinct length regimes exist in a single experiment run:
+
+| Path | Typical length | Source |
+| --- | --- | --- |
+| Training | full partition (e.g. 36,000 timesteps) | forecasting datamodule in `RAW_SERIES` mode emits one partition per batch |
+| Validation | full partition (e.g. 11,520) | same |
+| Encoding | forecast windows (e.g. 96, 168, 336) | one length per forecast case, all encoded by **one** model instance |
+
+The nominal `sequence_length` may match none of them. A model is pretrained once and then reused across every forecast case, so per-case reconstruction is not available as an escape hatch — the encoder must absorb the variation.
+
+### Step 1 — audit the port
+
+Before writing tests, read the upstream code for the constructs below.
+
+Length-agnostic by construction — leave alone:
+
+- `Conv1d` / `ConvTranspose1d`, dilated or not — kernels slide over any length.
+- Attention and `nn.TransformerEncoder` — but see the cost note below.
+- `nn.Linear` applied **per timestep**, i.e. mapping the feature axis (`Linear(input_dim, hidden_dim)` on a `(B, T, C)` tensor).
+- Pooling with a computed kernel (`full_series_pooling`, `multiscale_pooling` in `models/utils`).
+
+Needs patching — each of these is a latent crash:
+
+| Construct | Patch |
+| --- | --- |
+| `nn.Flatten()` → `nn.Linear` — flattened width scales with `T` | Resample the temporal axis first ([Pattern B](#pattern-b--resample-the-temporal-axis-timevae)) |
+| `register_buffer("pe", torch.zeros(sequence_length, ...))` and other position-indexed buffers | Compute analytically in `forward()` ([Pattern A](#pattern-a--compute-analytically-in-forward-tst)) |
+| Learned position embeddings (`nn.Parameter` per position) | Cannot extrapolate — raise, don't interpolate ([Pattern C](#pattern-c--raise-when-the-limit-is-inherent-tst)) |
+| `nn.Linear` whose `in_features` came from `sequence_length` | [Runtime-Derived Dimensions](#runtime-derived-dimensions) |
+| Reshapes with a literal temporal extent (`x.view(B, sequence_length, -1)`) | Derive from `x.size(...)` |
+
+Two traps worth naming explicitly:
+
+- **Silent truncation.** `self.pe[: x.size(0)]` raises a broadcast error on an over-long input, but on an *under*-long input it quietly returns a shorter slice and the forward pass succeeds with wrong values. A model can pass its tests while being wrong in one direction only. Prefer constructions that cannot half-work.
+- **Length-agnostic ≠ length-safe.** Self-attention is O(T²) in time and memory. At `T = 11,520` one attention matrix holds ~1.33 × 10⁸ entries — ~530 MB in fp32, multiplied by heads and layers. Removing a shape limit from a transformer converts a shape error into an out-of-memory error. Transformers need a training-path cap regardless.
+
+### Step 2 — apply the patch patterns
+
+Three patterns cover everything encountered so far. Both worked examples live in the tree; read them before inventing a fourth.
+
+#### Pattern A — compute analytically in `forward()` (TST)
+
+When upstream pre-allocates a table that a closed-form expression could produce, drop the table.
+
+`FixedPositionalEncoding` (`transformer/tst/ts_transformer.py`) originally built a
+`(sequence_length, 1, hidden_dim)` buffer in `__init__`. The sinusoidal formula is closed-form, so the buffer was only ever a cache — and one that silently imposed a ceiling. It now builds `position` and `div_term` inside `forward()` from `x.size(0)`, on `x.device` with `x.dtype` (see [Device Compatibility](#device-compatibility-cpu-cuda-mps)).
+
+Cost: recomputation per forward, which is negligible next to attention. Benefit: no ceiling, and the under-long silent-truncation path disappears. This is *more* faithful to the paper than the cache was — the paper defines a formula; the table was an implementation detail that narrowed it.
+
+#### Pattern B — resample the temporal axis (TimeVAE)
+
+When a layer structurally requires a fixed temporal width, insert `nn.AdaptiveAvgPool1d(target)` immediately before it.
+
+`TimeVAEEncoder` (`generative/timevae/model.py`) flattens its conv stack into `nn.Linear(encoder_last_dense_dim, latent_dim)`, so the flattened width — and therefore the weight shape — scaled with input length. The pool resamples the temporal axis to a constant number of ordered slots, holding the flattened width fixed at any input length.
+
+Choose `target` as **the conv-stack output at the nominal `sequence_length`**. That makes the layer an exact identity at that length (16 elements into 16 bins is one element per bin), so training behavior is bit-identical and existing checkpoints keep their shapes. That identity property is what makes the patch safe to land, and §Testing turns it into an assertion.
+
+Do not reach for global mean/max pooling instead. Collapsing the temporal axis to width 1 makes a spike at the start indistinguishable from one at the end — it compiles, the suite stays green, and the model quietly stops being the model whose name it carries.
+
+#### Pattern C — raise when the limit is inherent (TST)
+
+Some limits cannot be patched away. `LearnablePositionalEncoding` stores one *learned* vector per position; there is no principled value for position 5,000 when the model only ever trained on 0–127. Interpolating fabricates weights and silently changes what the model represents.
+
+It now raises a `ValueError` naming both lengths and the remedy. Failing loudly is the correct outcome — the alternative is a number that looks fine and means nothing.
+
+### Step 3 — cap the training path
+
+Patching the model handles *shape*. It does not handle *cost*: a patched transformer will still exhaust memory on a 36,000-timestep partition. Add a `max_train_length` parameter and apply the shared helper in `training_step` (or the shared loss helper, if the model has one):
+
+```python
+x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
+```
+
+- Apply it as the **first** operation on the batch — before mask construction, before `zero_fill_padding` — or masks desynchronize from the cropped tensor.
+- **Default to `None`**, a documented no-op, so adding the parameter cannot perturb a working configuration. Let the consuming pipeline set the value.
+- **Never crop inside `encode()`.** `encode()` must be deterministic (identical input → identical representation) and must return one representation per input series; `process_sample_length` draws a *random* window. Inference-path length handling is chunked windowing, which is a separate design.
+
+TS2Vec, CoST, AutoTCL, TST, and TimeVAE all follow this.
+
+### Testing
+
+Every model must have tests covering:
+
+- **Encode at several non-nominal lengths** — shorter and longer than `sequence_length`, using **one model instance across all lengths in a single test body**. A fresh model per parametrized case does not exercise the reuse pattern that actually breaks.
+- **Identity/regression at the nominal length** — if a resampling or dynamic-computation layer was added, assert the output at `sequence_length` is unchanged (exact equality where the operation is arithmetically a no-op). This is what licenses the change: a layer that cannot alter any currently working path cannot regress one.
+- **Long-input training** — a batch many times `sequence_length` through `training_step`, asserting a finite scalar loss with `requires_grad`.
+- **Gradient flow at a non-nominal length** — `encode_batch` is differentiable and the adversarial-attack path depends on it.
+
+See `tests/unit/test_long_input_crop.py` for examples.
+
+### Record the divergence
+
+Every patch here is a deliberate departure from the reference implementation, and a research codebase that loses track of those loses track of what its numbers mean. Each one needs:
+
+- A code comment at the patched layer stating what it does and why the reference lacks it.
+- A note in the commit body and the changelog fragment.
+- The class docstring, when the patch changes what a constructor argument means. `sequence_length` on a patched model no longer means "the only length this accepts" — say so where the reader will look.
+
+When a patch could alter what representations mean, write the rationale down before landing it. Passing tests are not sufficient evidence on their own: the failure mode here is a change that keeps every test green while quietly redefining the model.
+
+Current divergences and known limits:
+
+- **TimeVAE** — `nn.AdaptiveAvgPool1d` before the `Flatten`, so the latent projection width is constant. No counterpart in the reference; required because one pretrained model encodes several forecast window lengths. Exact identity at the nominal `sequence_length`.
+- **TST** — positional encoding computed in `forward()` rather than cached. Numerically identical to the reference at any length the reference supported.
+- **TST, open limit** — encoding at full-partition lengths is length-*correct* but O(T²) in memory and will exhaust it before raising. Chunked windowing is an open follow-up.
+- **`process_sample_length`, open limit** — uses `np.random.default_rng()` per call, so it is not controlled by `lightning.seed_everything` and training crops are not reproducible across runs. Shared by TS2Vec, CoST, AutoTCL, TST, and TimeVAE.
+- **Pretrain/encode length mismatch, open question** — a model pretrained on crops of one length and used to encode windows of another is mechanically valid after patching, but whether representation quality holds across lengths is empirical. Worth measuring before publishing numbers.

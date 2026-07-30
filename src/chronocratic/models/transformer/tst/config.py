@@ -58,6 +58,9 @@ class TSTModelParameters:
             distributed processes.
         augmentation: Optional custom augmentation function. Defaults to
             ``None`` (no augmentation applied).
+        max_train_length: Maximum sequence length used during training; longer
+            batches are randomly cropped to this length. ``None`` means no
+            cap, which will fail on inputs longer than ``sequence_length``.
     """
 
     input_dim: int
@@ -79,3 +82,4 @@ class TSTModelParameters:
     global_reg: bool = False
     sync_dist: bool = False
     augmentation: Callable | None = None
+    max_train_length: int | None = None
