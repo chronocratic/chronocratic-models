@@ -11,6 +11,15 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a17 (2026-07-30)
+
+### Fixed
+
+- **TST:** `FixedPositionalEncoding` now computes sinusoidal encoding analytically at forward time instead of reading a pre-allocated buffer, removing the silent-truncation hazard when input length exceeds `sequence_length`. `LearnablePositionalEncoding` raises a clear `ValueError` on overlong input instead of broadcasting. Both TST and TimeVAE gain `max_train_length: int | None = None` — when set, long training batches are randomly cropped via `process_sample_length`, matching TS2Vec/CoST/AutoTCL behavior.
+
+  **TimeVAE:** `TimeVAEEncoder` now accepts inputs of any length at inference time. An `nn.AdaptiveAvgPool1d` layer resamples the conv stack output to a fixed temporal width before `nn.Flatten`, so the latent `nn.Linear` layers work regardless of input T. Exact identity at the nominal `sequence_length`; no training behavior change. This pool layer has no counterpart in the reference TimeVAE implementation and is required because one pretrained model must encode multiple forecast window lengths. ([#84](https://github.com/chronocratic/chronocratic-models/issues/84))
+
+
 ## v0.1.0a16 (2026-07-28)
 
 ### Fixed
