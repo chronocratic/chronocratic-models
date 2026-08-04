@@ -1,3 +1,10 @@
+"""Normalized temperature-scaled cross entropy (NT-Xent) loss.
+
+Shared across models. Introduced by SimCLR and reused by TS-TCC for its
+contextual contrasting term, so it lives in the shared losses package rather
+than in either model's directory.
+"""
+
 __all__ = ["NTXentLoss"]
 
 import torch
