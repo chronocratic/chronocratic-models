@@ -30,6 +30,20 @@ Temporal contrastive clustering for representation learning.
    :show-inheritance:
 ```
 
+## SimCLR
+
+Instance-level contrastive learning: a ResNet-1D backbone, a projection head, and NT-Xent over two augmented views.
+
+```{eval-rst}
+.. automodule:: chronocratic.models.convolutional.standard.simclr.model
+   :members:
+   :show-inheritance:
+
+.. automodule:: chronocratic.models.convolutional.standard.simclr.config
+   :members:
+   :show-inheritance:
+```
+
 ## FCN (MCL)
 
 Multi-scale contrastive learning with a minimal FCN architecture.

@@ -390,6 +390,7 @@ Existing examples in the codebase:
 - Dilated encoders — `transpose(1, 2)` in `_common_forward()`
 - `FCNEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
 - `TCCEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
+- `ResNet1dEncoder.forward()` — `transpose(1, 2)` at entry
 
 ### Augmentation Axes
 
@@ -425,10 +426,11 @@ Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as
 | TimeVAE | Yes | No | VECTOR only |
 | AutoTCL | Yes | Yes | Both via pooling |
 | TSTCC | Yes | Yes | SEQUENCE via `_warn_sequence_fallback` + `unsqueeze(1)` |
+| SimCLR | Yes | Yes | SEQUENCE via `_warn_sequence_fallback` + `unsqueeze(1)` |
 | Series2Vec | Yes | Yes | Both supported |
 | RecurrentAutoEncoder | Yes | Yes | Both supported |
 
-> Models that list `SEQUENCE=Yes` but are not natively sequence-producing (MCL, TSTCC)
+> Models that list `SEQUENCE=Yes` but are not natively sequence-producing (MCL, TSTCC, SimCLR)
 > issue a `_warn_sequence_fallback` and return `(B, 1, D)` by unsqueezing the vector.
 > `supported_outputs` is the authoritative declaration; check that attribute on the model class.
 
@@ -436,7 +438,7 @@ Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as
 
 Two mixin families serve different encoder topologies:
 
-1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, TSTCC, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
+1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, TSTCC, SimCLR, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
 
 2. **`BaseEncodingMixin`** (`convolutional/dilated/_mixin/encoding.py`) — Dilated conv models (TS2Vec, AutoTCL, CoST) with sliding-window inference, multi-scale pooling, and mask-mode handling. Subclasses override `_get_encoder()`, `_get_eval_method()`, and `_get_slice()`. Specialized mixins extend the base: `PoolingEncodingMixin` (TS2Vec, AutoTCL) and `DecompositionEncodingMixin` (CoST).
 
@@ -517,7 +519,7 @@ labels = torch.eye(k - 1, dtype=torch.float32).to(z1.device)  # CPU allocation t
 
 Every loss function must derive its working device from its first tensor argument. Tensors created inside `forward()` or loss computation must use `device=input.device`.
 
-**Gold standard pattern:** `NTXentLoss._correlated_mask()` in `tstcc/losses.py`:
+**Gold standard pattern:** `NTXentLoss._correlated_mask()` in `losses/ntxent.py`:
 ```python
 mask = ~torch.eye(n, dtype=torch.bool, device=device)
 idx = torch.arange(batch_size, device=device)
@@ -698,6 +700,32 @@ Current divergences and known limits:
 
 - **TimeVAE** — `nn.AdaptiveAvgPool1d` before the `Flatten`, so the latent projection width is constant. No counterpart in the reference; required because one pretrained model encodes several forecast window lengths. Exact identity at the nominal `sequence_length`.
 - **TST** — positional encoding computed in `forward()` rather than cached. Numerically identical to the reference at any length the reference supported.
+- **SimCLR** — ported as a 1-D ResNet. The reference stacks `Conv2d` over an input unsqueezed to `(B, C, T, 1)`, where the outer kernel columns only ever see zero padding; the `Conv1d` stack is numerically identical (asserted at stride 1 and 2 in `tests/unit/test_simclr.py`), as is `BatchNorm1d` against the reference's `BatchNorm2d` on that axis. Five further departures, each commented at its line: each encoder stage honours its own configured depth, where the reference repeats the third stage's index in place of the fourth; the learning rate follows the *original* SimCLR's linear warmup into cosine annealing ([google-research/simclr](https://github.com/google-research/simclr) `WarmUpAndCosineDecay`) rather than the reference's `ExponentialLR(gamma=1e-6)`, which reaches `1e-15` within two epochs and would suppress training; normalization defaults to `GroupNorm(1, C)` rather than hardcoded `BatchNorm`, so the encoder remains well-defined at `batch_size=1`; the default augmentation draws a per-sample scale factor, the reference's single shared factor being meaningful only for its offline whole-corpus augmentation; and that factor uses `sigma=0.1` rather than the `sigma=1.1` the reference's `DataTransform` passes, since `N(1.0, 1.1)` places a substantial fraction of its mass below zero and those draws invert the sign of the series, leaving the two views describing different signals. `0.1` is the default of the reference's own `scaling()`, overridden only by `DataTransform`, and that module documents the intended range as `[0.1, 2.0]`.
+- **SimCLR, open limit** — the model is sensitive to the ratio between its capacity and the number of optimizer steps a run affords. The default configuration is a ResNet-50-scale backbone; where that ratio is unfavourable it can remain far from convergence, in which case a randomly-initialised backbone may match or exceed a trained one under a linear probe and repeated runs of one configuration disagree. The learning-rate schedule reduces this sensitivity without removing it, and the contributing causes — nondeterministic kernel selection versus undertraining — have not been separated. Callers can pin the former through `Trainer(deterministic=True)`.
 - **TST, open limit** — encoding at full-partition lengths is length-*correct* but O(T²) in memory and will exhaust it before raising. Chunked windowing is an open follow-up.
 - **`process_sample_length`, open limit** — uses `np.random.default_rng()` per call, so it is not controlled by `lightning.seed_everything` and training crops are not reproducible across runs. Shared by TS2Vec, CoST, AutoTCL, TST, and TimeVAE.
 - **Pretrain/encode length mismatch, open question** — a model pretrained on crops of one length and used to encode windows of another is mechanically valid after patching, but whether representation quality holds across lengths is empirical. Worth measuring before publishing numbers.
+
+#### SimCLR — parameter names vs. the reference
+
+Ported parameters are renamed to this library's canonical vocabulary (see
+*Canonical Hyperparameter Names*), so a reviewer comparing against ULTS needs
+the mapping. Nothing below changes behaviour; these are renames only.
+
+| this library | ULTS (`models/SimCLR/models.py`) | why renamed |
+|---|---|---|
+| `input_dim` | `in_channels` | canonical name for input feature count |
+| `stem_conv_channels` | (inline `64` in `self.conv1`) | was a literal; named for the layer it configures |
+| `encoder_stage_channels` | (inline `64,128,256,512` in `layer_block`) | were literals; `stage` distinguishes these from TS-TCC's per-block `encoder_channels` |
+| `encoder_stage_depths` | `layers` | `layers` reads as modules rather than counts; `depth` is the canonical term for a layer count |
+| `encoder_stage_strides` | (inline `1,2,2,2` in `layer_block`) | were literals |
+| `residual_block_type` | `block` | `block` suggests an instance; this selects a *type* |
+| `projection_dim` | `num_features` | `num_features` is ambiguous with `input_dim`; this is the projection width |
+| `projection_hidden_dim` | (inline `512` in `learning_head`) | was a literal |
+| `conv_kernel_size` | `kernel_size` | canonical name (`kernel_size` is explicitly discouraged) |
+| `normalization_layer_type` | (hardcoded `nn.BatchNorm2d`) | made configurable; see the divergence entry above |
+| `temperature` | `tau` | spelled out |
+| `use_lr_scheduler`, `warmup_epochs` | (no equivalent) | new; the reference's scheduler suppresses training |
+
+The reference also exposes `reparam` and a `linear` head that this port omits:
+both belong to a variational variant that its SimCLR path never uses.
