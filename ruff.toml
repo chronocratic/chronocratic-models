@@ -4,6 +4,7 @@ line-length = 100
 target-version = "py312"
 extend-exclude = [
     "_version.py",
+    "changelog.d/",
     "dependencies",
     "experiments_output",
     "src/chronocratic/models/utils/distances/soft_dtw/soft_dtw_cuda.py",

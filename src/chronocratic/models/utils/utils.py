@@ -1,6 +1,7 @@
 __all__ = [
     "apply_slicing",
     "concat_last_step_features",
+    "ensure_pairable_batch",
     "extract_features_from_batch",
     "full_series_pooling",
     "generate_not_nan_mask",
@@ -42,6 +43,40 @@ def extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Ten
         return batch[0]
     msg = f"Unsupported batch format; {type(batch)}"
     raise ValueError(msg)
+
+
+def ensure_pairable_batch(
+    x: torch.Tensor, *, split_count: int = 3, min_window_len: int = 1
+) -> torch.Tensor:
+    """Split a singleton ``(1, L, C)`` batch into K windows for pairwise loss.
+
+    Contrastive and pairwise objectives are defined relative to the other members
+    of the batch: with ``B == 1`` there are no negatives, the loss is a constant,
+    and the gradient is exactly zero — the model trains and learns nothing. A
+    single long series can be re-batched into contiguous, non-overlapping windows,
+    which are genuinely different signals and therefore usable as negatives.
+
+    Trailing timesteps that do not fill a whole window are dropped rather than
+    padded: padding would inject identical fabricated values into every window and
+    create spurious similarity in exactly the loss this is meant to repair.
+
+    Args:
+        x: Input batch of shape ``(B, L, C)``.
+        split_count: Number of windows ``K`` to cut the singleton into.
+        min_window_len: Smallest acceptable window length. When ``L // K`` falls
+            below this, the split is skipped and ``x`` is returned unchanged, so
+            the caller's own degenerate-case handling stays in charge.
+
+    Returns:
+        ``(K, L // K, C)`` when ``x`` is a splittable singleton, otherwise ``x``
+        unchanged. Always a no-op when ``B > 1``.
+    """
+    if x.size(0) != 1:
+        return x
+    window_len = x.size(1) // split_count
+    if window_len < min_window_len:
+        return x
+    return x[0, : split_count * window_len].reshape(split_count, window_len, x.size(2))
 
 
 def process_sample_length(

@@ -15,7 +15,6 @@ import torch
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
 
-
 # --------------------------------------------------------------------------- #
 # Fixtures
 # --------------------------------------------------------------------------- #

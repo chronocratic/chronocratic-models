@@ -9,13 +9,13 @@ Verifies:
 6. NaN defense in _step with masked reconstruction loss.
 """
 
+import warnings
+
 import pytest
 import torch
-import warnings
 
 from chronocratic.models import TimeVAE
 from chronocratic.models.generative.timevae.model import _timevae_encoder_output_length
-
 
 # ---------------------------------------------------------------------------
 # Task 1 / Task 2: Encoder output length + auto-clamp
@@ -41,7 +41,8 @@ class TestEncoderOutputLengthFormula:
     ) -> None:
         result = _timevae_encoder_output_length(seq_len, num_layers, stride)
         assert result == expected, (
-            f"encoder_output_length({seq_len}, {num_layers}, {stride}) = {result}, expected {expected}"
+            f"encoder_output_length({seq_len}, {num_layers}, {stride}) "
+            f"= {result}, expected {expected}"
         )
 
     def test_exported_from_model_module(self) -> None:
@@ -161,7 +162,7 @@ class TestTimeVAENaNDefense:
         # Sample 1: last 8 timesteps are NaN
         batch[1, 8:, :] = float("nan")
 
-        loss, recon_loss, kl_loss = model._step(batch)
+        loss, _, _ = model._step(batch)
 
         assert torch.isfinite(loss), f"Total loss is not finite: {loss}"
 
@@ -171,6 +172,6 @@ class TestTimeVAENaNDefense:
         model.train()
 
         batch = torch.randn(2, 16, 3)
-        loss, recon_loss, kl_loss = model._step(batch)
+        loss, _, _ = model._step(batch)
 
         assert torch.isfinite(loss), f"Total loss is not finite: {loss}"

@@ -57,6 +57,9 @@ class TSTCCModelParameters:
             at batch_size=1. ``BATCH`` uses BatchNorm1d.
         augmentation: Custom augmentation producer. Defaults to
             ``None``, which uses standard TSTCC pair augmentation at model init.
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for contrastive loss computation. Defaults
+            to ``3`` to ensure sufficient negatives at ``batch_size=1``.
     """
 
     input_dim: int
@@ -78,6 +81,7 @@ class TSTCCModelParameters:
     sync_dist: bool = False
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
     augmentation: AugmentationProducer[ViewPair] | None = None
+    singleton_split_count: int = 3
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""

@@ -14,12 +14,21 @@ from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
+from chronocratic.models.utils import (
+    ensure_pairable_batch,
+    extract_features_from_batch,
+    zero_fill_padding,
+)
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRScheduler
 
     from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
+
+
+# Minimum windows to split a singleton batch into: 2 gives the weakest
+# non-degenerate batch (exactly one negative pair).
+_MIN_SINGLETON_SPLIT_COUNT = 2
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +135,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         augmentation: Optional custom augmentation producer. Defaults to
             the standard TSTCC pair (Gaussian scaling + segment permutation
             with jitter).
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for contrastive loss computation.
+            Defaults to ``3`` to ensure sufficient negatives at
+            ``batch_size=1``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -154,16 +167,22 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
         sequence_length: int | None = None,
+        singleton_split_count: int = 3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
         self.automatic_optimization = False
 
+        if singleton_split_count < _MIN_SINGLETON_SPLIT_COUNT:
+            msg = f"singleton_split_count must be >= 2, got {singleton_split_count}"
+            raise ValueError(msg)
         self._learning_rate = learning_rate
         self._temporal_loss_weight = temporal_loss_weight
         self._contextual_loss_weight = contextual_loss_weight
         self._weight_decay = weight_decay
         self._sync_dist = sync_dist
+        self._conv_kernel_size = conv_kernel_size
+        self._singleton_split_count = singleton_split_count
 
         # Built before the clamp below, which probes it for its real output length.
         self._encoder = TCCEncoder(
@@ -177,8 +196,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             normalization_layer_type=normalization_layer_type,
         )
 
-        # Auto-clamp timesteps if sequence_length is provided
-        self._original_timesteps = temporal_contrast_timesteps
+        # Auto-clamp timesteps if sequence_length is provided (diagnostic, not
+        # a correctness requirement — TemporalContrast.forward clamps at runtime).
         if sequence_length is not None:
             encoder_out = _tstcc_encoder_output_length(self._encoder, sequence_length, input_dim)
             clamped = _clamp_timesteps(temporal_contrast_timesteps, encoder_out)
@@ -195,10 +214,6 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             temporal_contrast_timesteps = clamped
 
         self.temporal_contrast_timesteps = temporal_contrast_timesteps
-        self._timesteps_warned = sequence_length is not None
-        # Store for potential runtime _tc_model reconstruction
-        self._tc_hidden_dim = temporal_contrast_hidden_dim
-        self._tc_normalization_layer_type = normalization_layer_type
 
         if augmentation is None:
             from chronocratic.models.convolutional.standard.tstcc.augmentations import (  # noqa: PLC0415
@@ -242,27 +257,13 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         # NaN defense: zero-fill padded timesteps before augmentation
         data, _ = zero_fill_padding(data)
 
-        # Runtime timesteps clamping (when sequence_length not provided at init)
-        if not self._timesteps_warned:
-            seq_len = data.shape[1]
-            encoder_out = _tstcc_encoder_output_length(self._encoder, seq_len, data.shape[2])
-            clamped = _clamp_timesteps(self.temporal_contrast_timesteps, encoder_out)
-            if clamped != self.temporal_contrast_timesteps:
-                warnings.warn(
-                    f"TSTCC: encoder output length ({encoder_out}) "
-                    f"is <= temporal_contrast_timesteps ({self.temporal_contrast_timesteps}). "
-                    f"Clamping timesteps to {clamped}.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                self.temporal_contrast_timesteps = clamped
-                self._tc_model = TemporalContrast(
-                    num_channels=self._encoder.representation_dim,
-                    hidden_dim=self._tc_hidden_dim,
-                    timesteps=clamped,
-                    normalization_layer_type=self._tc_normalization_layer_type,
-                )
-            self._timesteps_warned = True
+        # B == 1 (single long forecasting series) makes both loss terms degenerate:
+        # NT-Xent sees no negatives and TemporalContrast's log-softmax runs over a
+        # 1x1 matrix, so each returns exactly 0.0 with a zero gradient. Re-batching
+        # the series into contiguous windows restores a real training signal.
+        data = ensure_pairable_batch(
+            data, split_count=self._singleton_split_count, min_window_len=self._conv_kernel_size
+        )
 
         pair = self._augmentation.produce(data)
         aug1, aug2 = pair.first, pair.second

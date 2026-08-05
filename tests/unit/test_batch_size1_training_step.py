@@ -9,12 +9,15 @@ We test _calculate_loss / _compute_loss / _step directly since training_step
 requires a Lightning Trainer.
 """
 
+import warnings
+
 import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.mcl.model import MCL
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 
 
 class TestSeries2VecLossBatchSize1:
@@ -115,6 +118,74 @@ class TestTSTCCLossBatchSize1:
         loss = model._compute_loss(batch)
         assert torch.isfinite(loss), f"Loss is {loss}"
 
+    def test_batch_size_1_produces_nonzero_loss(self, model: TSTCC) -> None:
+        """B=1 should produce a nonzero loss after the singleton-split fix."""
+        model.train()
+        x = torch.randn(1, 300, 3)
+        batch = (x, torch.zeros(1, dtype=torch.long))
+        loss = model._compute_loss(batch)
+        assert loss.item() != 0.0, "Loss is exactly 0.0 — contrastive objectives are degenerate"
+        assert torch.isfinite(loss)
+
+    def test_batch_size_1_produces_encoder_gradient(self, model: TSTCC) -> None:
+        """Regression test: B=1 should produce nonzero encoder gradients."""
+        model.train()
+        x = torch.randn(1, 300, 3)
+        batch = (x, torch.zeros(1, dtype=torch.long))
+        loss = model._compute_loss(batch)
+        loss.backward()
+        grads = [p.grad for p in model._encoder.parameters() if p.grad is not None]
+        assert grads, "no encoder parameter received a gradient"
+        assert any(torch.any(g != 0) for g in grads), "encoder gradient is all zeros"
+
+    def test_temporal_contrast_receives_gradient(self, model: TSTCC) -> None:
+        """TemporalContrast sub-net should receive gradients at B=1."""
+        model.train()
+        x = torch.randn(1, 300, 3)
+        batch = (x, torch.zeros(1, dtype=torch.long))
+        loss = model._compute_loss(batch)
+        loss.backward()
+        grads = [p.grad for p in model._tc_model.parameters() if p.grad is not None]
+        assert grads, "no tc_model parameter received a gradient"
+        assert any(torch.any(g != 0) for g in grads), "tc_model gradient is all zeros"
+
+    def test_short_series_does_not_crash(self, model: TSTCC) -> None:
+        """Very short input should not crash — TemporalContrast clamps at runtime."""
+        model.train()
+        x = torch.randn(1, 12, 3)
+        batch = (x, torch.zeros(1, dtype=torch.long))
+        loss = model._compute_loss(batch)
+        assert torch.isfinite(loss)
+        loss.backward()
+
+    def test_tc_model_identity_is_stable_across_batches(self, model: TSTCC) -> None:
+        """_tc_model must never be rebuilt mid-training (optimizer safety)."""
+        model.train()
+        tc_ref = model._tc_model
+
+        # First batch
+        loss1 = model._compute_loss((torch.randn(1, 300, 3), torch.zeros(1, dtype=torch.long)))
+        loss1.backward()
+        model.zero_grad()
+
+        # Second batch with different length
+        loss2 = model._compute_loss((torch.randn(2, 150, 3), torch.zeros(2, dtype=torch.long)))
+        loss2.backward()
+
+        assert model._tc_model is tc_ref, "_tc_model was rebuilt — optimizer is orphaned"
+
+    def test_batch_size_gt_1_is_unchanged(self, model: TSTCC) -> None:
+        """B>1 should work as before (no-op path)."""
+        model.train()
+        x = torch.randn(4, 100, 3)
+        batch = (x, torch.zeros(4, dtype=torch.long))
+        loss = model._compute_loss(batch)
+        assert torch.isfinite(loss)
+        loss.backward()
+        grads = [p.grad for p in model._encoder.parameters() if p.grad is not None]
+        assert grads, "no encoder parameter received a gradient"
+        assert any(torch.any(g != 0) for g in grads), "encoder gradient is all zeros"
+
 
 class TestMCLLossBatchSize1:
     """MCL uses MixUpLoss — z_1==z_2==z_aug at B=1, gradient flows."""
@@ -137,3 +208,55 @@ class TestMCLLossBatchSize1:
         x = torch.randn(1, 50, 3, requires_grad=True)
         loss = model._step(x)
         assert torch.isfinite(loss), f"Loss is {loss}"
+
+
+class TestTemporalContrastTimestepClamping:
+    """TemporalContrast should clamp effective horizon at runtime."""
+
+    @pytest.fixture
+    def tc(self) -> TemporalContrast:
+        return TemporalContrast(num_channels=16, hidden_dim=32, timesteps=6)
+
+    def test_short_seq_len_degrades_gracefully(self, tc: TemporalContrast) -> None:
+        """seq_len=3 < timesteps=6 should clamp and return finite loss."""
+        f1 = torch.randn(2, 16, 3)
+        f2 = torch.randn(2, 16, 3)
+        with pytest.warns(UserWarning, match="prediction timesteps"):
+            nce, proj = tc(f1, f2)
+        assert torch.isfinite(nce), f"Loss is {nce}"
+        assert proj.shape == (2, 4)
+
+    def test_clamp_warns_once(self, tc: TemporalContrast) -> None:
+        """The clamp warning fires once per instance, not once per batch."""
+        f1 = torch.randn(2, 16, 3)
+        f2 = torch.randn(2, 16, 3)
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            tc(f1, f2)
+            tc(f1, f2)
+        clamp_warnings = [w for w in record if "prediction timesteps" in str(w.message)]
+        assert len(clamp_warnings) == 1, (
+            f"expected 1 warning across 2 calls, got {len(clamp_warnings)}"
+        )
+
+    def test_no_warning_when_horizon_fits(self, tc: TemporalContrast) -> None:
+        """seq_len comfortably above timesteps must stay silent."""
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            tc(torch.randn(2, 16, 25), torch.randn(2, 16, 25))
+        assert not record, f"unexpected warnings: {[str(w.message) for w in record]}"
+
+    def test_seq_len_1_raises(self, tc: TemporalContrast) -> None:
+        """seq_len=1 should raise ValueError — cannot predict future."""
+        with pytest.raises(ValueError, match="seq_len"):
+            tc(torch.randn(1, 16, 1), torch.randn(1, 16, 1))
+
+    def test_long_seq_len_unchanged(self, tc: TemporalContrast) -> None:
+        """seq_len >> timesteps should behave as before (no regression)."""
+        torch.manual_seed(42)
+        f1 = torch.randn(2, 16, 25)
+        f2 = torch.randn(2, 16, 25)
+        nce, _ = tc(f1, f2)
+        assert torch.isfinite(nce)
+        # Loss should be nonzero with random features at B=2
+        assert nce.item() != 0.0

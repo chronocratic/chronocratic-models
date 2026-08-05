@@ -12,7 +12,6 @@ in a Lightning Trainer.
 
 from __future__ import annotations
 
-import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -144,8 +143,8 @@ def test_nan_padded_training_step_ts2vec() -> None:
     losses: list[torch.Tensor] = []
     original_step = model.training_step
 
-    def patched_step(*args, **kwargs):
-        loss = original_step(*args, **kwargs)
+    def patched_step(*args: object, **kwargs: object) -> torch.Tensor | None:
+        loss = original_step(*args, **kwargs)  # type: ignore[misc]
         if loss is not None:
             losses.append(loss.clone().detach())
         return loss
@@ -182,8 +181,8 @@ def test_nan_padded_training_step_cost() -> None:
     losses: list[torch.Tensor] = []
     original_step = model.training_step
 
-    def patched_step(*args, **kwargs):
-        loss = original_step(*args, **kwargs)
+    def patched_step(*args: object, **kwargs: object) -> torch.Tensor | None:
+        loss = original_step(*args, **kwargs)  # type: ignore[misc]
         if loss is not None:
             losses.append(loss.clone().detach())
         return loss
@@ -212,8 +211,8 @@ def test_nan_padded_training_step_autotcl() -> None:
     losses: list[torch.Tensor] = []
     original_step = model.training_step
 
-    def patched_step(*args, **kwargs):
-        loss = original_step(*args, **kwargs)
+    def patched_step(*args: object, **kwargs: object) -> torch.Tensor | None:
+        loss = original_step(*args, **kwargs)  # type: ignore[misc]
         if loss is not None:
             losses.append(loss.clone().detach())
         return loss
