@@ -8,7 +8,6 @@ Requirements: D-18
 """
 
 import pytest
-import torch
 
 from chronocratic.models.convolutional.standard.series2vec.config import Series2VecModelParameters
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec

@@ -8,11 +8,9 @@ Requirements: D-15 (Series2Vec short-sequence auto-clamp + forward)
 
 import warnings
 
-import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
-
 
 # --------------------------------------------------------------------------- #
 # Series2Vec short-sequence tests
