@@ -21,6 +21,7 @@ continue to work without modification.
 from chronocratic.models.utils.utils import (
     apply_slicing,
     concat_last_step_features,
+    ensure_pairable_batch,
     extract_features_from_batch,
     full_series_pooling,
     generate_not_nan_mask,
@@ -37,6 +38,7 @@ from chronocratic.models.utils.utils import (
 __all__ = [
     "apply_slicing",
     "concat_last_step_features",
+    "ensure_pairable_batch",
     "extract_features_from_batch",
     "full_series_pooling",
     "generate_not_nan_mask",
