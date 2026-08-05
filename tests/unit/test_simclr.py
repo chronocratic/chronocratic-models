@@ -27,13 +27,13 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 from chronocratic.models.augmentation.producers import FullOverlapProducer, IndependentPairProducer
-from chronocratic.models.convolutional.standard.layers import (
-    Conv1dBasicBlock,
-    Conv1dBottleneckBlock,
-    Conv1dResNetEncoder,
-)
 from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
 from chronocratic.models.convolutional.standard.simclr.config import SimCLRModelParameters
+from chronocratic.models.convolutional.standard.simclr.encoder import Conv1dResNetEncoder
+from chronocratic.models.convolutional.standard.simclr.layers import (
+    Conv1dBasicBlock,
+    Conv1dBottleneckBlock,
+)
 from chronocratic.models.convolutional.standard.simclr.model import SimCLR
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.encoding import EncodingOutputShape
