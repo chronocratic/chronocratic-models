@@ -390,7 +390,7 @@ Existing examples in the codebase:
 - Dilated encoders — `transpose(1, 2)` in `_common_forward()`
 - `FCNEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
 - `TCCEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
-- `ResNet1dEncoder.forward()` — `transpose(1, 2)` at entry
+- `Conv1dResNetEncoder.forward()` — `transpose(1, 2)` at entry
 
 ### Augmentation Axes
 
@@ -705,27 +705,3 @@ Current divergences and known limits:
 - **TST, open limit** — encoding at full-partition lengths is length-*correct* but O(T²) in memory and will exhaust it before raising. Chunked windowing is an open follow-up.
 - **`process_sample_length`, open limit** — uses `np.random.default_rng()` per call, so it is not controlled by `lightning.seed_everything` and training crops are not reproducible across runs. Shared by TS2Vec, CoST, AutoTCL, TST, and TimeVAE.
 - **Pretrain/encode length mismatch, open question** — a model pretrained on crops of one length and used to encode windows of another is mechanically valid after patching, but whether representation quality holds across lengths is empirical. Worth measuring before publishing numbers.
-
-#### SimCLR — parameter names vs. the reference
-
-Ported parameters are renamed to this library's canonical vocabulary (see
-*Canonical Hyperparameter Names*), so a reviewer comparing against ULTS needs
-the mapping. Nothing below changes behaviour; these are renames only.
-
-| this library | ULTS (`models/SimCLR/models.py`) | why renamed |
-|---|---|---|
-| `input_dim` | `in_channels` | canonical name for input feature count |
-| `stem_conv_channels` | (inline `64` in `self.conv1`) | was a literal; named for the layer it configures |
-| `encoder_stage_channels` | (inline `64,128,256,512` in `layer_block`) | were literals; `stage` distinguishes these from TS-TCC's per-block `encoder_channels` |
-| `encoder_stage_depths` | `layers` | `layers` reads as modules rather than counts; `depth` is the canonical term for a layer count |
-| `encoder_stage_strides` | (inline `1,2,2,2` in `layer_block`) | were literals |
-| `residual_block_type` | `block` | `block` suggests an instance; this selects a *type* |
-| `projection_dim` | `num_features` | `num_features` is ambiguous with `input_dim`; this is the projection width |
-| `projection_hidden_dim` | (inline `512` in `learning_head`) | was a literal |
-| `conv_kernel_size` | `kernel_size` | canonical name (`kernel_size` is explicitly discouraged) |
-| `normalization_layer_type` | (hardcoded `nn.BatchNorm2d`) | made configurable; see the divergence entry above |
-| `temperature` | `tau` | spelled out |
-| `use_lr_scheduler`, `warmup_epochs` | (no equivalent) | new; the reference's scheduler suppresses training |
-
-The reference also exposes `reparam` and a `linear` head that this port omits:
-both belong to a variational variant that its SimCLR path never uses.
