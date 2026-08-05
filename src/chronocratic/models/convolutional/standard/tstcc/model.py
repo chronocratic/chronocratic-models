@@ -10,10 +10,10 @@ from torch.nn import functional
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.tstcc.encoder import TCCEncoder
-from chronocratic.models.convolutional.standard.tstcc.losses import NTXentLoss
 from chronocratic.models.convolutional.standard.tstcc.temporal_contrast import TemporalContrast
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
+from chronocratic.models.losses import NTXentLoss
 from chronocratic.models.utils import (
     ensure_pairable_batch,
     extract_features_from_batch,

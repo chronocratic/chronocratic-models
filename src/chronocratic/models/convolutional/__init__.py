@@ -15,6 +15,8 @@ from .standard import (
     MCLModelParameters,
     Series2Vec,
     Series2VecModelParameters,
+    SimCLR,
+    SimCLRModelParameters,
     TSTCC,
     TSTCCModelParameters,
 )
@@ -29,6 +31,8 @@ __all__ = [
     "MCLModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
+    "SimCLR",
+    "SimCLRModelParameters",
     "TS2Vec",
     "TS2VecModelParameters",
     "TSTCCModelParameters",
