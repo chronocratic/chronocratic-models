@@ -1,6 +1,7 @@
 __all__ = ["TemporalContrast"]
 
 from typing import cast
+import warnings
 
 from einops import rearrange, repeat
 import torch
@@ -169,6 +170,10 @@ class TemporalContrast(nn.Module):
 
         self.num_channels = num_channels
         self.timestep = timesteps
+        # One-shot guard for the horizon-clamp warning in forward(). A plain bool,
+        # deliberately not a registered buffer: diagnostic state, not model state,
+        # so it must stay out of state_dict() and checkpoints.
+        self._clamp_warned = False
         self.Wk = nn.ModuleList([nn.Linear(hidden_dim, num_channels) for _ in range(timesteps)])
         self.lsoftmax = nn.LogSoftmax(dim=-1)
 
@@ -194,7 +199,9 @@ class TemporalContrast(nn.Module):
         runtime. If the sequence is shorter than the configured
         ``timesteps``, only the first ``seq_len - 1`` prediction heads
         (``self.Wk``) are used — the remaining heads simply receive no
-        gradient that step, which the optimizer handles natively.
+        gradient that step, which the optimizer handles natively. A
+        ``UserWarning`` reports the clamp once per module instance; the clamp
+        itself still applies on every call.
 
         Args:
             features_aug1: First feature view with shape ``(batch, num_channels, seq_len)``.
@@ -221,6 +228,16 @@ class TemporalContrast(nn.Module):
         # using only the first `effective_timesteps` of them is valid — the unused heads
         # simply receive no gradient this step, which the optimizer handles natively.
         effective_timesteps = min(self.timestep, seq_len - 1)
+        if effective_timesteps < self.timestep and not self._clamp_warned:
+            warnings.warn(
+                f"TemporalContrast: encoder output length ({seq_len}) supports at most "
+                f"{effective_timesteps} prediction timesteps, but timesteps={self.timestep} "
+                f"was configured. Using {effective_timesteps}. Reduce "
+                f"temporal_contrast_timesteps or lengthen the input to silence this.",
+                UserWarning,
+                stacklevel=2,
+            )
+            self._clamp_warned = True
         t_samples = torch.randint(seq_len - effective_timesteps, size=(1,), device=device).long()
 
         encode_samples = torch.stack(

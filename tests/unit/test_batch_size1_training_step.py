@@ -9,6 +9,8 @@ We test _calculate_loss / _compute_loss / _step directly since training_step
 requires a Lightning Trainer.
 """
 
+import warnings
+
 import pytest
 import torch
 
@@ -219,9 +221,30 @@ class TestTemporalContrastTimestepClamping:
         """seq_len=3 < timesteps=6 should clamp and return finite loss."""
         f1 = torch.randn(2, 16, 3)
         f2 = torch.randn(2, 16, 3)
-        nce, proj = tc(f1, f2)
+        with pytest.warns(UserWarning, match="prediction timesteps"):
+            nce, proj = tc(f1, f2)
         assert torch.isfinite(nce), f"Loss is {nce}"
         assert proj.shape == (2, 4)
+
+    def test_clamp_warns_once(self, tc: TemporalContrast) -> None:
+        """The clamp warning fires once per instance, not once per batch."""
+        f1 = torch.randn(2, 16, 3)
+        f2 = torch.randn(2, 16, 3)
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            tc(f1, f2)
+            tc(f1, f2)
+        clamp_warnings = [w for w in record if "prediction timesteps" in str(w.message)]
+        assert len(clamp_warnings) == 1, (
+            f"expected 1 warning across 2 calls, got {len(clamp_warnings)}"
+        )
+
+    def test_no_warning_when_horizon_fits(self, tc: TemporalContrast) -> None:
+        """seq_len comfortably above timesteps must stay silent."""
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            tc(torch.randn(2, 16, 25), torch.randn(2, 16, 25))
+        assert not record, f"unexpected warnings: {[str(w.message) for w in record]}"
 
     def test_seq_len_1_raises(self, tc: TemporalContrast) -> None:
         """seq_len=1 should raise ValueError — cannot predict future."""
