@@ -128,6 +128,11 @@ class _SeqTransformer(nn.Module):
         return x[:, 0]
 
 
+# Minimum sequence length TemporalContrast can operate on: one timestep
+# cannot predict a future timestep.
+_MIN_SEQ_LEN = 2
+
+
 # ---------------------------------------------------------------------------
 # Public module
 # ---------------------------------------------------------------------------
@@ -142,7 +147,10 @@ class TemporalContrast(nn.Module):
     Args:
         num_channels: Number of input feature channels from the encoder.
         hidden_dim: Hidden dimension for the transformer and projection head.
-        timesteps: Number of timesteps for temporal contrastive prediction.
+        timesteps: Upper bound on the number of timesteps for temporal
+            contrastive prediction. The effective horizon is clamped at
+            runtime to ``seq_len - 1`` so that short sequences degrade
+            gracefully instead of raising.
         normalization_layer_type: Normalization strategy for the projection
             head. ``CHANNEL`` uses LayerNorm, which is batch-size independent
             and avoids degeneracy at small batch sizes. ``BATCH`` uses
@@ -182,6 +190,12 @@ class TemporalContrast(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return temporal contrastive loss and projection for two views.
 
+        The effective prediction horizon is clamped to ``seq_len - 1`` at
+        runtime. If the sequence is shorter than the configured
+        ``timesteps``, only the first ``seq_len - 1`` prediction heads
+        (``self.Wk``) are used — the remaining heads simply receive no
+        gradient that step, which the optimizer handles natively.
+
         Args:
             features_aug1: First feature view with shape ``(batch, num_channels, seq_len)``.
             features_aug2: Second feature view with shape ``(batch, num_channels, seq_len)``.
@@ -189,32 +203,41 @@ class TemporalContrast(nn.Module):
         Returns:
             nce:        scalar temporal contrastive loss
             projection: ``(batch, num_channels // 4)`` for NT-Xent
+
+        Raises:
+            ValueError: If ``seq_len < 2`` (one timestep cannot predict a
+                future timestep).
         """
         device = features_aug1.device
         z1 = features_aug1.transpose(1, 2)  # (batch, seq_len, num_channels)
         z2 = features_aug2.transpose(1, 2)
 
         batch, seq_len, _ = z1.shape
-        if seq_len <= self.timestep:
-            msg = f"seq_len ({seq_len}) must be > timestep ({self.timestep})"
+        if seq_len < _MIN_SEQ_LEN:
+            msg = f"seq_len ({seq_len}) must be >= {_MIN_SEQ_LEN} to predict a future timestep"
             raise ValueError(msg)
-        t_samples = torch.randint(seq_len - self.timestep, size=(1,), device=device).long()
+        # Clamp to what this sequence can actually support rather than requiring the
+        # caller to rebuild this module. self.Wk holds self.timestep prediction heads;
+        # using only the first `effective_timesteps` of them is valid — the unused heads
+        # simply receive no gradient this step, which the optimizer handles natively.
+        effective_timesteps = min(self.timestep, seq_len - 1)
+        t_samples = torch.randint(seq_len - effective_timesteps, size=(1,), device=device).long()
 
         encode_samples = torch.stack(
             [
                 z2[:, t_samples + i, :].view(batch, self.num_channels)
-                for i in range(1, self.timestep + 1)
+                for i in range(1, effective_timesteps + 1)
             ]
-        )  # (timestep, batch, num_channels)
+        )  # (effective_timesteps, batch, num_channels)
 
         c_t = self.seq_transformer(z1[:, : t_samples + 1, :])
 
-        pred = torch.stack([self.Wk[i](c_t) for i in range(self.timestep)])
+        pred = torch.stack([self.Wk[i](c_t) for i in range(effective_timesteps)])
 
         nce = torch.tensor(0.0, device=device)
-        for i in range(self.timestep):
+        for i in range(effective_timesteps):
             total = torch.mm(encode_samples[i], pred[i].T)  # (batch, batch)
             nce = nce + torch.sum(torch.diag(self.lsoftmax(total)))
-        nce = -nce / (batch * self.timestep)
+        nce = -nce / (batch * effective_timesteps)
 
         return nce, self.projection_head(c_t)
