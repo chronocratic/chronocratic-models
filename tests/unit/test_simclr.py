@@ -912,13 +912,12 @@ class TestPoolingDecoupling:
             f"start={losses[0]:.4f} end={losses[-1]:.4f} floor={uniform_baseline:.4f}"
         )
 
-    def test_vector_output_equals_the_previous_pooled_encoder(self) -> None:
-        """VECTOR must be bit-comparable to the old in-encoder GAP.
+    def test_vector_output_equals_legacy_gap_encoder(self) -> None:
+        """VECTOR output must equal legacy GAP pooling.
 
         ``AdaptiveAvgPool1d(1)`` followed by ``flatten(1)`` is arithmetically a
-        mean over the last axis. Moving that mean from the encoder into
-        ``_encode_batch`` must not change a single downstream value; probes and
-        checkpoints depend on it.
+        mean over the last axis. ``_encode_batch`` performs that mean, so probes
+        and checkpoints are unaffected by the encoder no longer pooling.
         """
         model = _small_model()
         model.eval()

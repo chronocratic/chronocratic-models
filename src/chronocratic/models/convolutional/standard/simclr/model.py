@@ -265,12 +265,10 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
 
         The projection head is applied per timestep and the results are
         concatenated, so the returned vector retains the temporal structure the
-        contrastive loss needs. Averaging the timesteps away first — as an
-        earlier version of this port did — leaves every sample pointing in
-        nearly the same direction, and NT-Xent, which compares only angles,
-        then sees identical logits for every contrast option and freezes at
-        ``log(K)``. See
-        `.planning/todos/specs/simclr-decouple-pooling-from-encoder.md`.
+        contrastive loss needs. Averaging the timesteps away leaves every sample
+        pointing in nearly the same direction, and NT-Xent, which compares only
+        angles, then sees identical logits for every contrast option and freezes
+        at ``log(K)``.
 
         Length-agnostic: the temporal axis is folded into the batch axis before
         the head, so ``nn.Linear`` always sees ``representation_dim`` features
@@ -463,8 +461,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         temporal reduction. VECTOR averages over time, which is exactly the
         computation the encoder used to perform internally, so the VECTOR
         output is numerically unchanged. SEQUENCE transposes to ``(B, T', C)``
-        and is a real temporal axis, not the length-1 placeholder this method
-        previously returned.
+        and is a real temporal axis.
 
         The mean here is also what the reference computes, by a longer route:
         ULTS tiles a width-1 axis to length ``T'`` and applies ``avg_pool2d``

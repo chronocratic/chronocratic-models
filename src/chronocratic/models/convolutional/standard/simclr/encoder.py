@@ -10,9 +10,7 @@ the contrastive loss needs the temporal axis preserved (pooling it away leaves
 NT-Xent with no angular diversity and pins the loss at ``log(K)``), while
 ``encode()`` needs a fixed-width vector for downstream probes. See
 :meth:`~chronocratic.models.convolutional.standard.simclr.model.SimCLR._encode_batch`,
-which owns that reduction, and
-`.planning/todos/specs/simclr-decouple-pooling-from-encoder.md` for the
-measurements behind this split.
+which owns that reduction.
 
 See :class:`Conv1dResNetEncoder` for the deliberate divergences from the
 reference.
@@ -59,10 +57,7 @@ class Conv1dResNetEncoder(nn.Module):
       ``x.repeat(1, 1, 1, x.size(2))`` and then ``F.avg_pool2d(x, x.size(2))``
       to a tensor whose width axis is 1: it replicates that axis ``T`` times and
       averages the identical copies, which is the identity. It then flattens
-      ``C x T``. An earlier version of this port read that pair of calls as a
-      temporal average and applied ``AdaptiveAvgPool1d(1)``, which is a real
-      pooling the reference never performs; it pinned NT-Xent at ``log(K)``.
-      The temporal axis is now preserved here and reduced by the caller.
+      ``C x T``. The temporal axis is preserved here and reduced by the caller.
     - **1-D convolutions instead of 2-D over a width-1 axis.** Numerically
       identical; see the module docstring.
     - **``in_channels`` comes from ``input_dim``, not from a dataset name.**
