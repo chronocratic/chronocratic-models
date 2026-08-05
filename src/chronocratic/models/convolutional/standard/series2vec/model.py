@@ -18,7 +18,11 @@ from chronocratic.models.convolutional.standard.series2vec.losses import (
 from chronocratic.models.convolutional.standard.series2vec.network import Series2VecNetwork
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
-from chronocratic.models.utils import extract_features_from_batch, zero_fill_padding
+from chronocratic.models.utils import (
+    ensure_pairable_batch,
+    extract_features_from_batch,
+    zero_fill_padding,
+)
 from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
@@ -199,34 +203,12 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         # this correctly falls back to the CPU path. Do not add an MPS branch.
         return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
 
-    def _ensure_pairable_batch(self, x: torch.Tensor) -> torch.Tensor:
-        """Split a singleton ``(1, L, C)`` batch into K windows for pairwise loss.
-
-        The Series2Vec loss matches the batch's pairwise distance matrix, so a
-        single long series (``B == 1``) yields no pairs and no learning signal.
-        Splitting it into ``singleton_split_count`` contiguous, non-overlapping
-        sub-series manufactures a real batch. No-op when ``B > 1`` or when the
-        series is too short to form windows of at least the encoder kernel size
-        (the caller's zero-loss fallback then handles the degenerate case).
-
-        Args:
-            x: Input batch of shape ``(B, L, C)``.
-
-        Returns:
-            ``(K, L // K, C)`` when ``x`` is a splittable singleton, else ``x``.
-        """
-        if x.size(0) != 1:
-            return x
-        k = self._singleton_split_count
-        window_len = x.size(1) // k
-        # Use the (possibly clamped) temporal kernel from the encoder
-        actual_kernel = self.network.embed_layer.temporal_kernel_size
-        if window_len < actual_kernel:
-            return x
-        return x[0, : k * window_len].reshape(k, window_len, x.size(2))
-
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        x = self._ensure_pairable_batch(x)
+        x = ensure_pairable_batch(
+            x,
+            split_count=self._singleton_split_count,
+            min_window_len=self.network.embed_layer.temporal_kernel_size,
+        )
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
         target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
         filtered_frequency_data = filter_frequencies(x.detach())
