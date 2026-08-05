@@ -15,6 +15,7 @@ import dataclasses
 import inspect
 import math
 from types import SimpleNamespace
+import warnings
 
 import lightning.pytorch as pl
 import pytest
@@ -62,15 +63,57 @@ SMALL = {
     "projection_dim": 8,
 }
 
+# Encoder-only kwargs for constructing Conv1dResNetEncoder directly.
+_SMALL_ENCODER_KWARGS = {
+    "encoder_stage_channels": SMALL["encoder_stage_channels"],
+    "encoder_stage_depths": SMALL["encoder_stage_depths"],
+    "encoder_stage_strides": SMALL["encoder_stage_strides"],
+    "stem_conv_channels": SMALL["stem_conv_channels"],
+}
+
 
 def _small_model(**overrides: object) -> SimCLR:
     """Build a small SimCLR instance, overriding any keyword."""
-    return SimCLR(input_dim=CHANNELS, **{**SMALL, **overrides})  # type: ignore[arg-type]
+    kwargs = {"input_dim": CHANNELS} | SMALL | overrides
+    return SimCLR(**kwargs)  # type: ignore[arg-type]
 
 
 def _data(batch: int = BATCH, time: int = TIME, channels: int = CHANNELS) -> torch.Tensor:
     """Return a random ``(B, T, C)`` batch."""
     return torch.randn(batch, time, channels)
+
+
+def _structured_batch(
+    sample_count: int = BATCH, seq_len: int = 128, generator: torch.Generator | None = None
+) -> torch.Tensor:
+    """Build a batch with three distinguishable pattern families.
+
+    Uses sinusoids of varying frequency/phase, square waves, and ramps with
+    light additive noise. Structured input is required because white noise has
+    no between-sample structure, so any encoder clusters it and similarity
+    statistics say nothing about the encoder.
+
+    Args:
+        sample_count: Number of series to generate.
+        seq_len: Sequence length for each series.
+        generator: Seeded RNG for reproducibility.
+
+    Returns:
+        Tensor of shape ``(sample_count, seq_len, 1)``.
+    """
+    if generator is None:
+        generator = torch.Generator()
+    time = torch.linspace(0, 4 * math.pi, seq_len)
+    frequency = torch.randint(1, 6, (sample_count,), generator=generator).float()
+    phase = torch.rand(sample_count, generator=generator) * math.pi
+    family = torch.randint(0, 3, (sample_count,), generator=generator)
+    sine = torch.stack([torch.sin(frequency[i] * time + phase[i]) for i in range(sample_count)])
+    ramp = (time / time[-1]).expand(sample_count, seq_len) * frequency[:, None] / 5
+    series = torch.where(
+        family[:, None] == 0, sine, torch.where(family[:, None] == 1, torch.sign(sine), ramp)
+    )
+    noise = 0.05 * torch.randn(sample_count, seq_len, generator=generator)
+    return (series + noise).unsqueeze(-1)
 
 
 # --------------------------------------------------------------------------- #
@@ -294,8 +337,8 @@ class TestReferenceEquivalence:
 class TestEncoder:
     """Conv1dResNetEncoder shapes, widths, and configuration validation."""
 
-    def test_forward_returns_pooled_vector(self) -> None:
-        """Encoder returns (B, representation_dim)."""
+    def test_forward_returns_unpooled_feature_map(self) -> None:
+        """Encoder returns (B, representation_dim, T') — pooling is the caller's job."""
         encoder = Conv1dResNetEncoder(
             input_dim=CHANNELS,
             encoder_stage_channels=(8, 16),
@@ -303,7 +346,10 @@ class TestEncoder:
             encoder_stage_strides=(1, 2),
             stem_conv_channels=8,
         )
-        assert encoder(_data()).shape == (BATCH, encoder.representation_dim)
+        result = encoder(_data())
+        assert result.ndim == 3
+        assert result.shape[:2] == (BATCH, encoder.representation_dim)
+        assert result.shape[2] > 1, "the temporal axis must survive the encoder"
 
     @pytest.mark.parametrize(
         ("block_type", "expected"),
@@ -400,13 +446,23 @@ class TestEncodingOutput:
         assert result.ndim == 2
         assert result.shape == (BATCH, model.representation_dim)
 
-    def test_encode_sequence_is_3d_length_one(self) -> None:
-        """SEQUENCE returns (N, 1, D) — the backbone pools time away."""
+    def test_encode_sequence_has_real_temporal_axis(self) -> None:
+        """SEQUENCE returns (N, T', D) with a genuine temporal axis and no warning."""
+        model = _small_model()
+        result = model.encode(_data(), batch_size=2, output=EncodingOutputShape.SEQUENCE)
+        assert result.ndim == 3
+        assert result.shape[0] == BATCH
+        assert result.shape[2] == model.representation_dim
+        assert result.shape[1] > 1, "SEQUENCE must not be a length-1 placeholder"
+
+    def test_encode_sequence_does_not_warn(self) -> None:
+        """The length-1 fallback warning is obsolete — SEQUENCE is now real."""
         reset_warning_cache()
         model = _small_model()
-        with pytest.warns(UserWarning, match="no temporal axis"):
-            result = model.encode(_data(), batch_size=2, output=EncodingOutputShape.SEQUENCE)
-        assert result.shape == (BATCH, 1, model.representation_dim)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", module="torch")
+            warnings.filterwarnings("error", category=UserWarning, module="chronocratic")
+            model.encode(_data(), batch_size=2, output=EncodingOutputShape.SEQUENCE)
 
     def test_encode_rejects_unsupported_output(self) -> None:
         """An unrecognized output shape raises rather than guessing."""
@@ -430,10 +486,11 @@ class TestEncodingOutput:
         assert x.grad is not None
 
     def test_forward_returns_unit_norm_projections(self) -> None:
-        """forward() gives the projection space the loss operates in."""
+        """forward() gives the projection space the loss operates in, per timestep."""
         model = _small_model()
+        reduced_len = model.encoder(_data()).shape[-1]
         z = model(_data())
-        assert z.shape == (BATCH, model._projection_dim)
+        assert z.shape == (BATCH, reduced_len * model._projection_dim)
         assert torch.allclose(z.norm(dim=-1), torch.ones(BATCH), atol=1e-5)
 
 
@@ -467,8 +524,8 @@ class TestNaNHandling:
         x = _data()
         with torch.no_grad():
             guarded = model.encode_batch(x)
-            direct = model.encoder(x)
-        assert torch.equal(guarded, direct)
+            direct = model.encoder(x).mean(dim=-1)  # (B, C, T') -> (B, C)
+        assert torch.allclose(guarded, direct, atol=1e-6)
 
     def test_training_step_on_nan_padded_batch(self) -> None:
         """The training path zero-fills before augmenting, so the loss stays finite."""
@@ -782,3 +839,102 @@ class TestSingletonBatch:
         """Fewer than two windows cannot produce a negative pair."""
         with pytest.raises(ValueError, match="singleton_split_count must be >= 2"):
             SimCLRModelParameters(input_dim=CHANNELS, singleton_split_count=split_count)
+
+    def test_singleton_batch_still_produces_gradients(self) -> None:
+        """ensure_pairable_batch's window split must survive the shape change."""
+        model = _small_model()
+        model.train()
+        loss = model._compute_loss(_data()[:1])
+        loss.backward()
+        stem_grad = model.encoder._stem[0].weight.grad
+        assert stem_grad is not None
+        assert torch.isfinite(stem_grad).all()
+        assert stem_grad.abs().sum().item() > 0.0
+
+
+# --------------------------------------------------------------------------- #
+# Angular-diversity and training-regression guards
+# --------------------------------------------------------------------------- #
+
+
+class TestPoolingDecoupling:
+    """Guarantees that decoupling pooling from the encoder holds."""
+
+    def test_feature_map_preserves_angular_diversity(self) -> None:
+        """The unpooled feature map must not collapse to a single direction.
+
+        NT-Xent compares angles only, so a feature map whose flattened vectors
+        all point the same way gives the loss nothing to learn from. Measured on
+        structured input, never on ``torch.randn`` — white noise has no
+        between-sample structure, so any encoder clusters it and the statistic
+        says nothing about the encoder.
+        """
+        encoder = Conv1dResNetEncoder(input_dim=1, **_SMALL_ENCODER_KWARGS)
+        encoder.eval()
+        with torch.no_grad():
+            flat = encoder(_structured_batch(sample_count=64)).flatten(1)
+
+        unit = functional.normalize(flat, dim=-1)
+        similarity = unit @ unit.T
+        off_diagonal = similarity[~torch.eye(len(flat), dtype=torch.bool)]
+        assert off_diagonal.mean().item() < 0.95
+
+        _, singular_values, _ = torch.linalg.svd(flat)
+        assert (singular_values[0] / singular_values[1]).item() < 20.0
+
+    def test_contrastive_loss_escapes_the_uniform_baseline(self) -> None:
+        """Loss must fall meaningfully below log(K) — the flat-logit floor.
+
+        A contrastive loss pinned at ``log(K)`` means every logit is equal:
+        the encoder emits one direction for every sample and NT-Xent has no
+        gradient. This is the defect that pooling inside the encoder caused,
+        and it is invisible to a shape assertion, so it is asserted here
+        directly. Kept short (80 steps, tiny backbone) so it stays a unit test.
+        """
+        torch.manual_seed(0)
+        generator = torch.Generator().manual_seed(1)
+        model = _small_model(input_dim=1)
+        model.train()
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+        losses: list[float] = []
+        for _ in range(80):
+            loss = model._compute_loss(_structured_batch(sample_count=16, generator=generator))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            losses.append(loss.item())
+
+        uniform_baseline = math.log(2 * 16 - 1)
+        assert losses[0] <= uniform_baseline + 0.05
+        assert min(losses[-10:]) < uniform_baseline - 0.2, (
+            f"loss did not escape the uniform baseline: "
+            f"start={losses[0]:.4f} end={losses[-1]:.4f} floor={uniform_baseline:.4f}"
+        )
+
+    def test_vector_output_equals_legacy_gap_encoder(self) -> None:
+        """VECTOR output must equal legacy GAP pooling.
+
+        ``AdaptiveAvgPool1d(1)`` followed by ``flatten(1)`` is arithmetically a
+        mean over the last axis. ``_encode_batch`` performs that mean, so probes
+        and checkpoints are unaffected by the encoder no longer pooling.
+        """
+        model = _small_model()
+        model.eval()
+        batch = _data()
+        with torch.no_grad():
+            feature_map = model.encoder(batch)
+            legacy = nn.AdaptiveAvgPool1d(1)(feature_map).flatten(1)
+            current = model.encode_batch(batch)
+        assert current.shape == (BATCH, model.representation_dim)
+        assert torch.allclose(current, legacy, atol=1e-6)
+
+    @pytest.mark.parametrize("seq_len", [32, 64, 128])
+    def test_forward_accepts_any_sequence_length(self, seq_len: int) -> None:
+        """No parameter shape depends on T', so any length works untouched."""
+        model = _small_model()
+        batch = torch.randn(BATCH, seq_len, CHANNELS)
+        z = model(batch)
+        assert z.shape[0] == BATCH
+        assert torch.allclose(z.norm(dim=-1), torch.ones(BATCH), atol=1e-5)
+        assert model.encode_batch(batch).shape == (BATCH, model.representation_dim)

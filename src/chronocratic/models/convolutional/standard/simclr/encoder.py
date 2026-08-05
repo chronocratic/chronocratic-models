@@ -2,8 +2,15 @@
 
 Stacks the residual blocks from
 :mod:`~chronocratic.models.convolutional.standard.simclr.layers` into strided
-stages and global-average-pools the result, giving a length-agnostic
-``(B, representation_dim)`` representation.
+stages and returns the resulting feature map ``(B, representation_dim, T')``.
+
+The encoder deliberately does not pool over time. Reducing the temporal axis
+is the caller's decision, because SimCLR's two callers need different answers:
+the contrastive loss needs the temporal axis preserved (pooling it away leaves
+NT-Xent with no angular diversity and pins the loss at ``log(K)``), while
+``encode()`` needs a fixed-width vector for downstream probes. See
+:meth:`~chronocratic.models.convolutional.standard.simclr.model.SimCLR._encode_batch`,
+which owns that reduction.
 
 See :class:`Conv1dResNetEncoder` for the deliberate divergences from the
 reference.
@@ -31,18 +38,26 @@ _BLOCKS: dict[ResidualBlockType, type[Conv1dBasicBlock | Conv1dBottleneckBlock]]
 
 
 class Conv1dResNetEncoder(nn.Module):
-    """ResNet backbone over the time axis, returning a pooled flat vector.
+    """ResNet backbone over the time axis, returning a feature map.
 
     Layout: a stem convolution, then one residual stage per entry of
-    ``encoder_stage_depths``, then global average pooling over time. The output is
-    ``(B, encoder_stage_channels[-1] * block.expansion)``.
+    ``encoder_stage_depths``. The output is
+    ``(B, encoder_stage_channels[-1] * block.expansion, T')``, where ``T'`` is
+    the input length after the configured strides. No pooling — the caller
+    reduces the temporal axis as it requires.
 
-    Length-agnostic by construction — every layer is a convolution, a
-    normalization, or a pooling with a computed kernel, so the encoder accepts
-    any sequence length without a resampling patch.
+    Length-agnostic by construction — every layer is a convolution or a
+    normalization, so the encoder accepts any sequence length without a
+    resampling patch. ``representation_dim`` describes the channel width and is
+    independent of ``T'``.
 
     Deliberate divergences from the reference (ULTS ``ResNet_CIFAR``):
 
+    - **No temporal pooling, matching the reference.** ULTS applies
+      ``x.repeat(1, 1, 1, x.size(2))`` and then ``F.avg_pool2d(x, x.size(2))``
+      to a tensor whose width axis is 1: it replicates that axis ``T`` times and
+      averages the identical copies, which is the identity. It then flattens
+      ``C x T``. The temporal axis is preserved here and reduced by the caller.
     - **1-D convolutions instead of 2-D over a width-1 axis.** Numerically
       identical; see the module docstring.
     - **``in_channels`` comes from ``input_dim``, not from a dataset name.**
@@ -154,27 +169,27 @@ class Conv1dResNetEncoder(nn.Module):
             stages.append(nn.Sequential(*blocks))
         self._stages = nn.Sequential(*stages)
 
-        # Global average pooling over time. The reference reaches the same
-        # value the long way round -- it tiles the width-1 axis to length T'
-        # and then applies avg_pool2d with kernel T', which averages T'
-        # identical columns. Verified equal to a mean over the time axis.
-        self._pool = nn.AdaptiveAvgPool1d(1)
-
     @property
     def representation_dim(self) -> int:
-        """Width of the pooled feature vector this encoder returns."""
+        """Channel width of the feature map this encoder returns."""
         return self._representation_dim
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode a batch into flat pooled representations.
+        """Encode a batch into a convolutional feature map.
+
+        Deliberately unpooled. Callers reduce the temporal axis themselves:
+        :meth:`SimCLR._encode_batch` averages it for VECTOR and transposes it
+        for SEQUENCE, while the contrastive loss path keeps it, because
+        averaging it away leaves NT-Xent without the angular diversity it needs
+        to produce a gradient.
 
         Args:
             x: Input batch of shape ``(batch, seq_len, input_dim)``.
 
         Returns:
-            Representations of shape ``(batch, representation_dim)``.
+            Feature map of shape ``(batch, representation_dim, reduced_len)``,
+            where ``reduced_len`` follows from ``encoder_stage_strides``.
         """
         x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
         x = self._stem(x)
-        x = self._stages(x)
-        return self._pool(x).flatten(1)
+        return self._stages(x)

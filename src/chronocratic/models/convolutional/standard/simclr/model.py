@@ -21,7 +21,6 @@ from chronocratic.models.utils import (
     process_sample_length,
     zero_fill_padding,
 )
-from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 if TYPE_CHECKING:
     from lightning.pytorch.utilities.types import OptimizerLRSchedulerConfig
@@ -110,6 +109,14 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
       ``F.normalize(h_out)``. Every other model in this library returns raw
       features, and the projection path normalizes internally either way, so
       the loss is unaffected.
+    - **``encode()`` pools; the loss path does not.** The backbone returns an
+      unpooled ``(B, C, T')`` feature map. The contrastive path projects each
+      timestep and concatenates, matching the reference's flattened ``C x T``
+      projection input; ``encode()`` averages over time for VECTOR and
+      transposes for SEQUENCE. Splitting the two is what lets the loss keep the
+      angular diversity NT-Xent requires while ``encode()`` still returns a
+      fixed-width vector whose ``representation_dim`` is independent of the
+      input length.
 
     Args:
         input_dim: Number of input features (channels) in the time series.
@@ -256,11 +263,24 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return L2-normalized projections for ``x``.
 
+        The projection head is applied per timestep and the results are
+        concatenated, so the returned vector retains the temporal structure the
+        contrastive loss needs. Averaging the timesteps away leaves every sample
+        pointing in nearly the same direction, and NT-Xent, which compares only
+        angles, then sees identical logits for every contrast option and freezes
+        at ``log(K)``.
+
+        Length-agnostic: the temporal axis is folded into the batch axis before
+        the head, so ``nn.Linear`` always sees ``representation_dim`` features
+        and never a length. Only the width of the returned vector varies with
+        the input length, and NT-Xent is indifferent to that width.
+
         Args:
             x: Input batch of shape ``(batch, seq_len, input_dim)``.
 
         Returns:
-            Unit-norm projections of shape ``(batch, projection_dim)``.
+            Unit-norm projections of shape
+            ``(batch, reduced_len * projection_dim)``.
         """
         # DIVERGENCE: the reference returns the pair ``(F.normalize(h),
         # F.normalize(z))`` and its loss consumes only ``z``. This returns
@@ -273,7 +293,11 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         # only when every row has unit norm — the same condition that makes the
         # dot product a cosine similarity. Removing this call would leave the
         # loss optimizing an incorrect denominator without raising.
-        return functional.normalize(self.projection_head(self._encoder(x)), dim=-1)
+        features = self._encoder(x)  # (B, C, T')
+        batch, channels, reduced_len = features.shape
+        per_step = features.transpose(1, 2).reshape(batch * reduced_len, channels)
+        projected = self.projection_head(per_step)
+        return functional.normalize(projected.reshape(batch, -1), dim=-1)
 
     # ------------------------------------------------------------------
     # Loss
@@ -427,17 +451,42 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Return pooled backbone features, not projections.
+        """Reduce the backbone feature map to the requested output shape.
 
-        The backbone pools globally over time, so there is no temporal axis to
-        return: SEQUENCE is a length-1 fallback.
+        Returns backbone features, never projections — the projection head
+        shapes the contrastive objective only and is discarded downstream,
+        which is what SimCLR prescribes.
+
+        The backbone returns ``(B, C, T')`` unpooled, so this method owns the
+        temporal reduction. VECTOR averages over time, which is exactly the
+        computation the encoder used to perform internally, so the VECTOR
+        output is numerically unchanged. SEQUENCE transposes to ``(B, T', C)``
+        and is a real temporal axis.
+
+        The mean here is also what the reference computes, by a longer route:
+        ULTS tiles a width-1 axis to length ``T'`` and applies ``avg_pool2d``
+        with kernel ``T'``, averaging ``T'`` identical columns. Verified equal
+        to a mean over the time axis in
+        ``tests/unit/test_simclr.py::test_reference_pooling_equals_mean_over_time``.
+
+        Args:
+            encoder: The backbone returned by :meth:`_get_encoder`.
+            batch_x: Batch of shape ``(batch, seq_len, input_dim)``, already on
+                the model's device.
+            output: Requested output shape.
+
+        Returns:
+            ``(B, representation_dim)`` for VECTOR, or
+            ``(B, reduced_len, representation_dim)`` for SEQUENCE.
+
+        Raises:
+            ValueError: If ``output`` is not a supported shape.
         """
         batch_x, _ = zero_fill_padding(batch_x)
-        flat = encoder(batch_x.float())  # (B, D) — D = representation_dim
+        features = encoder(batch_x.float())  # (B, C, T')
         if output == EncodingOutputShape.VECTOR:
-            return flat
+            return features.mean(dim=-1)  # (B, C) — VECTOR
         if output == EncodingOutputShape.SEQUENCE:
-            _warn_sequence_fallback(type(self))
-            return flat.unsqueeze(1)  # (B, 1, D) — fake temporal axis
+            return features.transpose(1, 2)  # (B, T', C) — SEQUENCE
         msg = f"SimCLR does not support output={output}; supported: {type(self).supported_outputs}"
         raise ValueError(msg)
