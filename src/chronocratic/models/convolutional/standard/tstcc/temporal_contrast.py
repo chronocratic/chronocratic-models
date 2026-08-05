@@ -1,5 +1,6 @@
 __all__ = ["TemporalContrast"]
 
+from pathlib import Path
 from typing import cast
 import warnings
 
@@ -9,6 +10,13 @@ from torch import nn
 from torch.nn import functional
 
 from chronocratic.models.enums.layers import NormalizationLayerType
+
+# ``nn.Module.__call__`` sits between this module's ``forward`` and its real
+# caller, so no ``stacklevel`` lands the warning on user code -- it always
+# points into torch. ``skip_file_prefixes`` (Python 3.12+) walks past every
+# torch frame instead, so the warning names the call site that chose the
+# sequence length.
+_TORCH_PATH_PREFIX = str(Path(torch.__file__).parent)
 
 # ---------------------------------------------------------------------------
 # Seq_Transformer building blocks (internal to this module)
@@ -235,7 +243,7 @@ class TemporalContrast(nn.Module):
                 f"was configured. Using {effective_timesteps}. Reduce "
                 f"temporal_contrast_timesteps or lengthen the input to silence this.",
                 UserWarning,
-                stacklevel=2,
+                skip_file_prefixes=(_TORCH_PATH_PREFIX,),
             )
             self._clamp_warned = True
         t_samples = torch.randint(seq_len - effective_timesteps, size=(1,), device=device).long()
