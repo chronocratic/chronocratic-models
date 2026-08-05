@@ -27,13 +27,13 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 from chronocratic.models.augmentation.producers import FullOverlapProducer, IndependentPairProducer
+from chronocratic.models.convolutional.standard.layers import (
+    Conv1dBasicBlock,
+    Conv1dBottleneckBlock,
+    Conv1dResNetEncoder,
+)
 from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
 from chronocratic.models.convolutional.standard.simclr.config import SimCLRModelParameters
-from chronocratic.models.convolutional.standard.simclr.encoder import (
-    BasicBlock1d,
-    Bottleneck1d,
-    ResNet1dEncoder,
-)
 from chronocratic.models.convolutional.standard.simclr.model import SimCLR
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.encoding import EncodingOutputShape
@@ -291,11 +291,11 @@ class TestReferenceEquivalence:
 
 
 class TestEncoder:
-    """ResNet1dEncoder shapes, widths, and configuration validation."""
+    """Conv1dResNetEncoder shapes, widths, and configuration validation."""
 
     def test_forward_returns_pooled_vector(self) -> None:
         """Encoder returns (B, representation_dim)."""
-        encoder = ResNet1dEncoder(
+        encoder = Conv1dResNetEncoder(
             input_dim=CHANNELS,
             encoder_stage_channels=(8, 16),
             encoder_stage_depths=(1, 1),
@@ -312,7 +312,7 @@ class TestEncoder:
         self, block_type: ResidualBlockType, expected: int
     ) -> None:
         """representation_dim == encoder_stage_channels[-1] * block.expansion."""
-        encoder = ResNet1dEncoder(
+        encoder = Conv1dResNetEncoder(
             input_dim=CHANNELS,
             encoder_stage_channels=(8, 16),
             encoder_stage_depths=(1, 1),
@@ -324,8 +324,8 @@ class TestEncoder:
 
     def test_block_expansions(self) -> None:
         """Expansion factors match the ResNet paper."""
-        assert BasicBlock1d.expansion == 1
-        assert Bottleneck1d.expansion == 4
+        assert Conv1dBasicBlock.expansion == 1
+        assert Conv1dBottleneckBlock.expansion == 4
 
     def test_fourth_stage_honours_its_own_block_count(self) -> None:
         """Unlike the reference, stage 4 uses encoder_stage_depths[3], not encoder_stage_depths[2].
@@ -333,7 +333,7 @@ class TestEncoder:
         The reference builds its stages with ``layers[2]`` twice, so being
         handed (3, 4, 6, 3) it builds (3, 4, 6, 6).
         """
-        encoder = ResNet1dEncoder(
+        encoder = Conv1dResNetEncoder(
             input_dim=CHANNELS,
             encoder_stage_channels=(4, 4, 4, 4),
             encoder_stage_depths=(1, 1, 2, 1),
@@ -361,7 +361,7 @@ class TestEncoder:
             "stem_conv_channels": 8,
         }
         with pytest.raises(ValueError):  # noqa: PT011
-            ResNet1dEncoder(**{**base, **kwargs})
+            Conv1dResNetEncoder(**{**base, **kwargs})
 
     @pytest.mark.parametrize("norm", [NormalizationLayerType.CHANNEL, NormalizationLayerType.BATCH])
     def test_both_normalization_types_run(self, norm: NormalizationLayerType) -> None:

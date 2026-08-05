@@ -1,21 +1,26 @@
-"""ResNet-style Conv1D encoder backbone for SimCLR.
+"""ResNet-style Conv1D residual blocks and encoder.
 
-The reference implementation (ULTS ``models/SimCLR/models.py::ResNet_CIFAR``)
-builds a **2-D** ResNet and feeds it ``(B, C, T, 1)`` — the time series is
-unsqueezed into an image of width 1. Every ``Conv2d(k=3, padding=1)`` in that
-stack therefore sees a width axis of extent 1, so the left and right kernel
-columns only ever multiply zero padding: they are dead weights, and the stack
-computes exactly what the equivalent ``Conv1d(k=3, padding=1)`` computes with
-the centre column. This port is that ``Conv1d`` stack. It is numerically
-identical to the reference (verified at stride 1 and stride 2) with a third of
-the parameters per convolution and none of the width-axis bookkeeping.
+A 1-D port of the ResNet blocks and stage-stacking encoder, shared by
+standard-convolution models that need a residual backbone. :class:`SimCLR` is
+the current consumer.
 
-See :class:`ResNet1dEncoder` for the remaining deliberate divergences.
+The reference implementation this is ported from (ULTS
+``models/SimCLR/models.py::ResNet_CIFAR``) builds a **2-D** ResNet and feeds it
+``(B, C, T, 1)`` — the time series is unsqueezed into an image of width 1.
+Every ``Conv2d(k=3, padding=1)`` in that stack therefore sees a width axis of
+extent 1, so the left and right kernel columns only ever multiply zero padding:
+they are dead weights, and the stack computes exactly what the equivalent
+``Conv1d(k=3, padding=1)`` computes with the centre column. This module is that
+``Conv1d`` stack. It is numerically identical to the reference (verified at
+stride 1 and stride 2) with a third of the parameters per convolution and none
+of the width-axis bookkeeping.
+
+See :class:`Conv1dResNetEncoder` for the remaining deliberate divergences.
 """
 
 from __future__ import annotations
 
-__all__ = ["BasicBlock1d", "Bottleneck1d", "ResNet1dEncoder"]
+__all__ = ["Conv1dBasicBlock", "Conv1dBottleneckBlock", "Conv1dResNetEncoder"]
 
 import torch
 from torch import nn
@@ -62,7 +67,7 @@ def _norm_layer(
     return nn.BatchNorm1d(num_channels)
 
 
-class BasicBlock1d(nn.Module):
+class Conv1dBasicBlock(nn.Module):
     """Two-convolution residual block (``expansion = 1``).
 
     The 1-D counterpart of the reference's ``BasicBlock_CIFAR``.
@@ -126,7 +131,7 @@ class BasicBlock1d(nn.Module):
         return self._relu(out + self._shortcut(x))
 
 
-class Bottleneck1d(nn.Module):
+class Conv1dBottleneckBlock(nn.Module):
     """Channel-bottleneck residual block (``expansion = 4``).
 
     The 1-D counterpart of the reference's ``Bottleneck_CIFAR``: a 1-tap
@@ -217,13 +222,13 @@ def _build_shortcut(
     )
 
 
-_BLOCKS: dict[ResidualBlockType, type[BasicBlock1d | Bottleneck1d]] = {
-    ResidualBlockType.BASIC: BasicBlock1d,
-    ResidualBlockType.BOTTLENECK: Bottleneck1d,
+_BLOCKS: dict[ResidualBlockType, type[Conv1dBasicBlock | Conv1dBottleneckBlock]] = {
+    ResidualBlockType.BASIC: Conv1dBasicBlock,
+    ResidualBlockType.BOTTLENECK: Conv1dBottleneckBlock,
 }
 
 
-class ResNet1dEncoder(nn.Module):
+class Conv1dResNetEncoder(nn.Module):
     """ResNet backbone over the time axis, returning a pooled flat vector.
 
     Layout: a stem convolution, then one residual stage per entry of

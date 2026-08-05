@@ -8,8 +8,8 @@ from torch import nn
 from torch.nn import functional
 
 from chronocratic.models._mixin import BasicEncodingMixin
+from chronocratic.models.convolutional.standard.layers import Conv1dResNetEncoder
 from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
-from chronocratic.models.convolutional.standard.simclr.encoder import ResNet1dEncoder
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
@@ -50,10 +50,10 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
 
     - **1-D convolutions.** The reference stacks ``Conv2d`` over an input
       unsqueezed to ``(B, C, T, 1)``. Numerically identical; see
-      :mod:`~chronocratic.models.convolutional.standard.simclr.encoder`.
+      :mod:`~chronocratic.models.convolutional.standard.layers.resnet`.
     - **Each encoder stage honours its own configured depth.** The reference
       repeats the third stage's index in place of the fourth. See
-      :class:`ResNet1dEncoder`.
+      :class:`Conv1dResNetEncoder`.
     - **Linear warmup into cosine annealing**, the schedule the original
       SimCLR specifies (google-research/simclr, ``WarmUpAndCosineDecay``).
       The reference instead builds ``ExponentialLR(gamma=decay_lr)`` reusing
@@ -72,7 +72,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
       used here.
     - **Normalization defaults to ``GroupNorm(1, C)``** rather than the
       reference's hardcoded ``BatchNorm``. See
-      :func:`~chronocratic.models.convolutional.standard.simclr.encoder._norm_layer`;
+      :func:`~chronocratic.models.convolutional.standard.layers.resnet._norm_layer`;
       ``normalization_layer_type=BATCH`` restores the reference.
     - **Default scaling uses ``sigma=0.1`` and a per-sample factor.** The
       reference's ``sigma=1.1`` places a substantial fraction of its scale
@@ -183,7 +183,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
         self._normalization_layer_type = normalization_layer_type
 
-        self._encoder = ResNet1dEncoder(
+        self._encoder = Conv1dResNetEncoder(
             input_dim=input_dim,
             conv_kernel_size=conv_kernel_size,
             stem_conv_channels=stem_conv_channels,
