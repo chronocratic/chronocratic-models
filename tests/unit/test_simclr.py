@@ -40,6 +40,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.losses import NTXentLoss
 from chronocratic.models.protocols import HasEncoder
+from chronocratic.models.utils import ensure_pairable_batch
 from chronocratic.models.utils.helpers import reset_warning_cache
 
 # Asymmetric on purpose: T=50, C=3.
@@ -730,3 +731,54 @@ class TestLearningRateSchedule:
         """Config validation catches the nonsensical case at construction."""
         with pytest.raises(ValueError, match="warmup_epochs must be non-negative"):
             SimCLRModelParameters(input_dim=CHANNELS, warmup_epochs=-1)
+
+
+# --------------------------------------------------------------------------- #
+# Singleton-batch guard
+# --------------------------------------------------------------------------- #
+
+
+class TestSingletonBatch:
+    """NT-Xent is batch-relative, so ``B == 1`` must not silently no-op."""
+
+    def test_loss_is_nonzero_at_batch_size_one(self) -> None:
+        """A singleton batch still produces a real loss.
+
+        Without the split the only candidate is the anchor's own partner, the
+        softmax is over a single logit, and the loss collapses to a constant
+        with no gradient — training runs and learns nothing.
+        """
+        torch.manual_seed(0)
+        model = _small_model()
+        loss = model._compute_loss(_data(batch=1))
+        assert math.isfinite(loss.item())
+        assert loss.item() > 0.0
+
+    def test_gradients_flow_at_batch_size_one(self) -> None:
+        """The encoder receives non-zero gradient from a singleton batch."""
+        torch.manual_seed(0)
+        model = _small_model()
+        model._compute_loss(_data(batch=1)).backward()
+        grads = [p.grad for p in model._encoder.parameters() if p.grad is not None]
+        assert grads, "encoder received no gradient at all"
+        assert any(g.abs().sum().item() > 0.0 for g in grads)
+
+    def test_split_is_a_no_op_above_batch_size_one(self) -> None:
+        """Batches that already have negatives are passed through untouched."""
+        batch = _data(batch=BATCH)
+        assert torch.equal(ensure_pairable_batch(batch, split_count=3), batch)
+
+    def test_short_series_is_left_alone(self) -> None:
+        """Too short to split is returned unchanged, not padded into fake windows.
+
+        ``min_window_len`` is the convolution kernel size, below which a window
+        cannot be convolved at all.
+        """
+        short = _data(batch=1, time=2)
+        assert torch.equal(ensure_pairable_batch(short, split_count=3, min_window_len=3), short)
+
+    @pytest.mark.parametrize("split_count", [0, 1, -1])
+    def test_config_rejects_degenerate_split_count(self, split_count: int) -> None:
+        """Fewer than two windows cannot produce a negative pair."""
+        with pytest.raises(ValueError, match="singleton_split_count must be >= 2"):
+            SimCLRModelParameters(input_dim=CHANNELS, singleton_split_count=split_count)

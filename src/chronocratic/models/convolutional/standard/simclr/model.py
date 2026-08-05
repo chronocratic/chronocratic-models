@@ -9,12 +9,14 @@ from torch.nn import functional
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
+from chronocratic.models.convolutional.standard.simclr.config import _MIN_SINGLETON_SPLIT_COUNT
 from chronocratic.models.convolutional.standard.simclr.encoder import Conv1dResNetEncoder
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.losses import NTXentLoss
 from chronocratic.models.utils import (
+    ensure_pairable_batch,
     extract_features_from_batch,
     process_sample_length,
     zero_fill_padding,
@@ -57,8 +59,10 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
     Instance-level contrastive learning: two augmented views of each batch are
     encoded by a shared ResNet-1D backbone, projected through a two-layer head,
     and contrasted with NT-Xent. The other ``2N - 2`` views in the batch act as
-    negatives, so batches of one carry no learning signal — use
-    ``batch_size >= 2``.
+    negatives. A batch of one therefore has none, which would make the loss a
+    constant and the gradient exactly zero; ``ensure_pairable_batch`` splits
+    such a batch into ``singleton_split_count`` contiguous windows so training
+    still receives a signal.
 
     ``encode()`` returns backbone features, not projections. The projection
     head exists only to shape the contrastive objective and is discarded
@@ -158,6 +162,9 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         augmentation: Optional custom augmentation producer. Defaults to the
             reference weak/strong pair (Gaussian scaling; segment permutation
             with jitter).
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for contrastive loss computation. Defaults
+            to ``3`` to ensure sufficient negatives at ``batch_size=1``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -185,6 +192,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         sync_dist: bool = False,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
+        singleton_split_count: int = 3,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -206,6 +214,11 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         self._max_train_length = max_train_length
         self._sync_dist = sync_dist
         self._normalization_layer_type = normalization_layer_type
+
+        if singleton_split_count < _MIN_SINGLETON_SPLIT_COUNT:
+            msg = f"singleton_split_count must be >= 2, got {singleton_split_count}"
+            raise ValueError(msg)
+        self._singleton_split_count = singleton_split_count
 
         self._encoder = Conv1dResNetEncoder(
             input_dim=input_dim,
@@ -278,6 +291,14 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         # NaN defense: zero-fill padded timesteps before augmentation, because
         # the augmentation primitives and Conv1d both propagate NaN.
         data, _ = zero_fill_padding(data)
+
+        # NT-Xent is defined against the other members of the batch: at B == 1
+        # there are no negatives, the loss is a constant and the gradient is
+        # exactly zero, so the model trains and learns nothing. Splitting the
+        # series into contiguous windows restores a real training signal.
+        data = ensure_pairable_batch(
+            data, split_count=self._singleton_split_count, min_window_len=self._conv_kernel_size
+        )
 
         pair = self._augmentation.produce(data)
         return self.criterion(self(pair.first), self(pair.second))

@@ -12,6 +12,10 @@ from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.layers import NormalizationLayerType
 
+# Two windows is the smallest split that yields a non-degenerate batch
+# (exactly one negative pair).
+_MIN_SINGLETON_SPLIT_COUNT = 2
+
 
 @dataclass(kw_only=True)
 class SimCLRModelParameters:
@@ -86,6 +90,9 @@ class SimCLRModelParameters:
             reproduces the reference.
         augmentation: Custom augmentation producer. Defaults to ``None``,
             which builds the reference weak/strong pair at model init.
+        singleton_split_count: Number of contiguous windows to split a
+            singleton batch into for contrastive loss computation. Defaults
+            to ``3`` to ensure sufficient negatives at ``batch_size=1``.
     """
 
     input_dim: int
@@ -106,6 +113,7 @@ class SimCLRModelParameters:
     sync_dist: bool = False
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
     augmentation: AugmentationProducer[ViewPair] | None = None
+    singleton_split_count: int = 3
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""
@@ -126,6 +134,9 @@ class SimCLRModelParameters:
             raise ValueError(msg)
         if self.temperature <= 0.0:
             msg = f"temperature must be positive, got {self.temperature}"
+            raise ValueError(msg)
+        if self.singleton_split_count < _MIN_SINGLETON_SPLIT_COUNT:
+            msg = f"singleton_split_count must be >= 2, got {self.singleton_split_count}"
             raise ValueError(msg)
         if self.warmup_epochs < 0:
             msg = f"warmup_epochs must be non-negative, got {self.warmup_epochs}"
