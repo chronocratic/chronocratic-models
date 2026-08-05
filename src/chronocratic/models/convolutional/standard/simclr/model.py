@@ -27,6 +27,30 @@ if TYPE_CHECKING:
     from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 
 
+# ── Parameter names vs. the reference ────────────────────────────────────────
+# Parameters below are named per this library's canonical vocabulary rather
+# than the reference's. These are renames only; none of them changes
+# behaviour. Reproduced in docs/api/conv_standard.md.
+#
+#   this library                        ULTS (models/SimCLR/models.py)
+#   ----------------------------------  ------------------------------------
+#   input_dim                           in_channels
+#   stem_conv_channels                  inline 64 in self.conv1
+#   encoder_stage_channels              inline 64,128,256,512 in layer_block
+#   encoder_stage_depths                layers
+#   encoder_stage_strides               inline 1,2,2,2 in layer_block
+#   residual_block_type                 block
+#   projection_dim                      num_features
+#   projection_hidden_dim               inline 512 in learning_head
+#   conv_kernel_size                    kernel_size
+#   normalization_layer_type            hardcoded nn.BatchNorm2d
+#   temperature                         tau
+#   use_lr_scheduler, warmup_epochs     no equivalent
+#
+# The reference also exposes `reparam` and a `linear` head that this port
+# omits; both belong to a variational variant its SimCLR path never uses.
+
+
 class SimCLR(pl.LightningModule, BasicEncodingMixin):
     """PyTorch Lightning module for SimCLR (self-supervised pretraining only).
 
