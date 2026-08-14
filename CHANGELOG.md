@@ -11,6 +11,22 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a18 (2026-08-14)
+
+### Added
+
+- Added the SimCLR model for instance-level contrastive learning, ported from [ULTS](https://github.com/mqwfrog/ULTS) (`models/SimCLR/`). A ResNet-1D backbone feeds a two-layer projection head trained with NT-Xent over two augmented views, and accepts an injected `AugmentationProducer[ViewPair]` like the other contrastive models. The reference's 2-D ResNet over a width-1 axis is ported as the numerically identical 1-D stack; each encoder stage honours its own configured depth, where the reference repeats the third stage's index in place of the fourth; the learning rate warms up linearly and then anneals to zero as in the original SimCLR, rather than following the reference's scheduler, which decays it to 1e-15 within two epochs (pass `use_lr_scheduler=False` for a constant rate); normalization defaults to `GroupNorm(1, C)` rather than the reference's hardcoded `BatchNorm`; and the default augmentation draws a per-sample scale factor from a distribution narrow enough not to invert the series, rather than the reference's single shared factor. A singleton batch is split into `singleton_split_count` contiguous windows via `ensure_pairable_batch`, since NT-Xent is defined against the rest of the batch and would otherwise be a constant with zero gradient at `batch_size=1`. See the *Current divergences and known limits* section of the contributing guide. `NTXentLoss` moved from `tstcc/losses.py` to the shared `models/losses/` package, since it originates with SimCLR and is now used by two models. ([#87](https://github.com/chronocratic/chronocratic-models/issues/87))
+
+### Removed
+
+- Removed `chronocratic.models.convolutional.standard.tstcc.losses`. The module contained nothing but a re-export of `NTXentLoss`, which now lives in the shared `chronocratic.models.losses` package. It was never exported from any `__init__` or `__all__`, and the only importer was TS-TCC's own `model.py`. Import `NTXentLoss` from `chronocratic.models.losses` instead. ([#87](https://github.com/chronocratic/chronocratic-models/issues/87))
+
+### Fixed
+
+- Fixed TSTCC training silently producing zero loss and zero gradients at `batch_size=1`. Both the temporal-contrastive and NT-Xent terms are batch-relative and degenerate with a single sample, so a singleton batch is now re-split into contiguous windows via the new `chronocratic.models.utils.ensure_pairable_batch` helper. `TemporalContrast` now clamps its prediction horizon to the sequence it is given instead of requiring the module to be rebuilt. ([#89](https://github.com/chronocratic/chronocratic-models/issues/89))
+- fix(simclr): decouple pooling from encoder so NT-Xent can learn: SimCLR pretraining was frozen: the loss sat at `log(2N-1)` from step zero because the encoder pooled over time before returning, leaving every sample pointing in nearly the same direction. NT-Xent compares only angles, so it had no gradient to follow. The encoder now returns its unpooled `(B, C, T')` feature map. The contrastive path projects per timestep and concatenates, preserving angular diversity. `encode()` owns the reduction: `VECTOR` averages over time (numerically unchanged), `SEQUENCE` transposes to `(B, T', C)` (real temporal axis, no more warning). ([#90](https://github.com/chronocratic/chronocratic-models/issues/90))
+
+
 ## v0.1.0a17 (2026-07-30)
 
 ### Fixed
