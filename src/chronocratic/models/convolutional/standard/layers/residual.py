@@ -1,6 +1,10 @@
-"""Conv1D residual blocks used by the SimCLR ResNet encoder.
+"""Conv1D residual blocks for the shared ResNet encoder.
 
-The reference implementation (ULTS ``models/SimCLR/models.py``) builds **2-D**
+Consumed by
+:class:`~chronocratic.models.convolutional.standard.encoders.resnet.Conv1dResNetEncoder`,
+and through it by SimCLR and MHCCL.
+
+The SimCLR reference implementation (ULTS ``models/SimCLR/models.py``) builds **2-D**
 blocks and feeds them ``(B, C, T, 1)`` — the time series is unsqueezed into an
 image of width 1. Every ``Conv2d(k=3, padding=1)`` in that stack therefore sees
 a width axis of extent 1, so the left and right kernel columns only ever
@@ -11,8 +15,9 @@ These are that ``Conv1d`` form — numerically identical to the reference
 ``tests/unit/test_simclr.py``) with a third of the parameters per convolution
 and none of the width-axis bookkeeping.
 
-Kept beside the model rather than in a shared layers package: SimCLR is
-currently their only consumer. Promote them if a second model needs them.
+Promoted here from ``simclr/layers.py`` when MHCCL became a second consumer:
+general-purpose blocks belong beside the other general-purpose blocks, separate
+from the named architecture that assembles them.
 """
 
 from __future__ import annotations

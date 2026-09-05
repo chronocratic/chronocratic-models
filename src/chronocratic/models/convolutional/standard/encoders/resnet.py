@@ -1,16 +1,16 @@
-"""ResNet-style Conv1D encoder backbone for SimCLR.
+"""ResNet-style Conv1D encoder backbone, shared by SimCLR and MHCCL.
 
 Stacks the residual blocks from
-:mod:`~chronocratic.models.convolutional.standard.simclr.layers` into strided
+:mod:`~chronocratic.models.convolutional.standard.layers.residual` into strided
 stages and returns the resulting feature map ``(B, representation_dim, T')``.
 
-The encoder deliberately does not pool over time. Reducing the temporal axis
-is the caller's decision, because SimCLR's two callers need different answers:
-the contrastive loss needs the temporal axis preserved (pooling it away leaves
-NT-Xent with no angular diversity and pins the loss at ``log(K)``), while
-``encode()`` needs a fixed-width vector for downstream probes. See
-:meth:`~chronocratic.models.convolutional.standard.simclr.model.SimCLR._encode_batch`,
-which owns that reduction.
+The encoder deliberately does not pool over time. Reducing the temporal axis is
+the caller's decision, and its callers need different answers: SimCLR's
+contrastive loss needs the axis preserved (pooling it away leaves NT-Xent with
+no angular diversity and pins the loss at ``log(K)``), MHCCL's loss requires a
+fixed-width vector because cluster centroids must be comparable across lengths,
+and ``encode()`` needs a fixed-width vector for downstream probes. See each
+model's ``_encode_batch``, which owns that reduction.
 
 See :class:`Conv1dResNetEncoder` for the deliberate divergences from the
 reference.
@@ -23,7 +23,7 @@ __all__ = ["Conv1dResNetEncoder"]
 import torch
 from torch import nn
 
-from chronocratic.models.convolutional.standard.simclr.layers import (
+from chronocratic.models.convolutional.standard.layers.residual import (
     _norm_layer,
     Conv1dBasicBlock,
     Conv1dBottleneckBlock,
@@ -92,6 +92,11 @@ class Conv1dResNetEncoder(nn.Module):
             (``expansion = 4``).
         normalization_layer_type: ``CHANNEL`` for GroupNorm(1, C) or ``BATCH``
             for BatchNorm1d.
+        stem_conv_kernel_size: Kernel size of the stem convolution alone, when
+            it differs from ``conv_kernel_size``. ``None`` (the default) makes
+            the stem use ``conv_kernel_size``, which is what SimCLR's reference
+            does; MHCCL's reference instead pairs a wide stem with narrow
+            residual convolutions.
     """
 
     def __init__(
@@ -105,6 +110,7 @@ class Conv1dResNetEncoder(nn.Module):
         encoder_stage_strides: tuple[int, ...] = (1, 2, 2, 2),
         residual_block_type: ResidualBlockType = ResidualBlockType.BOTTLENECK,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
+        stem_conv_kernel_size: int | None = None,
     ) -> None:
         super().__init__()
         if not encoder_stage_channels:
@@ -126,13 +132,22 @@ class Conv1dResNetEncoder(nn.Module):
         block_cls = _BLOCKS[ResidualBlockType(residual_block_type)]
         self._representation_dim = encoder_stage_channels[-1] * block_cls.expansion
 
+        # The stem falls back to ``conv_kernel_size`` when unset, so callers that
+        # do not pass it — SimCLR, whose reference uses one kernel size
+        # throughout — evaluate exactly the expression this line evaluated
+        # before the parameter existed.
+        stem_kernel = conv_kernel_size if stem_conv_kernel_size is None else stem_conv_kernel_size
+        if stem_kernel <= 0:
+            msg = f"stem_conv_kernel_size must be positive, got {stem_kernel}"
+            raise ValueError(msg)
+
         self._stem = nn.Sequential(
             nn.Conv1d(
                 input_dim,
                 stem_conv_channels,
-                kernel_size=conv_kernel_size,
+                kernel_size=stem_kernel,
                 stride=1,
-                padding=conv_kernel_size // 2,
+                padding=stem_kernel // 2,
                 bias=False,
             ),
             _norm_layer(

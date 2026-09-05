@@ -14,6 +14,8 @@ from .convolutional import (
     CoSTModelParameters,
     MCL,
     MCLModelParameters,
+    MHCCL,
+    MHCCLModelParameters,
     Series2Vec,
     Series2VecModelParameters,
     SimCLR,
@@ -35,6 +37,7 @@ from .transformer import TST, TSTModelParameters
 
 __all__ = [
     "MCL",
+    "MHCCL",
     "TST",
     "TSTCC",
     "AutoTCL",
@@ -43,6 +46,7 @@ __all__ = [
     "CoSTModelParameters",
     "EncodingOutputShape",
     "MCLModelParameters",
+    "MHCCLModelParameters",
     "RecurrentAutoEncoder",
     "RecurrentAutoEncoderModelParameters",
     "Series2Vec",

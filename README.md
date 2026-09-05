@@ -54,7 +54,7 @@ The package ships with self-supervised time-series models across these architect
 | Category | Import |
 |----------|--------|
 | Convolutional (Dilated) | `TS2Vec`, `CoST`, `AutoTCL` |
-| Convolutional (Standard) | `Series2Vec`, `TSTCC`, `SimCLR`, `MCL` |
+| Convolutional (Standard) | `Series2Vec`, `TSTCC`, `SimCLR`, `MHCCL`, `MCL` |
 | Transformer | `TST` |
 | Recurrent | `TimeNet`, `RecurrentAutoEncoder` |
 | Generative | `TimeVAE` |

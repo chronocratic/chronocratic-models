@@ -28,13 +28,13 @@ from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
 from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
 from chronocratic.models.augmentation.producers import FullOverlapProducer, IndependentPairProducer
-from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
-from chronocratic.models.convolutional.standard.simclr.config import SimCLRModelParameters
-from chronocratic.models.convolutional.standard.simclr.encoder import Conv1dResNetEncoder
-from chronocratic.models.convolutional.standard.simclr.layers import (
+from chronocratic.models.convolutional.standard.encoders.resnet import Conv1dResNetEncoder
+from chronocratic.models.convolutional.standard.layers.residual import (
     Conv1dBasicBlock,
     Conv1dBottleneckBlock,
 )
+from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
+from chronocratic.models.convolutional.standard.simclr.config import SimCLRModelParameters
 from chronocratic.models.convolutional.standard.simclr.model import SimCLR
 from chronocratic.models.enums.blocks import ResidualBlockType
 from chronocratic.models.enums.encoding import EncodingOutputShape
@@ -415,6 +415,38 @@ class TestEncoder:
         """CHANNEL (default) and BATCH (the reference's choice) both work."""
         model = _small_model(normalization_layer_type=norm)
         assert torch.isfinite(model.encode_batch(_data())).all()
+
+    def test_unset_stem_kernel_is_identical_to_conv_kernel_size(self) -> None:
+        """stem_conv_kernel_size=None must reproduce the pre-parameter stem exactly.
+
+        SimCLR never passes the parameter, so this pins that adding it for MHCCL
+        cannot alter SimCLR: the two constructions must agree in weight shapes
+        and, at a fixed seed, bit-for-bit in output.
+        """
+        base = {"input_dim": CHANNELS, "conv_kernel_size": 5, **_SMALL_ENCODER_KWARGS}
+        torch.manual_seed(0)
+        implicit = Conv1dResNetEncoder(**base)  # type: ignore[arg-type]
+        torch.manual_seed(0)
+        explicit = Conv1dResNetEncoder(**base, stem_conv_kernel_size=5)  # type: ignore[arg-type]
+
+        implicit_shapes = {k: v.shape for k, v in implicit.state_dict().items()}
+        explicit_shapes = {k: v.shape for k, v in explicit.state_dict().items()}
+        assert implicit_shapes == explicit_shapes
+
+        x = _data()
+        assert torch.equal(implicit(x), explicit(x))
+
+    def test_stem_kernel_is_independent_of_conv_kernel_size(self) -> None:
+        """A wide stem with narrow residual convolutions is MHCCL's configuration."""
+        encoder = Conv1dResNetEncoder(
+            input_dim=CHANNELS,
+            conv_kernel_size=3,
+            stem_conv_kernel_size=8,
+            **_SMALL_ENCODER_KWARGS,  # type: ignore[arg-type]
+        )
+        stem_conv = encoder._stem[0]
+        assert stem_conv.kernel_size == (8,)
+        assert torch.isfinite(encoder(_data())).all()
 
 
 # --------------------------------------------------------------------------- #
