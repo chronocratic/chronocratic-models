@@ -30,3 +30,19 @@ class NormalizationLayerType(StrEnum):
 
     CHANNEL = "channel"
     BATCH = "batch"
+
+
+class ResidualProjectionType(StrEnum):
+    """How TimeVAE's residual decoder maps its deconvolution output to ``(B, T, C)``.
+
+    Attributes:
+        CROP: Keep the first ``T`` steps of the deconvolution output (which always has at
+            least ``T``). The last deconvolution is linear so residuals can be negative.
+            No extra parameters. Default.
+        DENSE: Upstream TimeVAE: flatten and apply ``Linear(C * L, C * T)``. Costs
+            O((C * T)^2) parameters, ~676 M at T=5200, C=5. Use for parity with the
+            original implementation on short series.
+    """
+
+    CROP = "crop"
+    DENSE = "dense"
