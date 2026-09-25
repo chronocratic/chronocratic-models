@@ -298,7 +298,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         trend_poly: int = 0,
         custom_seasonality: tuple[tuple[int, int], ...] | None = None,
         use_residual_conn: bool = True,
-        residual_projection: ResidualProjectionType | str = ResidualProjectionType.CROP,
+        residual_projection: ResidualProjectionType = ResidualProjectionType.CROP,
         max_train_length: int | None = None,
     ) -> None:
         super().__init__(
@@ -317,7 +317,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         self.trend_poly = trend_poly
         self.custom_seasonality = custom_seasonality
         self.use_residual_conn = use_residual_conn
-        self.residual_projection = ResidualProjectionType(residual_projection)
+        self.residual_projection = residual_projection
 
         # Auto-clamp conv_stride when encoder output spatial dim < 2 (D-10)
         num_encoder_layers = len(self.hidden_layer_sizes)

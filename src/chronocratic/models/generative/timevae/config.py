@@ -60,5 +60,5 @@ class TimeVAEModelParameters:
     trend_poly: int = 0
     custom_seasonality: tuple[tuple[int, int], ...] | None = None
     use_residual_conn: bool = True
-    residual_projection: ResidualProjectionType | str = ResidualProjectionType.CROP
+    residual_projection: ResidualProjectionType = ResidualProjectionType.CROP
     max_train_length: int | None = None

@@ -69,7 +69,7 @@ class TestDenseModeUnchanged:
             sequence_length=64,
             input_dim=3,
             hidden_layer_sizes=(8, 16, 32),
-            residual_projection="dense",
+            residual_projection=ResidualProjectionType.DENSE,
         )
         final_dense = model.decoder.residual_conn.final_dense
         assert final_dense.out_features == 64 * 3
@@ -78,13 +78,13 @@ class TestDenseModeUnchanged:
         assert out.shape == (2, 64, 3)
 
 
-class TestStringAndEnumAccepted:
-    def test_string_crop(self) -> None:
+class TestEnumAccepted:
+    def test_enum_crop(self) -> None:
         model = TimeVAE(
             sequence_length=64,
             input_dim=3,
             hidden_layer_sizes=(8, 16, 32),
-            residual_projection="crop",
+            residual_projection=ResidualProjectionType.CROP,
         )
         assert model.residual_projection is ResidualProjectionType.CROP
 
@@ -96,15 +96,6 @@ class TestStringAndEnumAccepted:
             residual_projection=ResidualProjectionType.DENSE,
         )
         assert model.residual_projection is ResidualProjectionType.DENSE
-
-    def test_invalid_string_raises(self) -> None:
-        with pytest.raises(ValueError, match="bogus"):
-            TimeVAE(
-                sequence_length=64,
-                input_dim=3,
-                hidden_layer_sizes=(8, 16, 32),
-                residual_projection="bogus",
-            )
 
 
 class TestResidualConnectionRequiresCoercedEnum:
