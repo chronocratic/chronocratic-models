@@ -128,33 +128,3 @@ class TestTrainingStepGradient:
         last_deconv = model.decoder.residual_conn.deconv_layers[-1]
         assert last_deconv.weight.grad is not None
         assert torch.any(last_deconv.weight.grad != 0)
-
-
-class TestCheckpointGuard:
-    def test_dense_checkpoint_into_crop_model_raises(self) -> None:
-        dense_model = TimeVAE(
-            sequence_length=64,
-            input_dim=3,
-            hidden_layer_sizes=(8, 16, 32),
-            residual_projection="dense",
-        )
-        crop_model = TimeVAE(sequence_length=64, input_dim=3, hidden_layer_sizes=(8, 16, 32))
-        checkpoint = {"state_dict": dense_model.state_dict()}
-        with pytest.raises(ValueError, match="residual_projection='dense'"):
-            crop_model.on_load_checkpoint(checkpoint)
-
-    def test_dense_checkpoint_into_dense_model_accepted(self) -> None:
-        dense_model = TimeVAE(
-            sequence_length=64,
-            input_dim=3,
-            hidden_layer_sizes=(8, 16, 32),
-            residual_projection="dense",
-        )
-        other_dense_model = TimeVAE(
-            sequence_length=64,
-            input_dim=3,
-            hidden_layer_sizes=(8, 16, 32),
-            residual_projection="dense",
-        )
-        checkpoint = {"state_dict": dense_model.state_dict()}
-        other_dense_model.on_load_checkpoint(checkpoint)  # must not raise

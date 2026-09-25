@@ -1,4 +1,3 @@
-from typing import Any
 import warnings
 
 import torch
@@ -413,16 +412,3 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             encoder_last_dense_dim=self._encoder.encoder_last_dense_dim,
             residual_projection=self.residual_projection,
         )
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Refuse dense-projection checkpoints loaded into a crop-projection model."""
-        has_dense = any(
-            key.endswith("residual_conn.final_dense.weight") for key in checkpoint["state_dict"]
-        )
-        if has_dense and self.residual_projection is not ResidualProjectionType.DENSE:
-            msg = (
-                "This checkpoint was trained with residual_projection='dense' (the only "
-                "behaviour before v0.1.0a19). Reload it with "
-                "TimeVAE.load_from_checkpoint(path, residual_projection='dense')."
-            )
-            raise ValueError(msg)
