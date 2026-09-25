@@ -23,7 +23,6 @@ from chronocratic.models.utils import (
     extract_features_from_batch,
     zero_fill_padding,
 )
-from chronocratic.models.utils.distances.soft_dtw import SoftDTW
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
 
 if TYPE_CHECKING:
@@ -84,6 +83,11 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
             used as the temporal target.
+        soft_dtw_bandwidth: Optional Sakoe-Chiba band (in time steps) for the
+            soft-DTW temporal target. ``None`` (default) computes the exact
+            target, as upstream. A band trades target accuracy for speed:
+            cost per pair drops from O(T^2) to O(T*w). A common starting
+            point is ~10% of the sequence length.
         singleton_split_count: Number of contiguous windows to split a
             singleton batch into for pairwise loss computation.
         normalization_layer_type: Normalization strategy for the
@@ -119,6 +123,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         sequence_length: int | None = None,
         learning_rate: float = 1e-3,
         soft_dtw_gamma: float = 0.1,
+        soft_dtw_bandwidth: float | None = None,
         singleton_split_count: int = 3,
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         sync_dist: bool = False,
@@ -131,10 +136,14 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
                 f"singleton_split_count must be >= {_MIN_SPLIT_COUNT}, got {singleton_split_count}"
             )
             raise ValueError(msg)
+        if soft_dtw_bandwidth is not None and soft_dtw_bandwidth <= 0:
+            msg = f"soft_dtw_bandwidth must be > 0 or None, got {soft_dtw_bandwidth}"
+            raise ValueError(msg)
         self.save_hyperparameters()
 
         self._learning_rate = learning_rate
         self._soft_dtw_gamma = soft_dtw_gamma
+        self._soft_dtw_bandwidth = soft_dtw_bandwidth
         self._sync_dist = sync_dist
         self._optimizer_name = optimizer_name
         self._weight_decay = weight_decay
@@ -198,19 +207,17 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         )
         raise ValueError(msg)
 
-    def _build_soft_dtw(self, x: torch.Tensor) -> SoftDTW:
-        # SoftDTW's CUDA kernel has no MPS equivalent; for MPS (x.is_cuda is False)
-        # this correctly falls back to the CPU path. Do not add an MPS branch.
-        return SoftDTW(use_cuda=x.is_cuda and torch.cuda.is_available(), gamma=self._soft_dtw_gamma)
-
     def _calculate_loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x = ensure_pairable_batch(
             x,
             split_count=self._singleton_split_count,
             min_window_len=self.network.embed_layer.temporal_kernel_size,
+            min_batch_size=_MIN_SPLIT_COUNT,
         )
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
-        target_temporal_distances = pairwise_soft_dtw_distances(self._build_soft_dtw(x), x)
+        target_temporal_distances = pairwise_soft_dtw_distances(
+            x, gamma=self._soft_dtw_gamma, bandwidth=self._soft_dtw_bandwidth
+        )
         filtered_frequency_data = filter_frequencies(x.detach())
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         result = pretraining_loss(

@@ -46,15 +46,16 @@ def extract_features_from_batch(batch: torch.Tensor | tuple | list) -> torch.Ten
 
 
 def ensure_pairable_batch(
-    x: torch.Tensor, *, split_count: int = 3, min_window_len: int = 1
+    x: torch.Tensor, *, split_count: int = 3, min_window_len: int = 1, min_batch_size: int = 2
 ) -> torch.Tensor:
-    """Split a singleton ``(1, L, C)`` batch into K windows for pairwise loss.
+    """Split each sample of a too-small ``(B, L, C)`` batch into K windows for pairwise loss.
 
     Contrastive and pairwise objectives are defined relative to the other members
-    of the batch: with ``B == 1`` there are no negatives, the loss is a constant,
-    and the gradient is exactly zero — the model trains and learns nothing. A
-    single long series can be re-batched into contiguous, non-overlapping windows,
-    which are genuinely different signals and therefore usable as negatives.
+    of the batch: with too few samples there are no (or too few) negatives, the loss
+    is a constant, and the gradient is exactly zero — the model trains and learns
+    nothing. A batch that is too small can be re-batched into contiguous,
+    non-overlapping windows per sample, which are genuinely different signals and
+    therefore usable as negatives.
 
     Trailing timesteps that do not fill a whole window are dropped rather than
     padded: padding would inject identical fabricated values into every window and
@@ -62,21 +63,26 @@ def ensure_pairable_batch(
 
     Args:
         x: Input batch of shape ``(B, L, C)``.
-        split_count: Number of windows ``K`` to cut the singleton into.
+        split_count: Number of windows ``K`` to cut each sample into.
         min_window_len: Smallest acceptable window length. When ``L // K`` falls
             below this, the split is skipped and ``x`` is returned unchanged, so
             the caller's own degenerate-case handling stays in charge.
+        min_batch_size: Smallest batch the caller's objective can learn from.
+            Batches with ``B >= min_batch_size`` are returned unchanged. The
+            default ``2`` splits only singletons (the historical behavior).
+            Objectives whose normalisation needs at least two distinct pairs
+            (Series2Vec's min-max targets) pass ``3``.
 
     Returns:
-        ``(K, L // K, C)`` when ``x`` is a splittable singleton, otherwise ``x``
-        unchanged. Always a no-op when ``B > 1``.
+        ``(B * K, L // K, C)`` when ``B < min_batch_size`` and the windows are long
+        enough, otherwise ``x`` unchanged.
     """
-    if x.size(0) != 1:
+    if x.size(0) >= min_batch_size:
         return x
     window_len = x.size(1) // split_count
     if window_len < min_window_len:
         return x
-    return x[0, : split_count * window_len].reshape(split_count, window_len, x.size(2))
+    return x[:, : split_count * window_len].reshape(x.size(0) * split_count, window_len, x.size(2))
 
 
 def process_sample_length(
