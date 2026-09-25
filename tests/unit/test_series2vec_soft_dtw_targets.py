@@ -5,12 +5,28 @@ step with gradient flow, bandwidth constructor validation/wiring, and the
 B=2 silent-zero-loss regression (§3.2/§6.6 of the memory-fix spec).
 """
 
+import os
+import subprocess
+import sys
+
 import pytest
 import torch
 
 from chronocratic.models.convolutional.standard.series2vec.losses import pairwise_soft_dtw_distances
 from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 from chronocratic.models.utils.distances.soft_dtw.soft_dtw_cuda import SoftDTW
+
+_MEMORY_TEST_SCRIPT = """
+import resource, sys
+import torch
+from chronocratic.models.utils.distances.soft_dtw import pairwise_soft_dtw_values
+
+x = torch.randn(8, 7500, 1)
+pairwise_soft_dtw_values(x, gamma=0.1)
+rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+peak_gb = rss / 1e9 if sys.platform == "darwin" else rss * 1024 / 1e9
+print(peak_gb)
+"""
 
 
 def _make_series2vec(**overrides: object) -> Series2Vec:
@@ -75,3 +91,20 @@ class TestBatchTwoLearns:
         loss.backward()
         grads = [p.grad for p in model.parameters() if p.grad is not None]
         assert any(torch.any(g != 0) for g in grads)
+
+
+class TestMemoryRegression:
+    @pytest.mark.skipif(
+        os.environ.get("CHRONOCRATIC_MEMORY_TESTS") != "1", reason="opt-in memory test"
+    )
+    def test_soft_dtw_values_peak_rss_under_2gb(self) -> None:
+        """(8, 7500, 1) targets stay under 2GB peak RSS; the old full-table code needed ~30GB.
+
+        Runs in a subprocess: RSS is a per-process high-water mark that other tests would
+        pollute if measured in-process.
+        """
+        result = subprocess.run(  # noqa: S603 — fixed literal command, no untrusted input
+            [sys.executable, "-c", _MEMORY_TEST_SCRIPT], capture_output=True, text=True, check=True
+        )
+        peak_gb = float(result.stdout.strip().splitlines()[-1])
+        assert peak_gb < 2.0, f"peak RSS {peak_gb:.2f} GB exceeds 2 GB budget"

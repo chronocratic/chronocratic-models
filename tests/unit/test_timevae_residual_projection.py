@@ -5,8 +5,6 @@ O((C*T)^2) ``final_dense`` layer; ``"dense"`` reproduces upstream TimeVAE
 exactly. See the memory-fix spec §8.
 """
 
-import warnings
-
 import pytest
 import torch
 
@@ -21,7 +19,7 @@ class TestDefaultIsCropNoFinalDense:
 
 
 class TestOutputShapeAcrossLengths:
-    @pytest.mark.parametrize("sequence_length", [24, 64, 1000, 1001])
+    @pytest.mark.parametrize("sequence_length", [24, 64, 1000, 1001, 7500])
     def test_decoder_output_shape_and_finite(self, sequence_length: int) -> None:
         model = TimeVAE(
             sequence_length=sequence_length, input_dim=3, hidden_layer_sizes=(8, 16, 32)
@@ -32,8 +30,7 @@ class TestOutputShapeAcrossLengths:
         assert torch.isfinite(out).all()
 
     def test_stride_auto_clamp_length_still_works(self) -> None:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with pytest.warns(UserWarning, match="stride"):
             model = TimeVAE(sequence_length=8, input_dim=3, hidden_layer_sizes=(8, 16, 32))
         z = torch.randn(2, model.latent_dim)
         out = model.decoder(z)
@@ -108,6 +105,27 @@ class TestStringAndEnumAccepted:
                 hidden_layer_sizes=(8, 16, 32),
                 residual_projection="bogus",
             )
+
+
+class TestResidualConnectionRequiresCoercedEnum:
+    """ResidualConnection is internal: the model coerces string/enum input (spec §8.3,
+    'the layer is internal, the model chooses; explicit is better'). Callers must pass
+    the already-coerced enum member directly."""
+
+    def test_enum_dense_projection_works_standalone(self) -> None:
+        from chronocratic.models.layers.general import ResidualConnection
+
+        rc = ResidualConnection(
+            sequence_length=64,
+            input_dim=3,
+            hidden_layer_sizes=(8, 16, 32),
+            latent_dim=8,
+            encoder_last_dense_dim=32,
+            projection=ResidualProjectionType.DENSE,
+        )
+        z = torch.randn(2, 8)
+        out = rc(z)
+        assert out.shape == (2, 64, 3)
 
 
 class TestParameterBudget:
