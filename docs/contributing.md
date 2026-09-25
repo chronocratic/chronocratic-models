@@ -542,7 +542,7 @@ def _filter_on_device(b: np.ndarray, a: np.ndarray, data: torch.Tensor) -> torch
 
 If a kernel has no MPS equivalent (e.g., SoftDTW's CUDA kernel), falling back to CPU when `x.is_cuda` is False is the correct behavior. Document the fallback with a comment to prevent future "fixes" that duplicate the logic.
 
-**See:** `Series2Vec._build_soft_dtw()` — MPS tensors have `is_cuda=False`, so they correctly use the CPU path.
+Note: `SoftDTW`'s own `use_cuda` flag is exactly this pattern (`self.use_cuda and x.is_cuda`); `chronocratic.models.utils.distances.soft_dtw.pairwise_soft_dtw_values` sidesteps the question entirely by always running on CPU — its no-gradient value-only routine has no CUDA kernel to fall back from.
 
 ### 5. pin_memory=True only when no gradients flow
 

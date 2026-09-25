@@ -47,6 +47,11 @@ class Series2VecModelParameters:
         learning_rate: Base learning rate for the optimizer.
         soft_dtw_gamma: Smoothing parameter for the soft-DTW distance
             used as the temporal target.
+        soft_dtw_bandwidth: Optional Sakoe-Chiba band (in time steps) for the
+            soft-DTW temporal target. ``None`` (default) computes the exact
+            target, as upstream. A band trades target accuracy for speed:
+            cost per pair drops from O(T^2) to O(T*w). A common starting
+            point is ~10% of the sequence length.
         sync_dist: Whether to synchronize logged metrics across
             distributed processes.
         optimizer_name: Optimizer to use; one of ``'Adam'``, ``'RAdam'``,
@@ -73,6 +78,7 @@ class Series2VecModelParameters:
     sequence_length: int | None = None
     learning_rate: float = 1e-3
     soft_dtw_gamma: float = 0.1
+    soft_dtw_bandwidth: float | None = None
     sync_dist: bool = False
     optimizer_name: OptimizerName = "RAdam"
     weight_decay: float = 0.0

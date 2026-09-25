@@ -7,6 +7,7 @@ __all__ = ["TimeVAE", "TimeVAEDecoder", "TimeVAEEncoder", "_timevae_encoder_outp
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.enums.encoding import EncodingOutputShape
+from chronocratic.models.enums.layers import ResidualProjectionType
 from chronocratic.models.generative.timevae.vae_base import BaseVariationalAutoencoder, Sampling
 from chronocratic.models.layers.general import (
     LevelModel,
@@ -154,6 +155,7 @@ class TimeVAEDecoder(nn.Module):
         conv_stride: int = 2,
         use_residual_conn: bool = True,
         encoder_last_dense_dim: int | None = None,
+        residual_projection: ResidualProjectionType = ResidualProjectionType.CROP,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -196,6 +198,7 @@ class TimeVAEDecoder(nn.Module):
                 hidden_layer_sizes=hidden_layer_sizes,
                 latent_dim=latent_dim,
                 encoder_last_dense_dim=encoder_last_dense_dim,
+                projection=residual_projection,
             )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
@@ -243,6 +246,13 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             disables the seasonal branch.
         use_residual_conn: Whether to include the residual ConvTranspose
             branch in the decoder.
+        residual_projection: How the residual branch reaches length
+            ``sequence_length``. ``"crop"`` (default) crops the deconvolution
+            output and adds no parameters. ``"dense"`` reproduces upstream
+            TimeVAE's final ``Linear(C·L, C·T)``, whose size grows with
+            ``(C·T)²`` (≈676 M parameters, ≈10.8 GB of training memory at
+            T=5200, C=5); use it only for parity experiments on short
+            series. Ignored when ``use_residual_conn`` is False.
         max_train_length: Maximum sequence length used during training; longer
             batches are randomly cropped to this length. ``None`` means no
             cap, which will fail on inputs longer than ``sequence_length``.
@@ -288,6 +298,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         trend_poly: int = 0,
         custom_seasonality: tuple[tuple[int, int], ...] | None = None,
         use_residual_conn: bool = True,
+        residual_projection: ResidualProjectionType = ResidualProjectionType.CROP,
         max_train_length: int | None = None,
     ) -> None:
         super().__init__(
@@ -306,6 +317,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         self.trend_poly = trend_poly
         self.custom_seasonality = custom_seasonality
         self.use_residual_conn = use_residual_conn
+        self.residual_projection = residual_projection
 
         # Auto-clamp conv_stride when encoder output spatial dim < 2 (D-10)
         num_encoder_layers = len(self.hidden_layer_sizes)
@@ -398,4 +410,5 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             conv_stride=self.conv_stride,
             use_residual_conn=self.use_residual_conn,
             encoder_last_dense_dim=self._encoder.encoder_last_dense_dim,
+            residual_projection=self.residual_projection,
         )
