@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from .blocks import ResidualBlockType
 from .encoding import EncodingOutputShape
-from .layers import NormalizationLayerType, ResidualProjectionType
+from .layers import NormalizationLayerType
 
-__all__ = [
-    "EncodingOutputShape",
-    "NormalizationLayerType",
-    "ResidualBlockType",
-    "ResidualProjectionType",
-]
+__all__ = ["EncodingOutputShape", "NormalizationLayerType", "ResidualBlockType"]

@@ -1,20 +1,34 @@
 """Tests for TimeVAE's residual_projection option (crop vs. dense).
 
-Default ``residual_projection="crop"`` removes ResidualConnection's
-O((C*T)^2) ``final_dense`` layer; ``"dense"`` reproduces upstream TimeVAE
-exactly. See the memory-fix spec §8.
+Default ``residual_projection=ResidualProjectionType.DENSE`` matches upstream
+TimeVAE's ``Linear(C·L, C·T)`` exactly, at the cost of O((C*T)^2) parameters.
+``ResidualProjectionType.CROP`` is the memory-saving alternative added here:
+it crops ResidualConnection's deconvolution output instead, adding no
+``final_dense`` layer. See the memory-fix spec §8.
 """
 
 import pytest
 import torch
 
-from chronocratic.models.enums.layers import ResidualProjectionType
+from chronocratic.models.generative.timevae.enums import ResidualProjectionType
 from chronocratic.models.generative.timevae.model import TimeVAE
 
 
-class TestDefaultIsCropNoFinalDense:
-    def test_no_final_dense_attribute(self) -> None:
+class TestDefaultIsDenseMatchesUpstream:
+    def test_final_dense_attribute_present_by_default(self) -> None:
         model = TimeVAE(sequence_length=64, input_dim=3, hidden_layer_sizes=(8, 16, 32))
+        assert model.residual_projection is ResidualProjectionType.DENSE
+        assert hasattr(model.decoder.residual_conn, "final_dense")
+
+
+class TestCropHasNoFinalDense:
+    def test_no_final_dense_attribute(self) -> None:
+        model = TimeVAE(
+            sequence_length=64,
+            input_dim=3,
+            hidden_layer_sizes=(8, 16, 32),
+            residual_projection=ResidualProjectionType.CROP,
+        )
         assert not hasattr(model.decoder.residual_conn, "final_dense")
 
 
@@ -22,7 +36,10 @@ class TestOutputShapeAcrossLengths:
     @pytest.mark.parametrize("sequence_length", [24, 64, 1000, 1001, 7500])
     def test_decoder_output_shape_and_finite(self, sequence_length: int) -> None:
         model = TimeVAE(
-            sequence_length=sequence_length, input_dim=3, hidden_layer_sizes=(8, 16, 32)
+            sequence_length=sequence_length,
+            input_dim=3,
+            hidden_layer_sizes=(8, 16, 32),
+            residual_projection=ResidualProjectionType.CROP,
         )
         z = torch.randn(2, model.latent_dim)
         out = model.decoder(z)
@@ -31,7 +48,12 @@ class TestOutputShapeAcrossLengths:
 
     def test_stride_auto_clamp_length_still_works(self) -> None:
         with pytest.warns(UserWarning, match="stride"):
-            model = TimeVAE(sequence_length=8, input_dim=3, hidden_layer_sizes=(8, 16, 32))
+            model = TimeVAE(
+                sequence_length=8,
+                input_dim=3,
+                hidden_layer_sizes=(8, 16, 32),
+                residual_projection=ResidualProjectionType.CROP,
+            )
         z = torch.randn(2, model.latent_dim)
         out = model.decoder(z)
         assert out.shape == (2, 8, 3)
@@ -40,7 +62,12 @@ class TestOutputShapeAcrossLengths:
 
 class TestResidualCanBeNegative:
     def test_deterministic_negative_residual(self) -> None:
-        model = TimeVAE(sequence_length=64, input_dim=3, hidden_layer_sizes=(8, 16, 32))
+        model = TimeVAE(
+            sequence_length=64,
+            input_dim=3,
+            hidden_layer_sizes=(8, 16, 32),
+            residual_projection=ResidualProjectionType.CROP,
+        )
         last_deconv = model.decoder.residual_conn.deconv_layers[-1]
         with torch.no_grad():
             last_deconv.weight.zero_()
@@ -52,7 +79,12 @@ class TestResidualCanBeNegative:
 
 class TestCropLayoutChannelsCorrect:
     def test_channel_c_outputs_constant_c(self) -> None:
-        model = TimeVAE(sequence_length=64, input_dim=3, hidden_layer_sizes=(8, 16, 32))
+        model = TimeVAE(
+            sequence_length=64,
+            input_dim=3,
+            hidden_layer_sizes=(8, 16, 32),
+            residual_projection=ResidualProjectionType.CROP,
+        )
         last_deconv = model.decoder.residual_conn.deconv_layers[-1]
         with torch.no_grad():
             last_deconv.weight.zero_()
@@ -104,7 +136,7 @@ class TestResidualConnectionRequiresCoercedEnum:
     the already-coerced enum member directly."""
 
     def test_enum_dense_projection_works_standalone(self) -> None:
-        from chronocratic.models.layers.general import ResidualConnection
+        from chronocratic.models.generative.timevae.layers import ResidualConnection
 
         rc = ResidualConnection(
             sequence_length=64,
@@ -121,8 +153,10 @@ class TestResidualConnectionRequiresCoercedEnum:
 
 class TestParameterBudget:
     def test_crop_mode_param_count_small(self) -> None:
-        """The actual bug: dense mode allocates ~678M params at this shape."""
-        model = TimeVAE(sequence_length=5200, input_dim=5)
+        """Dense mode (the default) allocates ~678M params at this shape; crop avoids it."""
+        model = TimeVAE(
+            sequence_length=5200, input_dim=5, residual_projection=ResidualProjectionType.CROP
+        )
         num_params = sum(p.numel() for p in model.parameters())
         assert num_params < 5_000_000
 
