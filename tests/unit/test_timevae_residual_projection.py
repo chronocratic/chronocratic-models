@@ -7,6 +7,8 @@ it crops ResidualConnection's deconvolution output instead, adding no
 ``final_dense`` layer. See the memory-fix spec §8.
 """
 
+import warnings
+
 import pytest
 import torch
 
@@ -171,3 +173,26 @@ class TestTrainingStepGradient:
         last_deconv = model.decoder.residual_conn.deconv_layers[-1]
         assert last_deconv.weight.grad is not None
         assert torch.any(last_deconv.weight.grad != 0)
+
+
+class TestDenseMemoryWarning:
+    def test_warns_when_final_dense_exceeds_threshold(self) -> None:
+        with pytest.warns(UserWarning, match="residual_projection"):
+            TimeVAE(sequence_length=5200, input_dim=5)  # default DENSE, ~678M params
+
+    def test_no_warning_for_small_dense_shape(self) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            TimeVAE(
+                sequence_length=64,
+                input_dim=3,
+                hidden_layer_sizes=(8, 16, 32),
+                residual_projection=ResidualProjectionType.DENSE,
+            )
+
+    def test_no_warning_for_crop(self) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            TimeVAE(
+                sequence_length=5200, input_dim=5, residual_projection=ResidualProjectionType.CROP
+            )

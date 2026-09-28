@@ -1,6 +1,7 @@
 """TimeVAE-specific decoder layers."""
 
 from collections.abc import Sequence
+import warnings
 
 import torch
 from torch import nn
@@ -9,6 +10,12 @@ import torch.nn.functional as F  # noqa: N812
 from chronocratic.models.generative.timevae.enums import ResidualProjectionType
 
 __all__ = ["ResidualConnection"]
+
+# Above this many params, DENSE's final_dense is big enough to be a training-memory risk
+# (weights + gradients + Adam state ≈ 16 bytes/param). 50M params ≈ 800 MB for this layer
+# alone. Chosen as a round order-of-magnitude threshold, not a hard cutoff — CROP is the
+# zero-parameter alternative for anyone who hits it.
+_DENSE_PARAM_WARN_THRESHOLD = 50_000_000
 
 
 class ResidualConnection(nn.Module):
@@ -67,6 +74,16 @@ class ResidualConnection(nn.Module):
         length_final = length_in
 
         if projection is ResidualProjectionType.DENSE:
+            final_dense_params = (input_dim * length_final) * (sequence_length * input_dim)
+            if final_dense_params > _DENSE_PARAM_WARN_THRESHOLD:
+                msg = (
+                    f"ResidualConnection: residual_projection=DENSE allocates "
+                    f"{final_dense_params:,} params ({final_dense_params * 4 / 1e9:.1f} GB just "
+                    f"for weights) at sequence_length={sequence_length}, input_dim={input_dim}. "
+                    "Pass residual_projection=ResidualProjectionType.CROP for a zero-parameter "
+                    "alternative if this exhausts memory."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
             self.final_dense = nn.Linear(input_dim * length_final, sequence_length * input_dim)
         elif length_final < sequence_length:
             msg = (
