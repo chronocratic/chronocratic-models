@@ -11,6 +11,21 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a19 (2026-10-01)
+
+### Added
+
+- Series2Vec `soft_dtw_bandwidth` (Sakoe-Chiba band) to trade target accuracy for speed on long series. `ensure_pairable_batch(min_batch_size=...)`. `pairwise_soft_dtw_values` in `chronocratic.models.utils.distances.soft_dtw`. ([#96](https://github.com/chronocratic/chronocratic-models/issues/96))
+
+### Changed
+
+- TimeVAE: new `residual_projection` option (`ResidualProjectionType`, in `chronocratic.models.generative.timevae.enums`). Defaults to `DENSE`, matching upstream TimeVAE exactly; `CROP` is the added memory-saving alternative that crops the deconvolution output to `sequence_length` instead of applying the O((C·T)²) final `Linear` layer. `series2vec.losses.pairwise_soft_dtw_distances` now takes `(time_series, *, gamma, bandwidth=None)` instead of `(soft_dtw_module, time_series)`. ([#96](https://github.com/chronocratic/chronocratic-models/issues/96))
+
+### Fixed
+
+- TimeVAE's residual decoder can now skip its O((C·T)²) dense layer via `residual_projection=CROP`; training memory at T=5200, C=5 (DuckDuckGeese) drops from ~10.5 GB (measured) to ~0.51 GB (measured), and parameter count drops from ~678M to ~3.4M. Series2Vec computes soft-DTW targets in O(T) memory per pair instead of keeping the full T×T table for every pair in the batch; at T=7500 (EigenWorms), batch size 4 drops from ~7.4 GB (measured, spec §3.2) to ~0.62 GB (measured) and batch size 8 drops from ~28-31 GB (measured, spec §3.2) to ~0.77 GB (measured). Series2Vec batches of size 2 now split into windows so the pairwise loss has a gradient instead of being exactly zero. ([#96](https://github.com/chronocratic/chronocratic-models/issues/96))
+
+
 ## v0.1.0a18 (2026-08-14)
 
 ### Added
