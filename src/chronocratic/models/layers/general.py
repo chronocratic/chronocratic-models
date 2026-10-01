@@ -1,11 +1,10 @@
-from collections.abc import Sequence
 import math
 
 import torch
 from torch import fft, nn
 import torch.nn.functional as F  # noqa: N812
 
-__all__ = ["BandedFourierLayer", "LevelModel", "ResidualConnection", "SeasonalLayer", "TrendLayer"]
+__all__ = ["BandedFourierLayer", "LevelModel", "SeasonalLayer", "TrendLayer"]
 
 Seasonality = tuple[int, int]
 
@@ -205,60 +204,3 @@ class LevelModel(nn.Module):
         ones_tensor = torch.ones((1, self.sequence_length, 1), dtype=torch.float32, device=z.device)
         level_vals = level_params * ones_tensor
         return level_vals
-
-
-class ResidualConnection(nn.Module):
-    def __init__(
-        self,
-        *,
-        sequence_length: int,
-        input_dim: int,
-        hidden_layer_sizes: Sequence[int],
-        latent_dim: int,
-        encoder_last_dense_dim: int,
-    ) -> None:
-        super().__init__()
-        self.sequence_length = sequence_length
-        self.input_dim = input_dim
-        self.hidden_layer_sizes = hidden_layer_sizes
-
-        self.dense = nn.Linear(latent_dim, encoder_last_dense_dim)
-        self.deconv_layers: nn.ModuleList = nn.ModuleList()
-        in_channels = hidden_layer_sizes[-1]
-
-        for num_filters in reversed(hidden_layer_sizes[:-1]):
-            self.deconv_layers.append(
-                nn.ConvTranspose1d(
-                    in_channels, num_filters, kernel_size=3, stride=2, padding=1, output_padding=1
-                )
-            )
-            in_channels = num_filters
-
-        self.deconv_layers.append(
-            nn.ConvTranspose1d(
-                in_channels, input_dim, kernel_size=3, stride=2, padding=1, output_padding=1
-            )
-        )
-
-        length_in = encoder_last_dense_dim // hidden_layer_sizes[-1]
-        for _ in range(len(hidden_layer_sizes)):
-            length_in = (length_in - 1) * 2 - 2 * 1 + 3 + 1
-        length_final = length_in
-
-        self.final_dense = nn.Linear(input_dim * length_final, sequence_length * input_dim)
-
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Return the residual decoder branch for each latent vector."""
-        batch_size = z.size(0)
-        x = F.relu(self.dense(z))
-        x = x.view(batch_size, -1, self.hidden_layer_sizes[-1])
-        x = x.transpose(1, 2)
-
-        for deconv in list(self.deconv_layers)[:-1]:
-            x = F.relu(deconv(x))
-        x = F.relu(self.deconv_layers[-1](x))
-
-        x = x.flatten(1)
-        x = self.final_dense(x)
-        residuals = x.view(-1, self.sequence_length, self.input_dim)
-        return residuals

@@ -1,6 +1,7 @@
 import torch
-from torch import nn
 from torch.nn import functional
+
+from chronocratic.models.utils.distances.soft_dtw import pairwise_soft_dtw_values
 
 __all__ = ["pairwise_euclidean_distances", "pairwise_soft_dtw_distances", "pretraining_loss"]
 
@@ -31,17 +32,15 @@ def _distance_normalizer(distance: torch.Tensor) -> torch.Tensor:
     return (distance - min_val) / denominator
 
 
-def pairwise_soft_dtw_distances(soft_dtw: nn.Module, time_series: torch.Tensor) -> torch.Tensor:
-    """Compute lower-triangular pairwise SoftDTW distances on the input device."""
-    if time_series.size(0) < MIN_PAIR_COUNT:
-        return time_series.new_empty(0)
+def pairwise_soft_dtw_distances(
+    time_series: torch.Tensor, *, gamma: float, bandwidth: float | None = None
+) -> torch.Tensor:
+    """Compute lower-triangular pairwise soft-DTW targets without gradients.
 
-    pair_indices = _lower_triangular_pair_indices(
-        batch_size=time_series.size(0), device=time_series.device
-    )
-    first_series = time_series[pair_indices[0]]
-    second_series = time_series[pair_indices[1]]
-    return soft_dtw(first_series, second_series)
+    Uses the value-only soft-DTW (O(T) memory per pair) because these distances are
+    supervision targets: they never need a backward pass.
+    """
+    return pairwise_soft_dtw_values(time_series, gamma=gamma, bandwidth=bandwidth)
 
 
 def pairwise_euclidean_distances(time_series: torch.Tensor) -> torch.Tensor:

@@ -9,6 +9,8 @@ __all__ = ["TimeVAEModelParameters"]
 
 from dataclasses import dataclass
 
+from chronocratic.models.generative.timevae.enums import ResidualProjectionType
+
 
 @dataclass(kw_only=True)
 class TimeVAEModelParameters:
@@ -35,6 +37,14 @@ class TimeVAEModelParameters:
             disables the seasonal branch.
         use_residual_conn: Whether to include the residual ConvTranspose
             branch in the decoder.
+        residual_projection: How the residual branch reaches length
+            ``sequence_length``. ``DENSE`` (default) reproduces upstream
+            TimeVAE's final ``Linear(C·L, C·T)`` exactly, whose size grows
+            with ``(C·T)²`` (≈676 M parameters, ≈10.8 GB of training memory
+            at T=5200, C=5) — large shapes can exhaust memory. ``CROP``
+            crops the deconvolution output instead and adds no parameters;
+            use it when the upstream-parity cost is too high. Ignored when
+            ``use_residual_conn`` is False.
         max_train_length: Maximum sequence length used during training; longer
             batches are randomly cropped to this length. ``None`` means no
             cap, which will fail on inputs longer than ``sequence_length``.
@@ -51,4 +61,5 @@ class TimeVAEModelParameters:
     trend_poly: int = 0
     custom_seasonality: tuple[tuple[int, int], ...] | None = None
     use_residual_conn: bool = True
+    residual_projection: ResidualProjectionType = ResidualProjectionType.DENSE
     max_train_length: int | None = None
