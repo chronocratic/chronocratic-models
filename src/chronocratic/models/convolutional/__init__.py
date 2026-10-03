@@ -13,6 +13,8 @@ from .dilated import (
 from .standard import (
     MCL,
     MCLModelParameters,
+    MHCCL,
+    MHCCLModelParameters,
     Series2Vec,
     Series2VecModelParameters,
     SimCLR,
@@ -23,12 +25,14 @@ from .standard import (
 
 __all__ = [
     "MCL",
+    "MHCCL",
     "TSTCC",
     "AutoTCL",
     "AutoTCLModelParameters",
     "CoST",
     "CoSTModelParameters",
     "MCLModelParameters",
+    "MHCCLModelParameters",
     "Series2Vec",
     "Series2VecModelParameters",
     "SimCLR",
