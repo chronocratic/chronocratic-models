@@ -107,7 +107,7 @@ def test_nan_padded_training_step_tstcc() -> None:
     x = _nan_padded()
     labels = torch.zeros(x.shape[0], dtype=torch.long)
     batch = (x, labels)
-    loss = model._compute_loss(batch)
+    loss, _ = model._compute_loss(batch)
     assert torch.isfinite(loss), f"TSTCC loss not finite: {loss}"
 
 

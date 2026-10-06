@@ -56,10 +56,15 @@ class TSTCCModelParameters:
             encoder conv blocks and LayerNorm for the projection head — safe
             at batch_size=1. ``BATCH`` uses BatchNorm1d.
         augmentation: Custom augmentation producer. Defaults to
-            ``None``, which uses standard TSTCC pair augmentation at model init.
+            ``None``, which uses ``_default_tstcc_pair()`` (per-timestep
+            scaling | jitter) at model init.
         singleton_split_count: Number of contiguous windows to split a
             singleton batch into for contrastive loss computation. Defaults
             to ``3`` to ensure sufficient negatives at ``batch_size=1``.
+        instance_normalize: Z-normalize each series and channel over time
+            before augmentation and encoding, which makes the absolute
+            jitter of the default augmentation scale-relative. Set ``False``
+            to keep amplitude information. Defaults to ``True``.
     """
 
     input_dim: int
@@ -82,6 +87,7 @@ class TSTCCModelParameters:
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
     augmentation: AugmentationProducer[ViewPair] | None = None
     singleton_split_count: int = 3
+    instance_normalize: bool = True
 
     def __post_init__(self) -> None:
         """Validate numeric constraints after construction."""

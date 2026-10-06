@@ -1,5 +1,6 @@
 __all__ = ["TSTCC", "_tstcc_encoder_output_length"]
 
+import math
 from typing import cast, TYPE_CHECKING
 import warnings
 
@@ -29,6 +30,51 @@ if TYPE_CHECKING:
 # Minimum windows to split a singleton batch into: 2 gives the weakest
 # non-degenerate batch (exactly one negative pair).
 _MIN_SINGLETON_SPLIT_COUNT = 2
+
+# Collapse guard: steps before the epoch-mean gap to chance is checked, and the
+# fraction of the chance loss the gap must fall below to count as learning.
+# Collapsed runs sit at a gap of about +/-0.005; learning runs reach -0.5 or
+# lower within 300 steps. At B=16 the tolerance is 0.08.
+_COLLAPSE_CHECK_MIN_STEPS = 500
+_COLLAPSE_REL_TOL = 0.01
+
+# Added to the per-series std so a constant series normalizes to 0, not NaN.
+_INSTANCE_NORM_EPS = 1e-8
+
+
+def _instance_normalize(x: torch.Tensor) -> torch.Tensor:
+    """Z-normalize each series and channel over the time axis.
+
+    Args:
+        x: Input tensor of shape ``(batch, time, channels)``.
+
+    Returns:
+        ``(x - mean) / (std + eps)`` with statistics over dim 1. A constant
+        series maps to all zeros.
+    """
+    mean = x.mean(dim=1, keepdim=True)
+    std = x.std(dim=1, keepdim=True, unbiased=False)
+    return (x - mean) / (std + _INSTANCE_NORM_EPS)
+
+
+def _chance_loss(*, batch_size: int, temporal_weight: float, contextual_weight: float) -> float:
+    """Return TS-TCC's loss when every logit is equal (a collapsed encoder).
+
+    The temporal NCE runs in two directions with a log-softmax over the batch
+    (``2 ln B``); the contextual NT-Xent has ``2B - 1`` candidates
+    (``ln(2B - 1)``).
+
+    Args:
+        batch_size: Effective batch size ``B`` the loss was computed on.
+        temporal_weight: Weight of the temporal contrastive loss.
+        contextual_weight: Weight of the contextual NT-Xent loss.
+
+    Returns:
+        The weighted chance-level loss.
+    """
+    return temporal_weight * 2 * math.log(batch_size) + contextual_weight * math.log(
+        2 * batch_size - 1
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -95,8 +141,10 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     Batch format: ``(data, labels)`` where ``labels`` is ignored.
     Two augmented views of ``data`` are produced by the injected
     ``AugmentationProducer[ViewPair]`` (e.g. :func:`_default_tstcc_pair`),
-    which provides Gaussian scaling (weak) and segment-permutation + jitter
-    (strong) views.
+    which provides per-timestep scaling (weak) and jitter (strong) views.
+
+    A run whose loss stays at chance (a collapsed encoder) triggers a one-shot
+    ``UserWarning`` after :data:`_COLLAPSE_CHECK_MIN_STEPS` steps.
 
     Uses ``automatic_optimization = False`` because two separate optimizers
     (one per sub-module) must be stepped independently.
@@ -133,8 +181,12 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             small batch sizes. ``BATCH`` uses BatchNorm1d. Defaults to
             ``CHANNEL``.
         augmentation: Optional custom augmentation producer. Defaults to
-            the standard TSTCC pair (Gaussian scaling + segment permutation
-            with jitter).
+            :func:`_default_tstcc_pair` (per-timestep scaling | jitter, no
+            permutation).
+        instance_normalize: Z-normalize each series and channel over time
+            before augmentation (training) and before the encoder
+            (``encode()``). Makes the absolute jitter scale-relative. Set
+            ``False`` to keep amplitude information. Defaults to ``True``.
         singleton_split_count: Number of contiguous windows to split a
             singleton batch into for contrastive loss computation.
             Defaults to ``3`` to ensure sufficient negatives at
@@ -168,6 +220,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
         sequence_length: int | None = None,
         singleton_split_count: int = 3,
+        instance_normalize: bool = True,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -183,6 +236,15 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         self._sync_dist = sync_dist
         self._conv_kernel_size = conv_kernel_size
         self._singleton_split_count = singleton_split_count
+        self._instance_normalize = instance_normalize
+        # Collapse-guard state. Plain attributes, not buffers: kept out of the
+        # state_dict. Steps are counted here because ``global_step`` stays 0:
+        # training_step drives raw optimizers (``use_pl_optimizer=False``).
+        self._collapse_warned = False
+        self._train_step_count = 0
+        self._epoch_gap_sum: torch.Tensor | float = 0.0
+        self._epoch_chance_sum = 0.0
+        self._epoch_gap_count = 0
 
         # Built before the clamp below, which probes it for its real output length.
         self._encoder = TCCEncoder(
@@ -246,11 +308,15 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     # Loss
     # ------------------------------------------------------------------
 
-    def _compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    def _compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, int]:
         """Compute contrastive pretraining loss.
 
         Labels in the batch are ignored — this model handles self-supervised
         pretraining only. For downstream supervised tasks, use SupervisedModule.
+
+        Returns:
+            The loss and the effective batch size after
+            :func:`ensure_pairable_batch` (needed for the chance-level loss).
         """
         data = extract_features_from_batch(batch).float()
 
@@ -264,6 +330,8 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         data = ensure_pairable_batch(
             data, split_count=self._singleton_split_count, min_window_len=self._conv_kernel_size
         )
+        if self._instance_normalize:
+            data = _instance_normalize(data)
 
         pair = self._augmentation.produce(data)
         aug1, aug2 = pair.first, pair.second
@@ -277,10 +345,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
 
         temporal_loss = temp_loss1 + temp_loss2
         contextual_loss = self._nt_xent_loss(proj1, proj2)
-        return (
+        loss = (
             self._temporal_loss_weight * temporal_loss
             + self._contextual_loss_weight * contextual_loss
         )
+        return loss, data.size(0)
 
     # ------------------------------------------------------------------
     # Training & validation steps
@@ -295,7 +364,7 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         model_opt.zero_grad()
         tc_opt.zero_grad()
 
-        loss = self._compute_loss(batch)
+        loss, batch_size = self._compute_loss(batch)
         self.log(
             "train_loss",
             loss,
@@ -304,6 +373,17 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
             prog_bar=True,
             sync_dist=self._sync_dist,
         )
+        chance = _chance_loss(
+            batch_size=batch_size,
+            temporal_weight=self._temporal_loss_weight,
+            contextual_weight=self._contextual_loss_weight,
+        )
+        # Detached tensor, not .item(): no host sync per step.
+        gap = loss.detach() - chance
+        self._train_step_count += 1
+        self._epoch_gap_sum += gap
+        self._epoch_chance_sum += chance
+        self._epoch_gap_count += 1
         if not torch.isfinite(loss):
             msg = f"Loss is {loss.item()}, skipping optimization step"
             raise RuntimeError(msg)
@@ -317,11 +397,37 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
     ) -> torch.Tensor:
         """Compute and log validation loss."""
         with torch.no_grad():
-            loss = self._compute_loss(batch)
+            loss, _ = self._compute_loss(batch)
         self.log(
             "val_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist
         )
         return loss
+
+    def on_train_epoch_end(self) -> None:
+        """Warn once if the epoch-mean loss is still at chance past warm-up.
+
+        The tolerance scales with the epoch-mean chance loss, so a smaller
+        final batch does not skew it.
+        """
+        gap_count = self._epoch_gap_count
+        mean_gap = float(self._epoch_gap_sum) / max(gap_count, 1)
+        chance = self._epoch_chance_sum / max(gap_count, 1)
+        self._epoch_gap_sum, self._epoch_chance_sum, self._epoch_gap_count = 0.0, 0.0, 0
+        if self._collapse_warned or gap_count == 0:
+            return
+        if self._train_step_count < _COLLAPSE_CHECK_MIN_STEPS:
+            return
+        if mean_gap <= -_COLLAPSE_REL_TOL * chance:
+            return
+        self._collapse_warned = True
+        warnings.warn(
+            f"TSTCC: after {self._train_step_count} steps the epoch-mean training loss is "
+            f"{mean_gap:+.4f} from chance ({chance:.4f}); the encoder has likely "
+            "collapsed to a constant embedding. Likely causes: augmentation too strong "
+            "for the data's scale, or instance_normalize=False.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     # ------------------------------------------------------------------
     # Optimizers
@@ -358,10 +464,11 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Cast to float and encode the batch.
+        """Cast to float, instance-normalize if enabled, and encode the batch.
 
         The TCC encoder expects float inputs, so we cast batch_x to float
-        before encoding. The feature map ``(B, C, L')`` is then
+        before encoding. With ``instance_normalize`` the input gets the same
+        per-series z-normalization as in training. The feature map ``(B, C, L')`` is then
         pooled to ``(B, C)`` for VECTOR, or transposed to
         ``(B, L', C)`` for SEQUENCE, where:
 
@@ -383,9 +490,14 @@ class TSTCC(pl.LightningModule, BasicEncodingMixin):
         # upstream. Real fix is masked normalization across all 3 blocks, which
         # changes the encoder and invalidates trained checkpoints. Training pools
         # nothing and contaminates identically, so this is a representation-quality
-        # ceiling, not a correctness bug.
+        # ceiling, not a correctness bug. The same holds for instance_normalize:
+        # zero-filled timesteps enter the per-series mean and std, in training
+        # and here alike.
         batch_x, _ = zero_fill_padding(batch_x)
-        features = encoder(batch_x.float())  # (B, C, L')
+        batch_x = batch_x.float()
+        if self._instance_normalize:
+            batch_x = _instance_normalize(batch_x)
+        features = encoder(batch_x)  # (B, C, L')
         if output == EncodingOutputShape.VECTOR:
             return features.mean(dim=-1)  # (B, C) — VECTOR
         if output == EncodingOutputShape.SEQUENCE:
