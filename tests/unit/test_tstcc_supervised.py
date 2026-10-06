@@ -58,7 +58,7 @@ class TestTSTCCModelCleaned:
         x = torch.randn(4, seq_len, 2)  # (B, T, C)
         labels = torch.randint(0, 3, (4,))
         batch = (x, labels)
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert loss.ndim == 0
         assert torch.isfinite(loss)
 

@@ -106,7 +106,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 64, 3, requires_grad=True)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         loss.backward()
         assert x.grad is not None
 
@@ -115,7 +115,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 64, 3, requires_grad=True)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert torch.isfinite(loss), f"Loss is {loss}"
 
     def test_batch_size_1_produces_nonzero_loss(self, model: TSTCC) -> None:
@@ -123,7 +123,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 300, 3)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert loss.item() != 0.0, "Loss is exactly 0.0 — contrastive objectives are degenerate"
         assert torch.isfinite(loss)
 
@@ -132,7 +132,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 300, 3)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         loss.backward()
         grads = [p.grad for p in model._encoder.parameters() if p.grad is not None]
         assert grads, "no encoder parameter received a gradient"
@@ -143,7 +143,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 300, 3)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         loss.backward()
         grads = [p.grad for p in model._tc_model.parameters() if p.grad is not None]
         assert grads, "no tc_model parameter received a gradient"
@@ -154,7 +154,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(1, 12, 3)
         batch = (x, torch.zeros(1, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert torch.isfinite(loss)
         loss.backward()
 
@@ -164,12 +164,12 @@ class TestTSTCCLossBatchSize1:
         tc_ref = model._tc_model
 
         # First batch
-        loss1 = model._compute_loss((torch.randn(1, 300, 3), torch.zeros(1, dtype=torch.long)))
+        loss1, _ = model._compute_loss((torch.randn(1, 300, 3), torch.zeros(1, dtype=torch.long)))
         loss1.backward()
         model.zero_grad()
 
         # Second batch with different length
-        loss2 = model._compute_loss((torch.randn(2, 150, 3), torch.zeros(2, dtype=torch.long)))
+        loss2, _ = model._compute_loss((torch.randn(2, 150, 3), torch.zeros(2, dtype=torch.long)))
         loss2.backward()
 
         assert model._tc_model is tc_ref, "_tc_model was rebuilt — optimizer is orphaned"
@@ -179,7 +179,7 @@ class TestTSTCCLossBatchSize1:
         model.train()
         x = torch.randn(4, 100, 3)
         batch = (x, torch.zeros(4, dtype=torch.long))
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert torch.isfinite(loss)
         loss.backward()
         grads = [p.grad for p in model._encoder.parameters() if p.grad is not None]

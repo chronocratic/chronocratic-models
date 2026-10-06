@@ -136,7 +136,8 @@ class TestClampTimestepsGuard:
             real = model._encoder(torch.zeros(1, 128, 3)).shape[-1]
         assert real > model.temporal_contrast_timesteps
         batch = (torch.randn(4, 128, 3), torch.zeros(4, dtype=torch.long))
-        assert torch.isfinite(model._compute_loss(batch))
+        loss, _ = model._compute_loss(batch)
+        assert torch.isfinite(loss)
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +228,7 @@ class TestTSTCCGradientsOnShortSeq:
         labels = torch.zeros(2, dtype=torch.long)
         batch = (x, labels)
 
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         loss.backward()
 
         assert x.grad is not None, "Gradient did not flow back to input"
@@ -249,6 +250,6 @@ class TestTSTCCNaNDefense:
         model.train()
         batch = _make_nan_padded_batch(seq_len=22, channels=200, batch_size=2, pad_timesteps=5)
 
-        loss = model._compute_loss(batch)
+        loss, _ = model._compute_loss(batch)
         assert torch.isfinite(loss), f"Loss is not finite for NaN-padded batch: {loss.item()}"
         assert math.isfinite(loss.item()), f"Loss.item() is not finite: {loss.item()}"
