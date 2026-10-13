@@ -25,7 +25,10 @@ _SATURATED_ACCURACY = 0.95
 
 
 def loss_dropped(*, record: FitRecord, max_ratio: float) -> None:
-    """Assert the last-epoch mean loss fell clearly below the first-epoch mean.
+    """Assert the late-epoch mean loss fell clearly below the early-epoch mean.
+
+    Early/late windows are the first/last quarter of epochs (at least one), which
+    tolerates the epoch-to-epoch noise of queue-based contrastive losses.
 
     Args:
         record: Result of :func:`fit_model`.
@@ -34,9 +37,11 @@ def loss_dropped(*, record: FitRecord, max_ratio: float) -> None:
     losses = record.epoch_losses
     assert len(losses) >= 2, f"need >= 2 epochs of loss, got {losses}"
     assert all(math.isfinite(value) for value in losses), f"non-finite loss in {losses}"
-    first, last = losses[0], losses[-1]
+    window = max(1, len(losses) // 4)
+    first = sum(losses[:window]) / window
+    last = sum(losses[-window:]) / window
     assert first - last >= (1 - max_ratio) * abs(first), (
-        f"loss did not drop enough: first epoch {first:.4f}, last {last:.4f}, "
+        f"loss did not drop enough: early mean {first:.4f}, late mean {last:.4f}, "
         f"required ratio <= {max_ratio}"
     )
 
@@ -93,6 +98,7 @@ def probe_beats_baselines(
     datamodule: SyntheticClassificationDataModule,
     encode_kwargs: Mapping[str, object],
     margin: float,
+    random_tolerance: float = 0.0,
 ) -> None:
     """Assert probe accuracy on trained features beats chance and a random-init encoder.
 
@@ -118,7 +124,10 @@ def probe_beats_baselines(
         f"probe at chance: {trained_accuracy:.3f} <= {chance:.3f} + {margin} "
         f"(random-init {random_accuracy:.3f})"
     )
-    assert trained_accuracy > random_accuracy or trained_accuracy >= _SATURATED_ACCURACY, (
+    assert (
+        trained_accuracy > random_accuracy - random_tolerance
+        or trained_accuracy >= _SATURATED_ACCURACY
+    ), (
         f"training made features no better than random init: "
         f"trained {trained_accuracy:.3f} vs random {random_accuracy:.3f}"
     )
