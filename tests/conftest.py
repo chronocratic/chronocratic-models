@@ -8,6 +8,8 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
+from tests.pipeline.flag import apply_skip_pipeline
+
 # --------------------------------------------------------------------------- #
 # Shared training helper
 # --------------------------------------------------------------------------- #
@@ -130,3 +132,18 @@ def finite_losses() -> Callable[..., None]:
         finite_losses(losses, expected_min=5)
     """
     return assert_finite_losses
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register the ``--skip-pipeline`` option."""
+    parser.addoption(
+        "--skip-pipeline",
+        action="store_true",
+        default=False,
+        help="Skip slow end-to-end pipeline learning tests (also: SKIP_PIPELINE_TESTS=1).",
+    )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip ``pipeline``-marked tests when the flag or env var is set."""
+    apply_skip_pipeline(config=config, items=items)

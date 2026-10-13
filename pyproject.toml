@@ -80,6 +80,7 @@ fallback_version = "0.1.0a1"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = ["pipeline: slow end-to-end training tests on synthetic data (skip with --skip-pipeline)"]
 
 [tool.towncrier]
 package = "chronocratic.models"
