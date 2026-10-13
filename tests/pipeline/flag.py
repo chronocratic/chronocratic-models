@@ -33,5 +33,5 @@ def apply_skip_pipeline(*, config: pytest.Config, items: list[pytest.Item]) -> N
         return
     skip = pytest.mark.skip(reason="pipeline tests disabled (--skip-pipeline)")
     for item in items:
-        if PIPELINE_MARKER in item.keywords:
+        if item.get_closest_marker(PIPELINE_MARKER) is not None:
             item.add_marker(skip)
