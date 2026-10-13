@@ -72,7 +72,7 @@ class SyntheticClassificationDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self._scaling = scaling
         self._nan_pad_fraction = nan_pad_fraction
-        self._loader_mode = loader_mode
+        self._loader_mode = LoaderMode(loader_mode)
         self._seed = seed
         self._splits: dict[str, tuple[torch.Tensor, torch.Tensor]] = {}
 
