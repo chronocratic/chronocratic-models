@@ -705,3 +705,26 @@ Current divergences and known limits:
 - **TST, open limit** — encoding at full-partition lengths is length-*correct* but O(T²) in memory and will exhaust it before raising. Chunked windowing is an open follow-up.
 - **`process_sample_length`, open limit** — uses `np.random.default_rng()` per call, so it is not controlled by `lightning.seed_everything` and training crops are not reproducible across runs. Shared by TS2Vec, CoST, AutoTCL, TST, and TimeVAE.
 - **Pretrain/encode length mismatch, open question** — a model pretrained on crops of one length and used to encode windows of another is mechanically valid after patching, but whether representation quality holds across lengths is empirical. Worth measuring before publishing numbers.
+
+## Pipeline Tests and Adding a Model
+
+`tests/pipeline/` trains every model end to end on structured synthetic data
+(`LightningDataModule` + `Trainer.fit`) and checks that it learns: the loss
+drops, gradients reach every parameter group, and a linear probe on `encode()`
+features (or reconstruction / accuracy for generative / supervised models)
+beats chance.
+
+These tests are slower than unit tests. Skip them for a quick run:
+
+```bash
+uv run pytest --skip-pipeline        # or: SKIP_PIPELINE_TESTS=1 uv run pytest
+```
+
+CI and a plain `uv run pytest` run them.
+
+**A new model cannot merge without a pipeline spec.** Add a `ModelSpec` to
+`tests/pipeline/specs.py` (builder with a small config, a datamodule factory,
+the task type and thresholds). `tests/pipeline/test_completeness.py` fails if an
+exported `LightningModule` has no spec, even when `--skip-pipeline` is set.
+If a model genuinely fails a check, mark its spec with a strict `xfail` that
+names a tracking issue; do not weaken the check.
