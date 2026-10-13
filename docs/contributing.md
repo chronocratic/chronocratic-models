@@ -732,8 +732,8 @@ CI and a plain `uv run pytest` run them.
 the task type). `tests/pipeline/test_completeness.py` fails if an exported
 `LightningModule` has no spec, even when `--skip-pipeline` is set.
 
-`epochs` is the only per-model knob. A model that needs more than the default
-gets a comment beside the override with the measured reason (e.g. the epoch at
-which it leaves a loss plateau, over several seeds). Never tune the shared
+A spec may only change `epochs` and its datamodule (e.g. a shorter
+`seq_len`). Each override gets a comment with the measured reason, over several
+seeds (e.g. the epoch at which the model leaves a loss plateau). Never tune the shared
 thresholds for one model. If a model genuinely fails a check, mark its spec with
 a strict `xfail` that names a tracking issue.

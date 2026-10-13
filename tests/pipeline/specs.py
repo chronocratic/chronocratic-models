@@ -60,9 +60,9 @@ class ModelSpec:
     task: Task
     build: Callable[[pl.LightningDataModule], pl.LightningModule]
     make_datamodule: Callable[[], pl.LightningDataModule]
-    epochs: int = (
-        10  # the only per-model knob; any override needs a comment with the measured reason
-    )
+    # Per-model knobs are epochs and the datamodule; any override needs a comment
+    # with the measured reason. Thresholds are shared (test_pipeline.py).
+    epochs: int = 10
     frozen_groups: frozenset[str] = frozenset()
     encode_kwargs: Mapping[str, object] = field(default_factory=dict)
     reconstruct: Callable[[pl.LightningModule, object], object] | None = None
@@ -305,24 +305,18 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec(
         name="recurrent_ae",
-        # Starts on a predict-the-mean plateau; escape epoch is chaotic. Locally it
-        # escapes at epoch 10-22 over 8 seeds, but ubuntu CI had not escaped by 30.
-        epochs=60,
         model_class=RecurrentAutoEncoder,
         task=Task.GENERATIVE,
         build=_recurrent_ae,
-        make_datamodule=SyntheticForecastingDataModule,
+        make_datamodule=partial(SyntheticForecastingDataModule, seq_len=16),
         reconstruct=_reconstruct,
     ),
     ModelSpec(
         name="timenet",
-        # Same predict-the-mean plateau as recurrent_ae: escapes at epoch 12-17 locally
-        # over 8 seeds, too close to 30 given the CI drift seen on recurrent_ae.
-        epochs=60,
         model_class=TimeNet,
         task=Task.GENERATIVE,
         build=_timenet,
-        make_datamodule=SyntheticForecastingDataModule,
+        make_datamodule=partial(SyntheticForecastingDataModule, seq_len=16),
         reconstruct=_reconstruct,
     ),
     ModelSpec(
