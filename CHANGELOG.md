@@ -11,6 +11,22 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a20 (2026-10-13)
+
+### Added
+
+- Added the MHCCL model for cluster-level contrastive learning, ported from [MHCCL](https://github.com/mqwfrog/MHCCL). A query encoder and a momentum-updated key encoder embed two augmented views; FINCH hierarchical clustering partitions those embeddings from fine to coarse with no cluster count to choose; and each anchor is contrasted against both the instances sharing its finest-grained cluster and every partition's prototypes, under multi-label sigmoid objectives rather than softmax InfoNCE. Upward masking drops per-cluster outliers before a prototype is recomputed, and downward masking moves candidate negatives sharing the anchor's parent cluster into the positives. It accepts an injected `AugmentationProducer[ViewPair]` like the other contrastive models and supports both `VECTOR` and `SEQUENCE` output. FINCH is reimplemented in torch on the input's device, the reference's scikit-learn, SciPy and pynndescent path not being a dependency here; connected-component labelling is asserted equal to `scipy.sparse.csgraph`. Clustering runs per batch over each sample's raw series and both views unioned with a momentum feature bank, because the reference addresses its per-epoch assignments through a dataset-global sample index this library's batch contract does not carry; that bank is capped at one epoch of rows, making `feature_bank_size` a ceiling the data can lower. Candidate scores are inner products computed with `einsum`, where the reference reshapes its `(B, M, D)` candidate stack to `(B, D, M)` and so reinterprets the flat buffer rather than permuting axes. Ten further divergences, a singleton-batch guard via `ensure_pairable_batch`, and one open limit are recorded in the *Current divergences and known limits* section of the contributing guide. ([#94](https://github.com/chronocratic/chronocratic-models/issues/94))
+- Add end-to-end pipeline tests that train every model on structured synthetic data through a `LightningDataModule` and assert it learns (loss drop, gradient flow, linear probe / reconstruction / accuracy). Disable them with `--skip-pipeline`; a completeness test requires a pipeline spec for every new model. ([#101](https://github.com/chronocratic/chronocratic-models/issues/101))
+
+### Changed
+
+- Moved `Conv1dResNetEncoder` and its residual blocks out of `chronocratic.models.convolutional.standard.simclr`, now that MHCCL is a second consumer: general-purpose blocks live in `chronocratic.models.convolutional.standard.layers.residual` and the named architecture that assembles them in `chronocratic.models.convolutional.standard.encoders.resnet`. Import `Conv1dResNetEncoder` from the latter instead. The encoder also gained `stem_conv_kernel_size`, which lets the stem convolution use a different kernel size from the residual convolutions; it defaults to `None` and falls back to `conv_kernel_size`, so existing configurations, `state_dict` shapes and checkpoints are unaffected. ([#94](https://github.com/chronocratic/chronocratic-models/issues/94))
+
+### Fixed
+
+- **Behaviour change:** TS-TCC's default augmentation no longer collapses the encoder on data that is not zero-mean and unit-scale (for example MINMAX-scaled UCR/UEA series, where the loss sat at chance). `TSTCC` now z-normalizes each series over time before augmentation and in `encode()` (`instance_normalize=True`, also on `TSTCCModelParameters`). The default pair is now per-timestep `TSTCCScaling` (weak) and `Jitter(0.8)` (strong) with segment permutation off (`_default_tstcc_pair(max_segments=..., jitter_sigma=...)` sets both). The original HAR recipe is `augmentation=_default_tstcc_pair(max_segments=8)`. Training also warns once when the loss is still at chance after 500 steps. `_compute_loss` now returns `(loss, batch_size)`, and `tstcc.augmentations` no longer re-exports the shared primitives (import them from `chronocratic.models.augmentation.primitives`). ([#100](https://github.com/chronocratic/chronocratic-models/issues/100))
+
+
 ## v0.1.0a19 (2026-10-01)
 
 ### Added
