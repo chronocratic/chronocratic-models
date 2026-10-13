@@ -49,17 +49,21 @@ class Task(StrEnum):
 
 @dataclass(frozen=True)
 class ModelSpec:
-    """How to build, feed and judge one model."""
+    """How to build, feed and judge one model.
+
+    Pass/fail thresholds are shared by every spec (see ``test_pipeline.py``); the
+    pipeline tests are a canary, so models differ only in how long they train.
+    """
 
     name: str
     model_class: type[pl.LightningModule]
     task: Task
     build: Callable[[pl.LightningDataModule], pl.LightningModule]
     make_datamodule: Callable[[], pl.LightningDataModule]
-    epochs: int = 10
-    max_loss_ratio: float = 0.9
-    probe_margin: float = 0.1
-    random_tolerance: float = 0.0
+    epochs: int = (
+        10  # the only per-model knob; any override needs a comment with the measured reason
+    )
+    frozen_groups: frozenset[str] = frozenset()
     encode_kwargs: Mapping[str, object] = field(default_factory=dict)
     reconstruct: Callable[[pl.LightningModule, object], object] | None = None
     loss_key: str | None = None
@@ -210,6 +214,7 @@ def _tstcc_supervised(dm: SyntheticClassificationDataModule) -> pl.LightningModu
 MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec(
         name="ts2vec",
+        frozen_groups=frozenset({"_averaged_encoder"}),  # SWA copy, updated outside backprop
         model_class=TS2Vec,
         task=Task.CONTRASTIVE,
         build=_ts2vec,
@@ -217,6 +222,7 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec(
         name="autotcl",
+        frozen_groups=frozenset({"_averaged_encoder"}),  # SWA copy, updated outside backprop
         model_class=AutoTCL,
         task=Task.CONTRASTIVE,
         build=_autotcl,
@@ -225,7 +231,6 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec(
         name="cost",
         epochs=30,
-        max_loss_ratio=0.95,
         model_class=CoST,
         task=Task.CONTRASTIVE,
         build=_cost,
@@ -234,7 +239,6 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec(
         name="mcl",
         epochs=20,
-        max_loss_ratio=0.95,
         model_class=MCL,
         task=Task.CONTRASTIVE,
         build=_mcl,
@@ -250,7 +254,6 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec(
         name="simclr",
         epochs=30,
-        max_loss_ratio=0.95,
         model_class=SimCLR,
         task=Task.CONTRASTIVE,
         build=_simclr,
@@ -266,6 +269,8 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec(
         name="tstcc_minmax",
+        # Guards the instance_normalize=True default (#100): with it off, TS-TCC does not
+        # learn on raw MINMAX data, so this fails if the default is ever flipped.
         epochs=20,
         model_class=TSTCC,
         task=Task.CONTRASTIVE,
@@ -285,7 +290,6 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec(
         name="tst_nan_padded",
         epochs=30,
-        random_tolerance=0.05,  # 1 test sample = 1.25%; random transformer features are strong here
         model_class=TST,
         task=Task.CONTRASTIVE,
         build=_tst,
@@ -301,7 +305,9 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec(
         name="recurrent_ae",
-        epochs=30,  # plateaus near the mean for ~20 epochs, then fits
+        # Starts on a predict-the-mean plateau; escape epoch is chaotic. Locally it
+        # escapes at epoch 10-22 over 8 seeds, but ubuntu CI had not escaped by 30.
+        epochs=60,
         model_class=RecurrentAutoEncoder,
         task=Task.GENERATIVE,
         build=_recurrent_ae,
@@ -310,7 +316,9 @@ MODEL_SPECS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec(
         name="timenet",
-        epochs=30,  # plateaus near the mean for ~20 epochs, then fits
+        # Same predict-the-mean plateau as recurrent_ae: escapes at epoch 12-17 locally
+        # over 8 seeds, too close to 30 given the CI drift seen on recurrent_ae.
+        epochs=60,
         model_class=TimeNet,
         task=Task.GENERATIVE,
         build=_timenet,

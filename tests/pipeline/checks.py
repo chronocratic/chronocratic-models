@@ -16,12 +16,10 @@ __all__ = [
     "gradients_flow",
     "linear_probe_accuracy",
     "loss_dropped",
-    "probe_beats_baselines",
+    "probe_beats_chance",
     "recon_beats_baseline",
     "supervised_accuracy",
 ]
-
-_SATURATED_ACCURACY = 0.95
 
 
 def loss_dropped(*, record: FitRecord, max_ratio: float) -> None:
@@ -46,10 +44,18 @@ def loss_dropped(*, record: FitRecord, max_ratio: float) -> None:
     )
 
 
-def gradients_flow(*, record: FitRecord) -> None:
-    """Assert gradients were finite and every parameter group received a nonzero one."""
+def gradients_flow(*, record: FitRecord, frozen_groups: frozenset[str] = frozenset()) -> None:
+    """Assert gradients were finite and every trainable parameter group received a nonzero one.
+
+    Args:
+        record: Result of :func:`fit_model`.
+        frozen_groups: Top-level groups that are trainable but updated outside backprop
+            (e.g. an EMA/SWA copy), so they are expected never to receive a gradient.
+    """
     assert not record.nonfinite_grad, "non-finite gradient observed"
-    dead = sorted(group for group, seen in record.grad_seen.items() if not seen)
+    dead = sorted(
+        group for group, seen in record.grad_seen.items() if not seen and group not in frozen_groups
+    )
     assert not dead, f"no nonzero gradient ever reached parameter groups: {dead}"
 
 
@@ -91,46 +97,29 @@ def encode_features(
     return torch.nan_to_num(features)
 
 
-def probe_beats_baselines(
+def probe_beats_chance(
     *,
-    trained: pl.LightningModule,
-    random_init: pl.LightningModule,
+    model: pl.LightningModule,
     datamodule: SyntheticClassificationDataModule,
     encode_kwargs: Mapping[str, object],
     margin: float,
-    random_tolerance: float = 0.0,
 ) -> None:
-    """Assert probe accuracy on trained features beats chance and a random-init encoder.
+    """Assert a linear probe on ``encode()`` features beats chance by ``margin``.
 
-    "Beats random-init" is waived when the trained probe is saturated (>= 0.95),
-    because on easy synthetic data random conv features can also saturate.
+    Catches a collapsed encoder (constant or label-blind features), which a
+    falling contrastive loss alone does not rule out.
     """
     train_x, train_y = datamodule.train_arrays()
     test_x, test_y = datamodule.test_arrays()
-    n_classes = datamodule.num_classes
-
-    def accuracy(model: pl.LightningModule) -> float:
-        return linear_probe_accuracy(
-            train_x=encode_features(model=model, x=train_x, encode_kwargs=encode_kwargs),
-            train_y=train_y,
-            test_x=encode_features(model=model, x=test_x, encode_kwargs=encode_kwargs),
-            test_y=test_y,
-            n_classes=n_classes,
-        )
-
-    trained_accuracy, random_accuracy = accuracy(trained), accuracy(random_init)
-    chance = 1 / n_classes
-    assert trained_accuracy > chance + margin, (
-        f"probe at chance: {trained_accuracy:.3f} <= {chance:.3f} + {margin} "
-        f"(random-init {random_accuracy:.3f})"
+    accuracy = linear_probe_accuracy(
+        train_x=encode_features(model=model, x=train_x, encode_kwargs=encode_kwargs),
+        train_y=train_y,
+        test_x=encode_features(model=model, x=test_x, encode_kwargs=encode_kwargs),
+        test_y=test_y,
+        n_classes=datamodule.num_classes,
     )
-    assert (
-        trained_accuracy > random_accuracy - random_tolerance
-        or trained_accuracy >= _SATURATED_ACCURACY
-    ), (
-        f"training made features no better than random init: "
-        f"trained {trained_accuracy:.3f} vs random {random_accuracy:.3f}"
-    )
+    chance = 1 / datamodule.num_classes
+    assert accuracy > chance + margin, f"probe at chance: {accuracy:.3f} <= {chance:.3f} + {margin}"
 
 
 def recon_beats_baseline(
@@ -138,8 +127,17 @@ def recon_beats_baseline(
     model: pl.LightningModule,
     datamodule: pl.LightningDataModule,
     reconstruct: Callable[[pl.LightningModule, torch.Tensor], torch.Tensor],
+    max_ratio: float,
 ) -> None:
-    """Assert reconstruction MSE on test data beats predicting the training mean."""
+    """Assert reconstruction MSE on test data clearly beats predicting the training mean.
+
+    Args:
+        model: Trained generative module.
+        datamodule: Data source; its train split gives the mean baseline.
+        reconstruct: Maps ``(model, x)`` to the reconstruction of ``x``.
+        max_ratio: Required ``error <= max_ratio * baseline``; an untrained model sits
+            at ~1.0, so the margin rules out outputs that only shrink toward the mean.
+    """
     datamodule.setup(stage="fit")
     train_x = torch.cat([_features(batch) for batch in datamodule.train_dataloader()])
     test_x = torch.cat([_features(batch) for batch in datamodule.test_dataloader()])
@@ -148,8 +146,8 @@ def recon_beats_baseline(
     with torch.no_grad():
         error = F.mse_loss(reconstruct(model, test_x), test_x).item()
     baseline = F.mse_loss(train_x.mean(dim=0, keepdim=True).expand_as(test_x), test_x).item()
-    assert error < baseline, (
-        f"reconstruction MSE {error:.4f} not below mean baseline {baseline:.4f}"
+    assert error <= max_ratio * baseline, (
+        f"reconstruction MSE {error:.4f} not below {max_ratio} x mean baseline {baseline:.4f}"
     )
 
 

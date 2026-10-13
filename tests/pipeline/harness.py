@@ -16,6 +16,8 @@ class FitRecord:
     Attributes:
         epoch_losses: Mean training loss per epoch.
         grad_seen: Top-level submodule name -> a finite, nonzero gradient was seen.
+            Every group holding a trainable parameter is listed, so a group cut off
+            from the loss (``grad is None`` throughout) shows up as ``False``.
         nonfinite_grad: Any NaN/Inf gradient was seen.
     """
 
@@ -50,12 +52,16 @@ class _Recorder(pl.Callback):
         if self._loss_key is not None and self._loss_key in trainer.callback_metrics:
             self._metric_losses.append(float(trainer.callback_metrics[self._loss_key]))
 
+    def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:  # noqa: ARG002
+        for name, parameter in pl_module.named_parameters():
+            if parameter.requires_grad:
+                self._grad_seen.setdefault(name.split(".")[0], False)
+
     def on_after_backward(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:  # noqa: ARG002
         for name, parameter in pl_module.named_parameters():
             if parameter.grad is None:
                 continue
             group = name.split(".")[0]
-            self._grad_seen.setdefault(group, False)
             if not torch.isfinite(parameter.grad).all():
                 self._nonfinite = True
             elif parameter.grad.abs().sum() > 0:

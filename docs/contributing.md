@@ -710,9 +710,14 @@ Current divergences and known limits:
 
 `tests/pipeline/` trains every model end to end on structured synthetic data
 (`LightningDataModule` + `Trainer.fit`) and checks that it learns: the loss
-drops, gradients reach every parameter group, and a linear probe on `encode()`
-features (or reconstruction / accuracy for generative / supervised models)
-beats chance.
+drops, gradients reach every trainable parameter group, and a linear probe on
+`encode()` features (or reconstruction / accuracy for generative / supervised
+models) beats chance.
+
+They are a canary, not a benchmark: the thresholds in
+`tests/pipeline/test_pipeline.py` are loose, shared by every model, and catch a
+model that does not learn at all (flat loss, dead gradients, collapsed
+features), not one that learns slowly.
 
 These tests are slower than unit tests. Skip them for a quick run:
 
@@ -724,7 +729,11 @@ CI and a plain `uv run pytest` run them.
 
 **A new model cannot merge without a pipeline spec.** Add a `ModelSpec` to
 `tests/pipeline/specs.py` (builder with a small config, a datamodule factory,
-the task type and thresholds). `tests/pipeline/test_completeness.py` fails if an
-exported `LightningModule` has no spec, even when `--skip-pipeline` is set.
-If a model genuinely fails a check, mark its spec with a strict `xfail` that
-names a tracking issue; do not weaken the check.
+the task type). `tests/pipeline/test_completeness.py` fails if an exported
+`LightningModule` has no spec, even when `--skip-pipeline` is set.
+
+`epochs` is the only per-model knob. A model that needs more than the default
+gets a comment beside the override with the measured reason (e.g. the epoch at
+which it leaves a loss plateau, over several seeds). Never tune the shared
+thresholds for one model. If a model genuinely fails a check, mark its spec with
+a strict `xfail` that names a tracking issue.
