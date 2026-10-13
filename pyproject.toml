@@ -81,13 +81,6 @@ fallback_version = "0.1.0a1"
 pythonpath = ["."]
 testpaths = ["tests"]
 markers = ["pipeline: slow end-to-end training tests on synthetic data (skip with --skip-pipeline)"]
-# Lightning/torch environment notices: tests pin CPU and tiny in-process loaders on purpose.
-filterwarnings = [
-    "ignore:GPU available but not used:UserWarning",
-    "ignore:.*does not have many workers which may be a bottleneck",
-    "ignore:`isinstance\\(treespec, LeafSpec\\)` is deprecated",
-    "ignore:'pin_memory' argument is set as true but:UserWarning",
-]
 
 [tool.towncrier]
 package = "chronocratic.models"
