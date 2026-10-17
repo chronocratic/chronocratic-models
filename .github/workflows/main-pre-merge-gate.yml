@@ -16,8 +16,12 @@ jobs:
     steps:
       - name: Reject non-dev PRs
         if: ${{ github.head_ref != 'dev' }}
+        # The branch name is chosen by whoever opens the PR, so it reaches the
+        # shell through env, never through template expansion.
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          echo "::error::PRs from '${{ github.head_ref }}' to main are not allowed. Only dev→main merges are permitted."
+          echo "::error::PRs from '${HEAD_REF}' to main are not allowed. Only dev→main merges are permitted."
           exit 1
 
       - name: Checkout

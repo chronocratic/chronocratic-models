@@ -141,4 +141,6 @@ jobs:
           fi
 
       - name: Verify a fragment is present
-        run: uv run towncrier check --compare-with origin/${{ github.base_ref }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run towncrier check --compare-with "origin/${BASE_REF}"
