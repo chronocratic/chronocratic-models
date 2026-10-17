@@ -92,11 +92,11 @@ def _clustered_features(
     return (centres + noise).reshape(groups * per_group, dim)
 
 
-def _random_first_neighbour_graph(num_points: int, rng: np.random.Generator) -> np.ndarray:
+def _random_first_neighbour_graph(num_points: int, generator: torch.Generator) -> np.ndarray:
     """Return a random functional graph: one out-edge per node, no self-loops."""
-    return np.array(
-        [rng.choice([j for j in range(num_points) if j != i]) for i in range(num_points)]
-    )
+    # Draw from the other num_points - 1 nodes, then skip over the node itself.
+    targets = torch.randint(low=0, high=num_points - 1, size=(num_points,), generator=generator)
+    return (targets + (targets >= torch.arange(num_points)).long()).numpy()
 
 
 @pytest.fixture(autouse=True)
@@ -227,10 +227,10 @@ class TestReferenceEquivalence:
         smallest member index, so the agreement is exact, not merely a matching
         partition.
         """
-        rng = np.random.default_rng(0)
+        generator = torch.Generator().manual_seed(0)
         for _ in range(60):
-            num_points = int(rng.integers(2, 60))
-            neighbours = _random_first_neighbour_graph(num_points, rng)
+            num_points = int(torch.randint(low=2, high=60, size=(1,), generator=generator))
+            neighbours = _random_first_neighbour_graph(num_points, generator)
             ours, count = _weak_connected_components(torch.as_tensor(neighbours))
             adjacency = sp.csr_matrix(
                 (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbours)),
@@ -295,9 +295,9 @@ class TestReferenceEquivalence:
         pruning: it writes zeros into stored entries, and the csgraph routines
         read only the sparsity structure.
         """
-        rng = np.random.default_rng(1)
+        generator = torch.Generator().manual_seed(1)
         num_points = 40
-        neighbours = _random_first_neighbour_graph(num_points, rng)
+        neighbours = _random_first_neighbour_graph(num_points, generator)
         adjacency = sp.csr_matrix(
             (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbours)),
             shape=(num_points, num_points),

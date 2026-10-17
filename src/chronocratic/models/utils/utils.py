@@ -17,7 +17,6 @@ __all__ = [
 
 
 from einops import rearrange
-import numpy as np
 import torch
 from torch.nn import functional as F  # noqa: N812
 
@@ -90,8 +89,10 @@ def process_sample_length(
 ) -> torch.Tensor:
     """Randomly crop the sample to `max_sample_length` along the time axis; no-op if unset."""
     if max_sample_length is not None and sample.size(1) > max_sample_length:
-        rng = np.random.default_rng()
-        window_offset = rng.integers(sample.size(1) - max_sample_length + 1)
+        # Global torch generator, so ``seed_everything`` makes the crop repeatable.
+        window_offset = int(
+            torch.randint(low=0, high=sample.size(1) - max_sample_length + 1, size=(1,))
+        )
         sample = sample[:, window_offset : window_offset + max_sample_length]
 
     return sample

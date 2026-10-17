@@ -3,10 +3,7 @@ __all__ = ["MaskMode", "generate_mask"]
 from collections.abc import Callable
 from enum import StrEnum
 
-import numpy as np
 import torch
-
-_rng = np.random.default_rng()
 
 
 class MaskMode(StrEnum):
@@ -56,7 +53,7 @@ def generate_continuous_mask(
 
     for i in range(batch_size):
         for _ in range(n_segments):
-            start = _rng.integers(seq_length - segment_length + 1)
+            start = int(torch.randint(low=0, high=seq_length - segment_length + 1, size=(1,)))
             mask[i, start : start + segment_length] = False
 
     return mask
@@ -76,8 +73,8 @@ def generate_binomial_mask(
     Returns:
         torch.Tensor: A boolean mask tensor of shape (batch_size, seq_length).
     """
-    samples = _rng.binomial(1, probability, size=(batch_size, seq_length))
-    return torch.from_numpy(samples).to(torch.bool)
+    # Global torch generator, so ``seed_everything`` makes the mask repeatable.
+    return torch.bernoulli(torch.full((batch_size, seq_length), probability)).bool()
 
 
 def generate_all_true_mask(*, batch_size: int, seq_length: int) -> torch.Tensor:

@@ -12,10 +12,14 @@ __all__ = ["CropShiftAugmentationParameters", "CropShiftProducer"]
 
 from dataclasses import dataclass
 
-import numpy as np
 import torch
 
 from chronocratic.models.augmentation.base import AlignedPair
+
+
+def _randint(*, low: int, high: int) -> int:
+    """Draw one integer in ``[low, high)`` from the global torch CPU generator."""
+    return int(torch.randint(low=low, high=high, size=(1,)))
 
 
 @dataclass
@@ -56,11 +60,6 @@ class CropShiftProducer:
                 When ``None``, defaults to ``CropShiftAugmentationParameters()``.
         """
         self._params = params if params is not None else CropShiftAugmentationParameters()
-        self._rng: np.random.Generator = np.random.default_rng()
-
-    def reseed(self, rng: np.random.Generator) -> None:
-        """Replace the internal RNG (called by Seeded decorator for determinism)."""
-        self._rng = rng
 
     def produce(self, x: torch.Tensor) -> AlignedPair:
         """Return two overlapping random crops of ``x`` with random per-sample shifts.
@@ -96,15 +95,16 @@ class CropShiftProducer:
                 f"or provide longer sequences."
             )
             raise ValueError(msg)
-        crop_length = self._rng.integers(min_crop_length, total_length + 1)
-
-        crop_start = self._rng.integers(0, total_length - crop_length + 1)
+        # Global torch CPU generator, so ``seed_everything`` and ``Seeded``
+        # both make the views repeatable, identically on every device.
+        crop_length = _randint(low=min_crop_length, high=total_length + 1)
+        crop_start = _randint(low=0, high=total_length - crop_length + 1)
         crop_end = crop_start + crop_length
-        crop_extension_start = self._rng.integers(0, crop_start + 1)
-        crop_extension_end = self._rng.integers(crop_end, total_length + 1)
+        crop_extension_start = _randint(low=0, high=crop_start + 1)
+        crop_extension_end = _randint(low=crop_end, high=total_length + 1)
 
-        crop_offsets = self._rng.integers(
-            -crop_extension_start, total_length - crop_extension_end + 1, size=x.size(0)
+        crop_offsets = torch.randint(
+            low=-crop_extension_start, high=total_length - crop_extension_end + 1, size=(x.size(0),)
         )
 
         # Generate augmented subsequences 1 by cropping and shifting
