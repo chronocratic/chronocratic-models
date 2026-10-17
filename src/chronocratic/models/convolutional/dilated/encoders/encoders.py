@@ -68,11 +68,7 @@ class BaseTimeSeriesEncoder(nn.Module, ABC):
 
     @abstractmethod
     def forward(
-        self,
-        x: torch.Tensor,
-        *,
-        return_tcn_output: bool = False,
-        mask_mode: MaskMode = MaskMode.ALL_TRUE,
+        self, x: torch.Tensor, *, return_tcn_output: bool = False, mask_mode: MaskMode | None = None
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         pass
 
@@ -182,11 +178,7 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
         return trend
 
     def forward(
-        self,
-        x: torch.Tensor,
-        *,
-        return_tcn_output: bool = False,
-        mask_mode: MaskMode = MaskMode.ALL_TRUE,
+        self, x: torch.Tensor, *, return_tcn_output: bool = False, mask_mode: MaskMode | None = None
     ) -> torch.Tensor:
         """Encode a batch of time series into trend representations.
 
@@ -194,7 +186,9 @@ class AutoTCLTimeSeriesEncoder(BaseTimeSeriesEncoder):
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: If ``True``, return the raw TCN output
                 ``(batch, time, representation_dim)`` before trend decoding.
-            mask_mode: Masking strategy applied to the input.
+            mask_mode: Masking strategy applied to the input. ``None`` applies the
+                configured ``mask_mode`` in training and ``ALL_TRUE`` in eval, as
+                upstream AutoTCL does for its encoder step.
 
         Returns:
             Trend tensor of shape ``(batch, time, representation_dim)``, or the
@@ -534,7 +528,7 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
         x: torch.Tensor,
         *,
         return_tcn_output: bool = False,
-        mask_mode: MaskMode = MaskMode.ALL_TRUE,
+        mask_mode: MaskMode | None = MaskMode.ALL_TRUE,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Encode a batch of time series into disentangled trend and seasonal representations.
 
@@ -542,7 +536,10 @@ class CoSTTimeSeriesEncoder(BaseTimeSeriesEncoder):
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: If ``True``, return the raw TCN output
                 ``(batch, time, representation_dim)`` before component decoding.
-            mask_mode: Masking strategy applied to the input.
+            mask_mode: Masking strategy applied to the input. Defaults to
+                ``ALL_TRUE``, as upstream CoST does, so training applies no mask
+                and the configured ``mask_mode`` only takes effect when
+                ``None`` is passed.
 
         Returns:
             A 2-tuple ``(trend, season)`` where both tensors have shape
@@ -624,14 +621,16 @@ class TS2VecTimeSeriesEncoder(BaseTimeSeriesEncoder):
         x: torch.Tensor,
         *,
         return_tcn_output: bool = False,  # noqa: ARG002
-        mask_mode: MaskMode = MaskMode.ALL_TRUE,
+        mask_mode: MaskMode | None = None,
     ) -> torch.Tensor:
         """Encode a batch of time series into contextual representations.
 
         Args:
             x: Input tensor of shape ``(batch, time, channels)``.
             return_tcn_output: Unused; present for interface compatibility.
-            mask_mode: Masking strategy applied to the input.
+            mask_mode: Masking strategy applied to the input. ``None`` applies the
+                configured ``mask_mode`` in training and ``ALL_TRUE`` in eval, as
+                upstream TS2Vec does.
 
         Returns:
             Encoded tensor of shape ``(batch, time, representation_dim)``.

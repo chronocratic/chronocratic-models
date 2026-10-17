@@ -29,7 +29,9 @@ class CoSTModelParameters:
         dropout_rate: Dropout probability applied after each encoder layer.
         conv_kernel_size: Convolutional kernel size in the dilated encoder.
             Defaults to ``3`` matching the source CoST implementation.
-        mask_mode: Strategy for masking input tokens during training.
+        mask_mode: Stored on the encoders but not applied in training: the encoder
+            ``forward`` defaults to ``ALL_TRUE``, as upstream CoST does, so no mask is
+            drawn. Kept for parity with the upstream constructor.
         learning_rate: Base learning rate for the optimizer.
         seasonal_loss_weight: Weight for the seasonal contrastive loss term.
         queue_size: Size of the memory queue for contrastive learning.
