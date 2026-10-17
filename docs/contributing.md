@@ -81,7 +81,7 @@ uv run ty check src/
 
 ```bash
 # Install documentation dependencies
-uv sync --extra docs
+uv sync --group docs
 
 # Build the documentation
 uv run sphinx-build -b html docs/ docs/_build/

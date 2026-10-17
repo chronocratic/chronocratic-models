@@ -36,13 +36,6 @@ dependencies = [
     "tqdm>=4.66.0",
 ]
 
-[project.optional-dependencies]
-docs = [
-    "sphinx>=7.0",
-    "pydata-sphinx-theme>=0.15",
-    "myst-parser>=3.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/chronocratic/chronocratic-models"
 Documentation = "https://chronocratic-models.readthedocs.io/"
@@ -61,6 +54,12 @@ dev = [
 notebooks = [
     "notebook>=7.3",
     "jupyterlab>=4.3",
+]
+
+docs = [
+    "sphinx>=7.0",
+    "pydata-sphinx-theme>=0.15",
+    "myst-parser>=3.0",
 ]
 
 [tool.uv]
