@@ -1,0 +1,61 @@
+name: Publish docs
+
+# Trigger a Read the Docs build when a release is published, through the
+# project's generic incoming webhook (RTD: Admin > Integrations > Generic API
+# incoming webhook), instead of relying on GitHub events reaching RTD.
+#
+# The webhook only builds versions RTD already knows and has active, and it
+# never syncs new tags by itself. So it asks for `main` and the new tag:
+# `main` is the `latest` version, kept Active but Hidden on RTD so it never
+# shows in the version menu or search. Every RTD build first syncs branches
+# and tags from git, which runs the project automation rules on the new tag;
+# the "set as default" rule activates the tag, builds it and makes it the
+# default version. If the tag version already exists and is active, the
+# webhook builds it directly.
+#
+# Required secrets, in the `rtd` GitHub environment:
+#   RTD_WEBHOOK_URL    the webhook URL, https://app.readthedocs.org/api/v2/webhook/<project>/<id>/
+#   RTD_WEBHOOK_TOKEN  the webhook token shown next to that URL
+# The environment deployment rules must allow release tags (`v*`), because a
+# release event runs on the tag ref.
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  trigger:
+    name: Trigger Read the Docs build
+    runs-on: ubuntu-latest
+    environment:
+      name: rtd
+      url: https://chronocratic-models.readthedocs.io/
+    steps:
+      - name: Call the RTD incoming webhook
+        env:
+          RTD_WEBHOOK_URL: ${{ secrets.RTD_WEBHOOK_URL }}
+          RTD_WEBHOOK_TOKEN: ${{ secrets.RTD_WEBHOOK_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -z "${RTD_WEBHOOK_URL}" ] || [ -z "${RTD_WEBHOOK_TOKEN}" ]; then
+            echo "::error::Set the RTD_WEBHOOK_URL and RTD_WEBHOOK_TOKEN secrets in the 'rtd' environment."
+            exit 1
+          fi
+
+          # JSON, not form data: repeated form keys collapse to the last value,
+          # and jq quotes the tag safely.
+          PAYLOAD=$(jq -n --arg token "${RTD_WEBHOOK_TOKEN}" --arg tag "${TAG}" \
+            '{token: $token, branches: ["main", $tag]}')
+
+          RESPONSE=$(curl --silent --show-error --fail-with-body \
+            --header "Content-Type: application/json" \
+            --data "${PAYLOAD}" \
+            "${RTD_WEBHOOK_URL}")
+          echo "RTD response: ${RESPONSE}"
+
+          if [ "$(jq -r '.build_triggered' <<< "${RESPONSE}")" != "true" ]; then
+            echo "::error::Read the Docs did not start a build. Check that the 'latest' version is Active (Hidden is fine)."
+            exit 1
+          fi
