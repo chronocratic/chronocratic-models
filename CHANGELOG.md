@@ -11,6 +11,18 @@ for instructions on adding changelog fragments.
 
 <!-- towncrier release notes start -->
 
+## v0.1.0rc1 (2026-10-17)
+
+### Removed
+
+- **Breaking:** removed the `Reseedable` protocol (`chronocratic.models.augmentation.Reseedable`) and `CropShiftProducer.reseed()`. Producers draw from the global torch generator, which `Seeded` already seeds through `torch.manual_seed`, so the extra NumPy hook is no longer needed. Custom producers that implemented `reseed()` should draw with `torch.randint`, `torch.rand` and similar instead; wrapping them in `Seeded` then makes them deterministic with no further code. ([#104](https://github.com/chronocratic/chronocratic-models/issues/104))
+
+### Fixed
+
+- **Behaviour change:** training is now repeatable under a fixed seed. Every random draw in the library now comes from the global torch generator, so `lightning.seed_everything` (or `torch.manual_seed`) controls all of it; no NumPy or Python `random` generator is used anywhere. Previously three NumPy generators were never seeded: the training crop of `process_sample_length` (TS2Vec, AutoTCL, CoST, TST, MHCCL, SimCLR, TimeVAE when `max_train_length` is set), the binomial and continuous masks of the dilated encoder (which never ran in training before the masking fix below), and the default TS2Vec crop-and-shift views. The CoST temporal index draw moved from a NumPy generator to torch as well. Draws use the CPU generator, so they are identical on CPU, CUDA and MPS. Results for these models change once (new random streams) and are reproducible from then on; earlier numbers for them cannot be reproduced exactly. ([#104](https://github.com/chronocratic/chronocratic-models/issues/104))
+- **Behaviour change:** TS2Vec and AutoTCL now apply their configured `mask_mode` (default `BINOMIAL`) while training, as upstream does. The dilated encoder `forward` defaulted to `mask_mode=ALL_TRUE`, which overrode the configured mode, so since the first port these models trained without any input mask. The encoder `forward` now defaults to `None`: the configured mode in training, `ALL_TRUE` in eval and `encode()`. The AutoTCL augmentation step still encodes without a mask, as upstream does. CoST is unchanged: upstream CoST applies no mask in training, and its `mask_mode` argument has no effect there either. Training results for TS2Vec and AutoTCL change. ([#104](https://github.com/chronocratic/chronocratic-models/issues/104))
+
+
 ## v0.1.0a20 (2026-10-13)
 
 ### Added
