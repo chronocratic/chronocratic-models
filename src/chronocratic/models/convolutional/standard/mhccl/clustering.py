@@ -117,12 +117,19 @@ def _weak_connected_components(neighbors: torch.Tensor) -> tuple[torch.Tensor, i
     """
     num_points = neighbors.numel()
     device = neighbors.device
-    index = torch.arange(num_points, device=device)
+    # MPS has no int64 ``scatter_reduce_(reduce="amin")``, so labels drop to
+    # int32 there only; node counts stay far below 2**31, so nothing is lost.
+    # Every other device keeps int64.
+    label_dtype = torch.int32 if device.type == "mps" else torch.int64
+    index = torch.arange(num_points, device=device, dtype=label_dtype)
+    neighbors = neighbors.to(dtype=label_dtype)
 
     # Weak connectivity is connectivity of the undirected closure, so every
     # edge is followed in both directions.
     sources = torch.cat([index, neighbors])
-    targets = torch.cat([neighbors, index])
+    # ``scatter_reduce_`` needs an int64 index on older torch (2.4). This only
+    # converts on MPS, where labels are int32; elsewhere it does nothing.
+    targets = torch.cat([neighbors, index]).long()
 
     labels = index.clone()
     # Each round hooks every node onto the smallest label in its neighbourhood,

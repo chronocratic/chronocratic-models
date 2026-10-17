@@ -69,3 +69,15 @@ def test_series2vec_filters_preserve_device(device: str) -> None:
     x = torch.randn(2, 128, device=device)
     out = filter_frequencies(x)
     assert out.device.type == device
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_mhccl_finch_runs(device: str) -> None:
+    """FINCH must run on any device; MPS lacks int64 scatter_reduce amin."""
+    from chronocratic.models.convolutional.standard.mhccl.clustering import finch
+
+    groups = torch.randn(6, 1, 8) * 10
+    features = (groups + torch.randn(6, 5, 8) * 0.1).reshape(30, 8).to(device=device)
+    hierarchy = finch(features, max_levels=3)
+    assert len(hierarchy.assignments) >= 1
+    assert hierarchy.assignments[0].dtype == torch.int64
