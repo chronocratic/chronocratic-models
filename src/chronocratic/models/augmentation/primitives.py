@@ -10,6 +10,8 @@ Shared across all models. Imports nothing model-specific.
 Exported symbols:
     - ``Jitter``, ``JitterParameters``: Additive Gaussian noise.
     - ``Scaling``, ``ScalingParameters``: Per-channel multiplicative scaling.
+    - ``TimestepScaling``, ``TimestepScalingParameters``: Per-timestep
+      multiplicative scaling.
     - ``Permutation``, ``PermutationParameters``: Time-segment permutation.
     - ``ComposeAugmentation``: Chain primitives sequentially.
 """
@@ -24,6 +26,8 @@ __all__ = [
     "PermutationParameters",
     "Scaling",
     "ScalingParameters",
+    "TimestepScaling",
+    "TimestepScalingParameters",
 ]
 
 from dataclasses import dataclass
@@ -147,6 +151,66 @@ class Scaling:
         if self._params.per_sample:
             shape[0] = x.size(0)
         factor = torch.randn(shape, device=x.device) * self._params.sigma + self._params.mean
+        return x * factor
+
+
+# --------------------------------------------------------------------------- #
+# TimestepScaling
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class TimestepScalingParameters:
+    """Parameters for :class:`TimestepScaling`.
+
+    The defaults are the TS-TCC reference's ``scaling(sigma=1.1)``.
+
+    Args:
+        sigma: Std of the per-timestep Gaussian scale factor.
+        mean: Mean of the per-timestep Gaussian scale factor.
+    """
+
+    sigma: float = 1.1
+    mean: float = 2.0
+
+
+class TimestepScaling:
+    """Multiply every timestep by an independent Gaussian factor.
+
+    Matches the TS-TCC reference's ``scaling``, which draws a factor of shape
+    ``(N, T)`` and multiplies every channel by it. On ``(B, T, C)`` input the
+    factor has shape ``(B, T, 1)`` and is broadcast across channels.
+
+    :class:`Scaling` draws one factor per sample/channel instead, which an
+    encoder with bias-free convolutions and ``GroupNorm`` cancels, so it
+    leaves such a model's view nearly the identity.
+
+    Satisfies the :class:`Augmentation` Protocol via ``__call__``.
+    """
+
+    def __init__(self, params: TimestepScalingParameters | None = None) -> None:
+        """Initialize the scaling augmentation.
+
+        Args:
+            params: Scale-factor distribution. Defaults to
+                ``TimestepScalingParameters()`` (``sigma=1.1``, ``mean=2.0``).
+        """
+        self._params = params if params is not None else TimestepScalingParameters()
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        """Return a per-timestep scaled view of ``x``.
+
+        Args:
+            x: Input tensor of shape ``(batch, time, channels)``.
+
+        Returns:
+            Tensor with the same shape as ``x``.
+        """
+        factor_shape = (x.size(0), x.size(1), 1)
+        factor = (
+            torch.randn(factor_shape, device=x.device, dtype=x.dtype) * self._params.sigma
+            + self._params.mean
+        )
         return x * factor
 
 

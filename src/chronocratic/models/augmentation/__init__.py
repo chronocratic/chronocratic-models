@@ -14,7 +14,8 @@ This package provides the producer contract for augmentation strategies.
 - :func:`maybe_train_augmentation` / :func:`maybe_configure_augmentation_optimizer`
   from ``trainable_support.py``.
 - Shared primitives (:class:`Jitter`, :class:`Scaling`,
-  :class:`Permutation`, :class:`ComposeAugmentation`) from ``primitives.py``.
+  :class:`TimestepScaling`, :class:`Permutation`,
+  :class:`ComposeAugmentation`) from ``primitives.py``.
 
 **Note:** Model-specific augmentations are imported from their respective
 model subpackages (e.g., ``chronocratic.models.convolutional.dilated.ts2vec.augmentation``).
@@ -40,6 +41,8 @@ from .primitives import (
     PermutationParameters,
     Scaling,
     ScalingParameters,
+    TimestepScaling,
+    TimestepScalingParameters,
 )
 from .producers import (
     FullOverlapProducer,
@@ -67,6 +70,8 @@ __all__ = [
     "Seeded",
     "SingleView",
     "SingleViewProducer",
+    "TimestepScaling",
+    "TimestepScalingParameters",
     "TrainableAugmentationProducer",
     "ViewPair",
     "maybe_configure_augmentation_optimizer",

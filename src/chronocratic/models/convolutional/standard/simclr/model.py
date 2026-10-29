@@ -18,6 +18,7 @@ from chronocratic.models.losses import NTXentLoss
 from chronocratic.models.utils import (
     ensure_pairable_batch,
     extract_features_from_batch,
+    normalize_per_series,
     process_sample_length,
     zero_fill_padding,
 )
@@ -101,10 +102,17 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
       reference's hardcoded ``BatchNorm``. See
       :func:`~chronocratic.models.convolutional.standard.layers.residual._norm_layer`;
       ``normalization_layer_type=BATCH`` restores the reference.
-    - **Default scaling uses ``sigma=0.1`` and a per-sample factor.** The
-      reference's ``sigma=1.1`` places a substantial fraction of its scale
-      factors below zero, inverting the sign of the series they scale. See
+    - **The default pair drops segment permutation and scales each
+      timestep.** Permutation makes the per-timestep loss discard where
+      things happen in a series, and the reference's per-channel scaling is
+      cancelled by ``GroupNorm``. ``max_segments=5`` restores the reference's
+      strong view. See
       :func:`~chronocratic.models.convolutional.standard.simclr.augmentations._default_simclr_pair`.
+    - **Each series is z-normalized over time** before augmentation and in
+      ``encode()`` (``instance_normalize=True``). The default jitter is
+      absolute, so on unnormalized data (MINMAX-scaled to ``(0, 1)``, std
+      about 0.1) it is several times the signal. The reference trains on
+      data already z-normalized per series (UCR).
     - **``encode()`` does not L2-normalize.** The reference returns
       ``F.normalize(h_out)``. Every other model in this library returns raw
       features, and the projection path normalizes internally either way, so
@@ -166,12 +174,16 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
             the projection head. ``CHANNEL`` uses GroupNorm(1, C), which is
             batch-size independent. ``BATCH`` uses BatchNorm1d and reproduces
             the reference.
-        augmentation: Optional custom augmentation producer. Defaults to the
-            reference weak/strong pair (Gaussian scaling; segment permutation
-            with jitter).
+        augmentation: Optional custom augmentation producer. Defaults to
+            :func:`_default_simclr_pair` (per-timestep scaling | jitter, no
+            permutation).
         singleton_split_count: Number of contiguous windows to split a
             singleton batch into for contrastive loss computation. Defaults
             to ``3`` to ensure sufficient negatives at ``batch_size=1``.
+        instance_normalize: Z-normalize each series and channel over time
+            before augmentation (training) and before the encoder
+            (``encode()``). Makes the absolute jitter scale-relative. Set
+            ``False`` to keep amplitude information. Defaults to ``True``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -200,6 +212,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL,
         augmentation: "AugmentationProducer[ViewPair] | None" = None,
         singleton_split_count: int = 3,
+        instance_normalize: bool = True,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -226,6 +239,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
             msg = f"singleton_split_count must be >= 2, got {singleton_split_count}"
             raise ValueError(msg)
         self._singleton_split_count = singleton_split_count
+        self._instance_normalize = instance_normalize
 
         self._encoder = Conv1dResNetEncoder(
             input_dim=input_dim,
@@ -323,6 +337,8 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         data = ensure_pairable_batch(
             data, split_count=self._singleton_split_count, min_window_len=self._conv_kernel_size
         )
+        if self._instance_normalize:
+            data = normalize_per_series(data)
 
         pair = self._augmentation.produce(data)
         return self.criterion(self(pair.first), self(pair.second))
@@ -451,11 +467,12 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         *,
         output: EncodingOutputShape = EncodingOutputShape.VECTOR,
     ) -> torch.Tensor:
-        """Reduce the backbone feature map to the requested output shape.
+        """Instance-normalize if enabled, encode, and reduce to the output shape.
 
         Returns backbone features, never projections — the projection head
         shapes the contrastive objective only and is discarded downstream,
-        which is what SimCLR prescribes.
+        which is what SimCLR prescribes. With ``instance_normalize`` the
+        input gets the same per-series z-normalization as in training.
 
         The backbone returns ``(B, C, T')`` unpooled, so this method owns the
         temporal reduction. VECTOR averages over time, which is exactly the
@@ -482,8 +499,13 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
         Raises:
             ValueError: If ``output`` is not a supported shape.
         """
+        # Zero-filled timesteps enter the per-series mean and std, in training
+        # and here alike.
         batch_x, _ = zero_fill_padding(batch_x)
-        features = encoder(batch_x.float())  # (B, C, T')
+        batch_x = batch_x.float()
+        if self._instance_normalize:
+            batch_x = normalize_per_series(batch_x)
+        features = encoder(batch_x)  # (B, C, T')
         if output == EncodingOutputShape.VECTOR:
             return features.mean(dim=-1)  # (B, C) — VECTOR
         if output == EncodingOutputShape.SEQUENCE:

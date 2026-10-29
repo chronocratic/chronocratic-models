@@ -26,13 +26,20 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
-from chronocratic.models.augmentation.primitives import Jitter, JitterParameters
+from chronocratic.models.augmentation.primitives import (
+    Jitter,
+    JitterParameters,
+    Permutation,
+    TimestepScaling,
+    TimestepScalingParameters,
+)
 from chronocratic.models.augmentation.producers import FullOverlapProducer, IndependentPairProducer
 from chronocratic.models.convolutional.standard.encoders.resnet import Conv1dResNetEncoder
 from chronocratic.models.convolutional.standard.layers.residual import (
     Conv1dBasicBlock,
     Conv1dBottleneckBlock,
 )
+from chronocratic.models.convolutional.standard.simclr import model as simclr_model
 from chronocratic.models.convolutional.standard.simclr.augmentations import _default_simclr_pair
 from chronocratic.models.convolutional.standard.simclr.config import SimCLRModelParameters
 from chronocratic.models.convolutional.standard.simclr.model import SimCLR
@@ -41,7 +48,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.losses import NTXentLoss
 from chronocratic.models.protocols import HasEncoder
-from chronocratic.models.utils import ensure_pairable_batch
+from chronocratic.models.utils import ensure_pairable_batch, normalize_per_series
 from chronocratic.models.utils.helpers import reset_warning_cache
 
 # Asymmetric on purpose: T=50, C=3.
@@ -305,28 +312,13 @@ class TestReferenceEquivalence:
         """SimCLR uses NT-Xent — the loss the reference's contrastive_loss computes."""
         assert isinstance(_small_model().criterion, NTXentLoss)
 
-    def test_default_augmentation_matches_reference_constants(self) -> None:
-        """The default pair carries ULTS DataTransform's constants.
-
-        Scaling is the documented exception; see the sigma test below.
-        """
-        producer = _default_simclr_pair()
-        assert producer._first._params.mean == pytest.approx(1.0)
-        permutation, jitter = producer._second._augmentations
+    def test_reference_strong_view_is_one_argument_away(self) -> None:
+        """``max_segments=5`` restores ULTS DataTransform's strong view."""
+        permutation, jitter = _default_simclr_pair(max_segments=5)._second._augmentations
+        assert isinstance(permutation, Permutation)
         assert permutation._params.max_segments == 5
+        assert isinstance(jitter, Jitter)
         assert jitter._params.sigma == pytest.approx(0.8)
-
-    def test_default_scaling_sigma_cannot_flip_the_signal(self) -> None:
-        """Scaling must not invert whole series, which breaks the view pair.
-
-        The factor is drawn from ``N(mean, sigma)``, so the reference's
-        ``sigma=1.1`` around ``mean=1.0`` sends 18.2% of draws negative. That
-        leaves NT-Xent at exactly ``ln(2N - 1)`` — pure chance — on GunPoint.
-        Three sigma inside the positive half-line keeps sign flips negligible.
-        """
-        params = _default_simclr_pair()._first._params
-        assert params.mean - 3 * params.sigma > 0.0
-        assert params.sigma == pytest.approx(0.1)
 
 
 # --------------------------------------------------------------------------- #
@@ -551,7 +543,7 @@ class TestNaNHandling:
 
     def test_clean_input_regression(self) -> None:
         """The NaN guard leaves clean inputs untouched."""
-        model = _small_model()
+        model = _small_model(instance_normalize=False)
         model.eval()
         x = _data()
         with torch.no_grad():
@@ -659,6 +651,71 @@ class TestAugmentation:
         """The default producer conforms to AugmentationProducer[ViewPair]."""
         producer: AugmentationProducer[ViewPair] = _default_simclr_pair()
         assert isinstance(producer.produce(_data()), ViewPair)
+
+    def test_default_pair_has_no_permutation(self) -> None:
+        """Permutation makes the per-timestep loss discard position (#99)."""
+        producer = _default_simclr_pair()
+        assert isinstance(producer._first, TimestepScaling)
+        assert producer._first._params == TimestepScalingParameters()
+        assert isinstance(producer._second, Jitter)
+        assert producer._second._params.sigma == pytest.approx(0.8)
+
+    def test_jitter_sigma_is_configurable(self) -> None:
+        assert _default_simclr_pair(jitter_sigma=0.3)._second._params.sigma == pytest.approx(0.3)
+
+    def test_rejects_max_segments_below_one(self) -> None:
+        with pytest.raises(ValueError, match="max_segments"):
+            _default_simclr_pair(max_segments=0)
+
+    def test_weak_view_scale_varies_over_time(self) -> None:
+        """A factor constant over time is cancelled by GroupNorm (#99).
+
+        The previous per-series ``Scaling`` left the weak view nearly the
+        identity; the per-timestep factor must not.
+        """
+        torch.manual_seed(0)
+        x = torch.rand(BATCH, TIME, CHANNELS) + 1.0
+        factor = _default_simclr_pair().produce(x).first / x
+        assert (factor.std(dim=1) > 0.1).all()
+        # One factor per timestep, shared by every channel, as in TS-TCC.
+        assert torch.allclose(factor, factor[..., :1].expand_as(factor), atol=1e-5)
+
+
+class TestInstanceNormalize:
+    """instance_normalize in training and encoding."""
+
+    @pytest.mark.parametrize("instance_normalize", [True, False])
+    def test_compute_loss_normalizes_only_when_enabled(
+        self, *, instance_normalize: bool, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        calls: list[torch.Tensor] = []
+
+        def recording_normalize(x: torch.Tensor) -> torch.Tensor:
+            calls.append(x)
+            return normalize_per_series(x)
+
+        monkeypatch.setattr(simclr_model, "normalize_per_series", recording_normalize)
+        model = _small_model(instance_normalize=instance_normalize)
+        model._compute_loss(_data())
+        assert len(calls) == int(instance_normalize)
+
+    @pytest.mark.parametrize("instance_normalize", [True, False])
+    def test_encode_batch_normalizes_only_when_enabled(self, *, instance_normalize: bool) -> None:
+        torch.manual_seed(0)
+        model = _small_model(instance_normalize=instance_normalize)
+        model.eval()
+        x = _data()
+        with torch.no_grad():
+            encoded = model._encode_batch(model.encoder, x * 10.0 + 3.0)
+            reference_input = normalize_per_series(x) if instance_normalize else x * 10.0 + 3.0
+            reference = model.encoder(reference_input).mean(dim=-1)
+        assert torch.allclose(encoded, reference, atol=1e-5)
+
+    def test_default_is_enabled(self) -> None:
+        model = _small_model()
+        assert model._instance_normalize is True
+        assert model.hparams["instance_normalize"] is True
+        assert SimCLRModelParameters(input_dim=1).instance_normalize is True
 
 
 # --------------------------------------------------------------------------- #
@@ -951,7 +1008,7 @@ class TestPoolingDecoupling:
         mean over the last axis. ``_encode_batch`` performs that mean, so probes
         and checkpoints are unaffected by the encoder no longer pooling.
         """
-        model = _small_model()
+        model = _small_model(instance_normalize=False)
         model.eval()
         batch = _data()
         with torch.no_grad():

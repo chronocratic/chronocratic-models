@@ -2,8 +2,8 @@
 
 Verifies TSTCC accepts AugmentationProducer[ViewPair] via
 _default_tstcc_pair(), uses .produce().first/.second, and trains with finite loss.
-Also covers TSTCCScaling, the pair builders' composition, and instance
-normalization in training and encoding.
+Also covers the pair builders' composition and instance normalization in
+training and encoding.
 """
 
 from collections.abc import Callable
@@ -11,16 +11,19 @@ from collections.abc import Callable
 import pytest
 import torch
 
-from chronocratic.models.augmentation.base import Augmentation, ViewPair
-from chronocratic.models.augmentation.primitives import ComposeAugmentation, Jitter, Permutation
+from chronocratic.models.augmentation.base import ViewPair
+from chronocratic.models.augmentation.primitives import (
+    ComposeAugmentation,
+    Jitter,
+    Permutation,
+    TimestepScaling,
+    TimestepScalingParameters,
+)
 from chronocratic.models.augmentation.producers import RolePairProducer
 from chronocratic.models.convolutional.standard.tstcc import model as tstcc_model
-from chronocratic.models.convolutional.standard.tstcc.augmentations import (
-    _default_tstcc_pair,
-    TSTCCScaling,
-    TSTCCScalingParameters,
-)
-from chronocratic.models.convolutional.standard.tstcc.model import _instance_normalize, TSTCC
+from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
+from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
+from chronocratic.models.utils import normalize_per_series
 
 
 class TestDefaultTSTCCPair:
@@ -133,42 +136,13 @@ def _strong_view_parts(producer: object) -> list[object]:
     return [strong]
 
 
-class TestTSTCCScaling:
-    """TSTCCScaling: upstream per-timestep scaling, broadcast across channels."""
-
-    def test_satisfies_augmentation_protocol(self) -> None:
-        assert isinstance(TSTCCScaling(), Augmentation)
-
-    def test_keeps_shape(self) -> None:
-        x = torch.ones(4, 50, 3)
-        assert TSTCCScaling()(x).shape == x.shape
-
-    def test_factor_varies_across_timesteps(self) -> None:
-        torch.manual_seed(0)
-        factor = TSTCCScaling()(torch.ones(2, 50, 1))
-        assert factor[0, :, 0].std().item() > 0.1
-
-    def test_factor_broadcast_across_channels(self) -> None:
-        torch.manual_seed(0)
-        factor = TSTCCScaling()(torch.ones(2, 50, 3))
-        assert torch.equal(factor[..., 0], factor[..., 1])
-        assert torch.equal(factor[..., 0], factor[..., 2])
-
-    def test_factor_distribution_follows_params(self) -> None:
-        torch.manual_seed(0)
-        params = TSTCCScalingParameters(sigma=0.5, mean=3.0)
-        factor = TSTCCScaling(params)(torch.ones(64, 256, 1))
-        assert factor.mean().item() == pytest.approx(3.0, abs=0.02)
-        assert factor.std().item() == pytest.approx(0.5, abs=0.02)
-
-
 class TestPairComposition:
     """_default_tstcc_pair() composition."""
 
-    def test_default_weak_view_is_tstcc_scaling(self) -> None:
+    def test_default_weak_view_is_timestep_scaling(self) -> None:
         producer = _default_tstcc_pair()
         assert isinstance(producer, RolePairProducer)
-        assert isinstance(producer._first, TSTCCScaling)
+        assert isinstance(producer._first, TimestepScaling)
 
     def test_default_has_no_permutation(self) -> None:
         parts = _strong_view_parts(_default_tstcc_pair())
@@ -191,8 +165,8 @@ class TestPairComposition:
         producer = _default_tstcc_pair(max_segments=8)
         assert isinstance(producer, RolePairProducer)
         weak = producer._first
-        assert isinstance(weak, TSTCCScaling)
-        assert weak._params == TSTCCScalingParameters(sigma=1.1, mean=2.0)
+        assert isinstance(weak, TimestepScaling)
+        assert weak._params == TimestepScalingParameters(sigma=1.1, mean=2.0)
         parts = _strong_view_parts(producer)
         assert [type(part) for part in parts] == [Permutation, Jitter]
         assert parts[0]._params.max_segments == 8
@@ -200,19 +174,7 @@ class TestPairComposition:
 
 
 class TestInstanceNormalize:
-    """_instance_normalize and its use in training and encoding."""
-
-    def test_zero_mean_unit_std_per_series_and_channel(self) -> None:
-        torch.manual_seed(0)
-        x = torch.rand(4, 100, 3) * 5.0 + 2.0
-        normalized = _instance_normalize(x)
-        assert torch.allclose(normalized.mean(dim=1), torch.zeros(4, 3), atol=1e-5)
-        assert torch.allclose(normalized.std(dim=1, unbiased=False), torch.ones(4, 3), atol=1e-4)
-
-    def test_constant_series_gives_zeros(self) -> None:
-        normalized = _instance_normalize(torch.full((2, 50, 1), 0.7))
-        assert not torch.isnan(normalized).any()
-        assert torch.equal(normalized, torch.zeros_like(normalized))
+    """normalize_per_series in training and encoding."""
 
     @pytest.mark.parametrize("instance_normalize", [True, False])
     def test_compute_loss_normalizes_only_when_enabled(
@@ -222,9 +184,9 @@ class TestInstanceNormalize:
 
         def recording_normalize(x: torch.Tensor) -> torch.Tensor:
             calls.append(x)
-            return _instance_normalize(x)
+            return normalize_per_series(x)
 
-        monkeypatch.setattr(tstcc_model, "_instance_normalize", recording_normalize)
+        monkeypatch.setattr(tstcc_model, "normalize_per_series", recording_normalize)
         model = TSTCC(
             input_dim=1,
             conv_kernel_size=5,
@@ -247,7 +209,7 @@ class TestInstanceNormalize:
         x = torch.rand(4, 100, 1)
         with torch.no_grad():
             encoded = model._encode_batch(model.encoder, x * 10.0 + 3.0)
-            reference_input = _instance_normalize(x) if instance_normalize else x * 10.0 + 3.0
+            reference_input = normalize_per_series(x) if instance_normalize else x * 10.0 + 3.0
             reference = model.encoder(reference_input).mean(dim=-1)
         assert torch.allclose(encoded, reference, atol=1e-5)
 

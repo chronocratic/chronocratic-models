@@ -1,5 +1,6 @@
-"""Tests for augmentation primitives: Jitter, Scaling, Permutation, ComposeAugmentation.
+"""Tests for augmentation primitives.
 
+Covers Jitter, Scaling, TimestepScaling, Permutation and ComposeAugmentation.
 Verifies that shared, model-agnostic primitives:
 - Return same-shape tensors (no TrainingViews wrapping).
 - Accept optional parameter dataclasses with correct defaults.
@@ -9,8 +10,10 @@ Verifies that shared, model-agnostic primitives:
 
 from dataclasses import is_dataclass
 
+import pytest
 import torch
 
+from chronocratic.models.augmentation.base import Augmentation
 from chronocratic.models.augmentation.primitives import (
     ComposeAugmentation,
     Jitter,
@@ -19,6 +22,8 @@ from chronocratic.models.augmentation.primitives import (
     PermutationParameters,
     Scaling,
     ScalingParameters,
+    TimestepScaling,
+    TimestepScalingParameters,
 )
 
 
@@ -64,6 +69,38 @@ class TestScaling:
         # (with high probability given sigma=0.1, mean=1.0)
         ratios = result[:, :, 0] / data[:, :, 0]
         assert not torch.allclose(ratios, ratios[0:1])
+
+
+class TestTimestepScaling:
+    """TimestepScaling: per-timestep factor, broadcast across channels."""
+
+    def test_satisfies_augmentation_protocol(self) -> None:
+        assert isinstance(TimestepScaling(), Augmentation)
+
+    def test_keeps_shape(self) -> None:
+        x = torch.ones(4, 50, 3)
+        assert TimestepScaling()(x).shape == x.shape
+
+    def test_factor_varies_across_timesteps(self) -> None:
+        torch.manual_seed(0)
+        factor = TimestepScaling()(torch.ones(2, 50, 1))
+        assert factor[0, :, 0].std().item() > 0.1
+
+    def test_factor_broadcast_across_channels(self) -> None:
+        torch.manual_seed(0)
+        factor = TimestepScaling()(torch.ones(2, 50, 3))
+        assert torch.equal(factor[..., 0], factor[..., 1])
+        assert torch.equal(factor[..., 0], factor[..., 2])
+
+    def test_factor_distribution_follows_params(self) -> None:
+        torch.manual_seed(0)
+        params = TimestepScalingParameters(sigma=0.5, mean=3.0)
+        factor = TimestepScaling(params)(torch.ones(64, 256, 1))
+        assert factor.mean().item() == pytest.approx(3.0, abs=0.02)
+        assert factor.std().item() == pytest.approx(0.5, abs=0.02)
+
+    def test_defaults_are_tstcc_reference(self) -> None:
+        assert TimestepScalingParameters() == TimestepScalingParameters(sigma=1.1, mean=2.0)
 
 
 class TestPermutation:
