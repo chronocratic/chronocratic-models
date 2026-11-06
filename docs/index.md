@@ -48,5 +48,6 @@ The library provides time series models organized by architecture family.
 quickstart
 changelog
 contributing
+model-notes
 api/index
 ```
