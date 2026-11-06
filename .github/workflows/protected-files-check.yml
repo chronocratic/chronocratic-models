@@ -8,6 +8,7 @@ on:
       - ruff.toml
       - .pre-commit-config.yaml
       - .vscode/**
+      - docs/contributing.md
 
 jobs:
   check-pyproject:
@@ -247,6 +248,70 @@ jobs:
               // Rolled back since the last flag — clear the warning instead of leaving it stale.
               body = `${marker}\n` +
                 `✅ No \`.vscode/\` files are modified by this PR anymore. Protected-file warning cleared.`;
+            } else {
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  check-contributing:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check contributing guide
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- protected-files-check:contributing -->';
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const changed = files.find(f => f.filename === 'docs/contributing.md');
+
+            // One marker comment per PR, kept in sync with the current diff.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            const baseRef = context.payload.pull_request.base.ref;
+            const docUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}` +
+              `/blob/${baseRef}/docs/contributing.md#protected-project-files`;
+
+            let body;
+            if (changed) {
+              body = `${marker}\n` +
+                `⚠️ **Contributing guide** — General Rules\n\n` +
+                `This PR modifies \`docs/contributing.md\` (${changed.status}), which holds ` +
+                `model-independent rules maintained by core maintainers.\n\n` +
+                `Core maintainers should verify:\n` +
+                `- The change is a general rule, not model-specific\n` +
+                `- Model-specific content belongs in \`docs/model-notes.md\`\n\n` +
+                `See [Contributing](${docUrl}) for policy.`;
+            } else if (existing) {
+              // Rolled back since the last flag — clear the warning instead of leaving it stale.
+              body = `${marker}\n` +
+                `✅ \`docs/contributing.md\` is no longer modified by this PR. Protected-file warning cleared.`;
             } else {
               return;
             }

@@ -93,6 +93,7 @@ Certain files affect every user of the project, so changes to them are **flagged
 
 - **`pyproject.toml`** — Build configuration, dependencies, and project metadata. Changes here affect all users and may introduce regressions.
 - **`.vscode/`** — Editor settings for linting, formatting, and type-checking (e.g. `settings.json`). Shared configuration that ensures consistency across the team.
+- **`docs/contributing.md`** — This guide. It holds general, model-independent rules. Model-specific notes belong in `docs/model-notes.md`, which anyone may edit.
 
 An automated CI check (`protected-files-check.yml`) posts an advisory comment on any PR that modifies these files. The comment is informational — it does not block the merge, but it makes the change explicit for reviewers. If a change is **absolutely necessary** (e.g., a dependency fix required for the PR to work), include a clear explanation in the PR description and expect maintainer review.
 
