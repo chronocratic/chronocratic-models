@@ -241,9 +241,9 @@ If an internal component expects a `list`, convert at the boundary: `list(self._
 
 Source **reference repository code**, not papers. Papers omit implementation details; cloned repos are ground truth.
 
-1. Clone the original implementation's repository.
+1. Clone the repository of the original implementation.
 2. Check actual constructor defaults and CLI argument defaults.
-3. Document any deliberate divergence where readers of the code will find it: a comment at the diverging line, the config field's docstring, and a changelog fragment.
+3. Document any deliberate divergence where readers of the code will find it: a comment at the diverging line, the docstring of the config field, and a changelog fragment.
 
 ### Hardcoded Constant Extraction
 
@@ -272,7 +272,7 @@ nn.Conv1d(256, 128, kernel_size=3),
 
 ### Runtime-Derived Dimensions
 
-A subtler variant of hardcoding, and one you will usually **inherit rather than write**: a value is not a literal, but is computed once in `__init__` from a constructor argument and baked into a weight tensor's shape. The literal is absent; the rigidity is identical.
+A subtler variant of hardcoding, and one you will usually **inherit rather than write**: a value is not a literal, but is computed once in `__init__` from a constructor argument and baked into the shape of a weight tensor. The literal is absent; the rigidity is identical.
 
 ```python
 # Upstream pattern — the flattened width is frozen at construction.
@@ -375,7 +375,7 @@ Before merging a model change, verify:
 
 ## Tensor Shape Convention
 
-All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches PyTorch's `DataLoader` output convention and the `transformers` ecosystem.
+All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches the output convention of the PyTorch `DataLoader` and the `transformers` ecosystem.
 
 ### Encoder-Owns-the-Transpose Rule
 
@@ -490,7 +490,7 @@ Every random draw in the library comes from the global torch generator, so `ligh
 
 Code in this library must work correctly on all PyTorch backends. Follow these five rules to ensure cross-device compatibility.
 
-### 1. Create on input's device, don't transfer after
+### 1. Create on the input device, don't transfer after
 
 Build auxiliary tensors on the same device as the input, instead of creating on CPU and then calling `.to()`.
 
