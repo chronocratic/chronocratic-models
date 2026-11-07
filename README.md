@@ -6,30 +6,12 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/chronocratic-models/"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="PyPI version" src="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
-  <a href="https://pepy.tech/projects/chronocratic-models"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="Total downloads" src="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
-  <a href="https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="CI status" src="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
-  <a href="https://github.com/chronocratic/chronocratic-models/blob/main/LICENSE"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="License" src="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
-  <a href="https://github.com/chronocratic/chronocratic-models/stargazers"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="GitHub stars" src="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
-  <a href="https://github.com/astral-sh/ruff"><picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=dark" />
-    <img alt="Code style: ruff" src="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=light" />
-  </picture></a>
+  <a href="https://pypi.org/project/chronocratic-models/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="PyPI version" src="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
+  <a href="https://pepy.tech/projects/chronocratic-models"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="Total downloads" src="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="CI status" src="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/blob/main/LICENSE"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="License" src="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/stargazers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="GitHub stars" src="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
+  <a href="https://github.com/astral-sh/ruff"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="Code style: ruff" src="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
 </p>
 
 | Python | Docs |
