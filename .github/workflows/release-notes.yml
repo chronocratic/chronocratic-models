@@ -8,4 +8,4 @@ jobs:
   sync:
     permissions:
       contents: write
-    uses: chronocratic/.github/.github/workflows/release-notes.yml@v0.1.0
+    uses: chronocratic/.github/.github/workflows/release-notes.yml@v0.1.1
