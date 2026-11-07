@@ -1,15 +1,40 @@
-# chronocratic-models
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/surface.svg?title=chronocratic-models&subtitle=Ready-to-use+time+series+models+implemented+in+PyTorch+and+Lightning.&align=center&font=jetbrains-mono&width=1200&height=600&bg=0E2A44&titleColor=F3F1EC&subtitleColor=A8D5D1&mode=dark&overlay=0&logo=https://raw.githubusercontent.com/chronocratic/chronocratic-models/main/.github/assets/icon-dark.png&image=https://raw.githubusercontent.com/chronocratic/chronocratic-models/main/.github/assets/header-bg-dark.png" />
+    <img alt="chronocratic-models" src="https://shieldcn.dev/header/surface.svg?title=chronocratic-models&subtitle=Ready-to-use+time+series+models+implemented+in+PyTorch+and+Lightning.&align=center&font=jetbrains-mono&width=1200&height=600&bg=F3F1EC&titleColor=0E2A44&subtitleColor=2A6A7C&mode=light&overlay=0&logo=https://raw.githubusercontent.com/chronocratic/chronocratic-models/main/.github/assets/icon-light.png&image=https://raw.githubusercontent.com/chronocratic/chronocratic-models/main/.github/assets/header-bg-light.png" />
+  </picture>
+</p>
 
-[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE)
-[![PyPI version](https://img.shields.io/pypi/v/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
-[![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/chronocratic-models?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/chronocratic-models)
-[![Build Status](https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/chronocratic/chronocratic-models/actions)
-[![Documentation Status](https://readthedocs.org/projects/chronocratic-models/badge/?version=latest)](https://chronocratic-models.readthedocs.io/en/latest/?badge=latest)
-[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![GitHub stars](https://img.shields.io/github/stars/chronocratic/chronocratic-models)](https://github.com/chronocratic/chronocratic-models/stargazers)
+<p align="center">
+  <a href="https://pypi.org/project/chronocratic-models/"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="PyPI version" src="https://shieldcn.dev/pypi/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://pepy.tech/projects/chronocratic-models"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="Total downloads" src="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-models&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/actions/workflows/build-and-test.yml"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="CI status" src="https://shieldcn.dev/github/ci/chronocratic/chronocratic-models.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/blob/main/LICENSE"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="License" src="https://shieldcn.dev/github/license/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-models/stargazers"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="GitHub stars" src="https://shieldcn.dev/github/stars/chronocratic/chronocratic-models.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/astral-sh/ruff"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="Code style: ruff" src="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+</p>
 
-Ready-to-use time series models implemented in PyTorch and Lightning.
+| Python | Docs |
+| :---: | :---: |
+| [![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-models.svg)](https://pypi.org/project/chronocratic-models/) | [![Documentation status](https://readthedocs.org/projects/chronocratic-models/badge/?version=latest)](https://chronocratic-models.readthedocs.io/en/latest/) |
 
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
