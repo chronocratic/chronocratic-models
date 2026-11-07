@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to `chronocratic-models`. This guide covers the development workflow and tooling used in the project.
 
+## License of contributions
+
+**By submitting a contribution, you agree that it is licensed under the terms of the [`LICENSE`](https://github.com/chronocratic/chronocratic-models/blob/main/LICENSE) file of this repository.**
+
 > **Note:** This guide holds general, model-independent rules and is maintained by the core maintainers. **Do not edit it in a model PR.** Anything specific to a model (support matrix, divergences from the reference, open limits, hyperparameter names, mixin or NaN-guard placement, worked examples) goes in [Model Notes](model-notes.md).
 
 ## Development Setup

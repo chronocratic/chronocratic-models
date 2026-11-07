@@ -20,8 +20,8 @@ from chronocratic.models import __version__
 
 project: str = "chronocratic-models"
 html_title: str = "chronocratic-models"
-copyright: str = "2026-Present, The Chronocratic Developers"  # noqa: A001
-author: str = "The Chronocratic Developers"
+copyright: str = "2026-Present, Chronocratic"  # noqa: A001
+author: str = "Chronocratic"
 release: str = __version__
 
 # -- General configuration ---------------------------------------------------
