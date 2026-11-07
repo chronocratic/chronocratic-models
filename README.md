@@ -22,6 +22,8 @@
 
 </div>
 
+> 📌 If you find this repository helpful or insightful, please consider **giving it a star ⭐**.
+
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
 ## Installation
