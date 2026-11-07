@@ -28,8 +28,16 @@
 
 ## Installation
 
+With pip:
+
 ```bash
 pip install chronocratic-models
+```
+
+With uv:
+
+```bash
+uv add chronocratic-models
 ```
 
 ## Quick Start
