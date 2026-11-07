@@ -103,3 +103,5 @@ For development setup, linting, testing, and coding standards, see [docs/contrib
 ## License
 
 This project is licensed under the BSD 3-Clause License — see the [LICENSE](LICENSE) file for details.
+
+The Chronocratic name and logo are not covered by the license. All rights reserved.
