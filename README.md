@@ -22,7 +22,7 @@
 
 </div>
 
-> ⭐ **Found this useful? Give it a star.** chronocratic-models is free and open source. A star takes one click, shows us which models matter to you, and helps other time series researchers find the project.
+> ⭐ **Found this useful? Give it a star.** chronocratic-models is free and open source. A star takes one click, tells us the work is worth continuing, and helps other time series researchers find the project.
 
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
