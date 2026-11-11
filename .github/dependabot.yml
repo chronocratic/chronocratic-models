@@ -5,3 +5,7 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    labels:
+      - dependencies
+      - github-actions
+      - skip-changelog
