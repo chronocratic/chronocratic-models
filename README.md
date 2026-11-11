@@ -22,9 +22,8 @@
 
 </div>
 
-> ⭐ **Found this useful? Give it a star.** chronocratic-models is free and open source. A star takes one click, tells us the work is worth continuing, and helps other time series researchers find the project.
-
-> **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
+> [!WARNING]
+> chronocratic-models is under active development. Expect breaking changes between releases until the API is declared stable in v1.0.0.
 
 ## Installation
 
@@ -39,6 +38,8 @@ With uv:
 ```bash
 uv add chronocratic-models
 ```
+
+> **Note:** The PyPI package name uses a hyphen (`chronocratic-models`), but the import uses the `chronocratic.models` namespace.
 
 ## Quick Start
 
@@ -67,6 +68,8 @@ representations = model.encode(
 )
 print(representations.shape)
 ```
+
+> ⭐ **Found this useful? Give it a star.** chronocratic-models is free and open source. A star takes one click, tells us the work is worth continuing, and helps other time series researchers find the project.
 
 ## Models
 
