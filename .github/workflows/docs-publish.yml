@@ -6,7 +6,7 @@ on:
 
 jobs:
   docs:
-    uses: chronocratic/.github/.github/workflows/docs-publish.yml@v0.1.1
+    uses: chronocratic/.github/.github/workflows/docs-publish.yml@v0.1.2
     with:
       docs-url: https://chronocratic-models.readthedocs.io/
     secrets: inherit

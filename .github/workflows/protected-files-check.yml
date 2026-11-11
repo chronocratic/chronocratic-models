@@ -13,4 +13,4 @@ jobs:
   check:
     permissions:
       pull-requests: write
-    uses: chronocratic/.github/.github/workflows/protected-files-check.yml@v0.1.1
+    uses: chronocratic/.github/.github/workflows/protected-files-check.yml@v0.1.2

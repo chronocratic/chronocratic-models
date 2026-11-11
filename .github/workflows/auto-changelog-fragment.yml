@@ -9,4 +9,4 @@ jobs:
   fragment:
     permissions:
       contents: write
-    uses: chronocratic/.github/.github/workflows/auto-changelog-fragment.yml@v0.1.1
+    uses: chronocratic/.github/.github/workflows/auto-changelog-fragment.yml@v0.1.2

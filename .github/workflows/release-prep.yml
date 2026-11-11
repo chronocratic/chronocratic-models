@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: chronocratic/.github/.github/workflows/release-prep.yml@v0.1.1
+    uses: chronocratic/.github/.github/workflows/release-prep.yml@v0.1.2
     with:
       version: ${{ inputs.version }}
     secrets: inherit
