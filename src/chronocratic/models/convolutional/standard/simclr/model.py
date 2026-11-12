@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 # ── Parameter names vs. the reference ────────────────────────────────────────
 # Parameters below are named per this library's canonical vocabulary rather
 # than the reference's. These are renames only; none of them changes
-# behaviour. Reproduced in docs/api/conv_standard.md.
+# behavior. Reproduced in docs/api/conv_standard.md.
 #
 #   this library                        ULTS (models/SimCLR/models.py)
 #   ----------------------------------  ------------------------------------
@@ -78,7 +78,7 @@ class SimCLR(pl.LightningModule, BasicEncodingMixin):
     - **1-D convolutions.** The reference stacks ``Conv2d`` over an input
       unsqueezed to ``(B, C, T, 1)``. Numerically identical; see
       :mod:`~chronocratic.models.convolutional.standard.encoders.resnet`.
-    - **Each encoder stage honours its own configured depth.** The reference
+    - **Each encoder stage honors its own configured depth.** The reference
       repeats the third stage's index in place of the fourth. See
       :class:`Conv1dResNetEncoder`.
     - **Linear warmup into cosine annealing**, the schedule the original

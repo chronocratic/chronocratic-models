@@ -199,8 +199,8 @@ class TestConfigContract:
 class TestReferenceEquivalence:
     """The reference's 2-D stack computes what this 1-D port computes."""
 
-    def test_conv2d_on_width_one_equals_conv1d_centre_column(self) -> None:
-        """Conv2d(k=3, pad=1) over (B, C, T, 1) == Conv1d(k=3, pad=1), centre column.
+    def test_conv2d_on_width_one_equals_conv1d_center_column(self) -> None:
+        """Conv2d(k=3, pad=1) over (B, C, T, 1) == Conv1d(k=3, pad=1), center column.
 
         The reference unsqueezes the series to width 1 and runs Conv2d over it.
         The outer kernel columns then only ever see zero padding, so they are
@@ -374,7 +374,7 @@ class TestEncoder:
         assert Conv1dBasicBlock.expansion == 1
         assert Conv1dBottleneckBlock.expansion == 4
 
-    def test_fourth_stage_honours_its_own_block_count(self) -> None:
+    def test_fourth_stage_honors_its_own_block_count(self) -> None:
         """Unlike the reference, stage 4 uses encoder_stage_depths[3], not encoder_stage_depths[2].
 
         The reference builds its stages with ``layers[2]`` twice, so being

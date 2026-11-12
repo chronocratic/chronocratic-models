@@ -6,7 +6,7 @@ is recomputed in
 from :class:`~chronocratic.models.convolutional.dilated.encoders.masking.MaskMode`,
 which masks input timesteps rather than cluster members.
 
-Mapping to behaviour
+Mapping to behavior
     FARTHEST:   drop the single member furthest from the centroid.
     THRESHOLD:  drop every member beyond an absolute distance.
     PROPORTION: drop a fixed fraction of each cluster, furthest first.

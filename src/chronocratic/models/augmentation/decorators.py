@@ -28,7 +28,7 @@ class Seeded[V]:
     Repeated calls with the same seed produce identical output tensors.
 
     Constraint: must NOT wrap :class:`TrainableAugmentationProducer`.
-    Trainable producers have their own parameterised state; seeding at the
+    Trainable producers have their own parameterized state; seeding at the
     producer level is not meaningful and may hide bugs.
 
     Args:

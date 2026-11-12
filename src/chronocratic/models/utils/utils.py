@@ -69,7 +69,7 @@ def ensure_pairable_batch(
         min_batch_size: Smallest batch the caller's objective can learn from.
             Batches with ``B >= min_batch_size`` are returned unchanged. The
             default ``2`` splits only singletons (the historical behavior).
-            Objectives whose normalisation needs at least two distinct pairs
+            Objectives whose normalization needs at least two distinct pairs
             (Series2Vec's min-max targets) pass ``3``.
 
     Returns:

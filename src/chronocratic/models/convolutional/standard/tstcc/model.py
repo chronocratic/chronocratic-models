@@ -88,7 +88,7 @@ def _tstcc_encoder_output_length(encoder: "TCCEncoder", seq_len: int, input_dim:
     Probed rather than derived. ``L'`` depends on ``conv_kernel_size``, ``stride``,
     both ``encoder_inner_kernels`` and three pooling stages; any formula restating
     that geometry drifts the moment the encoder changes. The previous formula
-    modelled only the pools, so its answer did not depend on ``stride`` at all --
+    modeled only the pools, so its answer did not depend on ``stride`` at all --
     it overestimated ``L'`` by 3x at ``stride=4``, which let bad configs past
     :func:`_clamp_timesteps` into the very ``ValueError`` that guard exists to
     prevent.

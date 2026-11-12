@@ -87,12 +87,12 @@ def _clustered_features(
     nothing about whether the clustering found anything.
     """
     generator = torch.Generator().manual_seed(seed)
-    centres = 8.0 * torch.randn(groups, 1, dim, generator=generator)
+    centers = 8.0 * torch.randn(groups, 1, dim, generator=generator)
     noise = torch.randn(groups, per_group, dim, generator=generator)
-    return (centres + noise).reshape(groups * per_group, dim)
+    return (centers + noise).reshape(groups * per_group, dim)
 
 
-def _random_first_neighbour_graph(num_points: int, generator: torch.Generator) -> np.ndarray:
+def _random_first_neighbor_graph(num_points: int, generator: torch.Generator) -> np.ndarray:
     """Return a random functional graph: one out-edge per node, no self-loops."""
     # Draw from the other num_points - 1 nodes, then skip over the node itself.
     targets = torch.randint(low=0, high=num_points - 1, size=(num_points,), generator=generator)
@@ -230,10 +230,10 @@ class TestReferenceEquivalence:
         generator = torch.Generator().manual_seed(0)
         for _ in range(60):
             num_points = int(torch.randint(low=2, high=60, size=(1,), generator=generator))
-            neighbours = _random_first_neighbour_graph(num_points, generator)
-            ours, count = _weak_connected_components(torch.as_tensor(neighbours))
+            neighbors = _random_first_neighbor_graph(num_points, generator)
+            ours, count = _weak_connected_components(torch.as_tensor(neighbors))
             adjacency = sp.csr_matrix(
-                (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbours)),
+                (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbors)),
                 shape=(num_points, num_points),
             )
             expected_count, expected = connected_components(
@@ -242,7 +242,7 @@ class TestReferenceEquivalence:
             assert count == expected_count
             assert np.array_equal(ours.numpy(), expected)
             # The partition is the semantically load-bearing claim; keep it
-            # asserted separately so a future SciPy relabelling degrades this
+            # asserted separately so a future SciPy relabeling degrades this
             # test rather than breaking it.
             ours_np = ours.numpy()
             assert np.array_equal(
@@ -297,9 +297,9 @@ class TestReferenceEquivalence:
         """
         generator = torch.Generator().manual_seed(1)
         num_points = 40
-        neighbours = _random_first_neighbour_graph(num_points, generator)
+        neighbors = _random_first_neighbor_graph(num_points, generator)
         adjacency = sp.csr_matrix(
-            (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbours)),
+            (np.ones(num_points, dtype=np.float32), (np.arange(num_points), neighbors)),
             shape=(num_points, num_points),
         )
         before = connected_components(csgraph=adjacency, directed=True, connection="weak")[1]

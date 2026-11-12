@@ -39,7 +39,7 @@ def _default_simclr_pair() -> AugmentationProducer[ViewPair]:
     scaling (weak) and whose second view applies segment permutation followed
     by jitter (strong). The reference notes this pairing follows TS-TCC; the
     constants differ from :func:`_default_tstcc_pair` in two places, so they
-    are sourced here rather than shared: the scale factor is centred on
+    are sourced here rather than shared: the scale factor is centered on
     ``1.0`` (TS-TCC uses ``2.0``) and permutation draws from at most ``5``
     segments (TS-TCC uses ``8``).
 

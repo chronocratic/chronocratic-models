@@ -49,7 +49,7 @@ Instance-level contrastive learning: a ResNet-1D backbone, a projection head, an
 SimCLR's parameters are named per this library's canonical vocabulary rather
 than the reference's. The mapping below is for anyone comparing this
 implementation against [ULTS](https://github.com/mqwfrog/ULTS); these are
-renames only and none of them changes behaviour.
+renames only and none of them changes behavior.
 
 | this library | ULTS (`models/SimCLR/models.py`) | why renamed |
 |---|---|---|
@@ -102,7 +102,7 @@ prototypes, with upward and downward masking shaping the pairs.
 MHCCL's parameters are named per this library's canonical vocabulary rather than
 the reference's. The mapping below is for anyone comparing this implementation
 against [MHCCL](https://github.com/mqwfrog/MHCCL); these are renames only and
-none of them changes behaviour.
+none of them changes behavior.
 
 | this library | MHCCL (`main.py` argparse, `framework.py`) | why renamed |
 |---|---|---|

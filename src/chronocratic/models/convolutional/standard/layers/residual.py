@@ -9,7 +9,7 @@ blocks and feeds them ``(B, C, T, 1)`` — the time series is unsqueezed into an
 image of width 1. Every ``Conv2d(k=3, padding=1)`` in that stack therefore sees
 a width axis of extent 1, so the left and right kernel columns only ever
 multiply zero padding: they are dead weights, and the stack computes exactly
-what the equivalent ``Conv1d(k=3, padding=1)`` computes with the centre column.
+what the equivalent ``Conv1d(k=3, padding=1)`` computes with the center column.
 These are that ``Conv1d`` form — numerically identical to the reference
 (verified at stride 1 and stride 2, and for the normalization layer, in
 ``tests/unit/test_simclr.py``) with a third of the parameters per convolution
@@ -47,7 +47,7 @@ def _norm_layer(
     # here; only the second is a divergence.
     #
     # ``BATCH`` instantiates ``BatchNorm1d`` rather than ``BatchNorm2d``. This
-    # is a consequence of the 1-D port, not a change in behaviour: on the
+    # is a consequence of the 1-D port, not a change in behavior: on the
     # reference's width-1 axis the two are the same operation. ``BatchNorm2d``
     # over ``(B, C, T, 1)`` accumulates its per-channel statistics over
     # ``B * T * 1`` elements and ``BatchNorm1d`` over ``(B, C, T)`` over

@@ -67,14 +67,14 @@ class Conv1dResNetEncoder(nn.Module):
     - **The fourth stage uses its own block count.** The reference builds its
       stages with ``layers[0], layers[1], layers[2], layers[2]`` — the last
       index is a typo, so ``resnet50_cifar`` is handed ``[3, 4, 6, 3]`` and
-      builds ``[3, 4, 6, 6]``. ``encoder_stage_depths`` is honoured entry by entry,
+      builds ``[3, 4, 6, 6]``. ``encoder_stage_depths`` is honored entry by entry,
       which restores the ResNet-50 stage pattern the reference intended.
     - **No unused projection.** The reference constructs
       ``self.linear = nn.Linear(512 * expansion, num_features)`` and never
       calls it.
     - **Normalization is configurable and defaults to GroupNorm(1, C).** The
       reference hardcodes ``BatchNorm2d``. ``BATCH`` reproduces the reference
-      behaviour; the default matches every other standard-convolution encoder
+      behavior; the default matches every other standard-convolution encoder
       in this library and stays well-defined at ``batch_size=1``.
 
     Args:
