@@ -12,14 +12,12 @@ import pytest
 import torch
 
 from chronocratic.models.augmentation.base import ViewPair
-from chronocratic.models.augmentation.primitives import (
-    ComposeAugmentation,
-    Jitter,
-    Permutation,
-    TimestepScaling,
-    TimestepScalingParameters,
-)
+from chronocratic.models.augmentation.primitives import ComposeAugmentation, Jitter, Permutation
 from chronocratic.models.augmentation.producers import RolePairProducer
+from chronocratic.models.convolutional.standard.augmentation import (
+    PerTimestepScaling,
+    PerTimestepScalingParameters,
+)
 from chronocratic.models.convolutional.standard.tstcc import model as tstcc_model
 from chronocratic.models.convolutional.standard.tstcc.augmentations import _default_tstcc_pair
 from chronocratic.models.convolutional.standard.tstcc.model import TSTCC
@@ -139,10 +137,10 @@ def _strong_view_parts(producer: object) -> list[object]:
 class TestPairComposition:
     """_default_tstcc_pair() composition."""
 
-    def test_default_weak_view_is_timestep_scaling(self) -> None:
+    def test_default_weak_view_is_per_timestep_scaling(self) -> None:
         producer = _default_tstcc_pair()
         assert isinstance(producer, RolePairProducer)
-        assert isinstance(producer._first, TimestepScaling)
+        assert isinstance(producer._first, PerTimestepScaling)
 
     def test_default_has_no_permutation(self) -> None:
         parts = _strong_view_parts(_default_tstcc_pair())
@@ -165,8 +163,8 @@ class TestPairComposition:
         producer = _default_tstcc_pair(max_segments=8)
         assert isinstance(producer, RolePairProducer)
         weak = producer._first
-        assert isinstance(weak, TimestepScaling)
-        assert weak._params == TimestepScalingParameters(sigma=1.1, mean=2.0)
+        assert isinstance(weak, PerTimestepScaling)
+        assert weak._params == PerTimestepScalingParameters(sigma=1.1, mean=2.0)
         parts = _strong_view_parts(producer)
         assert [type(part) for part in parts] == [Permutation, Jitter]
         assert parts[0]._params.max_segments == 8

@@ -1,11 +1,10 @@
 """Regression test: SimCLR with default settings learns on MINMAX-scaled data.
 
-On data MINMAX-scaled to ``(0, 1)`` the per-series std is about 0.1, so the
-absolute ``Jitter(0.8)`` of the strong view is several times the signal. With
-``instance_normalize=False`` and the reference pair, this small SimCLR sits at
-chance (tail gap within 1% of ``ln(2B - 1)``); the defaults reach about 40%
-below it. This test trains the defaults on synthetic data with those
-properties and asserts the loss moves clearly below chance (#99).
+On data MINMAX-scaled to ``(0, 1)`` the per-series std is small, so the
+absolute ``Jitter(0.8)`` of the strong view is several times the signal.
+Without per-series normalization the loss of this small SimCLR stays close to
+chance. This test trains the defaults on synthetic data with those properties
+and asserts the loss ends clearly below chance.
 
 It guards ``instance_normalize`` only. Permutation hurts SimCLR without
 moving its loss toward chance (the encoder learns position-invariant features
@@ -24,8 +23,8 @@ _BATCH_SIZE = 16
 _CLASS_COUNT = 4
 _STEP_COUNT = 200
 _TAIL_STEP_COUNT = 30
-# Fraction of the chance loss the tail gap must fall below. The reference pair
-# on raw MINMAX data reaches at most 1%; the defaults reach about 40%.
+# Fraction of the chance loss the tail gap must fall below. Without per-series
+# normalization the gap stays close to zero.
 _MIN_REL_GAP = 0.1
 
 

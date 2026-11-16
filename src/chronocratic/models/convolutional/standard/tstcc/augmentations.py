@@ -1,8 +1,9 @@
 """TS-TCC augmentation wiring.
 
 Provides :func:`_default_tstcc_pair`, which builds the default
-:class:`~chronocratic.models.augmentation.primitives.TimestepScaling` (weak) |
-``Jitter`` (strong) pair, with segment permutation off unless requested.
+:class:`~chronocratic.models.convolutional.standard.augmentation.PerTimestepScaling`
+(weak) | ``Jitter`` (strong) pair, with segment permutation off unless
+requested.
 
 TS-TCC operates on tensors of shape ``(batch, time, channels)``, so the
 builders in this module use ``time_dim=1``.
@@ -20,9 +21,9 @@ from chronocratic.models.augmentation.primitives import (
     JitterParameters,
     Permutation,
     PermutationParameters,
-    TimestepScaling,
 )
 from chronocratic.models.augmentation.producers import RolePairProducer
+from chronocratic.models.convolutional.standard.augmentation import PerTimestepScaling
 
 if TYPE_CHECKING:
     from chronocratic.models.augmentation.base import Augmentation, AugmentationProducer, ViewPair
@@ -33,7 +34,7 @@ def _default_tstcc_pair(
 ) -> AugmentationProducer[ViewPair]:
     """Build the default TS-TCC weak/strong augmentation pair.
 
-    The weak view applies :class:`TimestepScaling`. The strong view applies
+    The weak view applies :class:`PerTimestepScaling`. The strong view applies
     :class:`Jitter`, preceded by segment :class:`Permutation` only when
     ``max_segments > 1``. Permutation is off by default because it scrambles
     position-dependent shapes, leaving the temporal and contextual losses
@@ -63,4 +64,4 @@ def _default_tstcc_pair(
         if max_segments > 1
         else jitter
     )
-    return RolePairProducer(first=TimestepScaling(), second=strong)
+    return RolePairProducer(first=PerTimestepScaling(), second=strong)

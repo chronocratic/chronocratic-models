@@ -1,7 +1,7 @@
 """SimCLR augmentation wiring.
 
 Provides ``_default_simclr_pair()``, which builds the default
-:class:`~chronocratic.models.augmentation.primitives.TimestepScaling`
+:class:`~chronocratic.models.convolutional.standard.augmentation.PerTimestepScaling`
 (weak) | ``Jitter`` (strong) pair, with segment permutation off unless
 requested. The reference computes both views in
 ``ULTS/data_loader/augmentations.py::DataTransform``::
@@ -25,9 +25,9 @@ from chronocratic.models.augmentation.primitives import (
     JitterParameters,
     Permutation,
     PermutationParameters,
-    TimestepScaling,
 )
 from chronocratic.models.augmentation.producers import RolePairProducer
+from chronocratic.models.convolutional.standard.augmentation import PerTimestepScaling
 
 if TYPE_CHECKING:
     from chronocratic.models.augmentation.base import Augmentation, AugmentationProducer, ViewPair
@@ -38,33 +38,30 @@ def _default_simclr_pair(
 ) -> AugmentationProducer[ViewPair]:
     """Build the default SimCLR weak/strong augmentation pair.
 
-    The weak view applies :class:`TimestepScaling`. The strong view applies
+    The weak view applies :class:`PerTimestepScaling`. The strong view applies
     :class:`Jitter`, preceded by segment :class:`Permutation` only when
     ``max_segments > 1``. ``max_segments=5`` gives the reference's strong
     view.
 
-    Two deliberate divergences from the reference, both measured on UCR
-    data in issue #99:
+    Two deliberate divergences from the reference:
 
     **Permutation is off by default.** SimCLR's loss compares the two views
     timestep by timestep (``forward`` projects every timestep and
     concatenates), so permuted segments can only be matched by features that
     look the same at every position. Training then discards *where* things
-    happen in the series: on InsectWingbeatSound the reference pair scores
-    40-44% in a frozen-feature probe against 57-58% for the same encoder
-    untrained, while its loss falls well below chance, so no loss-based check
-    sees it. On series without position-dependent structure (FordA)
-    permutation is harmless.
+    happen in the series, which on data with position-dependent structure
+    leaves the encoder below an untrained one. The loss still falls well
+    below chance, so a loss-based check does not see it. On series without
+    position-dependent structure permutation is harmless.
 
     **The weak view scales every timestep independently.** The reference's
     ``scaling()`` draws one factor per channel, shared across the series
     (and, as the reference applies it offline, across the training set).
     The encoder's ``GroupNorm`` cancels a factor that is constant over time,
     so that view is nearly the identity and the pair reduces to the raw
-    series against a jittered one. :class:`TimestepScaling` is the per-timestep
-    scaling of the TS-TCC reference, which the SimCLR reference says this
-    pairing follows. Without permutation it reads 2-3 points above the
-    reference weak view on InsectWingbeatSound and CricketX.
+    series against a jittered one. :class:`PerTimestepScaling` is the
+    per-timestep scaling of the TS-TCC reference, which the SimCLR reference
+    says this pairing follows.
 
     Args:
         max_segments: Upper bound on permutation segments. ``1`` disables
@@ -91,4 +88,4 @@ def _default_simclr_pair(
         if max_segments > 1
         else jitter
     )
-    return RolePairProducer(first=TimestepScaling(), second=strong)
+    return RolePairProducer(first=PerTimestepScaling(), second=strong)

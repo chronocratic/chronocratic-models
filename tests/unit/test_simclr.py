@@ -26,14 +26,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from chronocratic.models._mixin import BasicEncodingMixin
 from chronocratic.models.augmentation.base import AugmentationProducer, ViewPair
-from chronocratic.models.augmentation.primitives import (
-    Jitter,
-    JitterParameters,
-    Permutation,
-    TimestepScaling,
-    TimestepScalingParameters,
-)
+from chronocratic.models.augmentation.primitives import Jitter, JitterParameters, Permutation
 from chronocratic.models.augmentation.producers import FullOverlapProducer, IndependentPairProducer
+from chronocratic.models.convolutional.standard.augmentation import (
+    PerTimestepScaling,
+    PerTimestepScalingParameters,
+)
 from chronocratic.models.convolutional.standard.encoders.resnet import Conv1dResNetEncoder
 from chronocratic.models.convolutional.standard.layers.residual import (
     Conv1dBasicBlock,
@@ -653,10 +651,10 @@ class TestAugmentation:
         assert isinstance(producer.produce(_data()), ViewPair)
 
     def test_default_pair_has_no_permutation(self) -> None:
-        """Permutation makes the per-timestep loss discard position (#99)."""
+        """Permutation makes the per-timestep loss discard position."""
         producer = _default_simclr_pair()
-        assert isinstance(producer._first, TimestepScaling)
-        assert producer._first._params == TimestepScalingParameters()
+        assert isinstance(producer._first, PerTimestepScaling)
+        assert producer._first._params == PerTimestepScalingParameters()
         assert isinstance(producer._second, Jitter)
         assert producer._second._params.sigma == pytest.approx(0.8)
 
@@ -668,9 +666,9 @@ class TestAugmentation:
             _default_simclr_pair(max_segments=0)
 
     def test_weak_view_scale_varies_over_time(self) -> None:
-        """A factor constant over time is cancelled by GroupNorm (#99).
+        """A factor constant over time is cancelled by GroupNorm.
 
-        The previous per-series ``Scaling`` left the weak view nearly the
+        A per-series ``Scaling`` would leave the weak view nearly the
         identity; the per-timestep factor must not.
         """
         torch.manual_seed(0)
