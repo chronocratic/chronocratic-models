@@ -130,7 +130,7 @@ def instance_contrast_terms(
     same_cluster = assignment[:, None] == assignment[None, :]
 
     # Positives: the anchor is always a candidate, so any shortfall is padded
-    # with the anchor itself rather than dropped — the reference's behaviour.
+    # with the anchor itself rather than dropped — the reference's behavior.
     positive_index, positive_available = _sample_from_mask(
         candidates=same_cluster, count=positive_count
     )

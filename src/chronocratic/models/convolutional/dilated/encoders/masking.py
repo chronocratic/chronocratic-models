@@ -125,7 +125,7 @@ def get_mask_function(mask_mode: MaskMode | str) -> Callable[..., torch.Tensor]:
     """Return the mask-generation callable for a given mask mode.
 
     Accepts either a ``MaskMode`` enum value or its string equivalent
-    (e.g. ``'binomial'``). Raises ``ValueError`` for unrecognised strings
+    (e.g. ``'binomial'``). Raises ``ValueError`` for unrecognized strings
     or enum values that have no registered function.
 
     Args:
@@ -136,7 +136,7 @@ def get_mask_function(mask_mode: MaskMode | str) -> Callable[..., torch.Tensor]:
         that produces a boolean mask of shape ``(batch_size, seq_length)``.
 
     Raises:
-        ValueError: If ``mask_mode`` is an unrecognised string or has no
+        ValueError: If ``mask_mode`` is an unrecognized string or has no
             registered implementation.
     """
     if isinstance(mask_mode, str):

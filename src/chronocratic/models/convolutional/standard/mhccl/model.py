@@ -69,7 +69,7 @@ def _warn_shallow_hierarchy(cls: type, *, requested: int, available: int, pool_s
 # ── Parameter names vs. the reference ────────────────────────────────────────
 # Parameters below are named per this library's canonical vocabulary rather
 # than the reference's. These are renames only; none of them changes
-# behaviour. Reproduced in docs/api/conv_standard.md.
+# behavior. Reproduced in docs/api/conv_standard.md.
 #
 #   this library                        MHCCL (main.py argparse, framework.py)
 #   ----------------------------------  ------------------------------------
@@ -211,7 +211,7 @@ class MHCCL(pl.LightningModule, BasicEncodingMixin):
       ``epilepsy`` setting, which pads by 43 — the first stage then mixes those
       columns across a ReLU, and only the second stage's stride collapses it.
       The extra columns are the same signal under different slices of the stem
-      kernel: an artifact of reusing a vision backbone, not a modelling choice,
+      kernel: an artifact of reusing a vision backbone, not a modeling choice,
       and not something the paper describes. Unlike the other ports sharing
       :class:`Conv1dResNetEncoder`, this one is therefore a simplification of
       the reference rather than a rewriting of it.

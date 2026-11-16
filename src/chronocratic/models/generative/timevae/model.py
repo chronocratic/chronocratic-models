@@ -100,7 +100,7 @@ class TimeVAEEncoder(nn.Module):
         # Resample the temporal axis to a fixed width so the flattened size — and therefore
         # z_mean / z_log_var — is independent of input length. The target is the conv-stack
         # output at the nominal sequence_length, which makes this layer an exact identity for
-        # inputs of that length (16 -> 16, one element per bin) and leaves training behaviour
+        # inputs of that length (16 -> 16, one element per bin) and leaves training behavior
         # bit-identical. Shorter inputs (e.g. a 96-step forecast window -> 12) are upsampled;
         # that is expected and adds no information. See spec §4.1-§4.3.
         self.pooled_length = _timevae_encoder_output_length(

@@ -191,7 +191,7 @@ class TestPaddingMask:
     def test_padding_does_not_leak_into_real_timesteps(
         self, model: TST, padded_x: torch.Tensor
     ) -> None:
-        """Real timesteps differ from the old all-ones behaviour; unpadded samples do not.
+        """Real timesteps differ from the old all-ones behavior; unpadded samples do not.
 
         Guards the regression directly: with an all-ones mask the trunk attends over
         padding and pools it into real positions. The unpadded sample is the control --

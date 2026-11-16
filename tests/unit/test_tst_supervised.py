@@ -1,7 +1,7 @@
 """Tests for TST fine-tuning via SupervisedModule.
 
 Verifies that the factory produces correct output shapes, logging works,
-and freeze/unfreeze behaviour is correct for real TST backbones.
+and freeze/unfreeze behavior is correct for real TST backbones.
 """
 
 from __future__ import annotations

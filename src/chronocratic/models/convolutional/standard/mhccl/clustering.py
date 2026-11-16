@@ -1,17 +1,17 @@
 """On-device FINCH hierarchical clustering for MHCCL.
 
 FINCH (Sarfraz et al., CVPR 2019) builds a partition hierarchy bottom-up from
-first-nearest-neighbour relations alone: no cluster count to specify and no
+first-nearest-neighbor relations alone: no cluster count to specify and no
 distance threshold to tune. Each level links every point to its nearest
-neighbour, takes the weakly connected components of that graph as clusters, and
+neighbor, takes the weakly connected components of that graph as clusters, and
 recurses on the resulting centroids.
 
 Everything here runs in torch on the input's device. The reference reaches for
-``sklearn.metrics.pairwise_distances`` for the neighbour search,
+``sklearn.metrics.pairwise_distances`` for the neighbor search,
 ``scipy.sparse.csgraph.connected_components`` for the components, and
 ``pynndescent`` above 40k points; none is a dependency of this library, and a
 host round-trip per level would dominate a per-batch clustering step. The
-component labelling is verified equal to SciPy's in ``tests/unit/test_mhccl.py``.
+component labeling is verified equal to SciPy's in ``tests/unit/test_mhccl.py``.
 
 Five divergences from the reference. The first four are marked ``DIVERGENCE``
 at the line where each happens:
@@ -77,18 +77,18 @@ class ClusterHierarchy:
 
 
 def _one_nn_neighbors(features: torch.Tensor) -> torch.Tensor:
-    """Return each point's first nearest neighbour under Euclidean distance.
+    """Return each point's first nearest neighbor under Euclidean distance.
 
     Args:
         features: ``(N, D)`` feature matrix with at least two rows.
 
     Returns:
         ``(N,)`` int64 tensor where entry ``i`` is the index of ``i``'s nearest
-        neighbour, excluding ``i`` itself.
+        neighbor, excluding ``i`` itself.
     """
     distances = torch.cdist(features, features)
     # DIVERGENCE: the self-distance is set to infinity, so a point can never be
-    # its own nearest neighbour. The reference uses 1e12, which is only large
+    # its own nearest neighbor. The reference uses 1e12, which is only large
     # enough because its features are unit-norm; infinity needs no such
     # assumption.
     distances.fill_diagonal_(torch.inf)
@@ -96,16 +96,16 @@ def _one_nn_neighbors(features: torch.Tensor) -> torch.Tensor:
 
 
 def _weak_connected_components(neighbors: torch.Tensor) -> tuple[torch.Tensor, int]:
-    """Label the weakly connected components of a first-neighbour graph.
+    """Label the weakly connected components of a first-neighbor graph.
 
-    Min-label propagation with pointer jumping over the symmetrised edge set.
+    Min-label propagation with pointer jumping over the symmetrized edge set.
     Components are numbered by ascending smallest member index, which is also
     SciPy's convention, so the labels match
     ``scipy.sparse.csgraph.connected_components(directed=True,
     connection="weak")`` element for element.
 
     Args:
-        neighbors: ``(N,)`` int64 tensor of first-neighbour indices.
+        neighbors: ``(N,)`` int64 tensor of first-neighbor indices.
 
     Returns:
         A ``(N,)`` int64 tensor of contiguous component ids, and the component
@@ -132,10 +132,10 @@ def _weak_connected_components(neighbors: torch.Tensor) -> tuple[torch.Tensor, i
     targets = torch.cat([neighbors, index]).long()
 
     labels = index.clone()
-    # Each round hooks every node onto the smallest label in its neighbourhood,
+    # Each round hooks every node onto the smallest label in its neighborhood,
     # then compresses the resulting pointer forest to a fixed point. Hooking
     # spreads a label one edge per round, so the round count is bounded by the
-    # component diameter; first-neighbour graphs of real point clouds have small
+    # component diameter; first-neighbor graphs of real point clouds have small
     # components and settle in a handful of rounds. The bound below is the
     # unreachable worst case — labels decrease monotonically and are bounded
     # below by zero, so the loop cannot cycle.
@@ -158,7 +158,7 @@ def _weak_connected_components(neighbors: torch.Tensor) -> tuple[torch.Tensor, i
             break
         labels = hooked
     else:
-        msg = f"connected-component labelling did not converge in {max_hook_rounds} rounds"
+        msg = f"connected-component labeling did not converge in {max_hook_rounds} rounds"
         raise RuntimeError(msg)
 
     unique_labels, assignment = torch.unique(labels, return_inverse=True)

@@ -295,7 +295,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         gradient_clip_val: float | None = None,
         gradient_clip_algorithm: str | None = None,
     ) -> None:
-        """Clip gradients by global norm to stabilise training."""
+        """Clip gradients by global norm to stabilize training."""
         del optimizer, gradient_clip_algorithm
         if gradient_clip_val is None:
             gradient_clip_val = 4.0

@@ -2,6 +2,12 @@
 
 Thank you for your interest in contributing to `chronocratic-models`. This guide covers the development workflow and tooling used in the project.
 
+## License of contributions
+
+**By submitting a contribution, you agree that it is licensed under the terms of the [`LICENSE`](https://github.com/chronocratic/chronocratic-models/blob/main/LICENSE) file of this repository.**
+
+> **Note:** This guide holds general, model-independent rules and is maintained by the core maintainers. **Do not edit it in a model PR.** Anything specific to a model (support matrix, divergences from the reference, open limits, hyperparameter names, mixin or NaN-guard placement, worked examples) goes in [Model Notes](model-notes.md).
+
 ## Development Setup
 
 The project uses [uv](https://github.com/astral-sh/uv) for environment and dependency management.
@@ -93,6 +99,7 @@ Certain files affect every user of the project, so changes to them are **flagged
 
 - **`pyproject.toml`** — Build configuration, dependencies, and project metadata. Changes here affect all users and may introduce regressions.
 - **`.vscode/`** — Editor settings for linting, formatting, and type-checking (e.g. `settings.json`). Shared configuration that ensures consistency across the team.
+- **`docs/contributing.md`** — This guide. It holds general, model-independent rules. Model-specific notes belong in `docs/model-notes.md`, which anyone may edit.
 
 An automated CI check (`protected-files-check.yml`) posts an advisory comment on any PR that modifies these files. The comment is informational — it does not block the merge, but it makes the change explicit for reviewers. If a change is **absolutely necessary** (e.g., a dependency fix required for the PR to work), include a clear explanation in the PR description and expect maintainer review.
 
@@ -104,7 +111,7 @@ The project uses [towncrier](https://towncrier.readthedocs.io/) for managing cha
 
 ```bash
 # Create a fragment (e.g., for a new feature in PR #42)
-echo "Added new TimeVAE model for generative time series encoding." > changelog.d/42.added.md
+echo "Added support for a new model family." > changelog.d/42.added.md
 ```
 
 Fragment types: `added`, `changed`, `deprecated`, `removed`, `fixed`, `security`.
@@ -147,7 +154,7 @@ Use these exact names. Do not invent alternatives.
 | `weight_decay` | L2 regularization | `l2_reg` |
 | `reconstruction_weight` | VAE reconstruction term | `reconstruction_wt` |
 
-Model-specific names are acceptable only when genuinely unique to that model (e.g., `latent_dim` for TimeVAE, `embedding_dim` for Series2Vec).
+Model-specific names are acceptable only when genuinely unique to that model (document the name in [Model Notes](model-notes.md)).
 
 All dimension parameters use **singular** form (``*_dim``), never plural (``*_dims``). Every dimension is a scalar ``int`` — the ecosystem convention (PyTorch: ``embedding_dim``, ``d_model``, ``dim_feedforward``) matches this pattern.
 
@@ -234,9 +241,9 @@ If an internal component expects a `list`, convert at the boundary: `list(self._
 
 Source **reference repository code**, not papers. Papers omit implementation details; cloned repos are ground truth.
 
-1. Clone the original implementation's repository.
+1. Clone the repository of the original implementation.
 2. Check actual constructor defaults and CLI argument defaults.
-3. Document any deliberate divergence where readers of the code will find it: a comment at the diverging line, the config field's docstring, and a changelog fragment.
+3. Document any deliberate divergence where readers of the code will find it: a comment at the diverging line, the docstring of the config field, and a changelog fragment.
 
 ### Hardcoded Constant Extraction
 
@@ -265,7 +272,7 @@ nn.Conv1d(256, 128, kernel_size=3),
 
 ### Runtime-Derived Dimensions
 
-A subtler variant of hardcoding, and one you will usually **inherit rather than write**: a value is not a literal, but is computed once in `__init__` from a constructor argument and baked into a weight tensor's shape. The literal is absent; the rigidity is identical.
+A subtler variant of hardcoding, and one you will usually **inherit rather than write**: a value is not a literal, but is computed once in `__init__` from a constructor argument and baked into the shape of a weight tensor. The literal is absent; the rigidity is identical.
 
 ```python
 # Upstream pattern — the flattened width is frozen at construction.
@@ -368,7 +375,7 @@ Before merging a model change, verify:
 
 ## Tensor Shape Convention
 
-All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches PyTorch's `DataLoader` output convention and the `transformers` ecosystem.
+All model entry points in this library use **`(B, T, C)`** (batch, time, channels) as the input tensor layout. This matches the output convention of the PyTorch `DataLoader` and the `transformers` ecosystem.
 
 ### Encoder-Owns-the-Transpose Rule
 
@@ -382,15 +389,6 @@ def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = x.transpose(1, 2)  # (B, T, C) -> (B, C, T) for Conv1d
     return self.layers(x)
 ```
-
-Existing examples in the codebase:
-
-- `TimeVAEEncoder.forward()` — `transpose(1, 2)` at entry
-- `Series2VecNetwork._to_channels_first()` — layout conversion helper
-- Dilated encoders — `transpose(1, 2)` in `_common_forward()`
-- `FCNEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
-- `TCCEncoder.forward()` — `transpose(1, 2)` at entry (D-01)
-- `Conv1dResNetEncoder.forward()` — `transpose(1, 2)` at entry
 
 ### Augmentation Axes
 
@@ -414,34 +412,17 @@ The mixin `encode()` and `encode_batch()` methods accept an `output: EncodingOut
 
 Each model class declares `supported_outputs: frozenset[EncodingOutputShape]` as a class attribute. This frozenset documents which output shapes the model supports natively without fallback warnings.
 
-#### Model Support Matrix
-
-| Model | VECTOR | SEQUENCE | Notes |
-|---|---|---|---|
-| TS2Vec | Yes | Yes | Both via pooling |
-| CoST | Yes | Yes | Both via feature concatenation |
-| MCL | Yes | Yes | SEQUENCE via fallback (unsqueeze to `B,1,D`) |
-| TimeNet | Yes | Yes | Both supported |
-| TST | Yes | Yes | Both supported |
-| TimeVAE | Yes | No | VECTOR only |
-| AutoTCL | Yes | Yes | Both via pooling |
-| TSTCC | Yes | Yes | SEQUENCE via `_warn_sequence_fallback` + `unsqueeze(1)` |
-| SimCLR | Yes | Yes | VECTOR via mean over time, SEQUENCE via transpose |
-| MHCCL | Yes | Yes | VECTOR via mean over time, SEQUENCE via transpose |
-| Series2Vec | Yes | Yes | Both supported |
-| RecurrentAutoEncoder | Yes | Yes | Both supported |
-
-> Models that list `SEQUENCE=Yes` but are not natively sequence-producing (MCL, TSTCC)
-> issue a `_warn_sequence_fallback` and return `(B, 1, D)` by unsqueezing the vector.
-> `supported_outputs` is the authoritative declaration; check that attribute on the model class.
+The per-model support table lives in [Model Notes](model-notes.md#model-support-matrix).
 
 #### Encoding Mixin Architecture
 
 Two mixin families serve different encoder topologies:
 
-1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models (TST, TimeVAE, TimeNet, RecurrentAutoEncoder, MCL, TSTCC, SimCLR, MHCCL, Series2Vec). Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
+1. **`BasicEncodingMixin`** (`_mixin/encoding.py`) — Fixed-length sequence models. Subclasses implement `_get_encoder()` and optionally override `_encode_batch()`. The mixin owns DataLoader iteration, eval/inference mode, device placement, and result concatenation.
 
-2. **`BaseEncodingMixin`** (`convolutional/dilated/_mixin/encoding.py`) — Dilated conv models (TS2Vec, AutoTCL, CoST) with sliding-window inference, multi-scale pooling, and mask-mode handling. Subclasses override `_get_encoder()`, `_get_eval_method()`, and `_get_slice()`. Specialized mixins extend the base: `PoolingEncodingMixin` (TS2Vec, AutoTCL) and `DecompositionEncodingMixin` (CoST).
+2. **`BaseEncodingMixin`** (`convolutional/dilated/_mixin/encoding.py`) — Dilated conv models with sliding-window inference, multi-scale pooling, and mask-mode handling. Subclasses override `_get_encoder()`, `_get_eval_method()`, and `_get_slice()`. Specialized pooling and decomposition mixins extend the base.
+
+Which model uses which mixin is listed in [Model Notes](model-notes.md#mixin-assignment).
 
 All encoders implement `HasEncoder` protocol (`chronocratic.models.protocols`). The `.encoder` property returns an `nn.Module` for representation extraction, checkpointing, or fine-tuning. Decoder-bearing models implement `HasDecoder` and `HasEncoderDecoder`.
 
@@ -471,7 +452,7 @@ Individual augmentation operations (Scaling, Permutation, etc.) live in `augment
 Models accept `augmentation: AugmentationProducer[ViewType] | None = None` in `__init__`. When `None`, a default producer is created. To use a custom augmentation:
 
 ```python
-model = AutoTCL(
+model = Model(
     input_dim=3,
     augmentation=SingleViewProducer(aug=ScalingParameters()),
 )
@@ -509,7 +490,7 @@ Every random draw in the library comes from the global torch generator, so `ligh
 
 Code in this library must work correctly on all PyTorch backends. Follow these five rules to ensure cross-device compatibility.
 
-### 1. Create on input's device, don't transfer after
+### 1. Create on the input device, don't transfer after
 
 Build auxiliary tensors on the same device as the input, instead of creating on CPU and then calling `.to()`.
 
@@ -583,13 +564,6 @@ Time series data may contain trailing NaN values for padding variable-length seq
 3. **Encoder `_process_not_nan_mask`** — always zero out NaN *before* masking. Multiplication (`x * 0.0`) on NaN yields NaN, not zero. Use `torch.nan_to_num(x, nan=0.0)` first, or use boolean indexing (`modified_x[~not_nan_mask] = 0`).
 4. **Reconstruction models** — always apply NaN masking in loss computation to avoid training on padding artifacts.
 
-### Implementation Status
-
-- `BasicEncodingMixin` models: NaN guard lives in each model's `_encode_batch()` method.
-- `PoolingEncodingMixin` (TS2Vec, AutoTCL): NaN guard in `_evaluate_with_pooling`.
-- `DecompositionEncodingMixin` (CoST): NaN guard in `_evaluate_with_feature_concatenation`.
-- `AutoTCLTimeSeriesEncoder._process_not_nan_mask`: uses `torch.nan_to_num` + multiplication pattern.
-
 ### Testing
 
 Every model that processes variable-length batches should include tests for:
@@ -630,9 +604,9 @@ Needs patching — each of these is a latent crash:
 
 | Construct | Patch |
 | --- | --- |
-| `nn.Flatten()` → `nn.Linear` — flattened width scales with `T` | Resample the temporal axis first ([Pattern B](#pattern-b--resample-the-temporal-axis-timevae)) |
-| `register_buffer("pe", torch.zeros(sequence_length, ...))` and other position-indexed buffers | Compute analytically in `forward()` ([Pattern A](#pattern-a--compute-analytically-in-forward-tst)) |
-| Learned position embeddings (`nn.Parameter` per position) | Cannot extrapolate — raise, don't interpolate ([Pattern C](#pattern-c--raise-when-the-limit-is-inherent-tst)) |
+| `nn.Flatten()` → `nn.Linear` — flattened width scales with `T` | Resample the temporal axis first ([Pattern B](#pattern-b--resample-the-temporal-axis)) |
+| `register_buffer("pe", torch.zeros(sequence_length, ...))` and other position-indexed buffers | Compute analytically in `forward()` ([Pattern A](#pattern-a--compute-analytically-in-forward)) |
+| Learned position embeddings (`nn.Parameter` per position) | Cannot extrapolate — raise, don't interpolate ([Pattern C](#pattern-c--raise-when-the-limit-is-inherent)) |
 | `nn.Linear` whose `in_features` came from `sequence_length` | [Runtime-Derived Dimensions](#runtime-derived-dimensions) |
 | Reshapes with a literal temporal extent (`x.view(B, sequence_length, -1)`) | Derive from `x.size(...)` |
 
@@ -643,32 +617,31 @@ Two traps worth naming explicitly:
 
 ### Step 2 — apply the patch patterns
 
-Three patterns cover everything encountered so far. Both worked examples live in the tree; read them before inventing a fourth.
+Three patterns cover everything encountered so far. Worked examples live in the tree; read them before inventing a fourth.
 
-#### Pattern A — compute analytically in `forward()` (TST)
+#### Pattern A — compute analytically in `forward()`
 
 When upstream pre-allocates a table that a closed-form expression could produce, drop the table.
 
-`FixedPositionalEncoding` (`transformer/tst/ts_transformer.py`) originally built a
-`(sequence_length, 1, hidden_dim)` buffer in `__init__`. The sinusoidal formula is closed-form, so the buffer was only ever a cache — and one that silently imposed a ceiling. It now builds `position` and `div_term` inside `forward()` from `x.size(0)`, on `x.device` with `x.dtype` (see [Device Compatibility](#device-compatibility-cpu-cuda-mps)).
+Build the table inside `forward()` from the input length, on `x.device` with `x.dtype` (see [Device Compatibility](#device-compatibility-cpu-cuda-mps)). Cost: recomputation per forward, usually negligible. Benefit: no ceiling, and no silent truncation. This is *more* faithful to a paper that defines a formula, since the table was an implementation detail.
 
-Cost: recomputation per forward, which is negligible next to attention. Benefit: no ceiling, and the under-long silent-truncation path disappears. This is *more* faithful to the paper than the cache was — the paper defines a formula; the table was an implementation detail that narrowed it.
-
-#### Pattern B — resample the temporal axis (TimeVAE)
+#### Pattern B — resample the temporal axis
 
 When a layer structurally requires a fixed temporal width, insert `nn.AdaptiveAvgPool1d(target)` immediately before it.
 
-`TimeVAEEncoder` (`generative/timevae/model.py`) flattens its conv stack into `nn.Linear(encoder_last_dense_dim, latent_dim)`, so the flattened width — and therefore the weight shape — scaled with input length. The pool resamples the temporal axis to a constant number of ordered slots, holding the flattened width fixed at any input length.
+The pool resamples the temporal axis to a constant number of ordered slots, holding the flattened width fixed at any input length.
 
 Choose `target` as **the conv-stack output at the nominal `sequence_length`**. That makes the layer an exact identity at that length (16 elements into 16 bins is one element per bin), so training behavior is bit-identical and existing checkpoints keep their shapes. That identity property is what makes the patch safe to land, and §Testing turns it into an assertion.
 
 Do not reach for global mean/max pooling instead. Collapsing the temporal axis to width 1 makes a spike at the start indistinguishable from one at the end — it compiles, the suite stays green, and the model quietly stops being the model whose name it carries.
 
-#### Pattern C — raise when the limit is inherent (TST)
+#### Pattern C — raise when the limit is inherent
 
-Some limits cannot be patched away. `LearnablePositionalEncoding` stores one *learned* vector per position; there is no principled value for position 5,000 when the model only ever trained on 0–127. Interpolating fabricates weights and silently changes what the model represents.
+Some limits cannot be patched away. A layer that stores one *learned* vector per position has no principled value for a position it never trained on; interpolating fabricates weights and silently changes what the model represents.
 
-It now raises a `ValueError` naming both lengths and the remedy. Failing loudly is the correct outcome — the alternative is a number that looks fine and means nothing.
+Raise a `ValueError` naming both lengths and the remedy. Failing loudly is the correct outcome — the alternative is a number that looks fine and means nothing.
+
+Worked examples for each pattern are in [Model Notes](model-notes.md#length-robustness-worked-examples).
 
 ### Step 3 — cap the training path
 
@@ -682,7 +655,6 @@ x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 - **Default to `None`**, a documented no-op, so adding the parameter cannot perturb a working configuration. Let the consuming pipeline set the value.
 - **Never crop inside `encode()`.** `encode()` must be deterministic (identical input → identical representation) and must return one representation per input series; `process_sample_length` draws a *random* window. Inference-path length handling is chunked windowing, which is a separate design.
 
-TS2Vec, CoST, AutoTCL, TST, and TimeVAE all follow this.
 
 ### Testing
 
@@ -705,16 +677,7 @@ Every patch here is a deliberate departure from the reference implementation, an
 
 When a patch could alter what representations mean, write the rationale down before landing it. Passing tests are not sufficient evidence on their own: the failure mode here is a change that keeps every test green while quietly redefining the model.
 
-Current divergences and known limits:
-
-- **TimeVAE** — `nn.AdaptiveAvgPool1d` before the `Flatten`, so the latent projection width is constant. No counterpart in the reference; required because one pretrained model encodes several forecast window lengths. Exact identity at the nominal `sequence_length`.
-- **TST** — positional encoding computed in `forward()` rather than cached. Numerically identical to the reference at any length the reference supported.
-- **SimCLR** — ported as a 1-D ResNet. The reference stacks `Conv2d` over an input unsqueezed to `(B, C, T, 1)`, where the outer kernel columns only ever see zero padding; the `Conv1d` stack is numerically identical (asserted at stride 1 and 2 in `tests/unit/test_simclr.py`), as is `BatchNorm1d` against the reference's `BatchNorm2d` on that axis. Seven further departures, each commented at its line: each encoder stage honours its own configured depth, where the reference repeats the third stage's index in place of the fourth; the learning rate follows the *original* SimCLR's linear warmup into cosine annealing ([google-research/simclr](https://github.com/google-research/simclr) `WarmUpAndCosineDecay`) rather than the reference's `ExponentialLR(gamma=1e-6)`, which reaches `1e-15` within two epochs and would suppress training; normalization defaults to `GroupNorm(1, C)` rather than hardcoded `BatchNorm`, so the encoder remains well-defined at `batch_size=1`; the default strong view drops the reference's segment permutation (`_default_simclr_pair(max_segments=5)` restores it), because the loss compares the two views timestep by timestep and permuted positives teach the encoder to discard where things happen in the series, leaving it below an untrained encoder on position-dependent UCR data (#99); the default weak view is the per-timestep `TimestepScaling` (the TS-TCC reference's scaling) rather than the reference's `scaling()`, whose one factor per channel is constant over time and is cancelled by `GroupNorm`, making that view nearly the identity; each series is z-normalized over time before augmentation and in `encode()` (`instance_normalize=True`), because the absolute `Jitter(0.8)` is several times the signal on data that is not unit-scale, such as MINMAX-scaled series; and the encoder returns the unpooled feature map `(B, C, T')`, matching the reference's flatten-of-`C×T` contrastive input. An earlier version applied `AdaptiveAvgPool1d(1)`, which destroyed the angular diversity NT-Xent needs; pooling is now done in `_encode_batch` (mean for VECTOR, transpose for SEQUENCE), keeping the loss path intact while leaving downstream probes unaffected.
-- **SimCLR, open limit** — the model is sensitive to the ratio between its capacity and the number of optimizer steps a run affords. The default configuration is a ResNet-50-scale backbone; where that ratio is unfavourable it can remain far from convergence, in which case a randomly-initialised backbone may match or exceed a trained one under a linear probe and repeated runs of one configuration disagree. The learning-rate schedule reduces this sensitivity without removing it, and the contributing causes — nondeterministic kernel selection versus undertraining — have not been separated. Callers can pin the former through `Trainer(deterministic=True)`.
-- **MHCCL** — ported as a 1-D ResNet-18 pair sharing `Conv1dResNetEncoder`, for the reasons given under SimCLR, with one caveat that does not apply there: the width-1 equivalence holds through the `3x3` residual convolutions but not through this model's stem, whose `kernel_size=8, padding=4` widens the vestigial axis to 2 (to 80 on the `epilepsy` setting, padded by 43) before the first stage mixes those columns across a ReLU and the second stage's stride collapses them. The columns are the same signal under different slices of the stem kernel — an artifact of reusing a vision backbone — so for MHCCL the 1-D port is a simplification of the reference rather than a rewriting of it. Two departures are structural. First, FINCH clustering is reimplemented in torch on the input's device: the reference uses scikit-learn, SciPy and pynndescent, none of which this library depends on, and a host round-trip per level would dominate a per-batch clustering step; component labelling is asserted equal to `scipy.sparse.csgraph` in `tests/unit/test_mhccl.py`. Second, the reference clusters the whole training set once per epoch and addresses the assignments through a dataset-global sample index that this library's batch contract does not carry, so clustering runs per batch over the raw and augmented embeddings unioned with a momentum feature bank; that bank is capped at one epoch of enqueued rows, because copies of one sample taken from different encoder states cluster together and add a partition encoding duplication rather than structure. Sixteen departures in all, ten of them marked `DIVERGENCE` at the line where they happen; the 1-D port above and the per-batch clustering below are two of the six structural ones. Candidate scores are inner products via `einsum("bd,bmd->bm", ...)`, where the reference reshapes its `(B, M, D)` stack to `(B, D, M)` — reinterpreting the buffer instead of permuting axes, so its einsum contracts mismatched elements; candidate slots a batch cannot fill are masked out of the mean rather than raising; the cluster-level term averages over the partitions actually realized, where the reference divides by the configured count and ties the loss scale to the batch's geometry; centroids neither mutate the caller's feature matrix nor mis-count, where the reference zeroes rows in place and subtracts a constant one from every cluster; upward masking reads each level's own cluster membership, where the reference builds its member lists once from the level-0 partition and reuses them at every coarser level, measuring each coarse centroid against the members of whichever level-0 cluster shares its id; the level-to-level cluster map comes from the merge step rather than a scan of the label matrix per anchor per candidate; shuffle-BN and the `torch.distributed` dependency are dropped, being the identity at world size 1; normalization defaults to `GroupNorm(1, C)` rather than the reference's `BatchNorm`, so the encoder stays well-defined at `batch_size=1`; views come from the injected producer per batch, where the reference freezes both at `Dataset` construction and never seeds `np.random`; the default view pair keeps every channel's own values under a shared segment order, where the reference's `permutation` broadcasts channel 0's shuffled values over every channel (inherited from TS-TCC, whose data is univariate); its scale factor varies across channels rather than along time, where the reference's varies along time and is shared across channels, making it multiplicative noise rather than a rescaling; self-distances in the neighbour search are infinite rather than the reference's `1e12`, which is large enough only for unit-norm features; the reference's `min_sim` edge pruning is dropped, being a no-op there (it zeroes stored entries of a `csr_matrix`, and `csgraph` reads only the sparsity structure); and defaults follow the CLI except for `use_projection_mlp` and `use_lr_scheduler`, which take the README command's `--mlp` and `--cos` because the CLI defaults would ship no projection head and no decay at all — the command's remaining overrides (`--protoNCE_only`, the masking flags, `--mask_mode`, `--posi`, `--negi`) select an ablation rather than a baseline, so the CLI default stands there.
-- **MHCCL, open limit** — the number of partitions the clustering realizes depends on the pool size and on the data's geometry, so it can fall below `hierarchy_levels`. The cluster-level term then averages over the partitions actually used, which is reported as `mhccl/hierarchy_levels_used` and warns once; whether a per-batch pool plus a feature bank is a good proxy for the reference's per-epoch corpus prototypes is empirical and unmeasured.
-- **TST, open limit** — encoding at full-partition lengths is length-*correct* but O(T²) in memory and will exhaust it before raising. Chunked windowing is an open follow-up.
-- **Pretrain/encode length mismatch, open question** — a model pretrained on crops of one length and used to encode windows of another is mechanically valid after patching, but whether representation quality holds across lengths is empirical. Worth measuring before publishing numbers.
+The running list of divergences and open limits lives in [Model Notes](model-notes.md#current-divergences-and-known-limits). Add your entry there; do not edit this guide.
 
 ## Pipeline Tests and Adding a Model
 
