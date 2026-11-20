@@ -9,6 +9,7 @@ __all__ = [
     "masked_reconstruction_loss_mean",
     "masked_reconstruction_loss_sum",
     "multiscale_pooling",
+    "normalize_per_series",
     "pad_tensor_with_nan",
     "process_sample_length",
     "process_sliding_window",
@@ -293,6 +294,25 @@ def zero_fill_padding(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     keep_mask = generate_not_nan_mask(x)  # (B, T) bool
     x_filled = torch.nan_to_num(x, nan=0.0)
     return x_filled, keep_mask
+
+
+# Added to the per-series std so a constant series normalizes to 0, not NaN.
+_PER_SERIES_NORM_EPS = 1e-8
+
+
+def normalize_per_series(x: torch.Tensor) -> torch.Tensor:
+    """Z-normalize each series and channel over the time axis.
+
+    Args:
+        x: Input tensor of shape ``(batch, time, channels)``.
+
+    Returns:
+        ``(x - mean) / (std + eps)`` with statistics over dim 1. A constant
+        series maps to all zeros.
+    """
+    mean = x.mean(dim=1, keepdim=True)
+    std = x.std(dim=1, keepdim=True, unbiased=False)
+    return (x - mean) / (std + _PER_SERIES_NORM_EPS)
 
 
 def masked_reconstruction_loss_mean(
