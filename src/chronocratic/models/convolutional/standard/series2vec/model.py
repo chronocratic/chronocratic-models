@@ -230,7 +230,14 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         target_temporal_distances = pairwise_soft_dtw_distances(
             targets_x, gamma=self._soft_dtw_gamma, bandwidth=self._soft_dtw_bandwidth
         )
-        filtered_frequency_data = filter_frequencies(targets_x.detach())
+        # ``filter_frequencies`` runs the FFT and the Butterworth filter along the
+        # last axis, so the input must be (B, C, T) for them to act over time, as
+        # upstream and the frequency branch of the network do. On (B, T, C) they
+        # would act across channels, and for univariate data the target would
+        # degenerate to a raw Euclidean distance. The output stays (B, C, T);
+        # ``pairwise_euclidean_distances`` flattens each sample before the norm,
+        # so the layout does not change the distances and needs no transpose back.
+        filtered_frequency_data = filter_frequencies(targets_x.detach().transpose(1, 2))
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         result = pretraining_loss(
             temporal_distances=temporal_distances,

@@ -265,7 +265,9 @@ def test_series2vec_k0_matches_reference_targets() -> None:
         target_temporal = pairwise_soft_dtw_distances(
             x, gamma=model._soft_dtw_gamma, bandwidth=model._soft_dtw_bandwidth
         )
-        target_frequency = pairwise_euclidean_distances(filter_frequencies(x.detach()))
+        target_frequency = pairwise_euclidean_distances(
+            filter_frequencies(x.detach().transpose(1, 2))
+        )
         expected = pretraining_loss(
             temporal_distances=temporal,
             frequency_distances=frequency,
@@ -279,3 +281,20 @@ def test_series2vec_k0_matches_reference_targets() -> None:
 def test_series2vec_invalid_num_covariate_channels_raises(bad: int) -> None:
     with pytest.raises(ValueError, match="num_covariate_channels"):
         _make_series2vec(k=bad)
+
+
+def test_series2vec_frequency_target_filters_over_time() -> None:
+    """The frequency target is computed over time and keeps a pairwise shape."""
+    torch.manual_seed(0)
+    x = torch.randn(B, T, 1)
+    torch.manual_seed(11)
+    filtered = filter_frequencies(x.transpose(1, 2))
+    assert filtered.shape == (B, 1, T)
+    distances = pairwise_euclidean_distances(filtered)
+    assert distances.shape == (B * (B - 1) // 2,)
+    assert torch.isfinite(distances).all()
+    # Over a length-1 channel axis the FFT is the identity, so filtering over
+    # time must differ from the old channel-axis result.
+    torch.manual_seed(11)
+    channel_axis = filter_frequencies(x)
+    assert not torch.allclose(filtered.transpose(1, 2), channel_axis)
