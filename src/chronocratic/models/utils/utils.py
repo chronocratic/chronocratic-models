@@ -13,6 +13,7 @@ __all__ = [
     "pad_tensor_with_nan",
     "process_sample_length",
     "process_sliding_window",
+    "validate_num_covariate_channels",
     "zero_fill_padding",
 ]
 
@@ -357,3 +358,28 @@ def masked_reconstruction_loss_sum(
     """
     m = keep_mask.unsqueeze(-1).to(per_element.dtype)  # (B, T, 1)
     return (per_element * m).sum()
+
+
+def validate_num_covariate_channels(*, num_covariate_channels: int, input_dim: int) -> int:
+    """Validate the number of leading covariate channels.
+
+    Covariates are known inputs prepended to the raw channels, so at least one
+    channel must remain to be reconstructed.
+
+    Args:
+        num_covariate_channels: Number of leading channels treated as covariates.
+        input_dim: Total number of input channels.
+
+    Returns:
+        The validated ``num_covariate_channels``.
+
+    Raises:
+        ValueError: If ``num_covariate_channels`` is not in ``[0, input_dim)``.
+    """
+    if not 0 <= num_covariate_channels < input_dim:
+        msg = (
+            f"num_covariate_channels must satisfy 0 <= num_covariate_channels < input_dim "
+            f"({input_dim}), got {num_covariate_channels}."
+        )
+        raise ValueError(msg)
+    return num_covariate_channels

@@ -24,6 +24,7 @@ from chronocratic.models.recurrent.recurrentae.layers import (
 from chronocratic.models.utils import (
     extract_features_from_batch,
     masked_reconstruction_loss_mean,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 
@@ -60,6 +61,12 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         optimizer: Optimizer — ``'adam'``, ``'adamw'``, or ``'radam'``.
         learning_rate: Base learning rate for the optimizer.
         sync_dist: Whether to sync logged metrics across devices.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
     """
 
     supported_outputs: frozenset[EncodingOutputShape] = frozenset(
@@ -77,11 +84,15 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
         optimizer: OptimizerName = OptimizerName.ADAM,
         learning_rate: float = 1e-3,
         sync_dist: bool = False,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         recurrent_cell_type = RecurrentCellType(str(recurrent_cell_type).lower())
         self._input_dim = input_dim
+        self.num_covariate_channels: int = validate_num_covariate_channels(
+            num_covariate_channels=num_covariate_channels, input_dim=input_dim
+        )
         self._layers = layers
         self.optimizer = optimizer
         self.learning_rate = learning_rate
@@ -150,14 +161,17 @@ class RecurrentAutoEncoder(LightningModule, BasicEncodingMixin):
             x: Raw input tensor (B, T, C) that may contain NaN timesteps.
 
         Returns:
-            Scalar loss tensor with padded timesteps excluded.
+            Scalar loss tensor with padded timesteps excluded. The leading
+            ``num_covariate_channels`` channels are not scored.
         """
         x_filled, keep_mask = zero_fill_padding(x)
-        output = self(x_filled)
+        k = self.num_covariate_channels
+        output = self(x_filled)[..., k:]
+        target = x_filled[..., k:]
         if isinstance(self.loss_fn, nn.MSELoss):
-            per_element = F.mse_loss(output, x_filled, reduction="none")
+            per_element = F.mse_loss(output, target, reduction="none")
         else:
-            per_element = F.l1_loss(output, x_filled, reduction="none")
+            per_element = F.l1_loss(output, target, reduction="none")
         return masked_reconstruction_loss_mean(per_element, keep_mask)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:

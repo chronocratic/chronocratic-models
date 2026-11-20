@@ -252,6 +252,12 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         max_train_length: Maximum sequence length used during training; longer
             batches are randomly cropped to this length. ``None`` means no
             cap, which will fail on inputs longer than ``sequence_length``.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/abudesai/timeVAE under MIT License.
@@ -296,6 +302,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
         use_residual_conn: bool = True,
         residual_projection: ResidualProjectionType = ResidualProjectionType.DENSE,
         max_train_length: int | None = None,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__(
             sequence_length=sequence_length,
@@ -304,6 +311,7 @@ class TimeVAE(BaseVariationalAutoencoder, BasicEncodingMixin):
             reconstruction_weight=reconstruction_weight,
             learning_rate=learning_rate,
             max_train_length=max_train_length,
+            num_covariate_channels=num_covariate_channels,
         )
         self.save_hyperparameters()
 
