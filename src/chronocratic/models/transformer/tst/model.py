@@ -16,6 +16,7 @@ from chronocratic.models.transformer.tst.ts_transformer import TSTransformerEnco
 from chronocratic.models.utils import (
     extract_features_from_batch,
     process_sample_length,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 
@@ -94,6 +95,14 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         max_train_length: Maximum sequence length used during training; longer
             batches are randomly cropped to this length. ``None`` means no
             cap, which will fail on inputs longer than ``sequence_length``.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
+            Covariates are never masked and never scored: they stay visible
+            to the encoder and only the raw channels enter the loss.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/gzerveas/mvts_transformer under MIT License.
@@ -126,6 +135,7 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         sync_dist: bool = False,
         augmentation: Callable | None = None,
         max_train_length: int | None = None,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["augmentation"])
@@ -148,6 +158,9 @@ class TST(pl.LightningModule, BasicEncodingMixin):
             msg = f"masking_ratio must be in the open interval (0.0, 1.0), got {masking_ratio}."
             raise ValueError(msg)
         self._masking_ratio = masking_ratio
+        self.num_covariate_channels: int = validate_num_covariate_channels(
+            num_covariate_channels=num_covariate_channels, input_dim=input_dim
+        )
 
         self._sequence_length = sequence_length
         self._max_train_length = max_train_length
@@ -239,6 +252,9 @@ class TST(pl.LightningModule, BasicEncodingMixin):
         x_filled, padding_masks = self._split_padding(x)
         # ponytail: Bernoulli mask; upstream also offers geometric (lm=3). Add if repr quality lags.
         keep = torch.rand(x_filled.shape, device=x.device) >= self._masking_ratio
+        # Draw over all channels (keeps the RNG stream identical), then override:
+        # covariates are never masked, so target_masks = ~keep never scores them.
+        keep[..., : self.num_covariate_channels] = True
         masked_x = x_filled * keep
         return masked_x, x_filled, ~keep, padding_masks
 

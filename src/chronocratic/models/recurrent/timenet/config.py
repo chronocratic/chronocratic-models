@@ -24,6 +24,12 @@ class TimeNetModelParameters:
         learning_rate: Base learning rate for the Adam optimizer.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
     """
 
     input_dim: int
@@ -32,3 +38,4 @@ class TimeNetModelParameters:
     dropout_rate: float = 0.4
     learning_rate: float = 5e-3
     sync_dist: bool = False
+    num_covariate_channels: int = 0

@@ -34,7 +34,7 @@ class TestTS2VecModelParameters:
 
     def test_default_max_train_length(self) -> None:
         params = TS2VecModelParameters(input_dim=1)
-        assert params.max_train_length is None
+        assert params.max_train_length == 3000
 
     def test_default_temporal_unit(self) -> None:
         params = TS2VecModelParameters(input_dim=1)

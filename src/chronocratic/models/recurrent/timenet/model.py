@@ -13,6 +13,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import (
     extract_features_from_batch,
     masked_reconstruction_loss_mean,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 
@@ -49,6 +50,12 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         learning_rate: Base learning rate for the Adam optimizer.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/paudan/TimeNet under MIT License.
@@ -67,10 +74,14 @@ class TimeNet(LightningModule, BasicEncodingMixin):
         dropout_rate: float = 0.4,
         learning_rate: float = 5e-3,
         sync_dist: bool = False,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self._input_dim: int = input_dim
+        self.num_covariate_channels: int = validate_num_covariate_channels(
+            num_covariate_channels=num_covariate_channels, input_dim=input_dim
+        )
         self._hidden_dim: int = hidden_dim
         self._depth: int = depth
         self._dropout_rate: float = dropout_rate
@@ -161,11 +172,13 @@ class TimeNet(LightningModule, BasicEncodingMixin):
             x: Raw input tensor (B, T, C) that may contain NaN timesteps.
 
         Returns:
-            Scalar loss tensor with padded timesteps excluded.
+            Scalar loss tensor with padded timesteps excluded. The leading
+            ``num_covariate_channels`` channels are not scored.
         """
         x_filled, keep_mask = zero_fill_padding(x)
         output = self(x_filled)
-        per_element = (output - x_filled) ** 2
+        k = self.num_covariate_channels
+        per_element = (output[..., k:] - x_filled[..., k:]) ** 2
         return masked_reconstruction_loss_mean(per_element, keep_mask)
 
     def training_step(self, batch: torch.Tensor, _batch_idx: int) -> torch.Tensor:

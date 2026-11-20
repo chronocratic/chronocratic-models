@@ -17,7 +17,11 @@ from chronocratic.models.convolutional.dilated.encoders.encoders import CoSTTime
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.losses import instance_contrastive_loss
-from chronocratic.models.utils import extract_features_from_batch, process_sample_length
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    process_sample_length,
+    split_into_sections,
+)
 
 
 class CoST(pl.LightningModule, DecompositionEncodingMixin):
@@ -33,7 +37,8 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
         kernel_sizes: DWT decomposition levels as kernel sizes.
         augmentation: Custom augmentation producer. Defaults to
             CosTRandomFunctionAugmentation.
-        max_train_length: Maximum sequence length for training samples.
+        max_train_length: Maximum sequence length for training samples. The batch-filling
+            multiplier of upstream is not ported.
         hidden_dim: Number of hidden units in each encoder layer.
         representation_dim: Number of output features produced by the encoder.
         depth: Number of encoder layers.
@@ -313,6 +318,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     ) -> torch.Tensor:
         """Augment the batch twice, compute the contrastive loss, perform a manual update step."""
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
 
         optimizer = cast("torch.optim.Optimizer", self.optimizers())
 
@@ -345,6 +353,9 @@ class CoST(pl.LightningModule, DecompositionEncodingMixin):
     ) -> torch.Tensor:
         """Compute and log the contrastive validation loss without updating model parameters."""
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
 
         pair = self._augmentation.produce(x)
         query, key = pair.first, pair.second

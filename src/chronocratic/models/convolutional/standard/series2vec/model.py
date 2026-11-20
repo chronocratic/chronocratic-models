@@ -21,6 +21,7 @@ from chronocratic.models.enums.layers import NormalizationLayerType
 from chronocratic.models.utils import (
     ensure_pairable_batch,
     extract_features_from_batch,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 from chronocratic.models.utils.helpers import _warn_sequence_fallback
@@ -99,6 +100,12 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             or ``'AdamW'``.
         weight_decay: L2 weight-decay coefficient passed to the
             optimizer.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder, but the soft-DTW and frequency-distance
+            targets are computed on the raw channels only. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
 
     This model was implemented based on the code available on this GitHub
     repo https://github.com/Navidfoumani/Series2Vec.
@@ -129,6 +136,7 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
         sync_dist: bool = False,
         optimizer_name: OptimizerName = "RAdam",
         weight_decay: float = 0.0,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__()
         if singleton_split_count < _MIN_SPLIT_COUNT:
@@ -140,6 +148,9 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             msg = f"soft_dtw_bandwidth must be > 0 or None, got {soft_dtw_bandwidth}"
             raise ValueError(msg)
         self.save_hyperparameters()
+        self.num_covariate_channels: int = validate_num_covariate_channels(
+            num_covariate_channels=num_covariate_channels, input_dim=input_dim
+        )
 
         self._learning_rate = learning_rate
         self._soft_dtw_gamma = soft_dtw_gamma
@@ -215,10 +226,18 @@ class Series2Vec(pl.LightningModule, BasicEncodingMixin):
             min_batch_size=_MIN_SPLIT_COUNT,
         )
         temporal_distances, frequency_distances, _, _ = self.network.pretrain_forward(x)
+        targets_x = x[..., self.num_covariate_channels :]
         target_temporal_distances = pairwise_soft_dtw_distances(
-            x, gamma=self._soft_dtw_gamma, bandwidth=self._soft_dtw_bandwidth
+            targets_x, gamma=self._soft_dtw_gamma, bandwidth=self._soft_dtw_bandwidth
         )
-        filtered_frequency_data = filter_frequencies(x.detach())
+        # ``filter_frequencies`` runs the FFT and the Butterworth filter along the
+        # last axis, so the input must be (B, C, T) for them to act over time, as
+        # upstream and the frequency branch of the network do. On (B, T, C) they
+        # would act across channels, and for univariate data the target would
+        # degenerate to a raw Euclidean distance. The output stays (B, C, T);
+        # ``pairwise_euclidean_distances`` flattens each sample before the norm,
+        # so the layout does not change the distances and needs no transpose back.
+        filtered_frequency_data = filter_frequencies(targets_x.detach().transpose(1, 2))
         target_frequency_distances = pairwise_euclidean_distances(filtered_frequency_data)
         result = pretraining_loss(
             temporal_distances=temporal_distances,

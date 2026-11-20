@@ -11,6 +11,7 @@ from chronocratic.models.utils import (
     extract_features_from_batch,
     masked_reconstruction_loss_sum,
     process_sample_length,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 
@@ -56,6 +57,7 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         reconstruction_weight: float = 3.0,
         learning_rate: float = 1e-3,
         max_train_length: int | None = None,
+        num_covariate_channels: int = 0,
     ) -> None:
         super().__init__()
         self.sequence_length = sequence_length
@@ -64,6 +66,9 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
         self.reconstruction_weight = reconstruction_weight
         self.learning_rate = learning_rate
         self.max_train_length = max_train_length
+        self.num_covariate_channels: int = validate_num_covariate_channels(
+            num_covariate_channels=num_covariate_channels, input_dim=input_dim
+        )
         self.sampling = Sampling()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -177,7 +182,11 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
     def _get_reconstruction_loss(
         self, x: torch.Tensor, x_recons: torch.Tensor, keep_mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        err = torch.pow(x - x_recons, 2)  # (B, T, C)
+        # Covariates are inputs, not targets: score only the raw channels.
+        k = self.num_covariate_channels
+        x = x[..., k:]
+        x_recons = x_recons[..., k:]
+        err = torch.pow(x - x_recons, 2)  # (B, T, C - k)
 
         # Per-element reconstruction loss (masked if keep_mask provided)
         if keep_mask is not None:
@@ -214,6 +223,9 @@ class BaseVariationalAutoencoder(pl.LightningModule, ABC):
             keep_mask: Boolean mask of shape ``(B, T)`` where ``True``
                 indicates non-padded (real) timesteps. When ``None``,
                 all timesteps are included (backward compatible).
+
+        The reconstruction term (elementwise and per-axis) ignores the leading
+        ``num_covariate_channels`` channels of both ``x`` and ``x_recons``.
 
         Returns:
             Tuple ``(total_loss, reconstruction_loss, kl_loss)``.

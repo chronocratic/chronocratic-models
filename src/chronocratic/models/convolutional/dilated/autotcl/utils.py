@@ -4,6 +4,7 @@ import torch
 
 from chronocratic.models.augmentation.base import AugmentationProducer, SingleView
 from chronocratic.models.convolutional.dilated.autotcl.losses import l1_out_loss
+from chronocratic.models.utils import split_into_sections
 
 _MIN_TIME_STEPS = 3
 
@@ -78,7 +79,8 @@ def calculate_mutual_information(
         augmented data.
     """
     with torch.inference_mode():
-        x = batch
+        # Same per-batch section split as the training step.
+        x = split_into_sections(batch, max_train_length=max_train_length)
 
         if max_train_length is not None and x.size(1) > max_train_length:
             window_offset = int(

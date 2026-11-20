@@ -33,6 +33,8 @@ from chronocratic.models.utils.utils import (
     pad_tensor_with_nan,
     process_sample_length,
     process_sliding_window,
+    split_into_sections,
+    validate_num_covariate_channels,
     zero_fill_padding,
 )
 
@@ -51,5 +53,7 @@ __all__ = [
     "pad_tensor_with_nan",
     "process_sample_length",
     "process_sliding_window",
+    "split_into_sections",
+    "validate_num_covariate_channels",
     "zero_fill_padding",
 ]

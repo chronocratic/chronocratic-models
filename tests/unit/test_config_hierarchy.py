@@ -60,7 +60,7 @@ class TestTS2VecConfigDefaults:
         params = TS2VecModelParameters(input_dim=1)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
-        assert params.max_train_length is None
+        assert params.max_train_length == 3000
         assert params.temporal_unit == 0
         assert params.sync_dist is False
 

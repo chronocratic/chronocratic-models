@@ -48,6 +48,12 @@ class TimeVAEModelParameters:
         max_train_length: Maximum sequence length used during training; longer
             batches are randomly cropped to this length. ``None`` means no
             cap, which will fail on inputs longer than ``sequence_length``.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder but excluded from the reconstruction
+            loss. The decoder keeps its full width. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
     """
 
     sequence_length: int
@@ -63,3 +69,4 @@ class TimeVAEModelParameters:
     use_residual_conn: bool = True
     residual_projection: ResidualProjectionType = ResidualProjectionType.DENSE
     max_train_length: int | None = None
+    num_covariate_channels: int = 0
