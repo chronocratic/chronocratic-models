@@ -202,7 +202,7 @@ class TestAutoTCLModelParameters:
 
     def test_default_max_train_length(self) -> None:
         params = AutoTCLModelParameters(input_dim=1)
-        assert params.max_train_length == 1024
+        assert params.max_train_length is None
 
     def test_default_sync_dist(self) -> None:
         params = AutoTCLModelParameters(input_dim=1)
