@@ -390,7 +390,7 @@ _MIN_SECTIONS = 2
 
 
 def _centerize_vary_length_series(x: torch.Tensor) -> torch.Tensor:
-    """Roll each row so its valid (non-all-NaN) span is centred along time.
+    """Roll each row so its valid (non-all-NaN) span is centered along time.
 
     Port of upstream ``centerize_vary_length_series``.
 
@@ -398,7 +398,7 @@ def _centerize_vary_length_series(x: torch.Tensor) -> torch.Tensor:
         x: Batch of shape ``(B, T, C)``.
 
     Returns:
-        Tensor of the same shape with every row rolled to be centred.
+        Tensor of the same shape with every row rolled to be centered.
     """
     valid = ~torch.isnan(x).all(dim=-1)  # (B, T)
     prefix = valid.int().argmax(dim=1)
@@ -413,7 +413,7 @@ def _centerize_vary_length_series(x: torch.Tensor) -> torch.Tensor:
 
 
 def split_into_sections(x: torch.Tensor, *, max_train_length: int | None) -> torch.Tensor:
-    """Split long series into sections, centre padded ones and drop empty rows.
+    """Split long series into sections, center padded ones and drop empty rows.
 
     Torch port of the preprocessing in upstream ``fit()``, which runs once on the
     dataset; here it runs per batch.
@@ -427,7 +427,7 @@ def split_into_sections(x: torch.Tensor, *, max_train_length: int | None) -> tor
         With ``S = T // max_train_length >= 2`` sections, a ``(B * S, ceil(T / S), C)``
         tensor ordered piece-major (all series' first piece, then all second
         pieces, ...), with NaN padding at the end of shorter pieces. Rows are then
-        centred if the first or last timestep is missing for any row, and rows
+        centered if the first or last timestep is missing for any row, and rows
         that are entirely NaN are dropped. Input without NaN and without a split
         is returned as is (same object). Deviation from upstream: if every row
         would be dropped (upstream would yield an empty dataset), ``x`` is
@@ -445,7 +445,7 @@ def split_into_sections(x: torch.Tensor, *, max_train_length: int | None) -> tor
         x = torch.cat(padded, dim=0)
     if not torch.isnan(x).any():
         return x
-    # Centre when padding touches either end.
+    # Center when padding touches either end.
     temporal_missing = torch.isnan(x).all(dim=-1).any(dim=0)
     if temporal_missing[0] or temporal_missing[-1]:
         x = _centerize_vary_length_series(x)
