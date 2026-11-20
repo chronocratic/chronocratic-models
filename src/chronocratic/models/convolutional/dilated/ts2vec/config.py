@@ -26,8 +26,9 @@ class TS2VecModelParameters:
         conv_kernel_size: Size of the convolutional kernel in each layer.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
-        max_train_length: Maximum sequence length; longer samples are
-            truncated. ``None`` means no limit.
+        max_train_length: Maximum sequence length. Series at least twice as long are
+            split into sections and any remainder is randomly cropped. Defaults to
+            ``3000``; ``None`` means no limit.
         temporal_unit: Token-level temporal unit index.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
@@ -43,7 +44,7 @@ class TS2VecModelParameters:
     conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
-    max_train_length: int | None = None  # Source repo uses 3000; None here for dataset flexibility.
+    max_train_length: int | None = 3000
     temporal_unit: int = 0
     sync_dist: bool = False
     augmentation: AugmentationProducer[AlignedPair] | None = None

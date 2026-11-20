@@ -60,7 +60,7 @@ class TestTS2VecConfigDefaults:
         params = TS2VecModelParameters(input_dim=1)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
-        assert params.max_train_length is None
+        assert params.max_train_length == 3000
         assert params.temporal_unit == 0
         assert params.sync_dist is False
 
@@ -109,7 +109,7 @@ class TestAutoTCLConfigDefaults:
         assert params.kernel_sizes == (1, 2, 4, 8, 16, 32, 64, 128)
         assert params.mask_mode == MaskMode.BINOMIAL
         assert params.learning_rate == 1e-3
-        assert params.max_train_length is None
+        assert params.max_train_length == 1024
         assert params.sync_dist is False
 
     def test_encoder_field_defaults(self) -> None:

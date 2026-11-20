@@ -27,8 +27,9 @@ class AutoTCLModelParameters:
         conv_kernel_size: Size of the convolutional kernel in each layer.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
-        max_train_length: Maximum sequence length; longer samples are
-            truncated. ``None`` means no limit.
+        max_train_length: Maximum sequence length. Series at least twice as long are
+            split into sections and any remainder is randomly cropped. Defaults to
+            ``1024``; ``None`` means no limit.
         meta_learning_rate: Learning rate for the augmentation network
             optimizer.
         local_loss_weight: Weight for the local InfoNCE loss term in the
@@ -51,7 +52,7 @@ class AutoTCLModelParameters:
     conv_kernel_size: int = 3
     mask_mode: MaskMode = MaskMode.BINOMIAL
     learning_rate: float = 1e-3
-    max_train_length: int | None = None
+    max_train_length: int | None = 1024
     info_nce_loss_temperature: float = 1.0
     meta_learning_rate: float = 1e-2
     local_loss_weight: float = 0.1
