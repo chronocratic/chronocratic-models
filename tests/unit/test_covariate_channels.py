@@ -5,6 +5,13 @@ from collections.abc import Callable
 import pytest
 import torch
 
+from chronocratic.models.convolutional.standard.series2vec.filters import filter_frequencies
+from chronocratic.models.convolutional.standard.series2vec.losses import (
+    pairwise_euclidean_distances,
+    pairwise_soft_dtw_distances,
+    pretraining_loss,
+)
+from chronocratic.models.convolutional.standard.series2vec.model import Series2Vec
 from chronocratic.models.generative.timevae.model import TimeVAE
 from chronocratic.models.recurrent.recurrentae.model import RecurrentAutoEncoder
 from chronocratic.models.recurrent.timenet.model import TimeNet
@@ -196,3 +203,79 @@ def test_validate_helper_rejects_out_of_range(bad: int) -> None:
 def test_validate_helper_returns_value() -> None:
     assert validate_num_covariate_channels(num_covariate_channels=4, input_dim=5) == 4
     assert validate_num_covariate_channels(num_covariate_channels=0, input_dim=1) == 0
+
+
+# --- Series2Vec: supervision targets use the raw channels only ---
+
+
+def _make_series2vec(*, k: int) -> Series2Vec:
+    return Series2Vec(
+        input_dim=C,
+        embedding_dim=8,
+        num_heads=2,
+        feedforward_dim=16,
+        representation_dim=16,
+        temporal_kernel_size=4,
+        sequence_length=T,
+        num_covariate_channels=k,
+    ).eval()
+
+
+def _s2v_loss(*, model: Series2Vec, x: torch.Tensor) -> torch.Tensor:
+    """Return the total loss with the RNG reset so the frequency filter draw is fixed."""
+    torch.manual_seed(11)
+    with torch.no_grad():
+        return model._calculate_loss(x)[0]
+
+
+def _freeze_network_outputs(*, model: Series2Vec, x: torch.Tensor) -> None:
+    """Make ``pretrain_forward`` return the fixed outputs it produces for ``x``."""
+    with torch.no_grad():
+        fixed = model.network.pretrain_forward(x)
+    model.network.pretrain_forward = lambda _x: fixed  # type: ignore[method-assign]
+
+
+@pytest.mark.parametrize("k", KS)
+def test_series2vec_targets_ignore_covariates(k: int) -> None:
+    torch.manual_seed(0)
+    model = _make_series2vec(k=k)
+    x = torch.randn(B, T, C)
+    _freeze_network_outputs(model=model, x=x)
+    base = _s2v_loss(model=model, x=x)
+
+    x_cov = x.clone()
+    x_cov[..., :k] += torch.randn(B, T, k) * 5.0
+    assert torch.equal(_s2v_loss(model=model, x=x_cov), base)
+
+    x_raw = x.clone()
+    x_raw[..., k] += torch.randn(B, T) * 5.0
+    assert not torch.equal(_s2v_loss(model=model, x=x_raw), base)
+
+
+def test_series2vec_k0_matches_reference_targets() -> None:
+    torch.manual_seed(0)
+    model = _make_series2vec(k=0)
+    x = torch.randn(B, T, C)
+    with torch.no_grad():
+        temporal, frequency, _, _ = model.network.pretrain_forward(x)
+    _freeze_network_outputs(model=model, x=x)
+
+    torch.manual_seed(11)
+    with torch.no_grad():
+        target_temporal = pairwise_soft_dtw_distances(
+            x, gamma=model._soft_dtw_gamma, bandwidth=model._soft_dtw_bandwidth
+        )
+        target_frequency = pairwise_euclidean_distances(filter_frequencies(x.detach()))
+        expected = pretraining_loss(
+            temporal_distances=temporal,
+            frequency_distances=frequency,
+            target_temporal_distances=target_temporal,
+            target_frequency_distances=target_frequency,
+        )[0]
+    assert torch.equal(_s2v_loss(model=model, x=x), expected)
+
+
+@pytest.mark.parametrize("bad", [-1, C])
+def test_series2vec_invalid_num_covariate_channels_raises(bad: int) -> None:
+    with pytest.raises(ValueError, match="num_covariate_channels"):
+        _make_series2vec(k=bad)

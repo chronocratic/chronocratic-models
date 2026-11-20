@@ -64,6 +64,12 @@ class Series2VecModelParameters:
         singleton_split_count: Number of contiguous windows to split a
             singleton batch into for pairwise loss computation. Defaults
             to ``3`` to ensure sufficient gradients at batch_size=1.
+        num_covariate_channels: Number of leading channels that are known
+            covariates rather than targets, as prepended by the forecasting
+            datamodules (input is ``[covariates | raw channels]``). They are
+            still fed to the encoder, but the soft-DTW and frequency-distance
+            targets are computed on the raw channels only. Must satisfy
+            ``0 <= num_covariate_channels < input_dim``.
     """
 
     input_dim: int
@@ -84,3 +90,4 @@ class Series2VecModelParameters:
     weight_decay: float = 0.0
     normalization_layer_type: NormalizationLayerType = NormalizationLayerType.CHANNEL
     singleton_split_count: int = 3
+    num_covariate_channels: int = 0
