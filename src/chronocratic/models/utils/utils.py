@@ -13,6 +13,7 @@ __all__ = [
     "pad_tensor_with_nan",
     "process_sample_length",
     "process_sliding_window",
+    "split_into_sections",
     "validate_num_covariate_channels",
     "zero_fill_padding",
 ]
@@ -383,3 +384,71 @@ def validate_num_covariate_channels(*, num_covariate_channels: int, input_dim: i
         )
         raise ValueError(msg)
     return num_covariate_channels
+
+
+_MIN_SECTIONS = 2
+
+
+def _centerize_vary_length_series(x: torch.Tensor) -> torch.Tensor:
+    """Roll each row so its valid (non-all-NaN) span is centred along time.
+
+    Port of upstream ``centerize_vary_length_series``.
+
+    Args:
+        x: Batch of shape ``(B, T, C)``.
+
+    Returns:
+        Tensor of the same shape with every row rolled to be centred.
+    """
+    valid = ~torch.isnan(x).all(dim=-1)  # (B, T)
+    prefix = valid.int().argmax(dim=1)
+    suffix = valid.flip(dims=(1,)).int().argmax(dim=1)
+    offset = (prefix + suffix) // 2 - prefix
+    offset = torch.where(offset < 0, offset + x.size(1), offset)
+    columns = torch.arange(x.size(1), device=x.device)[None, :] - offset[:, None]
+    # Negative indices wrap around as in NumPy fancy indexing.
+    columns = columns % x.size(1)
+    rows = torch.arange(x.size(0), device=x.device)[:, None]
+    return x[rows, columns]
+
+
+def split_into_sections(x: torch.Tensor, *, max_train_length: int | None) -> torch.Tensor:
+    """Split long series into sections, centre padded ones and drop empty rows.
+
+    Torch port of the preprocessing in upstream ``fit()``, which runs once on the
+    dataset; here it runs per batch.
+
+    Args:
+        x: Batch of shape ``(B, T, C)``, possibly containing NaN padding.
+        max_train_length: Section length. ``None``, or fewer than two sections
+            (``T // max_train_length < 2``), means no split.
+
+    Returns:
+        With ``S = T // max_train_length >= 2`` sections, a ``(B * S, ceil(T / S), C)``
+        tensor ordered piece-major (all series' first piece, then all second
+        pieces, ...), with NaN padding at the end of shorter pieces. Rows are then
+        centred if the first or last timestep is missing for any row, and rows
+        that are entirely NaN are dropped. Input without NaN and without a split
+        is returned as is (same object). Deviation from upstream: if every row
+        would be dropped (upstream would yield an empty dataset), ``x`` is
+        returned unchanged.
+    """
+    original = x
+    sections = 0 if max_train_length is None else x.size(1) // max_train_length
+    if sections >= _MIN_SECTIONS:
+        # Upstream: np.array_split, then NaN-pad the pieces at the end.
+        pieces = torch.tensor_split(x, sections, dim=1)
+        target = pieces[0].size(1)
+        padded = [
+            F.pad(piece, (0, 0, 0, target - piece.size(1)), value=float("nan")) for piece in pieces
+        ]
+        x = torch.cat(padded, dim=0)
+    if not torch.isnan(x).any():
+        return x
+    # Centre when padding touches either end.
+    temporal_missing = torch.isnan(x).all(dim=-1).any(dim=0)
+    if temporal_missing[0] or temporal_missing[-1]:
+        x = _centerize_vary_length_series(x)
+    # Drop rows that are entirely NaN.
+    keep = ~torch.isnan(x).flatten(start_dim=1).all(dim=1)
+    return x[keep] if keep.any() else original

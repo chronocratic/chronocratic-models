@@ -28,6 +28,7 @@ from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.utils import (
     extract_features_from_batch,
     process_sample_length,
+    split_into_sections,
     zero_fill_padding,
 )
 
@@ -51,8 +52,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         conv_kernel_size: Size of the convolutional kernel in each layer.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
-        max_train_length: Maximum sequence length; longer samples are
-            truncated. ``None`` means no limit.
+        max_train_length: Maximum sequence length. Series at least twice as long are
+            split into sections and any remainder is randomly cropped.
+            ``None`` means no limit.
         meta_learning_rate: Learning rate for the augmentation network
             optimizer.
         local_loss_weight: Weight for the local InfoNCE loss term in the
@@ -179,6 +181,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
         2. Uniform encoder training (all augmentation types).
         """
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
         x, _ = zero_fill_padding(x)
         x = process_sample_length(sample=x, max_sample_length=self._max_train_length)
 
@@ -277,6 +282,9 @@ class AutoTCL(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Compute validation contrastive loss using the averaged encoder."""
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
         x, _ = zero_fill_padding(x)
 
         view = self._augmentation.produce(x)

@@ -14,7 +14,11 @@ from chronocratic.models.convolutional.dilated.encoders.encoders import TS2VecTi
 from chronocratic.models.convolutional.dilated.encoders.masking import MaskMode
 from chronocratic.models.enums.encoding import EncodingOutputShape
 from chronocratic.models.losses import hierarchical_contrastive_loss
-from chronocratic.models.utils import extract_features_from_batch, process_sample_length
+from chronocratic.models.utils import (
+    extract_features_from_batch,
+    process_sample_length,
+    split_into_sections,
+)
 
 
 class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
@@ -35,8 +39,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
         conv_kernel_size: Size of the convolutional kernel in each layer.
         mask_mode: Strategy for masking input tokens during training.
         learning_rate: Base learning rate for the optimizer.
-        max_train_length: Maximum sequence length; longer samples are
-            truncated. ``None`` means no limit.
+        max_train_length: Maximum sequence length. Series at least twice as long are
+            split into sections and any remainder is randomly cropped.
+            ``None`` means no limit.
         temporal_unit: Token-level temporal unit index.
         sync_dist: Whether to synchronize metrics across distributed
             processes.
@@ -155,6 +160,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Run one TS2Vec training step with manual optimization."""
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
 
         optimizer = cast("torch.optim.Optimizer", self.optimizers())
 
@@ -187,6 +195,9 @@ class TS2Vec(pl.LightningModule, PoolingEncodingMixin):
     ) -> torch.Tensor:
         """Compute and log the TS2Vec validation loss."""
         x = extract_features_from_batch(batch)
+        # Upstream does this once on the dataset in ``fit()``; Lightning owns the loop here,
+        # so it runs per batch and sections of a series stay in the same batch.
+        x = split_into_sections(x, max_train_length=self._max_train_length)
 
         embeddings_1, embeddings_2 = self._encode_augmented_views(x)
 
